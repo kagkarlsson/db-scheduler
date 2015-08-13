@@ -12,12 +12,20 @@ public final class TaskInstance {
 		this.id = id;
 	}
 
-	public String getTaskId() {
+	public String getTaskAndInstance() {
 		return task.getName() + "_" + id;
 	}
 
 	public Task getTask() {
 		return task;
+	}
+
+	public String getTaskName() {
+		return task.getName();
+	}
+
+	public String getId() {
+		return id;
 	}
 
 	@Override

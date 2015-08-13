@@ -24,7 +24,7 @@ public class SchedulerMain {
 
 	public static void main(String[] args) {
 		try {
-			Scheduler scheduler = new Scheduler(new SystemClock(), new InMemoryTaskRespository(), 1);
+			Scheduler scheduler = new Scheduler(new SystemClock(), new InMemoryTaskRespository(), 1, new Scheduler.FixedName("scheduler1"));
 
 			RecurringTask recurring1 = new RecurringTask("recurring1", Duration.ofSeconds(1), execute);
 			RecurringTask recurring2 = new RecurringTask("recurring2", Duration.ofSeconds(1), execute);

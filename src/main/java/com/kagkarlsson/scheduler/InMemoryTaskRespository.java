@@ -15,13 +15,13 @@ public class InMemoryTaskRespository implements TaskRepository {
 	@Override
 	public synchronized boolean createIfNotExists(Execution execution) {
 		LOG.debug("Adding execution {} if it does not exist.", execution);
-		String taskId = execution.taskInstance.getTaskId();
+		String nameAndInstance = execution.taskInstance.getTaskAndInstance();
 		Optional<Execution> existing = futureExecutions.stream()
-				.filter(e -> e.taskInstance.getTaskId().equals(taskId))
+				.filter(e -> e.taskInstance.getTaskAndInstance().equals(nameAndInstance))
 				.findAny();
 
 		if (existing.isPresent()) {
-			LOG.info("Recurring task with id {} already exists. Not scheduling duplicate.", taskId);
+			LOG.info("Recurring task with id {} already exists. Not scheduling duplicate.", nameAndInstance);
 			return false;
 
 		} else {

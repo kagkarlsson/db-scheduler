@@ -31,11 +31,12 @@ public class JdbcTaskRepository implements TaskRepository {
 	public boolean createIfNotExists(Execution execution) {
 		try {
 			jdbcRunner.execute(
-					"insert into scheduled_tasks(task_name, task_instance, execution_time) values (?, ?, ?)",
+					"insert into scheduled_tasks(task_name, task_instance, execution_time, picked) values (?, ?, ?, ?)",
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTask().getName());
-						p.setString(2, execution.taskInstance.getTaskId());
+						p.setString(2, execution.taskInstance.getTaskAndInstance());
 						p.setTimestamp(3, Timestamp.valueOf(execution.exeecutionTime));
+						p.setBoolean(4, false);
 					});
 		} catch (IntegrityConstraintViolation e) {
 			LOG.info("Failed to add execution because of existing duplicate: " + execution.taskInstance);
@@ -48,7 +49,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public List<Execution> getDue(LocalDateTime now) {
 		return jdbcRunner.query(
-				"select * from scheduled_tasks where execution_time <= ?",
+				"select * from scheduled_tasks where picked = 0 and execution_time <= ? order by execution_time asc",
 				(PreparedStatement p) -> {
 					p.setTimestamp(1, Timestamp.valueOf(now));
 				},
@@ -58,17 +59,48 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public void remove(Execution execution) {
-		throw new UnsupportedOperationException("not implemented");
+
+		final int removed = jdbcRunner.execute("delete from scheduled_tasks where task_name = ? and task_instance = ?",
+				ps -> {
+					ps.setString(1, execution.taskInstance.getTaskName());
+					ps.setString(2, execution.taskInstance.getId());
+				}
+		);
+
+		if (removed != 1) {
+			throw new RuntimeException("Expected one execution to be removed, but removed " + removed + ". Indicates a bug.");
+		}
 	}
 
 	@Override
 	public void reschedule(Execution execution, LocalDateTime nextExecutionTime) {
-		throw new UnsupportedOperationException("not implemented");
+		remove(execution);
+		final boolean created = createIfNotExists(new Execution(nextExecutionTime, execution.taskInstance));
+		if (!created) {
+			throw new RuntimeException("New execution was not created. Should never happen if reschedule is run in an transaction.");
+		}
 	}
 
 	@Override
 	public boolean pick(Execution e) {
-		throw new UnsupportedOperationException("not implemented");
+		final int updated = jdbcRunner.execute(
+				"update scheduled_tasks set picked = 1 " +
+						"where picked = 0 " +
+						"and task_name = ? " +
+						"and task_instance = ?",
+				ps -> {
+					ps.setString(1, e.taskInstance.getTaskName());
+					ps.setString(2, e.taskInstance.getId());
+				});
+
+		if (updated == 0) {
+			LOG.debug("Failed to pick execution. It must have been picked by another scheduler.", e);
+			return false;
+		} else if (updated == 1) {
+			return true;
+		} else {
+			throw new IllegalStateException("Updated multiple rows when picking single execution. Should never happen since name and id is primary key. Execution: " + e);
+		}
 	}
 
 

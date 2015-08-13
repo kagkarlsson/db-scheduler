@@ -5,12 +5,11 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.*;
 
@@ -58,12 +57,14 @@ public class InMemoryRepositoryTest {
 	public void get_due_should_be_sorted() {
 		LocalDateTime now = LocalDateTime.now();
 		IntStream.range(0, 100).forEach(i ->
-			taskRespository.createIfNotExists(new Execution(now.minusSeconds(new Random().nextInt(10000)), oneTimeTask.instance("id" + i)))
+						taskRespository.createIfNotExists(new Execution(now.minusSeconds(new Random().nextInt(10000)), oneTimeTask.instance("id" + i)))
 		);
 		List<Execution> due = taskRespository.getDue(now);
 		assertThat(due, hasSize(100));
 
-		Collections.sort(due, Comparator.comparing(Execution::getExeecutionTime));
+		List<Execution> sortedDue = new ArrayList<>(due);
+		Collections.sort(sortedDue, Comparator.comparing(Execution::getExeecutionTime));
+		assertThat(due, is(sortedDue));
 	}
 
 	@Test

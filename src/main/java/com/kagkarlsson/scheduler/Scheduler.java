@@ -1,11 +1,14 @@
 package com.kagkarlsson.scheduler;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.kagkarlsson.scheduler.executors.CapacityLimitedExecutorService;
 import com.kagkarlsson.scheduler.executors.LimitedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,37 +22,45 @@ public class Scheduler {
 	private final Clock clock;
 	private final TaskRepository taskRepository;
 	private final CapacityLimitedExecutorService executorService;
+	private final Name name;
 	private Map<String, Task> knownTasks = new HashMap<>();
 	private boolean shutdownRequested = false;
 
-	public Scheduler(Clock clock, TaskRepository taskRepository, int executorThreads) {
-		this(clock, taskRepository, new LimitedThreadPool(executorThreads));
+	public Scheduler(Clock clock, TaskRepository taskRepository, int executorThreads, Name name) {
+		this(clock, taskRepository, new LimitedThreadPool(executorThreads, new ThreadFactoryBuilder().setNameFormat(name.getName() + "-%d").build()), name);
 	}
 
-	Scheduler(Clock clock, TaskRepository taskRepository, CapacityLimitedExecutorService executorService) {
+	Scheduler(Clock clock, TaskRepository taskRepository, CapacityLimitedExecutorService executorService, Name name) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.executorService = executorService;
+		this.name = name;
 	}
 
 	public void start() {
 		LOG.info("Starting scheduler");
-		while(!shutdownRequested) {
-			try {
-				if (executorService.hasFreeExecutor()) {
-					executeDue();
-				}
 
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					LOG.info("Interrupted. Assuming shutdown and continuing.");
-				}
+		new Thread(name.getName() + "-main-thread-") {
+			@Override
+			public void run() {
+				while(!shutdownRequested) {
+					try {
+						if (executorService.hasFreeExecutor()) {
+							executeDue();
+						}
 
-			} catch (Exception e) {
-				LOG.error("Unhandled exception", e);
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							LOG.info("Interrupted. Assuming shutdown and continuing.");
+						}
+
+					} catch (Exception e) {
+						LOG.error("Unhandled exception", e);
+					}
+				}
 			}
-		}
+		}.start();
 	}
 
 	public void stop() {
@@ -100,15 +111,55 @@ public class Scheduler {
 			if (taskRepository.pick(e)) {
 				executorService.submit(() -> {
 					try {
-						Run.logExceptions(LOG, () -> e.taskInstance.getTask().execute(e.taskInstance)).run();
+						Run.logExceptions(LOG, () -> {
+							LOG.debug("Executing " + e);
+							e.taskInstance.getTask().execute(e.taskInstance);
+						}).run();
 					} finally {
 						Run.logExceptions(LOG,
-								() -> e.taskInstance.getTask().complete(e, clock.now(), new TaskInstanceOperations(e))).run();
+								() -> {
+									LOG.trace("Completing " + e);
+									e.taskInstance.getTask().complete(e, clock.now(), new TaskInstanceOperations(e));
+								}).run();
 					}
 				});
 			}
 		}
 	}
+
+	public static Builder create(DataSource dataSource) {
+		return new Builder(dataSource);
+	}
+
+	public static class Builder {
+
+		private final DataSource dataSource;
+		private int executorThreads = 10;
+		private List<Task> knownTasks = new ArrayList<>();
+		private String name;
+
+		public Builder(DataSource dataSource) {
+			this.dataSource = dataSource;
+		}
+
+		public Builder addHandler(Task task) {
+			knownTasks.add(task);
+			return this;
+		}
+
+		public Builder name(String name) {
+			this.name = name;
+			return this;
+		}
+
+		Scheduler build() {
+			final TaskResolver taskResolver = new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
+			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver);
+
+			return new Scheduler(new SystemClock(), taskRepository, executorThreads, new FixedName(name));
+		}
+	}
+
 
 	public class TaskInstanceOperations {
 
@@ -126,6 +177,23 @@ public class Scheduler {
 			taskRepository.reschedule(execution, nextExecutionTime);
 		}
 
+	}
+
+	public interface Name {
+		String getName();
+	}
+
+	public static class FixedName implements Name {
+		private final String name;
+
+		public FixedName(String name) {
+			this.name = name;
+		}
+
+		@Override
+		public String getName() {
+			return name;
+		}
 	}
 
 }
