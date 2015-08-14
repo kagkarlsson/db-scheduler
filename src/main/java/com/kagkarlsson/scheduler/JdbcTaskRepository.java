@@ -17,12 +17,11 @@ import java.util.List;
 
 public class JdbcTaskRepository implements TaskRepository {
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
-	private final DataSource dataSource;
+	private static final int MAX_DUE_RESULTS = 10_000;
 	private final TaskResolver taskResolver;
 	private final JdbcRunner jdbcRunner;
 
 	public JdbcTaskRepository(DataSource dataSource, TaskResolver taskResolver) {
-		this.dataSource = dataSource;
 		this.taskResolver = taskResolver;
 		this.jdbcRunner = new JdbcRunner(dataSource);
 	}
@@ -34,7 +33,7 @@ public class JdbcTaskRepository implements TaskRepository {
 					"insert into scheduled_tasks(task_name, task_instance, execution_time, picked) values (?, ?, ?, ?)",
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTask().getName());
-						p.setString(2, execution.taskInstance.getTaskAndInstance());
+						p.setString(2, execution.taskInstance.getId());
 						p.setTimestamp(3, Timestamp.valueOf(execution.exeecutionTime));
 						p.setBoolean(4, false);
 					});
@@ -48,10 +47,15 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public List<Execution> getDue(LocalDateTime now) {
+		return getDue(now, MAX_DUE_RESULTS);
+	}
+
+	public List<Execution> getDue(LocalDateTime now, int limit) {
 		return jdbcRunner.query(
 				"select * from scheduled_tasks where picked = 0 and execution_time <= ? order by execution_time asc",
 				(PreparedStatement p) -> {
 					p.setTimestamp(1, Timestamp.valueOf(now));
+					p.setMaxRows(limit);
 				},
 				new ExecutionResultSetMapper()
 		);
@@ -103,19 +107,16 @@ public class JdbcTaskRepository implements TaskRepository {
 		}
 	}
 
-
-	/*private class ExecutionRowMapper implements RowMapper<Execution> {
-
-		@Override
-		public Execution map(ResultSet rs) throws SQLException {
-			String taskName = rs.getString("task_name");
-			Task task = taskResolver.resolve(taskName);
-			String taskInstance = rs.getString("task_instance");
-
-			LocalDateTime executionTime = rs.getTimestamp("execution_time").toLocalDateTime();
-			return new Execution(executionTime, new TaskInstance(task, taskInstance));
-		}
-	}*/
+	@Override
+	public List<Execution> getOldExecutions(LocalDateTime olderThan) {
+		return jdbcRunner.query(
+				"select * from scheduled_tasks where picked = 1 and execution_time <= ? order by execution_time asc",
+				(PreparedStatement p) -> {
+					p.setTimestamp(1, Timestamp.valueOf(olderThan));
+				},
+				new ExecutionResultSetMapper()
+		);
+	}
 
 
 	private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {

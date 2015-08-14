@@ -19,11 +19,13 @@ public class SchedulerTest {
 	private Scheduler scheduler;
 	private CustomHandler handler;
 	private SettableClock clock;
+	private InMemoryTaskRespository taskRepository;
 
 	@Before
 	public void setUp() {
 		clock = new SettableClock();
-		scheduler = new Scheduler(clock, new InMemoryTaskRespository(), new CapacityLimitedDirectExecutorService(), new Scheduler.FixedName("name"));
+		taskRepository = new InMemoryTaskRespository();
+		scheduler = new Scheduler(clock, taskRepository, new CapacityLimitedDirectExecutorService(), new Scheduler.FixedName("name"), new Scheduler.Waiter(0), new Scheduler.Waiter(100), Scheduler.WARN_LOGGER);
 		handler = new CustomHandler();
 	}
 
@@ -59,7 +61,7 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_stop_execution_when_executor_service_rejects() {
-		scheduler = new Scheduler(clock, new InMemoryTaskRespository(), new CapacityLimitedDirectExecutorService(false), new Scheduler.FixedName("name"));
+		scheduler = new Scheduler(clock, new InMemoryTaskRespository(), new CapacityLimitedDirectExecutorService(false), new Scheduler.FixedName("name"), new Scheduler.Waiter(0), new Scheduler.Waiter(100), Scheduler.WARN_LOGGER);
 		OneTimeTask oneTimeTask = new OneTimeTask("OneTime", handler);
 
 		scheduler.schedule(clock.now(), oneTimeTask.instance("1"));

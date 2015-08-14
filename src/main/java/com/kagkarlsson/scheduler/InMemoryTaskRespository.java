@@ -54,6 +54,16 @@ public class InMemoryTaskRespository implements TaskRepository {
 	}
 
 	@Override
+	public List<Execution> getOldExecutions(LocalDateTime olderThan) {
+		List<Execution> due = futureExecutions.stream()
+				.filter(e -> e.exeecutionTime.isBefore(olderThan) || e.exeecutionTime.isEqual(olderThan))
+				.filter(e -> e.picked)
+				.collect(Collectors.toList());
+		Collections.sort(due, Comparator.comparing(Execution::getExeecutionTime));
+		return due;
+	}
+
+	@Override
 	public synchronized List<Execution> getDue(LocalDateTime now) {
 		List<Execution> due = futureExecutions.stream()
 				.filter(e -> e.exeecutionTime.isBefore(now) || e.exeecutionTime.isEqual(now))

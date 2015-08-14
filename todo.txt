@@ -1,0 +1,4 @@
+
+- handle competing startup
+- scheduling existing tasks (competing scheduling recurring tasks)
+- detect schedulers own dead locks, default remove lock

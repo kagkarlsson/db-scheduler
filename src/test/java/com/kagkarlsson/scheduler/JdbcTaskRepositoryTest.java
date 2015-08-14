@@ -56,6 +56,16 @@ public class JdbcTaskRepositoryTest {
 	}
 
 	@Test
+	public void get_due_should_honor_max_results_limit() {
+		LocalDateTime now = LocalDateTime.now();
+
+		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
+		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id2")));
+		assertThat(taskRepository.getDue(now, 1), hasSize(1));
+		assertThat(taskRepository.getDue(now, 2), hasSize(2));
+	}
+
+	@Test
 	public void get_due_should_be_sorted() {
 		LocalDateTime now = LocalDateTime.now();
 		IntStream.range(0, 100).forEach(i ->

@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public class SettableClock implements Clock {
 
-	private LocalDateTime now = LocalDateTime.now();
+	public LocalDateTime now = LocalDateTime.now();
 
 	@Override
 	public LocalDateTime now() {

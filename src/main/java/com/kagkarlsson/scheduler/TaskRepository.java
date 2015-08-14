@@ -12,4 +12,6 @@ public interface TaskRepository {
 	void reschedule(Execution execution, LocalDateTime nextExecutionTime);
 
 	boolean pick(Execution e);
+
+	List<Execution> getOldExecutions(LocalDateTime olderThan);
 }

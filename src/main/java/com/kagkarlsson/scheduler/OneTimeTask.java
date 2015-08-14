@@ -12,11 +12,6 @@ public class OneTimeTask extends Task {
 	}
 
 	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
 	public TaskInstance instance(String id) {
 		return new TaskInstance(this, id);
 	}
@@ -27,8 +22,8 @@ public class OneTimeTask extends Task {
 	}
 
 	@Override
-	public void complete(Execution taskInstance, LocalDateTime timeDone, Scheduler.TaskInstanceOperations taskInstanceOperations) {
-		taskInstanceOperations.stop();
+	public void complete(ExecutionResult executionResult, Scheduler.ExecutionFinishedOperations executionFinishedOperations) {
+		executionFinishedOperations.stop();
 	}
 
 }

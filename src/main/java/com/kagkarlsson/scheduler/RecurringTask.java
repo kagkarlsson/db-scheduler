@@ -20,11 +20,6 @@ public class RecurringTask extends Task {
 	}
 
 	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
 	public TaskInstance instance(String id) {
 		return new TaskInstance(this, id);
 	}
@@ -35,10 +30,10 @@ public class RecurringTask extends Task {
 	}
 
 	@Override
-	public void complete(Execution taskInstance, LocalDateTime timeDone, Scheduler.TaskInstanceOperations taskInstanceOperations) {
-		LocalDateTime nextExecution = timeDone.plus(duration);
-		LOG.debug("Rescheduling task {} to {}", taskInstance.taskInstance, nextExecution);
-		taskInstanceOperations.reschedule(nextExecution);
+	public void complete(ExecutionResult executionResult, Scheduler.ExecutionFinishedOperations executionFinishedOperations) {
+		LocalDateTime nextExecution = executionResult.getTimeDone().plus(duration);
+		LOG.debug("Rescheduling task {} to {}", executionResult.getExecution().taskInstance, nextExecution);
+		executionFinishedOperations.reschedule(nextExecution);
 	}
 
 }

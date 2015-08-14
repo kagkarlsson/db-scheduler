@@ -7,67 +7,87 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.io.StringWriter;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 public class Scheduler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 	public static final int SHUTDOWN_WAIT = 30;
 	public static final TimeUnit SHUTDOWN_WAIT_TIMEUNIT = TimeUnit.MINUTES;
+	private static final Duration OLD_AGE = Duration.ofHours(6);
 	private final Clock clock;
 	private final TaskRepository taskRepository;
 	private final CapacityLimitedExecutorService executorService;
 	private final Name name;
-	private Map<String, Task> knownTasks = new HashMap<>();
+	private final Waiter waiter;
+	private final Waiter detectDeadWaiter;
+	private final Consumer<String> warnLogger;
+	private final ExecutorService dueExecutor;
+	private final ExecutorService detectDeadExecutor;
 	private boolean shutdownRequested = false;
 
-	public Scheduler(Clock clock, TaskRepository taskRepository, int executorThreads, Name name) {
-		this(clock, taskRepository, new LimitedThreadPool(executorThreads, new ThreadFactoryBuilder().setNameFormat(name.getName() + "-%d").build()), name);
-	}
-
-	Scheduler(Clock clock, TaskRepository taskRepository, CapacityLimitedExecutorService executorService, Name name) {
+	Scheduler(Clock clock, TaskRepository taskRepository, CapacityLimitedExecutorService executorService, Name name,
+			  Waiter waiter, Waiter detectDeadWaiter, Consumer<String> warnLogger) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.executorService = executorService;
 		this.name = name;
+		this.waiter = waiter;
+		this.detectDeadWaiter = detectDeadWaiter;
+		this.warnLogger = warnLogger;
+		this.dueExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(name.getName() + "-execute-due").build());
+		this.detectDeadExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(name.getName() + "-detect-dead").build());
 	}
 
 	public void start() {
 		LOG.info("Starting scheduler");
 
-		new Thread(name.getName() + "-main-thread-") {
-			@Override
-			public void run() {
-				while(!shutdownRequested) {
-					try {
-						if (executorService.hasFreeExecutor()) {
-							executeDue();
-						}
-
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							LOG.info("Interrupted. Assuming shutdown and continuing.");
-						}
-
-					} catch (Exception e) {
-						LOG.error("Unhandled exception", e);
+		dueExecutor.submit(() -> {
+			while (!shutdownRequested) {
+				try {
+					if (executorService.hasFreeExecutor()) {
+						executeDue();
 					}
+
+					waiter.doWait();
+
+				} catch (Exception e) {
+					LOG.error("Unhandled exception", e);
 				}
 			}
-		}.start();
+		});
+
+		detectDeadExecutor.submit(() -> {
+			while (!shutdownRequested) {
+				try {
+					detectDeadExecutions();
+					detectDeadWaiter.doWait();
+
+				} catch (Exception e) {
+					LOG.error("Unhandled exception", e);
+				}
+			}
+		});
 	}
 
 	public void stop() {
 		shutdownRequested = true;
 		try {
 			LOG.info("Shutting down Scheduler. Will wait {} {} for running tasks to complete.", SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
+			dueExecutor.shutdownNow();
+			detectDeadExecutor.shutdownNow();
 			executorService.shutdown();
+
+			detectDeadExecutor.awaitTermination(5, TimeUnit.SECONDS);
+			dueExecutor.awaitTermination(SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
 			boolean result = executorService.awaitTermination(SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
 			if (result) {
 				LOG.info("Done waiting for executing tasks.");
@@ -80,10 +100,6 @@ public class Scheduler {
 		} catch (InterruptedException e) {
 			LOG.warn("Interrupted while waiting for running tasks to complete.", e);
 		}
-	}
-
-	public void addTask(Task task) {
-		knownTasks.put(task.getName(), task);
 	}
 
 	public void schedule(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
@@ -102,11 +118,6 @@ public class Scheduler {
 				return;
 			}
 
-			// -> attempt lock here
-			//    if lock
-			//      execute
-			//      release lock
-
 			count++;
 			if (taskRepository.pick(e)) {
 				executorService.submit(() -> {
@@ -119,11 +130,27 @@ public class Scheduler {
 						Run.logExceptions(LOG,
 								() -> {
 									LOG.trace("Completing " + e);
-									e.taskInstance.getTask().complete(e, clock.now(), new TaskInstanceOperations(e));
+									e.taskInstance.getTask().complete(new Task.ExecutionResult(e, clock.now()), new ExecutionFinishedOperations(e));
 								}).run();
 					}
 				});
 			}
+		}
+	}
+
+	void detectDeadExecutions() {
+		LOG.info("Checking for dead executions.");
+		LocalDateTime now = clock.now();
+		List<Execution> oldExecutions = taskRepository.getOldExecutions(now.minus(OLD_AGE));
+
+		if (!oldExecutions.isEmpty()) {
+			StringBuilder warning = new StringBuilder();
+			warning.append("There are " + oldExecutions.size() + " old executions. They are either long running executions, " +
+					"or they have died and are non-resumable. Old executions:\n");
+			oldExecutions.stream()
+					.map(execution -> "Execution: " + execution.taskInstance.getTaskAndInstance() + " was due " + execution.exeecutionTime + "\n")
+					.forEach(warning::append);
+			warnLogger.accept(warning.toString());
 		}
 	}
 
@@ -137,12 +164,15 @@ public class Scheduler {
 		private int executorThreads = 10;
 		private List<Task> knownTasks = new ArrayList<>();
 		private String name;
+		private Waiter waiter = new Waiter(1000);
+		private Waiter detectDeadWaiter = new Waiter(TimeUnit.HOURS.toMillis(1));;
+		private Consumer<String> warnLogger = WARN_LOGGER;
 
 		public Builder(DataSource dataSource) {
 			this.dataSource = dataSource;
 		}
 
-		public Builder addHandler(Task task) {
+		public Builder addTask(Task task) {
 			knownTasks.add(task);
 			return this;
 		}
@@ -152,20 +182,27 @@ public class Scheduler {
 			return this;
 		}
 
+		public Builder pollingInterval(long time, TimeUnit timeUnit) {
+			waiter = new Waiter(timeUnit.toMillis(time));
+			return this;
+		}
+
 		Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver);
+			final FixedName name = new FixedName(this.name);
 
-			return new Scheduler(new SystemClock(), taskRepository, executorThreads, new FixedName(name));
+			final LimitedThreadPool executorService = new LimitedThreadPool(executorThreads, new ThreadFactoryBuilder().setNameFormat(name.getName() + "-%d").build());
+			return new Scheduler(new SystemClock(), taskRepository, executorService, name, waiter, detectDeadWaiter, warnLogger);
 		}
 	}
 
 
-	public class TaskInstanceOperations {
+	public class ExecutionFinishedOperations {
 
 		private final Execution execution;
 
-		public TaskInstanceOperations(Execution execution) {
+		public ExecutionFinishedOperations(Execution execution) {
 			this.execution = execution;
 		}
 
@@ -195,5 +232,25 @@ public class Scheduler {
 			return name;
 		}
 	}
+
+	public static class Waiter {
+		private final long millis;
+
+		public Waiter(long millis) {
+			this.millis = millis;
+		}
+
+		public void doWait() {
+			try {
+				if (millis > 0) {
+					Thread.sleep(millis);
+				}
+			} catch (InterruptedException e) {
+				LOG.info("Interrupted. Assuming shutdown and continuing.");
+			}
+		}
+	}
+
+	public static Consumer<String> WARN_LOGGER = (String message) -> LOG.warn(message);
 
 }
