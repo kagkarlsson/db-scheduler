@@ -1,5 +1,7 @@
 package com.kagkarlsson.scheduler;
 
+import com.kagkarlsson.scheduler.task.TaskInstance;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 

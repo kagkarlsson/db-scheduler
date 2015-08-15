@@ -1,4 +1,4 @@
-package com.kagkarlsson.scheduler;
+package com.kagkarlsson.scheduler.task;
 
 import java.util.Objects;
 

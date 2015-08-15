@@ -3,13 +3,15 @@ package com.kagkarlsson.scheduler;
 import com.google.common.util.concurrent.ForwardingExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.kagkarlsson.scheduler.executors.CapacityLimitedExecutorService;
+import com.kagkarlsson.scheduler.task.FixedDelay;
+import com.kagkarlsson.scheduler.task.OneTimeTask;
+import com.kagkarlsson.scheduler.task.RecurringTask;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Consumer;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -17,7 +19,7 @@ import static org.junit.Assert.assertThat;
 public class SchedulerTest {
 
 	private Scheduler scheduler;
-	private CustomHandler handler;
+	private TestTasks.CountingHandler handler;
 	private SettableClock clock;
 	private InMemoryTaskRespository taskRepository;
 
@@ -26,7 +28,7 @@ public class SchedulerTest {
 		clock = new SettableClock();
 		taskRepository = new InMemoryTaskRespository();
 		scheduler = new Scheduler(clock, taskRepository, new CapacityLimitedDirectExecutorService(), new Scheduler.FixedName("name"), new Scheduler.Waiter(0), new Scheduler.Waiter(100), Scheduler.WARN_LOGGER);
-		handler = new CustomHandler();
+		handler = new TestTasks.CountingHandler();
 	}
 
 	@Test
@@ -34,7 +36,7 @@ public class SchedulerTest {
 		OneTimeTask oneTimeTask = new OneTimeTask("OneTime", handler);
 
 		LocalDateTime executionTime = clock.now().plusMinutes(1);
-		scheduler.schedule(executionTime, oneTimeTask.instance("1"));
+		scheduler.addExecution(executionTime, oneTimeTask.instance("1"));
 
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
@@ -46,9 +48,9 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_execute_recurring_task_and_reschedule() {
-		RecurringTask recurringTask = new RecurringTask("Recurring", Duration.ofHours(1), handler);
+		RecurringTask recurringTask = new RecurringTask("Recurring", FixedDelay.of(Duration.ofHours(1)), handler);
 
-		scheduler.schedule(clock.now(), recurringTask.instance("single"));
+		scheduler.addExecution(clock.now(), recurringTask.instance("single"));
 		scheduler.executeDue();
 
 		assertThat(handler.timesExecuted, is(1));
@@ -64,18 +66,9 @@ public class SchedulerTest {
 		scheduler = new Scheduler(clock, new InMemoryTaskRespository(), new CapacityLimitedDirectExecutorService(false), new Scheduler.FixedName("name"), new Scheduler.Waiter(0), new Scheduler.Waiter(100), Scheduler.WARN_LOGGER);
 		OneTimeTask oneTimeTask = new OneTimeTask("OneTime", handler);
 
-		scheduler.schedule(clock.now(), oneTimeTask.instance("1"));
+		scheduler.addExecution(clock.now(), oneTimeTask.instance("1"));
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
-	}
-
-	public static class CustomHandler implements Consumer<TaskInstance> {
-		private int timesExecuted = 0;
-
-		@Override
-		public void accept(TaskInstance taskInstance) {
-			this.timesExecuted++;
-		}
 	}
 
 	public static class CapacityLimitedDirectExecutorService extends ForwardingExecutorService implements CapacityLimitedExecutorService {

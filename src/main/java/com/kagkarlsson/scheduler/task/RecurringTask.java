@@ -1,5 +1,6 @@
-package com.kagkarlsson.scheduler;
+package com.kagkarlsson.scheduler.task;
 
+import com.kagkarlsson.scheduler.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,18 +11,22 @@ import java.util.function.Consumer;
 public class RecurringTask extends Task {
 
 	private static final Logger LOG = LoggerFactory.getLogger(RecurringTask.class);
-	private final Duration duration;
+	private final Schedule schedule;
 	private final Consumer<TaskInstance> handler;
 
-	public RecurringTask(String name, Duration duration, Consumer<TaskInstance> handler) {
+	public RecurringTask(String name, Schedule schedule, Consumer<TaskInstance> handler) {
 		super(name);
-		this.duration = duration;
+		this.schedule = schedule;
 		this.handler = handler;
 	}
 
 	@Override
 	public TaskInstance instance(String id) {
 		return new TaskInstance(this, id);
+	}
+
+	public Schedule getSchedule() {
+		return schedule;
 	}
 
 	@Override
@@ -31,7 +36,7 @@ public class RecurringTask extends Task {
 
 	@Override
 	public void complete(ExecutionResult executionResult, Scheduler.ExecutionFinishedOperations executionFinishedOperations) {
-		LocalDateTime nextExecution = executionResult.getTimeDone().plus(duration);
+		LocalDateTime nextExecution = schedule.getNextExecutionTime(executionResult.getTimeDone());
 		LOG.debug("Rescheduling task {} to {}", executionResult.getExecution().taskInstance, nextExecution);
 		executionFinishedOperations.reschedule(nextExecution);
 	}

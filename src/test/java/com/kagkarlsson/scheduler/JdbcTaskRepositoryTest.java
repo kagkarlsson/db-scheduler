@@ -1,5 +1,6 @@
 package com.kagkarlsson.scheduler;
 
+import com.kagkarlsson.scheduler.task.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,8 +26,7 @@ public class JdbcTaskRepositoryTest {
 	public void setUp() {
 		oneTimeTask = new OneTimeTask("OneTime", instance -> {
 		});
-		recurringTask = new RecurringTask("RecurringTask", Duration.ofSeconds(1), instance -> {
-		});
+		recurringTask = new RecurringTask("RecurringTask", FixedDelay.of(Duration.ofSeconds(1)), TestTasks.DO_NOTHING);
 		List<Task> knownTasks = new ArrayList<>();
 		knownTasks.add(oneTimeTask);
 		knownTasks.add(recurringTask);

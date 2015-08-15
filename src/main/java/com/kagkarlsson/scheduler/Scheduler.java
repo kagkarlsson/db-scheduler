@@ -3,11 +3,12 @@ package com.kagkarlsson.scheduler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.kagkarlsson.scheduler.executors.CapacityLimitedExecutorService;
 import com.kagkarlsson.scheduler.executors.LimitedThreadPool;
+import com.kagkarlsson.scheduler.task.Task;
+import com.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.io.StringWriter;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -102,7 +103,7 @@ public class Scheduler {
 		}
 	}
 
-	public void schedule(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
+	public void addExecution(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
 		taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
 	}
 

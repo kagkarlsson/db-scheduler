@@ -1,5 +1,6 @@
 package com.kagkarlsson.scheduler;
 
+import com.kagkarlsson.scheduler.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +17,7 @@ public class TaskResolver {
 
 	public TaskResolver(List<Task> knownTasks, OnCannotResolve onCannotResolve) {
 		this.onCannotResolve = onCannotResolve;
-		this.taskMap = knownTasks.stream().collect(Collectors.toMap((Task t) -> t.name, identity()));
+		this.taskMap = knownTasks.stream().collect(Collectors.toMap((Task t) -> t.getName(), identity()));
 	}
 
 	public Task resolve(String taskName) {

@@ -1,12 +1,15 @@
 package com.kagkarlsson.scheduler;
 
+import com.kagkarlsson.scheduler.task.FixedDelay;
+import com.kagkarlsson.scheduler.task.OneTimeTask;
+import com.kagkarlsson.scheduler.task.RecurringTask;
+import com.kagkarlsson.scheduler.task.TaskInstance;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.is;
@@ -23,7 +26,7 @@ public class InMemoryRepositoryTest {
 	public void setUp() {
 		taskRespository = new InMemoryTaskRespository();
 		oneTimeTask = new OneTimeTask("OneTime", instance -> {});
-		recurringTask = new RecurringTask("RecurringTask", Duration.ofSeconds(1), instance -> {});
+		recurringTask = new RecurringTask("RecurringTask", FixedDelay.of(Duration.ofSeconds(1)), TestTasks.DO_NOTHING);
 	}
 
 	@Test

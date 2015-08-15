@@ -3,6 +3,8 @@ package com.kagkarlsson.scheduler;
 import com.kagkarlsson.jdbc.IntegrityConstraintViolation;
 import com.kagkarlsson.jdbc.JdbcRunner;
 import com.kagkarlsson.jdbc.ResultSetMapper;
+import com.kagkarlsson.scheduler.task.Task;
+import com.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

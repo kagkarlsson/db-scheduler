@@ -1,4 +1,32 @@
 
-- handle competing startup
-- scheduling existing tasks (competing scheduling recurring tasks)
 - detect schedulers own dead locks, default remove lock
+
+- schedules (daily (fixed times each day..))
+- notifier (log warns, errors)
+
+- task CompletionHandler
+    - remove
+    - reschedule (has Schedule)
+    - release
+
+- public void schedule(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
+	-> schedule(instance.nextExecutionTime(), instance)?
+
+	recurringTask = new RecurringTask(handler, schedule)
+   	schedule(recurringTask.nextExecutionTime(), recurringTask.instance(id?))
+
+
+   	schedule(taskInstance)? ->
+   	taskInstance.schedule(ScheduleOperations operations) {
+   		operations.schedule(this, nextExecution());
+   	}
+
+   	scheduler.start(RecurringTask)
+   	scheduler.oneTime(OneTimeTas)
+
+   	alt.
+   	onetimeTaskInstance = oneTimeTask.instance(jobbId);
+   	recurringTaskInstance = recurringTask.instance();
+
+   	scheduler.addExecution(time, oneTimeTask.instance(jobbId))
+   	scheduler.addExecution(recurringTask.schedule.nextExecutionTime(), recurringTask.instance())

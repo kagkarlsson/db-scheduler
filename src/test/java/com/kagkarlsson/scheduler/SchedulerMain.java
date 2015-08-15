@@ -1,10 +1,9 @@
 package com.kagkarlsson.scheduler;
 
+import com.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.function.Consumer;
 
 public class SchedulerMain {
@@ -30,9 +29,9 @@ public class SchedulerMain {
 //			RecurringTask recurring2 = new RecurringTask("recurring2", Duration.ofSeconds(1), execute);
 //			OneTimeTask onetime = new OneTimeTask("onetime", execute);
 //
-//			scheduler.schedule(LocalDateTime.now(), recurring1.instance("single"));
-//			scheduler.schedule(LocalDateTime.now(), recurring2.instance("single"));
-////			scheduler.schedule(LocalDateTime.now(), onetime.instance("1"));
+//			scheduler.addExecution(LocalDateTime.now(), recurring1.instance("single"));
+//			scheduler.addExecution(LocalDateTime.now(), recurring2.instance("single"));
+////			scheduler.addExecution(LocalDateTime.now(), onetime.instance("1"));
 //
 //			Runtime.getRuntime().addShutdownHook(new Thread() {
 //				@Override

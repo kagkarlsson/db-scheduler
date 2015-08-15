@@ -1,4 +1,7 @@
-package com.kagkarlsson.scheduler;
+package com.kagkarlsson.scheduler.task;
+
+import com.kagkarlsson.scheduler.Execution;
+import com.kagkarlsson.scheduler.Scheduler;
 
 import java.time.LocalDateTime;
 

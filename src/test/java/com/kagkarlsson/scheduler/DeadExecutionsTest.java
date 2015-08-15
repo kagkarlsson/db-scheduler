@@ -1,5 +1,7 @@
 package com.kagkarlsson.scheduler;
 
+import com.kagkarlsson.scheduler.task.OneTimeTask;
+import com.kagkarlsson.scheduler.task.Task;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,7 +31,7 @@ public class DeadExecutionsTest {
 	@Before
 	public void setUp() {
 		settableClock = new SettableClock();
-		oneTimeTask = new OneTimeTask("OneTime", new CustomHandler());
+		oneTimeTask = new OneTimeTask("OneTime", TestTasks.DO_NOTHING);
 
 		taskResolver = new TaskResolver(new ArrayList<Task>(), TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED);
 		taskResolver.addTask(oneTimeTask);
@@ -64,15 +66,6 @@ public class DeadExecutionsTest {
 		scheduler.detectDeadExecutions();
 
 		assertThat(warnLogger.notifications, Matchers.hasSize(1));
-	}
-
-	public static class CustomHandler implements Consumer<TaskInstance> {
-		private int timesExecuted = 0;
-
-		@Override
-		public void accept(TaskInstance taskInstance) {
-			this.timesExecuted++;
-		}
 	}
 
 	private static class TestLogger implements Consumer<String> {

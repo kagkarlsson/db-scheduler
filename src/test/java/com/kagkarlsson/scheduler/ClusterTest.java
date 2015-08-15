@@ -1,5 +1,7 @@
 package com.kagkarlsson.scheduler;
 
+import com.kagkarlsson.scheduler.task.OneTimeTask;
+import com.kagkarlsson.scheduler.task.TaskInstance;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,7 +46,7 @@ public class ClusterTest {
 		scheduler2.start();
 
 		ids.forEach(id -> {
-			scheduler1.schedule(LocalDateTime.now(), task.instance(id));
+			scheduler1.addExecution(LocalDateTime.now(), task.instance(id));
 		});
 
 		waiter.await();
@@ -89,6 +91,6 @@ public class ClusterTest {
 	}
 
 
-	private static final Consumer<TaskInstance> DO_NOTHING = (taskInstance -> {});
+	public static final Consumer<TaskInstance> DO_NOTHING = (taskInstance -> {});
 
 }

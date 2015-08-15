@@ -1,6 +1,7 @@
-package com.kagkarlsson.scheduler;
+package com.kagkarlsson.scheduler.task;
 
-import java.time.LocalDateTime;
+import com.kagkarlsson.scheduler.Scheduler;
+
 import java.util.function.Consumer;
 
 public class OneTimeTask extends Task {
