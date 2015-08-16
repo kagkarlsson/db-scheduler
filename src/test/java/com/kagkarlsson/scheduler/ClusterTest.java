@@ -1,7 +1,6 @@
 package com.kagkarlsson.scheduler;
 
-import com.kagkarlsson.scheduler.task.OneTimeTask;
-import com.kagkarlsson.scheduler.task.TaskInstance;
+import com.kagkarlsson.scheduler.task.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,15 +77,15 @@ public class ClusterTest {
 
 		private final Consumer<String> onComplete;
 
-		public ResultRegisteringTask(String name, Consumer<TaskInstance> handler, Consumer<String> onComplete) {
-			super(name, handler);
+		public ResultRegisteringTask(String name, ExecutionHandler executionHandler, Consumer<String> onComplete) {
+			super(name, executionHandler);
 			this.onComplete = onComplete;
 		}
 
 		@Override
-		public void complete(ExecutionResult executionResult, Scheduler.ExecutionFinishedOperations executionFinishedOperations) {
-			super.complete(executionResult, executionFinishedOperations);
-			onComplete.accept(executionResult.getExecution().taskInstance.getId());
+		public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionFinishedOperations executionFinishedOperations) {
+			super.complete(executionComplete, executionFinishedOperations);
+			onComplete.accept(executionComplete.getExecution().taskInstance.getId());
 		}
 	}
 

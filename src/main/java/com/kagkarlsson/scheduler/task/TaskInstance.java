@@ -44,9 +44,8 @@ public final class TaskInstance {
 
 	@Override
 	public String toString() {
-		return "TaskInstance{" +
-				"task=" + task +
-				", id='" + id + '\'' +
-				'}';
+		return "TaskInstance: " +
+				"task=" + task.getName() +
+				", id=" + id;
 	}
 }

@@ -1,18 +1,19 @@
 package com.kagkarlsson.scheduler;
 
+import com.kagkarlsson.scheduler.task.ExecutionHandler;
 import com.kagkarlsson.scheduler.task.TaskInstance;
 
 import java.util.function.Consumer;
 
 public class TestTasks {
 
-	public static final Consumer<TaskInstance> DO_NOTHING = (taskInstance -> {});
+	public static final ExecutionHandler DO_NOTHING = (taskInstance -> {});
 
-	public static class CountingHandler implements Consumer<TaskInstance> {
+	public static class CountingHandler implements ExecutionHandler {
 		public int timesExecuted = 0;
 
 		@Override
-		public void accept(TaskInstance taskInstance) {
+		public void execute(TaskInstance taskInstance) {
 			this.timesExecuted++;
 		}
 	}

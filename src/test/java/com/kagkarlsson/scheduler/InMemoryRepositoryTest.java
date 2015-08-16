@@ -66,7 +66,7 @@ public class InMemoryRepositoryTest {
 		assertThat(due, hasSize(100));
 
 		List<Execution> sortedDue = new ArrayList<>(due);
-		Collections.sort(sortedDue, Comparator.comparing(Execution::getExeecutionTime));
+		Collections.sort(sortedDue, Comparator.comparing(Execution::getExecutionTime));
 		assertThat(due, is(sortedDue));
 	}
 

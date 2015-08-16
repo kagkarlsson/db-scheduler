@@ -7,11 +7,11 @@ import java.util.Objects;
 
 public final class Execution {
 	public final TaskInstance taskInstance;
-	public final LocalDateTime exeecutionTime;
+	public final LocalDateTime executionTime;
 	public boolean picked;
 
-	public Execution(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
-		this.exeecutionTime = exeecutionTime;
+	public Execution(LocalDateTime executionTime, TaskInstance taskInstance) {
+		this.executionTime = executionTime;
 		this.taskInstance = taskInstance;
 		picked = false;
 	}
@@ -20,8 +20,8 @@ public final class Execution {
 		this.picked = true;
 	}
 
-	public LocalDateTime getExeecutionTime() {
-		return exeecutionTime;
+	public LocalDateTime getExecutionTime() {
+		return executionTime;
 	}
 
 	@Override
@@ -29,21 +29,21 @@ public final class Execution {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		Execution execution = (Execution) o;
-		return Objects.equals(exeecutionTime, execution.exeecutionTime) &&
+		return Objects.equals(executionTime, execution.executionTime) &&
 				Objects.equals(taskInstance, execution.taskInstance);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(exeecutionTime, taskInstance);
+		return Objects.hash(executionTime, taskInstance);
 	}
+
 
 	@Override
 	public String toString() {
-		return "Execution{" +
-				"taskInstance=" + taskInstance +
-				", exeecutionTime=" + exeecutionTime +
-				", picked=" + picked +
-				'}';
+		return "Execution: " +
+				"task=" + taskInstance.getTask().getName() +
+				", id=" + taskInstance.getId() +
+				", executionTime=" + executionTime;
 	}
 }

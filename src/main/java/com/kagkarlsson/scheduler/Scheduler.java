@@ -3,6 +3,8 @@ package com.kagkarlsson.scheduler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.kagkarlsson.scheduler.executors.CapacityLimitedExecutorService;
 import com.kagkarlsson.scheduler.executors.LimitedThreadPool;
+import com.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.kagkarlsson.scheduler.task.ExecutionComplete.Result;
 import com.kagkarlsson.scheduler.task.Task;
 import com.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.Logger;
@@ -33,6 +35,7 @@ public class Scheduler {
 	private final Consumer<String> warnLogger;
 	private final ExecutorService dueExecutor;
 	private final ExecutorService detectDeadExecutor;
+
 	private boolean shutdownRequested = false;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, CapacityLimitedExecutorService executorService, Name name,
@@ -123,17 +126,29 @@ public class Scheduler {
 			if (taskRepository.pick(e)) {
 				executorService.submit(() -> {
 					try {
-						Run.logExceptions(LOG, () -> {
+
+						final Task task = e.taskInstance.getTask();
+						try {
 							LOG.debug("Executing " + e);
-							e.taskInstance.getTask().execute(e.taskInstance);
-						}).run();
-					} finally {
-						Run.logExceptions(LOG,
-								() -> {
-									LOG.trace("Completing " + e);
-									e.taskInstance.getTask().complete(new Task.ExecutionResult(e, clock.now()), new ExecutionFinishedOperations(e));
-								}).run();
+							task.execute(e.taskInstance);
+							LOG.debug("Execution done");
+							task.complete(new ExecutionComplete(e, clock.now(), Result.OK), new ExecutionFinishedOperations(e));
+
+						} catch (RuntimeException unhandledException) {
+							LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
+							task.complete(new ExecutionComplete(e, clock.now(), Result.FAILED), new ExecutionFinishedOperations(e));
+
+						} catch (Throwable unhandledError) {
+							LOG.error("Error during execution. Treating as failure.", unhandledError);
+							task.complete(new ExecutionComplete(e, clock.now(), Result.FAILED), new ExecutionFinishedOperations(e));
+
+						}
+
+					} catch (Throwable throwable) {
+						LOG.error("Failed while completing execution " + e + ". Execution will likely remain scheduled and locked/picked. " +
+								"If the task is resumable, the lock will be released after duration " + OLD_AGE + " and execution run again.", throwable);
 					}
+
 				});
 			}
 		}
@@ -149,7 +164,7 @@ public class Scheduler {
 			warning.append("There are " + oldExecutions.size() + " old executions. They are either long running executions, " +
 					"or they have died and are non-resumable. Old executions:\n");
 			oldExecutions.stream()
-					.map(execution -> "Execution: " + execution.taskInstance.getTaskAndInstance() + " was due " + execution.exeecutionTime + "\n")
+					.map(execution -> "Execution: " + execution.taskInstance.getTaskAndInstance() + " was due " + execution.executionTime + "\n")
 					.forEach(warning::append);
 			warnLogger.accept(warning.toString());
 		}

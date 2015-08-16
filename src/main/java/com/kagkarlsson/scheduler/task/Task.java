@@ -1,50 +1,39 @@
 package com.kagkarlsson.scheduler.task;
 
-import com.kagkarlsson.scheduler.Execution;
 import com.kagkarlsson.scheduler.Scheduler;
 
-import java.time.LocalDateTime;
-
 public abstract class Task {
-
 	protected final String name;
+	private final ExecutionHandler executionHandler;
+	private final CompletionHandler completionHandler;
 
-	public Task(String name) {
+	public Task(String name, ExecutionHandler executionHandler, CompletionHandler completionHandler) {
 		this.name = name;
+		this.executionHandler = executionHandler;
+		this.completionHandler = completionHandler;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public abstract TaskInstance instance(String id);
-	public abstract void execute(TaskInstance taskInstance);
+	public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionFinishedOperations executionFinishedOperations) {
+		completionHandler.complete(executionComplete, executionFinishedOperations);
+	}
 
-	public abstract void complete(ExecutionResult executionResult, Scheduler.ExecutionFinishedOperations executionFinishedOperations);
+	public TaskInstance instance(String id) {
+		return new TaskInstance(this, id);
+	}
+
+	public void execute(TaskInstance taskInstance) {
+		executionHandler.execute(taskInstance);
+	}
 
 	@Override
 	public String toString() {
-		return "Task{" +
-				"task=" + getName() +
-				'}';
+		return "Task " +
+				"task=" + getName();
 	}
 
-	public static class ExecutionResult {
-		private Execution execution;
-		private LocalDateTime timeDone;
-
-		public ExecutionResult(Execution execution, LocalDateTime timeDone) {
-			this.execution = execution;
-			this.timeDone = timeDone;
-		}
-
-		public Execution getExecution() {
-			return execution;
-		}
-
-		public LocalDateTime getTimeDone() {
-			return timeDone;
-		}
-	}
 }
 
