@@ -1,5 +1,6 @@
 package com.kagkarlsson.scheduler;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import com.kagkarlsson.scheduler.task.OneTimeTask;
 import com.kagkarlsson.scheduler.task.Task;
 import org.hamcrest.Matchers;
@@ -33,7 +34,7 @@ public class DeadExecutionsTest {
 		settableClock = new SettableClock();
 		oneTimeTask = new OneTimeTask("OneTime", TestTasks.DO_NOTHING);
 
-		taskResolver = new TaskResolver(new ArrayList<Task>(), TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED);
+		taskResolver = new TaskResolver(new ArrayList<>(), TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED);
 		taskResolver.addTask(oneTimeTask);
 
 		jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), taskResolver);
@@ -42,11 +43,13 @@ public class DeadExecutionsTest {
 
 		scheduler = new Scheduler(settableClock,
 				jdbcTaskRepository,
-				new SchedulerTest.CapacityLimitedDirectExecutorService(),
+				1,
+				MoreExecutors.newDirectExecutorService(),
 				new Scheduler.FixedName("test-scheduler"),
 				new Scheduler.Waiter(0),
 				new Scheduler.Waiter(100),
-				warnLogger);
+				warnLogger,
+				StatsRegistry.NOOP);
 
 	}
 

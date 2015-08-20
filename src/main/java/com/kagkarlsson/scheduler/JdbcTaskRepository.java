@@ -100,7 +100,7 @@ public class JdbcTaskRepository implements TaskRepository {
 				});
 
 		if (updated == 0) {
-			LOG.debug("Failed to pick execution. It must have been picked by another scheduler.", e);
+			LOG.trace("Failed to pick execution. It must have been picked by another scheduler.", e);
 			return false;
 		} else if (updated == 1) {
 			return true;

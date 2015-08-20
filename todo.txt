@@ -3,7 +3,10 @@
 
 - notifier (log warns, errors)
 
-- complete in transaction
+- reschedule -> single operation, update, not remove+insert
 
 - cron schedule?
    - https://github.com/jmrozanec/cron-utils
+
+future
+- support transactional taskRepositories

@@ -1,17 +1,14 @@
 package com.kagkarlsson.scheduler;
 
-import com.google.common.util.concurrent.ForwardingExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.kagkarlsson.scheduler.executors.CapacityLimitedExecutorService;
-import com.kagkarlsson.scheduler.task.FixedDelay;
-import com.kagkarlsson.scheduler.task.OneTimeTask;
-import com.kagkarlsson.scheduler.task.RecurringTask;
+import com.kagkarlsson.scheduler.task.*;
+import org.hsqldb.lib.CountUpDownLatch;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CountDownLatch;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -27,7 +24,7 @@ public class SchedulerTest {
 	public void setUp() {
 		clock = new SettableClock();
 		taskRepository = new InMemoryTaskRespository();
-		scheduler = new Scheduler(clock, taskRepository, new CapacityLimitedDirectExecutorService(), new Scheduler.FixedName("name"), new Scheduler.Waiter(0), new Scheduler.Waiter(100), Scheduler.WARN_LOGGER);
+		scheduler = new Scheduler(clock, taskRepository, 1, MoreExecutors.newDirectExecutorService(), new Scheduler.FixedName("name"), new Scheduler.Waiter(0), new Scheduler.Waiter(100), Scheduler.WARN_LOGGER, StatsRegistry.NOOP);
 		handler = new TestTasks.CountingHandler();
 	}
 
@@ -62,8 +59,9 @@ public class SchedulerTest {
 	}
 
 	@Test
-	public void scheduler_should_stop_execution_when_executor_service_rejects() {
-		scheduler = new Scheduler(clock, new InMemoryTaskRespository(), new CapacityLimitedDirectExecutorService(false), new Scheduler.FixedName("name"), new Scheduler.Waiter(0), new Scheduler.Waiter(100), Scheduler.WARN_LOGGER);
+	public void scheduler_should_stop_execution_when_executor_service_rejects() throws InterruptedException {
+		scheduler = new Scheduler(clock, new InMemoryTaskRespository(), 1, MoreExecutors.newDirectExecutorService(), new Scheduler.FixedName("name"), new Scheduler.Waiter(0), new Scheduler.Waiter(100), Scheduler.WARN_LOGGER, StatsRegistry.NOOP);
+		scheduler.executorsSemaphore.acquire();
 		OneTimeTask oneTimeTask = new OneTimeTask("OneTime", handler);
 
 		scheduler.addExecution(clock.now(), oneTimeTask.instance("1"));
@@ -71,27 +69,4 @@ public class SchedulerTest {
 		assertThat(handler.timesExecuted, is(0));
 	}
 
-	public static class CapacityLimitedDirectExecutorService extends ForwardingExecutorService implements CapacityLimitedExecutorService {
-
-		private final ExecutorService delegate;
-		private final boolean hasFreeExecutor;
-
-		public CapacityLimitedDirectExecutorService() {
-			this(true);
-		}
-		public CapacityLimitedDirectExecutorService(boolean hasFreeExecutor) {
-			this.hasFreeExecutor = hasFreeExecutor;
-			this.delegate = MoreExecutors.newDirectExecutorService();
-		}
-
-		@Override
-		public boolean hasFreeExecutor() {
-			return hasFreeExecutor;
-		}
-
-		@Override
-		protected ExecutorService delegate() {
-			return delegate;
-		}
-	}
 }

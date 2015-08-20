@@ -1,6 +1,8 @@
 package com.kagkarlsson.scheduler;
 
 import com.google.common.io.CharStreams;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.hsqldb.Database;
 import org.hsqldb.DatabaseManager;
 import org.hsqldb.jdbc.JDBCDataSource;
@@ -17,13 +19,16 @@ import java.util.function.Consumer;
 public class HsqlTestDatabaseRule extends ExternalResource {
 
 
-	private JDBCDataSource dataSource;
+	private DataSource dataSource;
 
 	@Override
 	protected void before() throws Throwable {
-		dataSource = new JDBCDataSource();
-		dataSource.setUrl("jdbc:hsqldb:mem:schedule_testing");
-		dataSource.setUser("sa");
+		HikariConfig config = new HikariConfig();
+		config.setJdbcUrl("jdbc:hsqldb:mem:schedule_testing");
+		config.setUsername("sa");
+		config.setPassword("");
+
+		dataSource = new HikariDataSource(config);
 
 		doWithConnection(dataSource, c -> {
 

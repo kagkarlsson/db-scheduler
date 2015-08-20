@@ -23,6 +23,10 @@ public class ExecutionComplete {
 		return timeDone;
 	}
 
+	public Result getResult() {
+		return result;
+	}
+
 	public enum Result {
 		OK,
 		FAILED;

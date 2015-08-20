@@ -1,8 +1,7 @@
 package com.kagkarlsson.scheduler;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.kagkarlsson.scheduler.executors.CapacityLimitedExecutorService;
-import com.kagkarlsson.scheduler.executors.LimitedThreadPool;
 import com.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.kagkarlsson.scheduler.task.ExecutionComplete.Result;
 import com.kagkarlsson.scheduler.task.Task;
@@ -15,9 +14,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public class Scheduler {
@@ -28,27 +25,42 @@ public class Scheduler {
 	private static final Duration OLD_AGE = Duration.ofHours(6);
 	private final Clock clock;
 	private final TaskRepository taskRepository;
-	private final CapacityLimitedExecutorService executorService;
+	private final int maxThreads;
+	private final ExecutorService executorService;
 	private final Name name;
 	private final Waiter waiter;
 	private final Waiter detectDeadWaiter;
 	private final Consumer<String> warnLogger;
+	private final StatsRegistry statsRegistry;
 	private final ExecutorService dueExecutor;
 	private final ExecutorService detectDeadExecutor;
+	final Semaphore executorsSemaphore;
 
 	private boolean shutdownRequested = false;
 
-	Scheduler(Clock clock, TaskRepository taskRepository, CapacityLimitedExecutorService executorService, Name name,
-			  Waiter waiter, Waiter detectDeadWaiter, Consumer<String> warnLogger) {
+	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, Name name,
+			  Waiter waiter, Waiter detectDeadWaiter, Consumer<String> warnLogger, StatsRegistry statsRegistry) {
+		this(clock, taskRepository, maxThreads, defaultExecutorService(maxThreads, name), name, waiter, detectDeadWaiter, warnLogger, statsRegistry);
+	}
+
+	private static ExecutorService defaultExecutorService(int maxThreads, Name name) {
+		return Executors.newFixedThreadPool(maxThreads, new ThreadFactoryBuilder().setNameFormat(name.getName() + "-%d").build());
+	}
+
+	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, ExecutorService executorService, Name name,
+			  Waiter waiter, Waiter detectDeadWaiter, Consumer<String> warnLogger, StatsRegistry statsRegistry) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
+		this.maxThreads = maxThreads;
 		this.executorService = executorService;
 		this.name = name;
 		this.waiter = waiter;
 		this.detectDeadWaiter = detectDeadWaiter;
 		this.warnLogger = warnLogger;
+		this.statsRegistry = statsRegistry;
 		this.dueExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(name.getName() + "-execute-due").build());
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(name.getName() + "-detect-dead").build());
+		executorsSemaphore = new Semaphore(maxThreads);
 	}
 
 	public void start() {
@@ -57,13 +69,14 @@ public class Scheduler {
 		dueExecutor.submit(() -> {
 			while (!shutdownRequested) {
 				try {
-					if (executorService.hasFreeExecutor()) {
+					if (executorsSemaphore.availablePermits() > 0) {
 						executeDue();
 					}
 
 					waiter.doWait();
 
 				} catch (Exception e) {
+					statsRegistry.registerUnexpectedError();
 					LOG.error("Unhandled exception", e);
 				}
 			}
@@ -76,6 +89,7 @@ public class Scheduler {
 					detectDeadWaiter.doWait();
 
 				} catch (Exception e) {
+					statsRegistry.registerUnexpectedError();
 					LOG.error("Unhandled exception", e);
 				}
 			}
@@ -84,25 +98,16 @@ public class Scheduler {
 
 	public void stop() {
 		shutdownRequested = true;
-		try {
-			LOG.info("Shutting down Scheduler. Will wait {} {} for running tasks to complete.", SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
-			dueExecutor.shutdownNow();
-			detectDeadExecutor.shutdownNow();
-			executorService.shutdown();
+		LOG.info("Shutting down Scheduler. Will wait {} {} for running tasks to complete.", SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
+		MoreExecutors.shutdownAndAwaitTermination(dueExecutor, 1, TimeUnit.MINUTES);
+		MoreExecutors.shutdownAndAwaitTermination(detectDeadExecutor, 1, TimeUnit.MINUTES);
 
-			detectDeadExecutor.awaitTermination(5, TimeUnit.SECONDS);
-			dueExecutor.awaitTermination(SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
-			boolean result = executorService.awaitTermination(SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
-			if (result) {
-				LOG.info("Done waiting for executing tasks.");
-			} else {
-				LOG.warn("Some tasks did not complete. Forcing shutdown.");
-				executorService.shutdownNow();
-				executorService.awaitTermination(10, TimeUnit.SECONDS);
-			}
+		final boolean result = MoreExecutors.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
 
-		} catch (InterruptedException e) {
-			LOG.warn("Interrupted while waiting for running tasks to complete.", e);
+		if (result) {
+			LOG.info("Done waiting for executing tasks.");
+		} else {
+			LOG.warn("Some tasks did not complete.");
 		}
 	}
 
@@ -115,43 +120,39 @@ public class Scheduler {
 		List<Execution> dueExecutions = taskRepository.getDue(now);
 
 		int count = 0;
-		LOG.info("Found {} taskinstances due for execution", dueExecutions.size());
+		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 		for (Execution e : dueExecutions) {
-			if (!executorService.hasFreeExecutor()) {
-				LOG.debug("No free executors. Will not run remaining {} due executions.", dueExecutions.size() - count);
+
+			if (aquireAndPick(executorsSemaphore, e)) {
+				count++;
+				CompletableFuture
+						.runAsync(new ExecuteTask(e), executorService)
+						.thenRun(() -> executorsSemaphore.release());
+			} else {
+				LOG.debug("No available executors. Skipping {} executions", dueExecutions.size() - count);
 				return;
 			}
 
-			count++;
-			if (taskRepository.pick(e)) {
-				executorService.submit(() -> {
-					try {
+		}
+	}
 
-						final Task task = e.taskInstance.getTask();
-						try {
-							LOG.debug("Executing " + e);
-							task.execute(e.taskInstance);
-							LOG.debug("Execution done");
-							task.complete(new ExecutionComplete(e, clock.now(), Result.OK), new ExecutionFinishedOperations(e));
+	private boolean aquireAndPick(Semaphore semaphore, Execution execution) {
+		if (semaphore.tryAcquire()) {
+			try {
+				boolean successfulPick = taskRepository.pick(execution);
 
-						} catch (RuntimeException unhandledException) {
-							LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
-							task.complete(new ExecutionComplete(e, clock.now(), Result.FAILED), new ExecutionFinishedOperations(e));
+				if (!successfulPick) {
+					semaphore.release();
+				}
+				return successfulPick;
 
-						} catch (Throwable unhandledError) {
-							LOG.error("Error during execution. Treating as failure.", unhandledError);
-							task.complete(new ExecutionComplete(e, clock.now(), Result.FAILED), new ExecutionFinishedOperations(e));
-
-						}
-
-					} catch (Throwable throwable) {
-						LOG.error("Failed while completing execution " + e + ". Execution will likely remain scheduled and locked/picked. " +
-								"If the task is resumable, the lock will be released after duration " + OLD_AGE + " and execution run again.", throwable);
-					}
-
-				});
+			} catch (Throwable t) {
+				semaphore.release();
+				throw t;
 			}
 		}
+
+		return false;
 	}
 
 	void detectDeadExecutions() {
@@ -170,6 +171,42 @@ public class Scheduler {
 		}
 	}
 
+	private class ExecuteTask implements Runnable {
+		private final Execution execution;
+
+		private ExecuteTask(Execution execution) {
+			this.execution = execution;
+		}
+
+		@Override
+		public void run() {
+			try {
+
+				final Task task = execution.taskInstance.getTask();
+				try {
+					LOG.debug("Executing " + execution);
+					task.execute(execution.taskInstance);
+					LOG.debug("Execution done");
+					task.complete(new ExecutionComplete(execution, clock.now(), Result.OK), new ExecutionFinishedOperations(execution));
+
+				} catch (RuntimeException unhandledException) {
+					LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
+					task.complete(new ExecutionComplete(execution, clock.now(), Result.FAILED), new ExecutionFinishedOperations(execution));
+
+				} catch (Throwable unhandledError) {
+					LOG.error("Error during execution. Treating as failure.", unhandledError);
+					task.complete(new ExecutionComplete(execution, clock.now(), Result.FAILED), new ExecutionFinishedOperations(execution));
+
+				}
+
+			} catch (Throwable throwable) {
+				statsRegistry.registerUnexpectedError();
+				LOG.error("Failed while completing execution " + execution + ". Execution will likely remain scheduled and locked/picked. " +
+						"If the task is resumable, the lock will be released after duration " + OLD_AGE + " and execution run again.", throwable);
+			}
+		}
+	}
+
 	public static Builder create(DataSource dataSource) {
 		return new Builder(dataSource);
 	}
@@ -181,8 +218,10 @@ public class Scheduler {
 		private List<Task> knownTasks = new ArrayList<>();
 		private String name;
 		private Waiter waiter = new Waiter(1000);
-		private Waiter detectDeadWaiter = new Waiter(TimeUnit.HOURS.toMillis(1));;
+		private Waiter detectDeadWaiter = new Waiter(TimeUnit.HOURS.toMillis(1));
+		;
 		private Consumer<String> warnLogger = WARN_LOGGER;
+		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 
 		public Builder(DataSource dataSource) {
 			this.dataSource = dataSource;
@@ -203,13 +242,22 @@ public class Scheduler {
 			return this;
 		}
 
+		public Builder detectDeadInterval(long time, TimeUnit timeUnit) {
+			detectDeadWaiter = new Waiter(timeUnit.toMillis(time));
+			return this;
+		}
+
+		public Builder statsRegistry(StatsRegistry statsRegistry) {
+			this.statsRegistry = statsRegistry;
+			return this;
+		}
+
 		Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver);
 			final FixedName name = new FixedName(this.name);
 
-			final LimitedThreadPool executorService = new LimitedThreadPool(executorThreads, new ThreadFactoryBuilder().setNameFormat(name.getName() + "-%d").build());
-			return new Scheduler(new SystemClock(), taskRepository, executorService, name, waiter, detectDeadWaiter, warnLogger);
+			return new Scheduler(new SystemClock(), taskRepository, executorThreads, name, waiter, detectDeadWaiter, warnLogger, statsRegistry);
 		}
 	}
 
