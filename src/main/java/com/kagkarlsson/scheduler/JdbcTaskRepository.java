@@ -1,8 +1,9 @@
 package com.kagkarlsson.scheduler;
 
-import com.kagkarlsson.jdbc.IntegrityConstraintViolation;
 import com.kagkarlsson.jdbc.JdbcRunner;
+import com.kagkarlsson.jdbc.Mappers;
 import com.kagkarlsson.jdbc.ResultSetMapper;
+import com.kagkarlsson.jdbc.SQLRuntimeException;
 import com.kagkarlsson.scheduler.task.Task;
 import com.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.Logger;
@@ -32,19 +33,29 @@ public class JdbcTaskRepository implements TaskRepository {
 	public boolean createIfNotExists(Execution execution) {
 		try {
 			jdbcRunner.execute(
-					"insert into scheduled_tasks(task_name, task_instance, execution_time, picked) values (?, ?, ?, ?)",
+					"insert into scheduled_tasks(task_name, task_instance, execution_time, picked) values(?, ?, ?, ?)",
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTask().getName());
 						p.setString(2, execution.taskInstance.getId());
 						p.setTimestamp(3, Timestamp.valueOf(execution.executionTime));
 						p.setBoolean(4, false);
 					});
-		} catch (IntegrityConstraintViolation e) {
-			LOG.info("Failed to add execution because of existing duplicate: " + execution.taskInstance);
-			LOG.trace("Stacktrace", e);
+			return true;
+
+		} catch (SQLRuntimeException e) {
+			LOG.debug("Exception when inserting execution. Assuming it to be a constraint violation.", e);
+			final Boolean exists = jdbcRunner.query("select 1 from scheduled_tasks where task_name = ? and task_instance = ?",
+					ps -> {
+						ps.setString(1, execution.taskInstance.getTaskName());
+						ps.setString(2, execution.taskInstance.getId());
+					},
+					Mappers.NON_EMPTY_RESULTSET);
+			if (!exists) {
+				throw new RuntimeException("Failed to add new execution.", e);
+			}
+			LOG.debug("Exception was due to a constraint violation. Another thread inserted the execution.");
 			return false;
 		}
-		return true;
 	}
 
 	@Override
@@ -54,9 +65,10 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	public List<Execution> getDue(LocalDateTime now, int limit) {
 		return jdbcRunner.query(
-				"select * from scheduled_tasks where picked = 0 and execution_time <= ? order by execution_time asc",
+				"select * from scheduled_tasks where picked = ? and execution_time <= ? order by execution_time asc",
 				(PreparedStatement p) -> {
-					p.setTimestamp(1, Timestamp.valueOf(now));
+					p.setBoolean(1, false);
+					p.setTimestamp(2, Timestamp.valueOf(now));
 					p.setMaxRows(limit);
 				},
 				new ExecutionResultSetMapper()
@@ -82,14 +94,15 @@ public class JdbcTaskRepository implements TaskRepository {
 	public void reschedule(Execution execution, LocalDateTime nextExecutionTime) {
 		final int updated = jdbcRunner.execute(
 				"update scheduled_tasks set " +
-						"picked = 0, " +
+						"picked = ?, " +
 						"execution_time = ? " +
 						"where task_name = ? " +
 						"and task_instance = ?",
 				ps -> {
-					ps.setTimestamp(1, Timestamp.valueOf(nextExecutionTime));
-					ps.setString(2, execution.taskInstance.getTaskName());
-					ps.setString(3, execution.taskInstance.getId());
+					ps.setBoolean(1, false);
+					ps.setTimestamp(2, Timestamp.valueOf(nextExecutionTime));
+					ps.setString(3, execution.taskInstance.getTaskName());
+					ps.setString(4, execution.taskInstance.getId());
 				});
 
 		if (updated != 1) {
@@ -100,13 +113,15 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public boolean pick(Execution e) {
 		final int updated = jdbcRunner.execute(
-				"update scheduled_tasks set picked = 1 " +
-						"where picked = 0 " +
+				"update scheduled_tasks set picked = ? " +
+						"where picked = ? " +
 						"and task_name = ? " +
 						"and task_instance = ?",
 				ps -> {
-					ps.setString(1, e.taskInstance.getTaskName());
-					ps.setString(2, e.taskInstance.getId());
+					ps.setBoolean(1, true);
+					ps.setBoolean(2, false);
+					ps.setString(3, e.taskInstance.getTaskName());
+					ps.setString(4, e.taskInstance.getId());
 				});
 
 		if (updated == 0) {
@@ -122,9 +137,10 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public List<Execution> getOldExecutions(LocalDateTime olderThan) {
 		return jdbcRunner.query(
-				"select * from scheduled_tasks where picked = 1 and execution_time <= ? order by execution_time asc",
+				"select * from scheduled_tasks where picked = ? and execution_time <= ? order by execution_time asc",
 				(PreparedStatement p) -> {
-					p.setTimestamp(1, Timestamp.valueOf(olderThan));
+					p.setBoolean(1, true);
+					p.setTimestamp(2, Timestamp.valueOf(olderThan));
 				},
 				new ExecutionResultSetMapper()
 		);
@@ -136,7 +152,7 @@ public class JdbcTaskRepository implements TaskRepository {
 		public List<Execution> map(ResultSet rs) throws SQLException {
 
 			List<Execution> executions = new ArrayList<>();
-			while(rs.next()) {
+			while (rs.next()) {
 				String taskName = rs.getString("task_name");
 				Task task = taskResolver.resolve(taskName);
 

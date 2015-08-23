@@ -18,7 +18,6 @@ import java.util.function.Consumer;
 
 public class HsqlTestDatabaseRule extends ExternalResource {
 
-
 	private DataSource dataSource;
 
 	@Override

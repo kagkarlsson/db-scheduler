@@ -123,11 +123,11 @@ public class Scheduler {
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 		for (Execution e : dueExecutions) {
 
-			if (aquireAndPick(executorsSemaphore, e)) {
+			if (aquireExecutorAndPickExecution(e)) {
 				count++;
 				CompletableFuture
 						.runAsync(new ExecuteTask(e), executorService)
-						.thenRun(() -> executorsSemaphore.release());
+						.thenRun(() -> releaseExecutor());
 			} else {
 				LOG.debug("No available executors. Skipping {} executions", dueExecutions.size() - count);
 				return;
@@ -136,23 +136,27 @@ public class Scheduler {
 		}
 	}
 
-	private boolean aquireAndPick(Semaphore semaphore, Execution execution) {
-		if (semaphore.tryAcquire()) {
+	private boolean aquireExecutorAndPickExecution(Execution execution) {
+		if (executorsSemaphore.tryAcquire()) {
 			try {
 				boolean successfulPick = taskRepository.pick(execution);
 
 				if (!successfulPick) {
-					semaphore.release();
+					executorsSemaphore.release();
 				}
 				return successfulPick;
 
 			} catch (Throwable t) {
-				semaphore.release();
+				executorsSemaphore.release();
 				throw t;
 			}
 		}
 
 		return false;
+	}
+
+	private void releaseExecutor() {
+		executorsSemaphore.release();
 	}
 
 	void detectDeadExecutions() {

@@ -24,12 +24,10 @@ public class ClusterTest {
 
 	@Rule
 	public HsqlTestDatabaseRule DB = new HsqlTestDatabaseRule();
+//	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
+
 	@Rule
 	public Timeout timeout = new Timeout(10, TimeUnit.SECONDS);
-
-	@Before
-	public void setUp() {
-	}
 
 	@Test
 	public void test_concurrency() throws InterruptedException {
