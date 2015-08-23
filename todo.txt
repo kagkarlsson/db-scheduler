@@ -1,12 +1,9 @@
 
 - detect schedulers own dead locks, default remove lock
 
-- notifier (log warns, errors)
-
-- reschedule -> single operation, update, not remove+insert
-
 - cron schedule?
    - https://github.com/jmrozanec/cron-utils
 
 future
 - support transactional taskRepositories
+   - so far, jdbctaskrepository requires TransactionAwareDataSource for reliable scheduling of new tasks in transaction

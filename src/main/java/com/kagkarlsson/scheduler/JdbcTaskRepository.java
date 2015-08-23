@@ -80,10 +80,20 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public void reschedule(Execution execution, LocalDateTime nextExecutionTime) {
-		remove(execution);
-		final boolean created = createIfNotExists(new Execution(nextExecutionTime, execution.taskInstance));
-		if (!created) {
-			throw new RuntimeException("New execution was not created. Should never happen if reschedule is run in an transaction.");
+		final int updated = jdbcRunner.execute(
+				"update scheduled_tasks set " +
+						"picked = 0, " +
+						"execution_time = ? " +
+						"where task_name = ? " +
+						"and task_instance = ?",
+				ps -> {
+					ps.setTimestamp(1, Timestamp.valueOf(nextExecutionTime));
+					ps.setString(2, execution.taskInstance.getTaskName());
+					ps.setString(3, execution.taskInstance.getId());
+				});
+
+		if (updated != 1) {
+			throw new RuntimeException("Expected one execution to be updated, but updated " + updated + ". Indicates a bug.");
 		}
 	}
 
