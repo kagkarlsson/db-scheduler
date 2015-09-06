@@ -11,28 +11,27 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.*;
 
 public class JdbcTaskRepositoryTest {
 
+	public static final String SCHEDULER_NAME = "scheduler1";
 	@Rule
 	public HsqlTestDatabaseRule DB = new HsqlTestDatabaseRule();
 //	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
 
 	private JdbcTaskRepository taskRepository;
 	private OneTimeTask oneTimeTask;
-	private RecurringTask recurringTask;
 
 	@Before
 	public void setUp() {
-		oneTimeTask = new OneTimeTask("OneTime", instance -> {
-		});
-		recurringTask = new RecurringTask("RecurringTask", FixedDelay.of(Duration.ofSeconds(1)), TestTasks.DO_NOTHING);
+		oneTimeTask = new OneTimeTask("OneTime", TestTasks.DO_NOTHING);
 		List<Task> knownTasks = new ArrayList<>();
 		knownTasks.add(oneTimeTask);
-		knownTasks.add(recurringTask);
-		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED));
+		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED), new SchedulerName(SCHEDULER_NAME));
 	}
 
 	@Test
@@ -88,23 +87,62 @@ public class JdbcTaskRepositoryTest {
 		List<Execution> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
 
-		taskRepository.pick(due.get(0));
+		taskRepository.pick(due.get(0), now);
 		assertThat(taskRepository.getDue(now), hasSize(0));
+	}
+
+	@Test
+	public void picked_execution_should_have_information_about_which_scheduler_processes_it() {
+		LocalDateTime now = LocalDateTime.now();
+		final TaskInstance instance = oneTimeTask.instance("id1");
+		taskRepository.createIfNotExists(new Execution(now, instance));
+		List<Execution> due = taskRepository.getDue(now);
+		assertThat(due, hasSize(1));
+		taskRepository.pick(due.get(0), now);
+
+		final Optional<Execution> pickedExecution = taskRepository.getExecution(instance);
+		assertThat(pickedExecution.isPresent(), is(true));
+		assertThat(pickedExecution.get().picked, is(true));
+		assertThat(pickedExecution.get().pickedBy, is(SCHEDULER_NAME));
+		assertThat(pickedExecution.get().lastHeartbeat, notNullValue());
+		assertThat(taskRepository.getDue(now), hasSize(0));
+	}
+
+	@Test
+	public void should_not_be_able_to_pick_execution_that_has_been_rescheduled() {
+		LocalDateTime now = LocalDateTime.now();
+		final TaskInstance instance = oneTimeTask.instance("id1");
+		taskRepository.createIfNotExists(new Execution(now, instance));
+
+		List<Execution> due = taskRepository.getDue(now);
+		assertThat(due, hasSize(1));
+		final Execution execution = due.get(0);
+		assertThat(taskRepository.pick(execution, now), is(true));
+		taskRepository.reschedule(execution, now.plusSeconds(1));
+		assertThat(taskRepository.pick(execution, now), is(false));
 	}
 
 	@Test
 	public void reschedule_should_move_execution_in_time() {
 		LocalDateTime now = LocalDateTime.now();
-		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
+		final TaskInstance instance = oneTimeTask.instance("id1");
+		taskRepository.createIfNotExists(new Execution(now, instance));
 		List<Execution> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
 
 		Execution execution = due.get(0);
-		taskRepository.pick(execution);
-		taskRepository.reschedule(execution, now.plusMinutes(1));
+		taskRepository.pick(execution, now);
+		final LocalDateTime nextExecutionTime = now.plusMinutes(1);
+		taskRepository.reschedule(execution, nextExecutionTime);
 
 		assertThat(taskRepository.getDue(now), hasSize(0));
-		assertThat(taskRepository.getDue(now.plusMinutes(1)), hasSize(1));
+		assertThat(taskRepository.getDue(nextExecutionTime), hasSize(1));
+
+		final Optional<Execution> nextExecution = taskRepository.getExecution(instance);
+		assertTrue(nextExecution.isPresent());
+		assertThat(nextExecution.get().picked, is(false));
+		assertThat(nextExecution.get().pickedBy, nullValue());
+		assertThat(nextExecution.get().executionTime, is(nextExecutionTime));
 	}
 
 

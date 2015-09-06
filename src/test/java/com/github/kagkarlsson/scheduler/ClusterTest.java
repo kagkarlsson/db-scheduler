@@ -8,6 +8,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,7 +68,7 @@ public class ClusterTest {
 		return Scheduler.create(DB.getDataSource())
 				.name(name)
 				.pollingInterval(0, TimeUnit.MILLISECONDS)
-				.detectDeadInterval(10, TimeUnit.MILLISECONDS)
+				.heartbeatInterval(Duration.ofMillis(100))
 				.addTask(task)
 				.statsRegistry(stats)
 				.build();
@@ -93,14 +94,14 @@ public class ClusterTest {
 		}
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionFinishedOperations executionFinishedOperations) {
+		public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionOperations executionOperations) {
 			final String instanceId = executionComplete.getExecution().taskInstance.getId();
 			if (executionComplete.getResult() == ExecutionComplete.Result.OK) {
 				ok.add(instanceId);
 			} else {
 				failed.add(instanceId);
 			}
-			super.complete(executionComplete, executionFinishedOperations);
+			super.complete(executionComplete, executionOperations);
 			onComplete.accept(instanceId);
 		}
 	}
@@ -112,8 +113,5 @@ public class ClusterTest {
 			unexpectedErrors.incrementAndGet();
 		}
 	}
-
-
-	public static final Consumer<TaskInstance> DO_NOTHING = (taskInstance -> {});
 
 }

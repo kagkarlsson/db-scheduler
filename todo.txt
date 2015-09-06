@@ -3,6 +3,5 @@
    - https://github.com/jmrozanec/cron-utils
 
 future
-- detect schedulers own dead locks, default remove lock
 - support transactional taskRepositories
    - so far, jdbctaskrepository requires TransactionAwareDataSource for reliable scheduling of new tasks in transaction

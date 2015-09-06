@@ -3,5 +3,7 @@ create table scheduled_tasks (
   task_instance varchar(100),
   execution_time TIMESTAMP(6),
   picked BOOLEAN,
+  picked_by varchar(50),
+  last_heartbeat TIMESTAMP(6),
   PRIMARY KEY (task_name, task_instance)
 )

@@ -11,7 +11,9 @@ public interface TaskRepository {
 	void remove(Execution execution);
 	void reschedule(Execution execution, LocalDateTime nextExecutionTime);
 
-	boolean pick(Execution e);
+	boolean pick(Execution e, LocalDateTime timePicked);
 
 	List<Execution> getOldExecutions(LocalDateTime olderThan);
+
+	void updateHeartbeat(Execution execution, LocalDateTime heartbeatTime);
 }

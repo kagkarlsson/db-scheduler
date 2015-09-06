@@ -40,6 +40,6 @@ public class TaskResolver {
 
 	enum OnCannotResolve {
 		WARN_ON_UNRESOLVED,
-		FAIL_ON_UNRESOLVED;
+		FAIL_ON_UNRESOLVED
 	}
 }

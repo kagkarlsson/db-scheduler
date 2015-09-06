@@ -5,8 +5,8 @@ import com.github.kagkarlsson.scheduler.Execution;
 import java.time.LocalDateTime;
 
 public class ExecutionComplete {
-	private Execution execution;
-	private LocalDateTime timeDone;
+	private final Execution execution;
+	private final LocalDateTime timeDone;
 	private final Result result;
 
 	public ExecutionComplete(Execution execution, LocalDateTime timeDone, Result result) {
@@ -29,6 +29,6 @@ public class ExecutionComplete {
 
 	public enum Result {
 		OK,
-		FAILED;
+		FAILED
 	}
 }

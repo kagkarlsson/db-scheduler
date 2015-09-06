@@ -24,7 +24,7 @@ public class InMemoryRepositoryTest {
 
 	@Before
 	public void setUp() {
-		taskRespository = new InMemoryTaskRespository();
+		taskRespository = new InMemoryTaskRespository(new SchedulerName("scheduler1"));
 		oneTimeTask = new OneTimeTask("OneTime", instance -> {});
 		recurringTask = new RecurringTask("RecurringTask", FixedDelay.of(Duration.ofSeconds(1)), TestTasks.DO_NOTHING);
 	}
@@ -77,7 +77,7 @@ public class InMemoryRepositoryTest {
 		List<Execution> due = taskRespository.getDue(now);
 		assertThat(due, hasSize(1));
 
-		taskRespository.pick(due.get(0));
+		taskRespository.pick(due.get(0), now);
 		assertThat(taskRespository.getDue(now), hasSize(0));
 	}
 
@@ -89,7 +89,7 @@ public class InMemoryRepositoryTest {
 		assertThat(due, hasSize(1));
 
 		Execution execution = due.get(0);
-		taskRespository.pick(execution);
+		taskRespository.pick(execution, now);
 		taskRespository.reschedule(execution, now.plusMinutes(1));
 
 		assertThat(taskRespository.getDue(now), hasSize(0));

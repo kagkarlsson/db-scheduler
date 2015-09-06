@@ -8,14 +8,14 @@ import java.time.LocalDateTime;
 
 public interface CompletionHandler {
 
-	void complete(ExecutionComplete executionComplete, Scheduler.ExecutionFinishedOperations executionFinishedOperations);
+	void complete(ExecutionComplete executionComplete, Scheduler.ExecutionOperations executionOperations);
 
 
 	class OnCompleteRemove implements CompletionHandler {
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionFinishedOperations executionFinishedOperations) {
-			executionFinishedOperations.stop();
+		public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionOperations executionOperations) {
+			executionOperations.stop();
 		}
 	}
 
@@ -29,10 +29,10 @@ public interface CompletionHandler {
 		}
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionFinishedOperations executionFinishedOperations) {
+		public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionOperations executionOperations) {
 			LocalDateTime nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
 			LOG.debug("Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
-			executionFinishedOperations.reschedule(nextExecution);
+			executionOperations.reschedule(nextExecution);
 		}
 	}
 

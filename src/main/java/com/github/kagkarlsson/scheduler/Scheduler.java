@@ -11,10 +11,9 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Consumer;
 
 public class Scheduler {
 
@@ -24,41 +23,42 @@ public class Scheduler {
 	private static final Duration OLD_AGE = Duration.ofHours(6);
 	private final Clock clock;
 	private final TaskRepository taskRepository;
-	private final int maxThreads;
 	private final ExecutorService executorService;
-	private final Name name;
 	private final Waiter waiter;
 	private final Waiter detectDeadWaiter;
-	private final Consumer<String> warnLogger;
+	private final Duration heartbeatInterval;
 	private final StatsRegistry statsRegistry;
 	private final ExecutorService dueExecutor;
 	private final ExecutorService detectDeadExecutor;
+	private final ExecutorService updateHeartbeatExecutor;
+	private final Map<Execution,Execution> currentlyProcessing = Collections.synchronizedMap(new HashMap<>());
+	private final Waiter heartbeatWaiter;
 	final Semaphore executorsSemaphore;
 
 	private boolean shutdownRequested = false;
 
-	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, Name name,
-			  Waiter waiter, Waiter detectDeadWaiter, Consumer<String> warnLogger, StatsRegistry statsRegistry) {
-		this(clock, taskRepository, maxThreads, defaultExecutorService(maxThreads, name), name, waiter, detectDeadWaiter, warnLogger, statsRegistry);
+	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, SchedulerName schedulerName,
+			  Waiter waiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry) {
+		this(clock, taskRepository, maxThreads, defaultExecutorService(maxThreads, schedulerName), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry);
 	}
 
-	private static ExecutorService defaultExecutorService(int maxThreads, Name name) {
-		return Executors.newFixedThreadPool(maxThreads, new ThreadFactoryBuilder().setNameFormat(name.getName() + "-%d").build());
+	private static ExecutorService defaultExecutorService(int maxThreads, SchedulerName schedulerName) {
+		return Executors.newFixedThreadPool(maxThreads, new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-%d").build());
 	}
 
-	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, ExecutorService executorService, Name name,
-			  Waiter waiter, Waiter detectDeadWaiter, Consumer<String> warnLogger, StatsRegistry statsRegistry) {
+	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
+			  Waiter waiter, Duration heartbeatInterval, StatsRegistry statsRegistry) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
-		this.maxThreads = maxThreads;
 		this.executorService = executorService;
-		this.name = name;
 		this.waiter = waiter;
-		this.detectDeadWaiter = detectDeadWaiter;
-		this.warnLogger = warnLogger;
+		this.detectDeadWaiter = new Waiter(heartbeatInterval.toMillis() * 2);
+		this.heartbeatInterval = heartbeatInterval;
+		this.heartbeatWaiter = new Waiter(heartbeatInterval.toMillis());
 		this.statsRegistry = statsRegistry;
-		this.dueExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(name.getName() + "-execute-due").build());
-		this.detectDeadExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(name.getName() + "-detect-dead").build());
+		this.dueExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-execute-due").build());
+		this.detectDeadExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-detect-dead").build());
+		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-update-heartbeat").build());
 		executorsSemaphore = new Semaphore(maxThreads);
 	}
 
@@ -74,7 +74,7 @@ public class Scheduler {
 
 					waiter.doWait();
 
-				} catch (Exception e) {
+				} catch (Throwable e) {
 					statsRegistry.registerUnexpectedError();
 					LOG.error("Unhandled exception", e);
 				}
@@ -87,7 +87,20 @@ public class Scheduler {
 					detectDeadExecutions();
 					detectDeadWaiter.doWait();
 
-				} catch (Exception e) {
+				} catch (Throwable e) {
+					statsRegistry.registerUnexpectedError();
+					LOG.error("Unhandled exception", e);
+				}
+			}
+		});
+
+		updateHeartbeatExecutor.submit(() -> {
+			while (!shutdownRequested) {
+				try {
+					updateHeartbeats();
+					heartbeatWaiter.doWait();
+
+				} catch (Throwable e) {
 					statsRegistry.registerUnexpectedError();
 					LOG.error("Unhandled exception", e);
 				}
@@ -126,7 +139,7 @@ public class Scheduler {
 				count++;
 				CompletableFuture
 						.runAsync(new ExecuteTask(e), executorService)
-						.thenRun(() -> releaseExecutor());
+						.thenRun(() -> releaseExecutor(e));
 			} else {
 				LOG.debug("No available executors. Skipping {} executions", dueExecutions.size() - count);
 				return;
@@ -138,10 +151,12 @@ public class Scheduler {
 	private boolean aquireExecutorAndPickExecution(Execution execution) {
 		if (executorsSemaphore.tryAcquire()) {
 			try {
-				boolean successfulPick = taskRepository.pick(execution);
+				boolean successfulPick = taskRepository.pick(execution, clock.now());
 
 				if (!successfulPick) {
 					executorsSemaphore.release();
+				} else {
+					currentlyProcessing.put(execution, execution);
 				}
 				return successfulPick;
 
@@ -154,24 +169,42 @@ public class Scheduler {
 		return false;
 	}
 
-	private void releaseExecutor() {
+	private void releaseExecutor(Execution execution) {
 		executorsSemaphore.release();
+		if (currentlyProcessing.remove(execution) == null) {
+			LOG.error("Released execution was not found in collection of executions currently being processed. Should never happen.");
+			statsRegistry.registerUnexpectedError();
+		}
 	}
 
 	void detectDeadExecutions() {
 		LOG.info("Checking for dead executions.");
 		LocalDateTime now = clock.now();
-		List<Execution> oldExecutions = taskRepository.getOldExecutions(now.minus(OLD_AGE));
+		final LocalDateTime oldAgeLimit = now.minus(heartbeatInterval.multipliedBy(4).toMillis(), ChronoUnit.MILLIS);
+		List<Execution> oldExecutions = taskRepository.getOldExecutions(oldAgeLimit);
 
 		if (!oldExecutions.isEmpty()) {
-			StringBuilder warning = new StringBuilder();
-			warning.append("There are " + oldExecutions.size() + " old executions. They are either long running executions, " +
-					"or they have died and are non-resumable. Old executions:\n");
-			oldExecutions.stream()
-					.map(execution -> "Execution: " + execution.taskInstance.getTaskAndInstance() + " was due " + execution.executionTime + "\n")
-					.forEach(warning::append);
-			warnLogger.accept(warning.toString());
+			oldExecutions.stream().forEach(execution -> {
+				LOG.info("Found dead execution. Delegating handling to task. Execution: " + execution);
+				execution.taskInstance.getTask().handleDeadExecution(execution, new ExecutionOperations(execution));
+			});
+		} else {
+			LOG.trace("No dead executions found.");
 		}
+	}
+
+	void updateHeartbeats() {
+		if (currentlyProcessing.isEmpty()) {
+			LOG.trace("No executions to update heartbeats for. Skipping.");
+			return;
+		}
+
+		LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
+		LocalDateTime now = clock.now();
+		new ArrayList<>(currentlyProcessing.values()).stream().forEach(execution -> {
+			LOG.trace("Updating heartbeat for execution: " + execution);
+			taskRepository.updateHeartbeat(execution, now);
+		});
 	}
 
 	private class ExecuteTask implements Runnable {
@@ -190,15 +223,15 @@ public class Scheduler {
 					LOG.debug("Executing " + execution);
 					task.execute(execution.taskInstance);
 					LOG.debug("Execution done");
-					task.complete(new ExecutionComplete(execution, clock.now(), ExecutionComplete.Result.OK), new ExecutionFinishedOperations(execution));
+					task.complete(new ExecutionComplete(execution, clock.now(), ExecutionComplete.Result.OK), new ExecutionOperations(execution));
 
 				} catch (RuntimeException unhandledException) {
 					LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
-					task.complete(new ExecutionComplete(execution, clock.now(), ExecutionComplete.Result.FAILED), new ExecutionFinishedOperations(execution));
+					task.complete(new ExecutionComplete(execution, clock.now(), ExecutionComplete.Result.FAILED), new ExecutionOperations(execution));
 
 				} catch (Throwable unhandledError) {
 					LOG.error("Error during execution. Treating as failure.", unhandledError);
-					task.complete(new ExecutionComplete(execution, clock.now(), ExecutionComplete.Result.FAILED), new ExecutionFinishedOperations(execution));
+					task.complete(new ExecutionComplete(execution, clock.now(), ExecutionComplete.Result.FAILED), new ExecutionOperations(execution));
 
 				}
 
@@ -217,14 +250,12 @@ public class Scheduler {
 	public static class Builder {
 
 		private final DataSource dataSource;
-		private int executorThreads = 10;
-		private List<Task> knownTasks = new ArrayList<>();
+		private final int executorThreads = 10;
+		private final List<Task> knownTasks = new ArrayList<>();
 		private String name;
 		private Waiter waiter = new Waiter(1000);
-		private Waiter detectDeadWaiter = new Waiter(TimeUnit.HOURS.toMillis(1));
-		;
-		private Consumer<String> warnLogger = WARN_LOGGER;
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
+		private Duration heartbeatInterval = Duration.ofMinutes(5);
 
 		public Builder(DataSource dataSource) {
 			this.dataSource = dataSource;
@@ -245,8 +276,8 @@ public class Scheduler {
 			return this;
 		}
 
-		public Builder detectDeadInterval(long time, TimeUnit timeUnit) {
-			detectDeadWaiter = new Waiter(timeUnit.toMillis(time));
+		public Builder heartbeatInterval(Duration duration) {
+			this.heartbeatInterval = duration;
 			return this;
 		}
 
@@ -257,19 +288,19 @@ public class Scheduler {
 
 		Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
-			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver);
-			final FixedName name = new FixedName(this.name);
+			final SchedulerName name = new SchedulerName(this.name);
+			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, name);
 
-			return new Scheduler(new SystemClock(), taskRepository, executorThreads, name, waiter, detectDeadWaiter, warnLogger, statsRegistry);
+			return new Scheduler(new SystemClock(), taskRepository, executorThreads, name, waiter, heartbeatInterval, statsRegistry);
 		}
 	}
 
 
-	public class ExecutionFinishedOperations {
+	public class ExecutionOperations {
 
 		private final Execution execution;
 
-		public ExecutionFinishedOperations(Execution execution) {
+		public ExecutionOperations(Execution execution) {
 			this.execution = execution;
 		}
 
@@ -281,23 +312,6 @@ public class Scheduler {
 			taskRepository.reschedule(execution, nextExecutionTime);
 		}
 
-	}
-
-	public interface Name {
-		String getName();
-	}
-
-	public static class FixedName implements Name {
-		private final String name;
-
-		public FixedName(String name) {
-			this.name = name;
-		}
-
-		@Override
-		public String getName() {
-			return name;
-		}
 	}
 
 	public static class Waiter {
@@ -317,7 +331,5 @@ public class Scheduler {
 			}
 		}
 	}
-
-	public static Consumer<String> WARN_LOGGER = (String message) -> LOG.warn(message);
 
 }

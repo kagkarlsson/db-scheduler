@@ -5,7 +5,6 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.hsqldb.Database;
 import org.hsqldb.DatabaseManager;
-import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.rules.ExternalResource;
 
 import javax.sql.DataSource;

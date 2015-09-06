@@ -9,15 +9,25 @@ public final class Execution {
 	public final TaskInstance taskInstance;
 	public final LocalDateTime executionTime;
 	public boolean picked;
+	public String pickedBy;
+	public LocalDateTime lastHeartbeat;
 
 	public Execution(LocalDateTime executionTime, TaskInstance taskInstance) {
-		this.executionTime = executionTime;
-		this.taskInstance = taskInstance;
-		picked = false;
+		this(executionTime, taskInstance, false, null, null);
 	}
 
-	public void setPicked() {
+	public Execution(LocalDateTime executionTime, TaskInstance taskInstance, boolean picked, String pickedBy, LocalDateTime lastHeartbeat) {
+		this.executionTime = executionTime;
+		this.taskInstance = taskInstance;
+		this.picked = picked;
+		this.pickedBy = pickedBy;
+		this.lastHeartbeat = lastHeartbeat;
+	}
+
+	public void setPicked(String pickedBy, LocalDateTime timePicked) {
+		this.pickedBy = pickedBy;
 		this.picked = true;
+		this.lastHeartbeat = timePicked;
 	}
 
 	public LocalDateTime getExecutionTime() {

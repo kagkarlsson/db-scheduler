@@ -9,8 +9,13 @@ import java.util.stream.Collectors;
 
 public class InMemoryTaskRespository implements TaskRepository {
 	private static final Logger LOG = LoggerFactory.getLogger(InMemoryTaskRespository.class);
+	private final SchedulerName schedulerName;
 
-	private Set<Execution> futureExecutions = new HashSet<>();
+	private final Set<Execution> futureExecutions = new HashSet<>();
+
+	public InMemoryTaskRespository(SchedulerName schedulerName) {
+		this.schedulerName = schedulerName;
+	}
 
 	@Override
 	public synchronized boolean createIfNotExists(Execution execution) {
@@ -43,10 +48,10 @@ public class InMemoryTaskRespository implements TaskRepository {
 	}
 
 	@Override
-	public boolean pick(Execution e) {
+	public boolean pick(Execution e, LocalDateTime timePicked) {
 		for (Execution futureExecution : futureExecutions) {
 			if (futureExecution.equals(e)) {
-				futureExecution.setPicked();
+				futureExecution.setPicked(schedulerName.getName(), timePicked);
 				return true;
 			}
 		}
@@ -61,6 +66,11 @@ public class InMemoryTaskRespository implements TaskRepository {
 				.collect(Collectors.toList());
 		Collections.sort(due, Comparator.comparing(Execution::getExecutionTime));
 		return due;
+	}
+
+	@Override
+	public void updateHeartbeat(Execution execution, LocalDateTime heartbeatTime) {
+		throw new UnsupportedOperationException("not implemented");
 	}
 
 	@Override
