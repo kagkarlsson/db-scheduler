@@ -66,8 +66,8 @@ public class DeadExecutionsTest {
 		final List<Execution> due = jdbcTaskRepository.getDue(now);
 		assertThat(due, Matchers.hasSize(1));
 		final Execution execution = due.get(0);
-		jdbcTaskRepository.pick(execution, now);
-		jdbcTaskRepository.updateHeartbeat(execution, now.minusHours(1));
+		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(execution, now);
+		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.minusHours(1));
 
 		scheduler.detectDeadExecutions();
 

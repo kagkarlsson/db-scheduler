@@ -117,9 +117,11 @@ public class JdbcTaskRepositoryTest {
 		List<Execution> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
 		final Execution execution = due.get(0);
-		assertThat(taskRepository.pick(execution, now), is(true));
-		taskRepository.reschedule(execution, now.plusSeconds(1));
-		assertThat(taskRepository.pick(execution, now), is(false));
+		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
+		assertThat(pickedExecution.isPresent(), is(true));
+		taskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1));
+
+		assertThat(taskRepository.pick(pickedExecution.get(), now).isPresent(), is(false));
 	}
 
 	@Test
@@ -131,9 +133,9 @@ public class JdbcTaskRepositoryTest {
 		assertThat(due, hasSize(1));
 
 		Execution execution = due.get(0);
-		taskRepository.pick(execution, now);
+		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
 		final LocalDateTime nextExecutionTime = now.plusMinutes(1);
-		taskRepository.reschedule(execution, nextExecutionTime);
+		taskRepository.reschedule(pickedExecution.get(), nextExecutionTime);
 
 		assertThat(taskRepository.getDue(now), hasSize(0));
 		assertThat(taskRepository.getDue(nextExecutionTime), hasSize(1));

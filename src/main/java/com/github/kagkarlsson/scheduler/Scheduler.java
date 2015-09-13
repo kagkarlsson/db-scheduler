@@ -117,9 +117,9 @@ public class Scheduler {
 		final boolean result = MoreExecutors.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
 
 		if (result) {
-			LOG.info("Done waiting for executing tasks.");
+			LOG.info("Scheduler stopped.");
 		} else {
-			LOG.warn("Some tasks did not complete.");
+			LOG.warn("Scheduler stopped, but some tasks did not complete.");
 		}
 	}
 
@@ -135,38 +135,45 @@ public class Scheduler {
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 		for (Execution e : dueExecutions) {
 
-			if (aquireExecutorAndPickExecution(e)) {
-				count++;
-				CompletableFuture
-						.runAsync(new ExecuteTask(e), executorService)
-						.thenRun(() -> releaseExecutor(e));
-			} else {
-				LOG.debug("No available executors. Skipping {} executions", dueExecutions.size() - count);
+			final Optional<Execution> pickedExecution;
+			try {
+				pickedExecution = aquireExecutorAndPickExecution(e);
+			} catch (NoAvailableExecutors ex) {
+				LOG.debug("No available executors. Skipping {} due executions.", dueExecutions.size() - count);
 				return;
 			}
 
+			if (pickedExecution.isPresent()) {
+				CompletableFuture
+						.runAsync(new ExecuteTask(pickedExecution.get()), executorService)
+						.thenRun(() -> releaseExecutor(pickedExecution.get()));
+			} else {
+				LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
+				return;
+			}
+			count++;
 		}
 	}
 
-	private boolean aquireExecutorAndPickExecution(Execution execution) {
+	private Optional<Execution> aquireExecutorAndPickExecution(Execution execution) {
 		if (executorsSemaphore.tryAcquire()) {
 			try {
-				boolean successfulPick = taskRepository.pick(execution, clock.now());
+				final Optional<Execution> pickedExecution = taskRepository.pick(execution, clock.now());
 
-				if (!successfulPick) {
+				if (!pickedExecution.isPresent()) {
 					executorsSemaphore.release();
 				} else {
-					currentlyProcessing.put(execution, execution);
+					currentlyProcessing.put(pickedExecution.get(), pickedExecution.get());
 				}
-				return successfulPick;
+				return pickedExecution;
 
 			} catch (Throwable t) {
 				executorsSemaphore.release();
 				throw t;
 			}
+		} else {
+			throw new NoAvailableExecutors();
 		}
-
-		return false;
 	}
 
 	private void releaseExecutor(Execution execution) {
@@ -178,7 +185,7 @@ public class Scheduler {
 	}
 
 	void detectDeadExecutions() {
-		LOG.info("Checking for dead executions.");
+		LOG.debug("Checking for dead executions.");
 		LocalDateTime now = clock.now();
 		final LocalDateTime oldAgeLimit = now.minus(heartbeatInterval.multipliedBy(4).toMillis(), ChronoUnit.MILLIS);
 		List<Execution> oldExecutions = taskRepository.getOldExecutions(oldAgeLimit);
@@ -243,31 +250,27 @@ public class Scheduler {
 		}
 	}
 
-	public static Builder create(DataSource dataSource) {
-		return new Builder(dataSource);
+	public static Builder create(DataSource dataSource, SchedulerName schedulerName) {
+		return new Builder(dataSource, schedulerName);
 	}
 
 	public static class Builder {
 
 		private final DataSource dataSource;
-		private final int executorThreads = 10;
+		private final SchedulerName schedulerName;
+		private int executorThreads = 10;
 		private final List<Task> knownTasks = new ArrayList<>();
-		private String name;
 		private Waiter waiter = new Waiter(1000);
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 
-		public Builder(DataSource dataSource) {
+		public Builder(DataSource dataSource, SchedulerName schedulerName) {
 			this.dataSource = dataSource;
+			this.schedulerName = schedulerName;
 		}
 
 		public Builder addTask(Task task) {
 			knownTasks.add(task);
-			return this;
-		}
-
-		public Builder name(String name) {
-			this.name = name;
 			return this;
 		}
 
@@ -281,17 +284,21 @@ public class Scheduler {
 			return this;
 		}
 
+		public Builder threads(int numberOfThreads) {
+			this.executorThreads = numberOfThreads;
+			return this;
+		}
+
 		public Builder statsRegistry(StatsRegistry statsRegistry) {
 			this.statsRegistry = statsRegistry;
 			return this;
 		}
 
-		Scheduler build() {
+		public Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
-			final SchedulerName name = new SchedulerName(this.name);
-			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, name);
+			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, schedulerName);
 
-			return new Scheduler(new SystemClock(), taskRepository, executorThreads, name, waiter, heartbeatInterval, statsRegistry);
+			return new Scheduler(new SystemClock(), taskRepository, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry);
 		}
 	}
 
@@ -332,4 +339,6 @@ public class Scheduler {
 		}
 	}
 
+	public static class NoAvailableExecutors extends RuntimeException {
+	}
 }

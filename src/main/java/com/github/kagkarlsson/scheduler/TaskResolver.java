@@ -38,7 +38,7 @@ public class TaskResolver {
 		taskMap.put(task.getName(), task);
 	}
 
-	enum OnCannotResolve {
+	public enum OnCannotResolve {
 		WARN_ON_UNRESOLVED,
 		FAIL_ON_UNRESOLVED
 	}

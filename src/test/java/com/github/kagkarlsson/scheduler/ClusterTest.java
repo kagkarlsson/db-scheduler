@@ -39,7 +39,7 @@ public class ClusterTest {
 		final CountDownLatch completeAllIds = new CountDownLatch(ids.size());
 		ResultRegisteringTask task = new ResultRegisteringTask("OneTime", (instance) -> {sleep(1);}, (id) -> completeAllIds.countDown());
 
-		final SimpleStatsRegistry stats = new SimpleStatsRegistry();
+		final TestTasks.SimpleStatsRegistry stats = new TestTasks.SimpleStatsRegistry();
 		final Scheduler scheduler1 = createScheduler("scheduler1", task, stats);
 		final Scheduler scheduler2 = createScheduler("scheduler2", task, stats);
 
@@ -64,9 +64,8 @@ public class ClusterTest {
 		}
 	}
 
-	private Scheduler createScheduler(String name, ResultRegisteringTask task, SimpleStatsRegistry stats) {
-		return Scheduler.create(DB.getDataSource())
-				.name(name)
+	private Scheduler createScheduler(String name, ResultRegisteringTask task, TestTasks.SimpleStatsRegistry stats) {
+		return Scheduler.create(DB.getDataSource(), new SchedulerName(name))
 				.pollingInterval(0, TimeUnit.MILLISECONDS)
 				.heartbeatInterval(Duration.ofMillis(100))
 				.addTask(task)
@@ -103,14 +102,6 @@ public class ClusterTest {
 			}
 			super.complete(executionComplete, executionOperations);
 			onComplete.accept(instanceId);
-		}
-	}
-
-	private static class SimpleStatsRegistry implements StatsRegistry {
-		public final AtomicInteger unexpectedErrors = new AtomicInteger(0);
-		@Override
-		public void registerUnexpectedError() {
-			unexpectedErrors.incrementAndGet();
 		}
 	}
 

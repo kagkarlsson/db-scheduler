@@ -6,7 +6,7 @@
 		</encoder>
 	</appender>
 
-	<logger name="com.github.kagkarlsson.scheduler" level="TRACE"/>
+	<logger name="com.github.kagkarlsson.scheduler" level="INFO"/>
 
 	<root level="INFO">
 		<appender-ref ref="STDOUT" />

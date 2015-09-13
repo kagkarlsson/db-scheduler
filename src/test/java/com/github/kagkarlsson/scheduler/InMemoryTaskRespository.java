@@ -48,14 +48,14 @@ public class InMemoryTaskRespository implements TaskRepository {
 	}
 
 	@Override
-	public boolean pick(Execution e, LocalDateTime timePicked) {
+	public Optional<Execution> pick(Execution e, LocalDateTime timePicked) {
 		for (Execution futureExecution : futureExecutions) {
 			if (futureExecution.equals(e)) {
 				futureExecution.setPicked(schedulerName.getName(), timePicked);
-				return true;
+				return Optional.of(futureExecution);
 			}
 		}
-		return false;
+		return Optional.empty();
 	}
 
 	@Override

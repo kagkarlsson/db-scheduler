@@ -5,5 +5,6 @@ create table scheduled_tasks (
   picked BOOLEAN,
   picked_by varchar(50),
   last_heartbeat TIMESTAMP(6),
+  version BIGINT,
   PRIMARY KEY (task_name, task_instance)
 )

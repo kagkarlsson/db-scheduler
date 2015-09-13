@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface TaskRepository {
 
@@ -11,7 +12,7 @@ public interface TaskRepository {
 	void remove(Execution execution);
 	void reschedule(Execution execution, LocalDateTime nextExecutionTime);
 
-	boolean pick(Execution e, LocalDateTime timePicked);
+	Optional<Execution> pick(Execution e, LocalDateTime timePicked);
 
 	List<Execution> getOldExecutions(LocalDateTime olderThan);
 

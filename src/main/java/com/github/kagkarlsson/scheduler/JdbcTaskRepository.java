@@ -33,12 +33,13 @@ public class JdbcTaskRepository implements TaskRepository {
 	public boolean createIfNotExists(Execution execution) {
 		try {
 			jdbcRunner.execute(
-					"insert into scheduled_tasks(task_name, task_instance, execution_time, picked) values(?, ?, ?, ?)",
+					"insert into scheduled_tasks(task_name, task_instance, execution_time, picked, version) values(?, ?, ?, ?, ?)",
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTask().getName());
 						p.setString(2, execution.taskInstance.getId());
 						p.setTimestamp(3, Timestamp.valueOf(execution.executionTime));
 						p.setBoolean(4, false);
+						p.setLong(5, 1L);
 					});
 			return true;
 
@@ -78,10 +79,11 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public void remove(Execution execution) {
 
-		final int removed = jdbcRunner.execute("delete from scheduled_tasks where task_name = ? and task_instance = ?",
+		final int removed = jdbcRunner.execute("delete from scheduled_tasks where task_name = ? and task_instance = ? and version = ?",
 				ps -> {
 					ps.setString(1, execution.taskInstance.getTaskName());
 					ps.setString(2, execution.taskInstance.getId());
+					ps.setLong(3, execution.version);
 				}
 		);
 
@@ -96,15 +98,20 @@ public class JdbcTaskRepository implements TaskRepository {
 				"update scheduled_tasks set " +
 						"picked = ?, " +
 						"picked_by = ?, " +
-						"execution_time = ? " +
+						"last_heartbeat = ?, " +
+						"execution_time = ?, " +
+						"version = version + 1" +
 						"where task_name = ? " +
-						"and task_instance = ?",
+						"and task_instance = ? " +
+						"and version = ?",
 				ps -> {
 					ps.setBoolean(1, false);
 					ps.setString(2, null);
-					ps.setTimestamp(3, Timestamp.valueOf(nextExecutionTime));
-					ps.setString(4, execution.taskInstance.getTaskName());
-					ps.setString(5, execution.taskInstance.getId());
+					ps.setTimestamp(3, null);
+					ps.setTimestamp(4, Timestamp.valueOf(nextExecutionTime));
+					ps.setString(5, execution.taskInstance.getTaskName());
+					ps.setString(6, execution.taskInstance.getId());
+					ps.setLong(7, execution.version);
 				});
 
 		if (updated != 1) {
@@ -113,28 +120,34 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public boolean pick(Execution e, LocalDateTime timePicked) {
+	public Optional<Execution> pick(Execution e, LocalDateTime timePicked) {
 		final int updated = jdbcRunner.execute(
-				"update scheduled_tasks set picked = ?, picked_by = ?, last_heartbeat = ? " +
+				"update scheduled_tasks set picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
 						"where picked = ? " +
-						"and execution_time = ? " +
 						"and task_name = ? " +
-						"and task_instance = ?",
+						"and task_instance = ?" +
+						"and version = ?",
 				ps -> {
 					ps.setBoolean(1, true);
 					ps.setString(2, schedulerSchedulerName.getName());
 					ps.setTimestamp(3, Timestamp.valueOf(timePicked));
 					ps.setBoolean(4, false);
-					ps.setTimestamp(5, Timestamp.valueOf(e.executionTime));
-					ps.setString(6, e.taskInstance.getTaskName());
-					ps.setString(7, e.taskInstance.getId());
+					ps.setString(5, e.taskInstance.getTaskName());
+					ps.setString(6, e.taskInstance.getId());
+					ps.setLong(7, e.version);
 				});
 
 		if (updated == 0) {
 			LOG.trace("Failed to pick execution. It must have been picked by another scheduler.", e);
-			return false;
+			return Optional.empty();
 		} else if (updated == 1) {
-			return true;
+			final Optional<Execution> pickedExecution = getExecution(e.taskInstance);
+			if (!pickedExecution.isPresent()) {
+				throw new IllegalStateException("Unable to find picked execution. Must have been deleted by another thread. Indicates a bug.");
+			} else if (!pickedExecution.get().isPicked()) {
+				throw new IllegalStateException("Picked execution does not have expected state in database: " + pickedExecution.get());
+			}
+			return pickedExecution;
 		} else {
 			throw new IllegalStateException("Updated multiple rows when picking single execution. Should never happen since name and id is primary key. Execution: " + e);
 		}
@@ -157,21 +170,21 @@ public class JdbcTaskRepository implements TaskRepository {
 
 		final int updated = jdbcRunner.execute(
 				"update scheduled_tasks set last_heartbeat = ? " +
-						"where execution_time = ? " +
-						"and task_name = ? " +
-						"and task_instance = ?",
+						"where task_name = ? " +
+						"and task_instance = ? " +
+						"and version = ?",
 				ps -> {
 					ps.setTimestamp(1, Timestamp.valueOf(newHeartbeat));
-					ps.setTimestamp(2, Timestamp.valueOf(e.executionTime));
-					ps.setString(3, e.taskInstance.getTaskName());
-					ps.setString(4, e.taskInstance.getId());
+					ps.setString(2, e.taskInstance.getTaskName());
+					ps.setString(3, e.taskInstance.getId());
+					ps.setLong(4, e.version);
 				});
 
 		if (updated == 0) {
 			LOG.trace("Did not update heartbeat. Execution must have been removed or rescheduled.", e);
 		} else {
 			if (updated > 1) {
-				LOG.warn("Update multiple rows when updating heartbeat for execution: " + e);
+				throw new IllegalStateException("Updated multiple rows updating heartbeat for execution. Should never happen since name and id is primary key. Execution: " + e);
 			}
 			LOG.debug("Updated heartbeat for execution: " + e);
 		}
@@ -214,7 +227,8 @@ public class JdbcTaskRepository implements TaskRepository {
 				final String pickedBy = rs.getString("picked_by");
 				final Optional<Timestamp> lastHeartbeatTimestamp = Optional.ofNullable(rs.getTimestamp("last_heartbeat"));
 				LocalDateTime lastHeartbeat = lastHeartbeatTimestamp.map(Timestamp::toLocalDateTime).orElse(null);
-				executions.add(new Execution(executionTime, new TaskInstance(task, taskInstance), picked, pickedBy, lastHeartbeat));
+				long version = rs.getLong("version");
+				executions.add(new Execution(executionTime, new TaskInstance(task, taskInstance), picked, pickedBy, lastHeartbeat, version));
 			}
 			return executions;
 		}

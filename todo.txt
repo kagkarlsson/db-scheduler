@@ -1,4 +1,6 @@
 
+- polling interval to duration
+
 - cron schedule?
    - https://github.com/jmrozanec/cron-utils
 

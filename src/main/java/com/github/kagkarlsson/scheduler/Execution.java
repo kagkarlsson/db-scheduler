@@ -11,17 +11,19 @@ public final class Execution {
 	public boolean picked;
 	public String pickedBy;
 	public LocalDateTime lastHeartbeat;
+	public long version;
 
 	public Execution(LocalDateTime executionTime, TaskInstance taskInstance) {
-		this(executionTime, taskInstance, false, null, null);
+		this(executionTime, taskInstance, false, null, null, 1L);
 	}
 
-	public Execution(LocalDateTime executionTime, TaskInstance taskInstance, boolean picked, String pickedBy, LocalDateTime lastHeartbeat) {
+	public Execution(LocalDateTime executionTime, TaskInstance taskInstance, boolean picked, String pickedBy, LocalDateTime lastHeartbeat, long version) {
 		this.executionTime = executionTime;
 		this.taskInstance = taskInstance;
 		this.picked = picked;
 		this.pickedBy = pickedBy;
 		this.lastHeartbeat = lastHeartbeat;
+		this.version = version;
 	}
 
 	public void setPicked(String pickedBy, LocalDateTime timePicked) {
@@ -34,6 +36,10 @@ public final class Execution {
 		return executionTime;
 	}
 
+	public boolean isPicked() {
+		return picked;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -42,6 +48,7 @@ public final class Execution {
 		return Objects.equals(executionTime, execution.executionTime) &&
 				Objects.equals(taskInstance, execution.taskInstance);
 	}
+
 
 	@Override
 	public int hashCode() {
@@ -54,6 +61,10 @@ public final class Execution {
 		return "Execution: " +
 				"task=" + taskInstance.getTask().getName() +
 				", id=" + taskInstance.getId() +
-				", executionTime=" + executionTime;
+				", executionTime=" + executionTime +
+				", picked=" + picked +
+				", pickedBy=" + pickedBy +
+				", lastHeartbeat=" + lastHeartbeat +
+				", version=" + version;
 	}
 }
