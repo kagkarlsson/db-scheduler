@@ -5,6 +5,7 @@ import com.github.kagkarlsson.scheduler.task.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -44,9 +45,7 @@ public abstract class CompatibilityTest {
 		recurring = new RecurringTask("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandler);
 
 		statsRegistry = new TestTasks.SimpleStatsRegistry();
-		scheduler = Scheduler.create(getDataSource(), new SchedulerName("scheduler1"))
-				.addTask(oneTime)
-				.addTask(recurring)
+		scheduler = Scheduler.create(getDataSource(), new SchedulerName("scheduler1"), Lists.newArrayList(oneTime, recurring))
 				.pollingInterval(10, TimeUnit.MILLISECONDS)
 				.heartbeatInterval(Duration.ofMillis(100))
 				.statsRegistry(statsRegistry)
@@ -62,12 +61,12 @@ public abstract class CompatibilityTest {
 	public void test_compatibility() {
 		scheduler.start();
 
-		scheduler.addExecution(LocalDateTime.now(), oneTime.instance("id1"));
-		scheduler.addExecution(LocalDateTime.now(), oneTime.instance("id1")); //duplicate
-		scheduler.addExecution(LocalDateTime.now(), recurring.instance("id1"));
-		scheduler.addExecution(LocalDateTime.now(), recurring.instance("id2"));
-		scheduler.addExecution(LocalDateTime.now(), recurring.instance("id3"));
-		scheduler.addExecution(LocalDateTime.now(), recurring.instance("id4"));
+		scheduler.scheduleForExecution(LocalDateTime.now(), oneTime.instance("id1"));
+		scheduler.scheduleForExecution(LocalDateTime.now(), oneTime.instance("id1")); //duplicate
+		scheduler.scheduleForExecution(LocalDateTime.now(), recurring.instance("id1"));
+		scheduler.scheduleForExecution(LocalDateTime.now(), recurring.instance("id2"));
+		scheduler.scheduleForExecution(LocalDateTime.now(), recurring.instance("id3"));
+		scheduler.scheduleForExecution(LocalDateTime.now(), recurring.instance("id4"));
 
 		sleep(Duration.ofSeconds(10));
 

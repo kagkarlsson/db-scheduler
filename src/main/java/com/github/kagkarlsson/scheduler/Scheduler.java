@@ -123,7 +123,7 @@ public class Scheduler {
 		}
 	}
 
-	public void addExecution(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
+	public void scheduleForExecution(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
 		taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
 	}
 
@@ -250,8 +250,8 @@ public class Scheduler {
 		}
 	}
 
-	public static Builder create(DataSource dataSource, SchedulerName schedulerName) {
-		return new Builder(dataSource, schedulerName);
+	public static Builder create(DataSource dataSource, SchedulerName schedulerName, List<Task> knownTasks) {
+		return new Builder(dataSource, schedulerName, knownTasks);
 	}
 
 	public static class Builder {
@@ -259,19 +259,15 @@ public class Scheduler {
 		private final DataSource dataSource;
 		private final SchedulerName schedulerName;
 		private int executorThreads = 10;
-		private final List<Task> knownTasks = new ArrayList<>();
+		private List<Task> knownTasks = new ArrayList<>();
 		private Waiter waiter = new Waiter(1000);
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 
-		public Builder(DataSource dataSource, SchedulerName schedulerName) {
+		public Builder(DataSource dataSource, SchedulerName schedulerName, List<Task> knownTasks) {
 			this.dataSource = dataSource;
 			this.schedulerName = schedulerName;
-		}
-
-		public Builder addTask(Task task) {
-			knownTasks.add(task);
-			return this;
+			this.knownTasks = knownTasks;
 		}
 
 		public Builder pollingInterval(long time, TimeUnit timeUnit) {

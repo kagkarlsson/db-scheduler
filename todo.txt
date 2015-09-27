@@ -1,4 +1,8 @@
 
+- support simple form of metadata for each execution, e.g. some form of ids
+
+- profil som kør postgres-testerna
+
 - polling interval to duration
 
 - cron schedule?

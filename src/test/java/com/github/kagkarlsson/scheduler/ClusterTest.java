@@ -3,7 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.OneTimeTask;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.google.common.collect.Lists;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
@@ -48,7 +47,7 @@ public class ClusterTest {
 			scheduler2.start();
 
 			ids.forEach(id -> {
-				scheduler1.addExecution(LocalDateTime.now(), task.instance(id));
+				scheduler1.scheduleForExecution(LocalDateTime.now(), task.instance(id));
 			});
 
 			completeAllIds.await();
@@ -65,10 +64,9 @@ public class ClusterTest {
 	}
 
 	private Scheduler createScheduler(String name, ResultRegisteringTask task, TestTasks.SimpleStatsRegistry stats) {
-		return Scheduler.create(DB.getDataSource(), new SchedulerName(name))
+		return Scheduler.create(DB.getDataSource(), new SchedulerName(name), Lists.newArrayList(task))
 				.pollingInterval(0, TimeUnit.MILLISECONDS)
 				.heartbeatInterval(Duration.ofMillis(100))
-				.addTask(task)
 				.statsRegistry(stats)
 				.build();
 	}

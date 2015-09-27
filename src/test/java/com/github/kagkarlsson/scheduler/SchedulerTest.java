@@ -32,7 +32,7 @@ public class SchedulerTest {
 		OneTimeTask oneTimeTask = new OneTimeTask("OneTime", handler);
 
 		LocalDateTime executionTime = clock.now().plusMinutes(1);
-		scheduler.addExecution(executionTime, oneTimeTask.instance("1"));
+		scheduler.scheduleForExecution(executionTime, oneTimeTask.instance("1"));
 
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
@@ -46,7 +46,7 @@ public class SchedulerTest {
 	public void scheduler_should_execute_recurring_task_and_reschedule() {
 		RecurringTask recurringTask = new RecurringTask("Recurring", FixedDelay.of(Duration.ofHours(1)), handler);
 
-		scheduler.addExecution(clock.now(), recurringTask.instance("single"));
+		scheduler.scheduleForExecution(clock.now(), recurringTask.instance("single"));
 		scheduler.executeDue();
 
 		assertThat(handler.timesExecuted, is(1));
@@ -63,7 +63,7 @@ public class SchedulerTest {
 		scheduler.executorsSemaphore.acquire();
 		OneTimeTask oneTimeTask = new OneTimeTask("OneTime", handler);
 
-		scheduler.addExecution(clock.now(), oneTimeTask.instance("1"));
+		scheduler.scheduleForExecution(clock.now(), oneTimeTask.instance("1"));
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
 	}
