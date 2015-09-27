@@ -1,5 +1,8 @@
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.example;
 
+import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
+import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.OneTimeTask;
@@ -27,10 +30,6 @@ public class SchedulerMain {
 				.create(dataSource, new SchedulerName("myscheduler"), Lists.newArrayList(recurring1, recurring2, onetime))
 				.build();
 
-		scheduler.scheduleForExecution(now(), recurring1.instance(SINGLE_INSTANCE));
-		scheduler.scheduleForExecution(now(), recurring2.instance(SINGLE_INSTANCE));
-		scheduler.scheduleForExecution(now().plusSeconds(20), onetime.instance("1045"));
-
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
@@ -40,6 +39,11 @@ public class SchedulerMain {
 		});
 
 		scheduler.start();
+
+		scheduler.scheduleForExecution(now(), recurring1.instance(SINGLE_INSTANCE));
+		scheduler.scheduleForExecution(now(), recurring2.instance(SINGLE_INSTANCE));
+		scheduler.scheduleForExecution(now().plusSeconds(20), onetime.instance("1045"));
+
 	}
 
 	private static final ExecutionHandler LOGGING_EXECUTION_HANDLER = taskInstance -> {
