@@ -65,7 +65,7 @@ public class ClusterTest {
 
 	private Scheduler createScheduler(String name, ResultRegisteringTask task, TestTasks.SimpleStatsRegistry stats) {
 		return Scheduler.create(DB.getDataSource(), new SchedulerName(name), Lists.newArrayList(task))
-				.pollingInterval(0, TimeUnit.MILLISECONDS)
+				.pollingInterval(Duration.ofMillis(0))
 				.heartbeatInterval(Duration.ofMillis(100))
 				.statsRegistry(stats)
 				.build();

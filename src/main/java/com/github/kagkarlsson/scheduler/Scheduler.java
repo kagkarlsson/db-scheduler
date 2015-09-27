@@ -270,8 +270,8 @@ public class Scheduler {
 			this.knownTasks = knownTasks;
 		}
 
-		public Builder pollingInterval(long time, TimeUnit timeUnit) {
-			waiter = new Waiter(timeUnit.toMillis(time));
+		public Builder pollingInterval(Duration pollingInterval) {
+			waiter = new Waiter(pollingInterval.toMillis());
 			return this;
 		}
 

@@ -46,7 +46,7 @@ public abstract class CompatibilityTest {
 
 		statsRegistry = new TestTasks.SimpleStatsRegistry();
 		scheduler = Scheduler.create(getDataSource(), new SchedulerName("scheduler1"), Lists.newArrayList(oneTime, recurring))
-				.pollingInterval(10, TimeUnit.MILLISECONDS)
+				.pollingInterval(Duration.ofMillis(10))
 				.heartbeatInterval(Duration.ofMillis(100))
 				.statsRegistry(statsRegistry)
 				.build();

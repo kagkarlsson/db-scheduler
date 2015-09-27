@@ -1,9 +1,9 @@
 
+next
+
 - support simple form of metadata for each execution, e.g. some form of ids
 
-- profil som kør postgres-testerna
-
-- polling interval to duration
+- profile for varying target db (hsql/postgresql) for tests
 
 - cron schedule?
    - https://github.com/jmrozanec/cron-utils
