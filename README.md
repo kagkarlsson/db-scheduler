@@ -1,12 +1,18 @@
 # db-scheduler
 
-Simple persistent scheduler for scheduled tasks, recurring or ad-hoc. The scheduler requires a single database-table.
+Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.
+
+## Features
+
+* Cluster-friendly, guarantees execution by single scheduler instance.
+* Requires only one database-table for persistence.
+* Minimal dependencies (guava, slf4j)
 
 
 ## Examples
 ### Recurring tasks
 
-Custom task class for a reoccurring task.
+Custom task class for a reccurring task.
 
 ```java
 public static class MyHourlyTask extends RecurringTask {
@@ -57,6 +63,8 @@ public static class MyAdhocTask extends OneTimeTask {
   }
 }
 ```
+
+Schedule the task for execution at a certain time in the future. The instance-id may be used to encode metadata (e.g. an id), since the instance-id will be available for the execution-handler.
 
 ```java
 private static void adhocExecution(Scheduler scheduler, MyAdhocTask myAdhocTask) {
