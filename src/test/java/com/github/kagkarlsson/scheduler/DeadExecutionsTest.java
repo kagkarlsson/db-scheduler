@@ -49,7 +49,7 @@ public class DeadExecutionsTest {
 				1,
 				MoreExecutors.newDirectExecutorService(),
 				new SchedulerName("test-scheduler"),
-				new Scheduler.Waiter(0),
+				new Waiter(Duration.ZERO),
 				Duration.ofMinutes(1),
 				StatsRegistry.NOOP);
 
@@ -118,7 +118,7 @@ public class DeadExecutionsTest {
 		public int timesCalled = 0;
 
 		@Override
-		public void deadExecution(Execution execution, Scheduler.ExecutionOperations executionOperations) {
+		public void deadExecution(Execution execution, ExecutionOperations executionOperations) {
 			timesCalled++;
 			super.deadExecution(execution, executionOperations);
 		}
@@ -126,7 +126,7 @@ public class DeadExecutionsTest {
 
 	public static class DoNothingCompletionHandler implements CompletionHandler {
 		@Override
-		public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionOperations executionOperations) {
+		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
 		}
 	}
 }

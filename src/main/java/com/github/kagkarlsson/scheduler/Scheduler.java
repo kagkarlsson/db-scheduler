@@ -35,7 +35,6 @@ public class Scheduler {
 	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 	public static final int SHUTDOWN_WAIT = 30;
 	public static final TimeUnit SHUTDOWN_WAIT_TIMEUNIT = TimeUnit.MINUTES;
-	private static final Duration OLD_AGE = Duration.ofHours(6);
 	private final Clock clock;
 	private final TaskRepository taskRepository;
 	private final ExecutorService executorService;
@@ -46,7 +45,7 @@ public class Scheduler {
 	private final ExecutorService dueExecutor;
 	private final ExecutorService detectDeadExecutor;
 	private final ExecutorService updateHeartbeatExecutor;
-	private final Map<Execution,Execution> currentlyProcessing = Collections.synchronizedMap(new HashMap<>());
+	private final Map<Execution, Execution> currentlyProcessing = Collections.synchronizedMap(new HashMap<>());
 	private final Waiter heartbeatWaiter;
 	final Semaphore executorsSemaphore;
 
@@ -67,9 +66,9 @@ public class Scheduler {
 		this.taskRepository = taskRepository;
 		this.executorService = executorService;
 		this.waiter = waiter;
-		this.detectDeadWaiter = new Waiter(heartbeatInterval.toMillis() * 2);
+		this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2));
 		this.heartbeatInterval = heartbeatInterval;
-		this.heartbeatWaiter = new Waiter(heartbeatInterval.toMillis());
+		this.heartbeatWaiter = new Waiter(heartbeatInterval);
 		this.statsRegistry = statsRegistry;
 		this.dueExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-execute-due").build());
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-detect-dead").build());
@@ -80,54 +79,16 @@ public class Scheduler {
 	public void start() {
 		LOG.info("Starting scheduler");
 
-		dueExecutor.submit(() -> {
-			while (!shutdownRequested) {
-				try {
-					if (executorsSemaphore.availablePermits() > 0) {
-						executeDue();
-					}
-
-					waiter.doWait();
-
-				} catch (Throwable e) {
-					statsRegistry.registerUnexpectedError();
-					LOG.error("Unhandled exception", e);
-				}
-			}
-		});
-
-		detectDeadExecutor.submit(() -> {
-			while (!shutdownRequested) {
-				try {
-					detectDeadExecutions();
-					detectDeadWaiter.doWait();
-
-				} catch (Throwable e) {
-					statsRegistry.registerUnexpectedError();
-					LOG.error("Unhandled exception", e);
-				}
-			}
-		});
-
-		updateHeartbeatExecutor.submit(() -> {
-			while (!shutdownRequested) {
-				try {
-					updateHeartbeats();
-					heartbeatWaiter.doWait();
-
-				} catch (Throwable e) {
-					statsRegistry.registerUnexpectedError();
-					LOG.error("Unhandled exception", e);
-				}
-			}
-		});
+		dueExecutor.submit(new RunUntilShutdown(this::executeDue, waiter));
+		detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter));
+		updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter));
 	}
 
 	public void stop() {
 		shutdownRequested = true;
 		LOG.info("Shutting down Scheduler. Will wait {} {} for running tasks to complete.", SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
-		MoreExecutors.shutdownAndAwaitTermination(dueExecutor, 1, TimeUnit.MINUTES);
-		MoreExecutors.shutdownAndAwaitTermination(detectDeadExecutor, 1, TimeUnit.MINUTES);
+		MoreExecutors.shutdownAndAwaitTermination(dueExecutor, 5, TimeUnit.SECONDS);
+		MoreExecutors.shutdownAndAwaitTermination(detectDeadExecutor, 5, TimeUnit.SECONDS);
 
 		final boolean result = MoreExecutors.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
 
@@ -143,6 +104,10 @@ public class Scheduler {
 	}
 
 	void executeDue() {
+		if (executorsSemaphore.availablePermits() <= 0) {
+			return;
+		}
+
 		LocalDateTime now = clock.now();
 		List<Execution> dueExecutions = taskRepository.getDue(now);
 
@@ -202,13 +167,18 @@ public class Scheduler {
 	void detectDeadExecutions() {
 		LOG.debug("Checking for dead executions.");
 		LocalDateTime now = clock.now();
-		final LocalDateTime oldAgeLimit = now.minus(heartbeatInterval.multipliedBy(4).toMillis(), ChronoUnit.MILLIS);
+		final LocalDateTime oldAgeLimit = now.minus(getMaxAgeBeforeConsideredDead());
 		List<Execution> oldExecutions = taskRepository.getOldExecutions(oldAgeLimit);
 
 		if (!oldExecutions.isEmpty()) {
 			oldExecutions.stream().forEach(execution -> {
 				LOG.info("Found dead execution. Delegating handling to task. Execution: " + execution);
-				execution.taskInstance.getTask().handleDeadExecution(execution, new ExecutionOperations(execution));
+				try {
+					execution.taskInstance.getTask().handleDeadExecution(execution, new ExecutionOperations(taskRepository, execution));
+				} catch (Throwable e) {
+					LOG.error("Failed while handling dead execution {}. Will be tried again later.", execution, e);
+					statsRegistry.registerUnexpectedError();
+				}
 			});
 		} else {
 			LOG.trace("No dead executions found.");
@@ -225,8 +195,17 @@ public class Scheduler {
 		LocalDateTime now = clock.now();
 		new ArrayList<>(currentlyProcessing.values()).stream().forEach(execution -> {
 			LOG.trace("Updating heartbeat for execution: " + execution);
-			taskRepository.updateHeartbeat(execution, now);
+			try {
+				taskRepository.updateHeartbeat(execution, now);
+			} catch (Throwable e) {
+				LOG.error("Failed while updating heartbeat for execution {}. Will try again later.", execution, e);
+				statsRegistry.registerUnexpectedError();
+			}
 		});
+	}
+
+	private Duration getMaxAgeBeforeConsideredDead() {
+		return heartbeatInterval.multipliedBy(4);
 	}
 
 	private class ExecuteTask implements Runnable {
@@ -239,28 +218,61 @@ public class Scheduler {
 		@Override
 		public void run() {
 			try {
-
 				final Task task = execution.taskInstance.getTask();
-				try {
-					LOG.debug("Executing " + execution);
-					task.execute(execution.taskInstance);
-					LOG.debug("Execution done");
-					task.complete(new ExecutionComplete(execution, clock.now(), ExecutionComplete.Result.OK), new ExecutionOperations(execution));
+				LOG.debug("Executing " + execution);
+				task.execute(execution.taskInstance);
+				LOG.debug("Execution done");
+				complete(execution, ExecutionComplete.Result.OK);
 
-				} catch (RuntimeException unhandledException) {
-					LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
-					task.complete(new ExecutionComplete(execution, clock.now(), ExecutionComplete.Result.FAILED), new ExecutionOperations(execution));
+			} catch (RuntimeException unhandledException) {
+				LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
+				complete(execution, ExecutionComplete.Result.FAILED);
 
-				} catch (Throwable unhandledError) {
-					LOG.error("Error during execution. Treating as failure.", unhandledError);
-					task.complete(new ExecutionComplete(execution, clock.now(), ExecutionComplete.Result.FAILED), new ExecutionOperations(execution));
+			} catch (Throwable unhandledError) {
+				LOG.error("Error during execution. Treating as failure.", unhandledError);
+				complete(execution, ExecutionComplete.Result.FAILED);
+			}
+		}
 
-				}
-
-			} catch (Throwable throwable) {
+		private void complete(Execution execution, ExecutionComplete.Result result) {
+			try {
+				final Task task = execution.taskInstance.getTask();
+				task.complete(new ExecutionComplete(execution, clock.now(), result), new ExecutionOperations(taskRepository, execution));
+			} catch (Throwable e) {
 				statsRegistry.registerUnexpectedError();
-				LOG.error("Failed while completing execution " + execution + ". Execution will likely remain scheduled and locked/picked. " +
-						"If the task is resumable, the lock will be released after duration " + OLD_AGE + " and execution run again.", throwable);
+				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +
+						"The execution should be detected as dead in {}, and handled according to the tasks DeadExecutionHandler.", execution, getMaxAgeBeforeConsideredDead(), e);
+			}
+		}
+	}
+
+	private class RunUntilShutdown implements Runnable {
+		private final Runnable toRun;
+		private final Waiter waitBetweenRuns;
+
+		public RunUntilShutdown(Runnable toRun, Waiter waitBetweenRuns) {
+			this.toRun = toRun;
+			this.waitBetweenRuns = waitBetweenRuns;
+		}
+
+		@Override
+		public void run() {
+			while (!shutdownRequested) {
+				try {
+					toRun.run();
+					waitBetweenRuns.doWait();
+
+				} catch (InterruptedException interruptedException) {
+					if (shutdownRequested) {
+						LOG.info("Thread '{}' interrupted due to shutdown.", Thread.currentThread().getName());
+					} else {
+						LOG.error("Unexpected interruption of thread. Will keep running.", interruptedException);
+						statsRegistry.registerUnexpectedError();
+					}
+				} catch (Throwable e) {
+					LOG.error("Unhandled exception. Will keep running.", e);
+					statsRegistry.registerUnexpectedError();
+				}
 			}
 		}
 	}
@@ -275,7 +287,7 @@ public class Scheduler {
 		private final SchedulerName schedulerName;
 		private int executorThreads = 10;
 		private List<Task> knownTasks = new ArrayList<>();
-		private Waiter waiter = new Waiter(1000);
+		private Waiter waiter = new Waiter(Duration.ofSeconds(1));
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 
@@ -286,7 +298,7 @@ public class Scheduler {
 		}
 
 		public Builder pollingInterval(Duration pollingInterval) {
-			waiter = new Waiter(pollingInterval.toMillis());
+			waiter = new Waiter(pollingInterval);
 			return this;
 		}
 
@@ -313,42 +325,6 @@ public class Scheduler {
 		}
 	}
 
-
-	public class ExecutionOperations {
-
-		private final Execution execution;
-
-		public ExecutionOperations(Execution execution) {
-			this.execution = execution;
-		}
-
-		public void stop() {
-			taskRepository.remove(execution);
-		}
-
-		public void reschedule(LocalDateTime nextExecutionTime) {
-			taskRepository.reschedule(execution, nextExecutionTime);
-		}
-
-	}
-
-	public static class Waiter {
-		private final long millis;
-
-		public Waiter(long millis) {
-			this.millis = millis;
-		}
-
-		public void doWait() {
-			try {
-				if (millis > 0) {
-					Thread.sleep(millis);
-				}
-			} catch (InterruptedException e) {
-				LOG.info("Interrupted. Assuming shutdown and continuing.");
-			}
-		}
-	}
 
 	public static class NoAvailableExecutors extends RuntimeException {
 	}

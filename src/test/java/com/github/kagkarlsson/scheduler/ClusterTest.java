@@ -91,7 +91,7 @@ public class ClusterTest {
 		}
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, Scheduler.ExecutionOperations executionOperations) {
+		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
 			final String instanceId = executionComplete.getExecution().taskInstance.getId();
 			if (executionComplete.getResult() == ExecutionComplete.Result.OK) {
 				ok.add(instanceId);

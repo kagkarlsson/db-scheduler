@@ -5,7 +5,6 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestTasks {

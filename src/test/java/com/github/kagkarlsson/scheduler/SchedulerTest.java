@@ -23,7 +23,7 @@ public class SchedulerTest {
 	public void setUp() {
 		clock = new SettableClock();
 		InMemoryTaskRespository taskRepository = new InMemoryTaskRespository(new SchedulerName("scheduler1"));
-		scheduler = new Scheduler(clock, taskRepository, 1, MoreExecutors.newDirectExecutorService(), new SchedulerName("name"), new Scheduler.Waiter(0), Duration.ofSeconds(1), StatsRegistry.NOOP);
+		scheduler = new Scheduler(clock, taskRepository, 1, MoreExecutors.newDirectExecutorService(), new SchedulerName("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP);
 		handler = new TestTasks.CountingHandler();
 	}
 
@@ -59,7 +59,7 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_stop_execution_when_executor_service_rejects() throws InterruptedException {
-		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName("scheduler1")), 1, MoreExecutors.newDirectExecutorService(), new SchedulerName("name"), new Scheduler.Waiter(0), Duration.ofMinutes(1), StatsRegistry.NOOP);
+		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName("scheduler1")), 1, MoreExecutors.newDirectExecutorService(), new SchedulerName("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP);
 		scheduler.executorsSemaphore.acquire();
 		OneTimeTask oneTimeTask = new OneTimeTask("OneTime", handler);
 

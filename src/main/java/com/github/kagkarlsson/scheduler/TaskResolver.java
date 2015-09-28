@@ -32,14 +32,14 @@ public class TaskResolver {
 
 	public TaskResolver(List<Task> knownTasks, OnCannotResolve onCannotResolve) {
 		this.onCannotResolve = onCannotResolve;
-		this.taskMap = knownTasks.stream().collect(Collectors.toMap((Task t) -> t.getName(), identity()));
+		this.taskMap = knownTasks.stream().collect(Collectors.toMap(Task::getName, identity()));
 	}
 
 	public Task resolve(String taskName) {
 		Task task = taskMap.get(taskName);
 		if (task == null) {
 			if (onCannotResolve == OnCannotResolve.FAIL_ON_UNRESOLVED) {
-				throw new RuntimeException("Unable to resolve task with name " + taskName + ". Will not fetch due executions.");
+				throw new RuntimeException("Unable to resolve task with name " + taskName + ".");
 			} else {
 				LOG.warn("Found execution with unknown task-name '{}'", taskName);
 				return null;

@@ -3,7 +3,6 @@ package com.github.kagkarlsson.scheduler.compatibility;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
-import org.junit.Before;
 import org.junit.Ignore;
 
 import javax.sql.DataSource;

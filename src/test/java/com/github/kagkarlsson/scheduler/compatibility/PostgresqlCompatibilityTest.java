@@ -2,8 +2,6 @@ package com.github.kagkarlsson.scheduler.compatibility;
 
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlRule;
-import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
-import com.opentable.db.postgres.junit.EmbeddedPostgresTestDatabaseRule;
 import org.junit.Rule;
 
 import javax.sql.DataSource;
