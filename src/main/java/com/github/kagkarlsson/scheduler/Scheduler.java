@@ -18,23 +18,22 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.google.common.util.concurrent.MoreExecutors;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
+
+import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 
 public class Scheduler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
-	public static final int SHUTDOWN_WAIT = 30;
-	public static final TimeUnit SHUTDOWN_WAIT_TIMEUNIT = TimeUnit.MINUTES;
+	public static final Duration SHUTDOWN_WAIT = Duration.ofMinutes(30);
 	private final Clock clock;
 	private final TaskRepository taskRepository;
 	private final ExecutorService executorService;
@@ -57,7 +56,7 @@ public class Scheduler {
 	}
 
 	private static ExecutorService defaultExecutorService(int maxThreads, SchedulerName schedulerName) {
-		return Executors.newFixedThreadPool(maxThreads, new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-%d").build());
+		return Executors.newFixedThreadPool(maxThreads, defaultThreadFactoryWithPrefix(schedulerName.getName() + "-"));
 	}
 
 	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
@@ -70,9 +69,9 @@ public class Scheduler {
 		this.heartbeatInterval = heartbeatInterval;
 		this.heartbeatWaiter = new Waiter(heartbeatInterval);
 		this.statsRegistry = statsRegistry;
-		this.dueExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-execute-due").build());
-		this.detectDeadExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-detect-dead").build());
-		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(schedulerName.getName() + "-update-heartbeat").build());
+		this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-execute-due-"));
+		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-detect-dead-"));
+		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-update-heartbeat-"));
 		executorsSemaphore = new Semaphore(maxThreads);
 	}
 
@@ -86,16 +85,23 @@ public class Scheduler {
 
 	public void stop() {
 		shutdownRequested = true;
-		LOG.info("Shutting down Scheduler. Will wait {} {} for running tasks to complete.", SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
-		MoreExecutors.shutdownAndAwaitTermination(dueExecutor, 5, TimeUnit.SECONDS);
-		MoreExecutors.shutdownAndAwaitTermination(detectDeadExecutor, 5, TimeUnit.SECONDS);
+		LOG.info("Shutting down Scheduler.");
+		if (!ExecutorUtils.shutdownNowAndAwaitTermination(dueExecutor, Duration.ofSeconds(5))) {
+			LOG.warn("Failed to shutdown due-executor properly.");
+		}
+		if (!ExecutorUtils.shutdownNowAndAwaitTermination(detectDeadExecutor, Duration.ofSeconds(5))) {
+			LOG.warn("Failed to shutdown detect-dead-executor properly.");
+		}
+		if (!ExecutorUtils.shutdownNowAndAwaitTermination(updateHeartbeatExecutor, Duration.ofSeconds(5))) {
+			LOG.warn("Failed to shutdown update-heartbeat-executor properly.");
+		}
 
-		final boolean result = MoreExecutors.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT, SHUTDOWN_WAIT_TIMEUNIT);
-
-		if (result) {
+		LOG.info("Letting running executions finish. Will wait up to {}.", SHUTDOWN_WAIT);
+		if (ExecutorUtils.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT)) {
 			LOG.info("Scheduler stopped.");
 		} else {
-			LOG.warn("Scheduler stopped, but some tasks did not complete.");
+			LOG.warn("Scheduler stopped, but some tasks did not complete. Was currently running the following executions:\n{}",
+					new ArrayList<>(currentlyProcessing.values()).stream().map(Execution::toString).collect(Collectors.joining("\n")));
 		}
 	}
 
@@ -114,6 +120,10 @@ public class Scheduler {
 		int count = 0;
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 		for (Execution e : dueExecutions) {
+			if (shutdownRequested) {
+				LOG.info("Scheduler has been shutdown. Skipping {} due executions.", dueExecutions.size() - count);
+				return;
+			}
 
 			final Optional<Execution> pickedExecution;
 			try {
@@ -264,7 +274,7 @@ public class Scheduler {
 
 				} catch (InterruptedException interruptedException) {
 					if (shutdownRequested) {
-						LOG.info("Thread '{}' interrupted due to shutdown.", Thread.currentThread().getName());
+						LOG.debug("Thread '{}' interrupted due to shutdown.", Thread.currentThread().getName());
 					} else {
 						LOG.error("Unexpected interruption of thread. Will keep running.", interruptedException);
 						statsRegistry.registerUnexpectedError();

@@ -6,7 +6,7 @@ Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.
 
 * Cluster-friendly, guarantees execution by single scheduler instance.
 * Requires only one database-table for persistence.
-* Minimal dependencies (guava, slf4j)
+* Minimal dependencies (slf4j, micro-jdbc)
 
 
 ## Examples

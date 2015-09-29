@@ -1,4 +1,6 @@
 
+- only update heartbeats if execution older than one heartbeat interval/cycles
+
 next
 
 - support simple form of metadata for each execution, e.g. some form of ids
