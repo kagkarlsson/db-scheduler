@@ -1,9 +1,6 @@
 package com.github.kagkarlsson.scheduler.example;
 
-import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
-import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.SchedulerName;
-import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.*;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,26 +39,24 @@ public class TasksMain {
 	public static class MyHourlyTask extends RecurringTask {
 
 		public MyHourlyTask() {
-			super("task_name", FixedDelay.of(Duration.ofHours(1)), createExecutionHandler());
+			super("task_name", FixedDelay.of(Duration.ofHours(1)));
 		}
 
-		private static ExecutionHandler createExecutionHandler() {
-			return taskInstance -> {
-				System.out.println("Executed!");
-			};
+		@Override
+		public void execute(TaskInstance taskInstance) {
+			System.out.println("Executed!");
 		}
 	}
 
 	public static class MyAdhocTask extends OneTimeTask {
 
 		public MyAdhocTask() {
-			super("adhoc_task_name", createExecutionHandler());
+			super("adhoc_task_name");
 		}
 
-		private static ExecutionHandler createExecutionHandler() {
-			return taskInstance -> {
-				System.out.println("Executed!");
-			};
+		@Override
+		public void execute(TaskInstance taskInstance) {
+			System.out.println("Executed!");
 		}
 	}
 

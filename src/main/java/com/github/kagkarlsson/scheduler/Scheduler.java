@@ -15,9 +15,6 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
-import com.github.kagkarlsson.scheduler.task.Task;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

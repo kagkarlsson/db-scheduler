@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler;
 
 import java.time.LocalDateTime;
 

@@ -3,6 +3,8 @@
 
 next
 
+- customizable table-name
+
 - support simple form of metadata for each execution, e.g. some form of ids
 
 - profile for varying target db (hsql/postgresql) for tests

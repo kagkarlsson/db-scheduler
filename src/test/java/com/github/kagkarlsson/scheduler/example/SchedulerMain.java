@@ -1,12 +1,8 @@
 package com.github.kagkarlsson.scheduler.example;
 
-import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
-import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.SchedulerName;
-import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
-import com.github.kagkarlsson.scheduler.task.FixedDelay;
-import com.github.kagkarlsson.scheduler.task.OneTimeTask;
-import com.github.kagkarlsson.scheduler.task.RecurringTask;
+import com.github.kagkarlsson.scheduler.*;
+import com.github.kagkarlsson.scheduler.example.TasksMain.MyAdhocTask;
+import com.github.kagkarlsson.scheduler.example.TasksMain.MyHourlyTask;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,12 +18,11 @@ public class SchedulerMain {
 
 	private static void example(DataSource dataSource) {
 
-		RecurringTask recurring1 = new RecurringTask("do_something", FixedDelay.of(Duration.ofSeconds(10)), LOGGING_EXECUTION_HANDLER);
-		RecurringTask recurring2 = new RecurringTask("do_something_else", FixedDelay.of(Duration.ofSeconds(8)), LOGGING_EXECUTION_HANDLER);
-		OneTimeTask onetime = new OneTimeTask("do_something_once", LOGGING_EXECUTION_HANDLER);
+		Task myRecurringTask = new MyHourlyTask();
+		Task myAdhocTask = new MyAdhocTask();
 
 		final Scheduler scheduler = Scheduler
-				.create(dataSource, new SchedulerName("myscheduler"), Lists.newArrayList(recurring1, recurring2, onetime))
+				.create(dataSource, new SchedulerName("myscheduler"), Lists.newArrayList(myRecurringTask, myAdhocTask))
 				.build();
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -40,9 +35,8 @@ public class SchedulerMain {
 
 		scheduler.start();
 
-		scheduler.scheduleForExecution(now(), recurring1.instance(SINGLE_INSTANCE));
-		scheduler.scheduleForExecution(now(), recurring2.instance(SINGLE_INSTANCE));
-		scheduler.scheduleForExecution(now().plusSeconds(20), onetime.instance("1045"));
+		scheduler.scheduleForExecution(now(), myRecurringTask.instance(SINGLE_INSTANCE));
+		scheduler.scheduleForExecution(now().plusSeconds(20), myAdhocTask.instance("1045"));
 
 	}
 

@@ -1,6 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.*;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,7 +26,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Before
 	public void setUp() {
-		oneTimeTask = new OneTimeTask("OneTime", TestTasks.DO_NOTHING);
+		oneTimeTask = TestTasks.oneTime("OneTime", TestTasks.DO_NOTHING);
 		List<Task> knownTasks = new ArrayList<>();
 		knownTasks.add(oneTimeTask);
 		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED), new SchedulerName(SCHEDULER_NAME));

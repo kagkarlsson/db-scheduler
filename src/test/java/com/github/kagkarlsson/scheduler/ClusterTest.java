@@ -1,8 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
-import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
-import com.github.kagkarlsson.scheduler.task.OneTimeTask;
 import com.google.common.collect.Lists;
 import org.junit.Rule;
 import org.junit.Test;
@@ -81,13 +78,20 @@ public class ClusterTest {
 
 	private static class ResultRegisteringTask extends OneTimeTask {
 
+		private final ExecutionHandler executionHandler;
 		private final Consumer<String> onComplete;
 		private final List<String> ok = Collections.synchronizedList(new ArrayList<>());
 		private final List<String> failed = Collections.synchronizedList(new ArrayList<>());
 
 		public ResultRegisteringTask(String name, ExecutionHandler executionHandler, Consumer<String> onComplete) {
-			super(name, executionHandler);
+			super(name);
+			this.executionHandler = executionHandler;
 			this.onComplete = onComplete;
+		}
+
+		@Override
+		public void execute(TaskInstance taskInstance) {
+			executionHandler.execute(taskInstance);
 		}
 
 		@Override

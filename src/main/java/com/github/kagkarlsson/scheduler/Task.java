@@ -13,20 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.Execution;
-import com.github.kagkarlsson.scheduler.ExecutionOperations;
-
-public abstract class Task {
+public abstract class Task implements ExecutionHandler {
 	protected final String name;
-	private final ExecutionHandler executionHandler;
 	private final CompletionHandler completionHandler;
 	private final DeadExecutionHandler deadExecutionHandler;
 
-	public Task(String name, ExecutionHandler executionHandler, CompletionHandler completionHandler, DeadExecutionHandler deadExecutionHandler) {
+	public Task(String name, CompletionHandler completionHandler, DeadExecutionHandler deadExecutionHandler) {
 		this.name = name;
-		this.executionHandler = executionHandler;
 		this.completionHandler = completionHandler;
 		this.deadExecutionHandler = deadExecutionHandler;
 	}
@@ -39,15 +34,13 @@ public abstract class Task {
 		return new TaskInstance(this, id);
 	}
 
-	public void execute(TaskInstance taskInstance) {
-		executionHandler.execute(taskInstance);
-	}
+	public abstract void execute(TaskInstance taskInstance);
 
-	public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+	void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
 		completionHandler.complete(executionComplete, executionOperations);
 	}
 
-	public void handleDeadExecution(Execution execution, ExecutionOperations executionOperations) {
+	void handleDeadExecution(Execution execution, ExecutionOperations executionOperations) {
 		deadExecutionHandler.deadExecution(execution, executionOperations);
 	}
 

@@ -1,6 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -33,7 +32,7 @@ public class DeadExecutionsTest {
 	@Before
 	public void setUp() {
 		settableClock = new SettableClock();
-		oneTimeTask = new OneTimeTask("OneTime", TestTasks.DO_NOTHING);
+		oneTimeTask = TestTasks.oneTime("OneTime", TestTasks.DO_NOTHING);
 		nonCompletingExecutionHandler = new TestTasks.CountingHandler();
 		deadExecutionHandler = new RescheduleDead();
 		nonCompleting = new NonCompletingTask("NonCompleting", nonCompletingExecutionHandler, deadExecutionHandler);
@@ -107,11 +106,17 @@ public class DeadExecutionsTest {
 	}
 
 	public static class NonCompletingTask extends Task {
+		private final ExecutionHandler handler;
 
 		public NonCompletingTask(String name, ExecutionHandler handler, DeadExecutionHandler deadExecutionHandler) {
-			super(name, handler, new DoNothingCompletionHandler(), deadExecutionHandler);
+			super(name, new DoNothingCompletionHandler(), deadExecutionHandler);
+			this.handler = handler;
 		}
 
+		@Override
+		public void execute(TaskInstance taskInstance) {
+			handler.execute(taskInstance);
+		}
 	}
 
 	public static class RescheduleDead extends DeadExecutionHandler.RescheduleDeadExecution {

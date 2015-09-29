@@ -1,7 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
@@ -10,6 +8,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestTasks {
 
 	public static final ExecutionHandler DO_NOTHING = (taskInstance -> {});
+
+	public static OneTimeTask oneTime(String name, ExecutionHandler handler) {
+		return new OneTimeTask(name) {
+			@Override
+			public void execute(TaskInstance taskInstance) {
+				handler.execute(taskInstance);
+			}
+		};
+	}
+
+	public static RecurringTask recurring(String name, FixedDelay schedule, ExecutionHandler handler) {
+		return new RecurringTask(name, schedule) {
+			@Override
+			public void execute(TaskInstance taskInstance) {
+				handler.execute(taskInstance);
+			}
+		};
+	}
 
 	public static class CountingHandler implements ExecutionHandler {
 		private final Duration wait;

@@ -13,8 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler;
 
-public interface ExecutionHandler {
-	void execute(TaskInstance taskInstance);
+import java.time.Duration;
+import java.time.LocalDateTime;
+
+public class FixedDelay implements Schedule {
+
+	private final Duration duration;
+
+	private FixedDelay(Duration duration) {
+		this.duration = duration;
+	}
+
+	public static FixedDelay of(Duration duration) {
+		return new FixedDelay(duration);
+	}
+
+	@Override
+	public LocalDateTime getNextExecutionTime(LocalDateTime from) {
+		return from.plus(duration);
+	}
 }

@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler;
 
-public class OneTimeTask extends Task {
+import com.github.kagkarlsson.scheduler.TaskInstance;
 
-	public OneTimeTask(String name, ExecutionHandler handler) {
-		super(name, handler, new CompletionHandler.OnCompleteRemove(), new DeadExecutionHandler.RescheduleDeadExecution());
-	}
-
+public interface ExecutionHandler {
+	void execute(TaskInstance taskInstance);
 }

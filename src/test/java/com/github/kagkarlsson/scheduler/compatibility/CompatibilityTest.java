@@ -1,10 +1,6 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
 import com.github.kagkarlsson.scheduler.*;
-import com.github.kagkarlsson.scheduler.task.FixedDelay;
-import com.github.kagkarlsson.scheduler.task.OneTimeTask;
-import com.github.kagkarlsson.scheduler.task.RecurringTask;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
@@ -41,8 +37,8 @@ public abstract class CompatibilityTest {
 	@Before
 	public void setUp() {
 		delayingHandler = new TestTasks.CountingHandler(Duration.ofMillis(200));
-		oneTime = new OneTimeTask("oneTime", delayingHandler);
-		recurring = new RecurringTask("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandler);
+		oneTime = TestTasks.oneTime("oneTime", delayingHandler);
+		recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandler);
 
 		statsRegistry = new TestTasks.SimpleStatsRegistry();
 		scheduler = Scheduler.create(getDataSource(), new SchedulerName("scheduler1"), Lists.newArrayList(oneTime, recurring))

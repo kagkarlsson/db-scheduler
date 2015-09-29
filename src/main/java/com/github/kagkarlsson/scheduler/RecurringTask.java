@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteReschedule;
-import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDeadExecution;
+import com.github.kagkarlsson.scheduler.CompletionHandler.OnCompleteReschedule;
+import com.github.kagkarlsson.scheduler.DeadExecutionHandler.RescheduleDeadExecution;
+import com.github.kagkarlsson.scheduler.Schedule;
+import com.github.kagkarlsson.scheduler.Task;
 
-public class RecurringTask extends Task {
+public abstract class RecurringTask extends Task {
 
 	private final Schedule schedule;
 
-	public RecurringTask(String name, Schedule schedule, ExecutionHandler executionHandler) {
-		super(name, executionHandler, new OnCompleteReschedule(schedule), new RescheduleDeadExecution());
+	public RecurringTask(String name, Schedule schedule) {
+		super(name, new OnCompleteReschedule(schedule), new RescheduleDeadExecution());
 		this.schedule = schedule;
 	}
 

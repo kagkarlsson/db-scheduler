@@ -15,8 +15,6 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 
