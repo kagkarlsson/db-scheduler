@@ -24,7 +24,10 @@ import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
@@ -37,6 +40,7 @@ public class Scheduler {
 	private final TaskRepository taskRepository;
 	private final ExecutorService executorService;
 	private final Waiter waiter;
+	private final List<RecurringTask> recurringTasks;
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
 	private final StatsRegistry statsRegistry;
@@ -49,8 +53,8 @@ public class Scheduler {
 	final Semaphore executorsSemaphore;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, SchedulerName schedulerName,
-			  Waiter waiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry) {
-		this(clock, taskRepository, maxThreads, defaultExecutorService(maxThreads, schedulerName), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry);
+			  Waiter waiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry, List<RecurringTask> recurringTasks) {
+		this(clock, taskRepository, maxThreads, defaultExecutorService(maxThreads, schedulerName), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry, recurringTasks);
 	}
 
 	private static ExecutorService defaultExecutorService(int maxThreads, SchedulerName schedulerName) {
@@ -58,11 +62,12 @@ public class Scheduler {
 	}
 
 	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
-			  Waiter waiter, Duration heartbeatInterval, StatsRegistry statsRegistry) {
+			  Waiter waiter, Duration heartbeatInterval, StatsRegistry statsRegistry, List<RecurringTask> recurringTasks) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.executorService = executorService;
 		this.waiter = waiter;
+		this.recurringTasks = recurringTasks;
 		this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2));
 		this.heartbeatInterval = heartbeatInterval;
 		this.heartbeatWaiter = new Waiter(heartbeatInterval);
@@ -79,6 +84,10 @@ public class Scheduler {
 		dueExecutor.submit(new RunUntilShutdown(this::executeDue, waiter));
 		detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter));
 		updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter));
+
+		recurringTasks.stream().forEach(task -> {
+			scheduleForExecution(task.getInitialExecutionTime(), task.instance(RecurringTask.INSTANCE));
+		});
 	}
 
 	public void stop() {
@@ -286,6 +295,10 @@ public class Scheduler {
 		}
 	}
 
+	public static Builder create(DataSource dataSource) {
+		return create(dataSource, new ArrayList<>());
+	}
+
 	public static Builder create(DataSource dataSource, List<Task> knownTasks) {
 		return new Builder(dataSource, knownTasks);
 	}
@@ -299,10 +312,16 @@ public class Scheduler {
 		private Waiter waiter = new Waiter(Duration.ofSeconds(1));
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
+		private List<RecurringTask> recurringTasks = new ArrayList<>();
 
 		public Builder(DataSource dataSource, List<Task> knownTasks) {
 			this.dataSource = dataSource;
 			this.knownTasks = knownTasks;
+		}
+
+		public Builder recurringTasks(List<RecurringTask> recurringTasks) {
+			this.recurringTasks = recurringTasks;
+			return this;
 		}
 
 		public Builder pollingInterval(Duration pollingInterval) {
@@ -331,10 +350,12 @@ public class Scheduler {
 		}
 
 		public Scheduler build() {
-			final TaskResolver taskResolver = new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
+			List<Task> allKnownTasks = new ArrayList<Task>(knownTasks);
+			allKnownTasks.addAll(recurringTasks);
+			final TaskResolver taskResolver = new TaskResolver(allKnownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, schedulerName);
 
-			return new Scheduler(new SystemClock(), taskRepository, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry);
+			return new Scheduler(new SystemClock(), taskRepository, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, recurringTasks);
 		}
 	}
 

@@ -51,7 +51,8 @@ public class DeadExecutionsTest {
 				new SchedulerName.Fixed("test-scheduler"),
 				new Waiter(Duration.ZERO),
 				Duration.ofMinutes(1),
-				StatsRegistry.NOOP);
+				StatsRegistry.NOOP,
+				new ArrayList<>());
 
 	}
 

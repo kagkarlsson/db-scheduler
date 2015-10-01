@@ -18,8 +18,11 @@ package com.github.kagkarlsson.scheduler.task;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteReschedule;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDeadExecution;
 
+import java.time.LocalDateTime;
+
 public abstract class RecurringTask extends Task {
 
+	public static final String INSTANCE = "recurring";
 	private final Schedule schedule;
 
 	public RecurringTask(String name, Schedule schedule) {
@@ -29,6 +32,10 @@ public abstract class RecurringTask extends Task {
 
 	public Schedule getSchedule() {
 		return schedule;
+	}
+
+	public LocalDateTime getInitialExecutionTime() {
+		return LocalDateTime.now();
 	}
 
 }

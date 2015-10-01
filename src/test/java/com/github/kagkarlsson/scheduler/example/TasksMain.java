@@ -10,6 +10,8 @@ import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
+import static com.google.common.collect.Lists.newArrayList;
+
 public class TasksMain {
 	private static final Logger LOG = LoggerFactory.getLogger(TasksMain.class);
 
@@ -30,11 +32,12 @@ public class TasksMain {
 		final MyHourlyTask hourlyTask = new MyHourlyTask();
 
 		final Scheduler scheduler = Scheduler
-				.create(dataSource, Lists.newArrayList(hourlyTask))
+				.create(dataSource)
+				.recurringTasks(newArrayList( hourlyTask ))
 				.build();
 
-		// Schedule the task for execution now()
-		scheduler.scheduleForExecution(LocalDateTime.now(), hourlyTask.instance("INSTANCE_1"));
+		// Recurring task is automatically scheduled
+		scheduler.start();
 	}
 
 	public static class MyHourlyTask extends RecurringTask {

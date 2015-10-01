@@ -1,10 +1,6 @@
 
 - only update heartbeats if execution older than one heartbeat interval/cycles
 
-- execution-handler should have access to check scheduler-state (isShuttingDown specifically)
-
-- recurring tasks are automatically scheduled
-
 next
 
 - customizable table-name

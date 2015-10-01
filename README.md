@@ -20,11 +20,12 @@ private static void recurringTask(DataSource dataSource) {
   final MyHourlyTask hourlyTask = new MyHourlyTask();
 
   final Scheduler scheduler = Scheduler
-      .create(dataSource, new SchedulerName("myscheduler"), Lists.newArrayList(hourlyTask))
+      .create(dataSource)
+      .recurringTasks(newArrayList( hourlyTask ))
       .build();
 
-  // Schedule the task for execution now()
-  scheduler.scheduleForExecution(LocalDateTime.now(), hourlyTask.instance("INSTANCE_1"));
+  // Recurring task is automatically scheduled
+  scheduler.start();
 }
 ```
 
@@ -38,7 +39,7 @@ public static class MyHourlyTask extends RecurringTask {
   }
 
   @Override
-  public void execute(TaskInstance taskInstance) {
+  public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
     System.out.println("Executed!");
   }
 }
@@ -62,12 +63,13 @@ Custom task class for an ad-hoc task.
 
 ```java
 public static class MyAdhocTask extends OneTimeTask {
+
   public MyAdhocTask() {
     super("adhoc_task_name");
   }
 
   @Override
-  public void execute(TaskInstance taskInstance) {
+  public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
     System.out.println("Executed!");
   }
 }
@@ -79,23 +81,24 @@ public static class MyAdhocTask extends OneTimeTask {
 ### Instantiating and starting the Scheduler
 
 ```java
-Task myRecurringTask = new MyHourlyTask();
+RecurringTask myRecurringTask = new MyHourlyTask();
 Task myAdhocTask = new MyAdhocTask();
 
 final Scheduler scheduler = Scheduler
-		.create(dataSource, new SchedulerName("myscheduler"), Lists.newArrayList(myRecurringTask, myAdhocTask))
-		.build();
+    .create(dataSource, newArrayList( myAdhocTask ))
+    .recurringTasks(newArrayList( myRecurringTask ))
+    .build();
 
 Runtime.getRuntime().addShutdownHook(new Thread() {
-	@Override
-	public void run() {
-		LOG.info("Received shutdown signal.");
-		scheduler.stop();
-	}
+  @Override
+  public void run() {
+    LOG.info("Received shutdown signal.");
+    scheduler.stop();
+  }
 });
 
 scheduler.start();
 
-scheduler.scheduleForExecution(now(), myRecurringTask.instance(SINGLE_INSTANCE));
+// schedule one-time task for execution. recurring task is automatically scheduled
 scheduler.scheduleForExecution(now().plusSeconds(20), myAdhocTask.instance("1045"));
 ```

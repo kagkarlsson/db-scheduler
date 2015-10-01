@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -23,7 +24,7 @@ public class SchedulerTest {
 	public void setUp() {
 		clock = new SettableClock();
 		InMemoryTaskRespository taskRepository = new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1"));
-		scheduler = new Scheduler(clock, taskRepository, 1, MoreExecutors.newDirectExecutorService(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP);
+		scheduler = new Scheduler(clock, taskRepository, 1, MoreExecutors.newDirectExecutorService(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP, new ArrayList<>());
 		handler = new TestTasks.CountingHandler();
 	}
 
@@ -59,7 +60,7 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_stop_execution_when_executor_service_rejects() throws InterruptedException {
-		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), 1, MoreExecutors.newDirectExecutorService(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP);
+		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), 1, MoreExecutors.newDirectExecutorService(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
 		scheduler.executorsSemaphore.acquire();
 		OneTimeTask oneTimeTask = TestTasks.oneTime("OneTime", handler);
 
