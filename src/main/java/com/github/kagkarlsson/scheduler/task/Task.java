@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.task;
 
 public abstract class Task implements ExecutionHandler {
 	protected final String name;
@@ -36,12 +36,12 @@ public abstract class Task implements ExecutionHandler {
 
 	public abstract void execute(TaskInstance taskInstance);
 
-	void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
-		completionHandler.complete(executionComplete, executionOperations);
+	public CompletionHandler getCompletionHandler() {
+		return completionHandler;
 	}
 
-	void handleDeadExecution(Execution execution, ExecutionOperations executionOperations) {
-		deadExecutionHandler.deadExecution(execution, executionOperations);
+	public DeadExecutionHandler getDeadExecutionHandler() {
+		return deadExecutionHandler;
 	}
 
 	@Override

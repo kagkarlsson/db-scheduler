@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.task.*;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -20,7 +21,7 @@ public class InMemoryRepositoryTest {
 
 	@Before
 	public void setUp() {
-		taskRespository = new InMemoryTaskRespository(new SchedulerName("scheduler1"));
+		taskRespository = new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1"));
 		oneTimeTask = TestTasks.oneTime("OneTime", instance -> {});
 		recurringTask = TestTasks.recurring("RecurringTask", FixedDelay.of(Duration.ofSeconds(1)), TestTasks.DO_NOTHING);
 	}

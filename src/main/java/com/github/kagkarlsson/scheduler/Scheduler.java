@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,7 +182,7 @@ public class Scheduler {
 			oldExecutions.stream().forEach(execution -> {
 				LOG.info("Found dead execution. Delegating handling to task. Execution: " + execution);
 				try {
-					execution.taskInstance.getTask().handleDeadExecution(execution, new ExecutionOperations(taskRepository, execution));
+					execution.taskInstance.getTask().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(taskRepository, execution));
 				} catch (Throwable e) {
 					LOG.error("Failed while handling dead execution {}. Will be tried again later.", execution, e);
 					statsRegistry.registerUnexpectedError();
@@ -244,7 +245,7 @@ public class Scheduler {
 		private void complete(Execution execution, ExecutionComplete.Result result) {
 			try {
 				final Task task = execution.taskInstance.getTask();
-				task.complete(new ExecutionComplete(execution, clock.now(), result), new ExecutionOperations(taskRepository, execution));
+				task.getCompletionHandler().complete(new ExecutionComplete(execution, clock.now(), result), new ExecutionOperations(taskRepository, execution));
 			} catch (Throwable e) {
 				statsRegistry.registerUnexpectedError();
 				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +
@@ -284,23 +285,22 @@ public class Scheduler {
 		}
 	}
 
-	public static Builder create(DataSource dataSource, SchedulerName schedulerName, List<Task> knownTasks) {
-		return new Builder(dataSource, schedulerName, knownTasks);
+	public static Builder create(DataSource dataSource, List<Task> knownTasks) {
+		return new Builder(dataSource, knownTasks);
 	}
 
 	public static class Builder {
 
 		private final DataSource dataSource;
-		private final SchedulerName schedulerName;
+		private SchedulerName schedulerName = new SchedulerName.Hostname();
 		private int executorThreads = 10;
 		private List<Task> knownTasks = new ArrayList<>();
 		private Waiter waiter = new Waiter(Duration.ofSeconds(1));
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 
-		public Builder(DataSource dataSource, SchedulerName schedulerName, List<Task> knownTasks) {
+		public Builder(DataSource dataSource, List<Task> knownTasks) {
 			this.dataSource = dataSource;
-			this.schedulerName = schedulerName;
 			this.knownTasks = knownTasks;
 		}
 
@@ -321,6 +321,11 @@ public class Scheduler {
 
 		public Builder statsRegistry(StatsRegistry statsRegistry) {
 			this.statsRegistry = statsRegistry;
+			return this;
+		}
+
+		public Builder schedulerName(SchedulerName schedulerName) {
+			this.schedulerName = schedulerName;
 			return this;
 		}
 

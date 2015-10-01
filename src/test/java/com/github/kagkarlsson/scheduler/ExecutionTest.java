@@ -1,5 +1,9 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.FixedDelay;
+import com.github.kagkarlsson.scheduler.task.OneTimeTask;
+import com.github.kagkarlsson.scheduler.task.RecurringTask;
 import org.junit.Test;
 
 import java.time.Duration;

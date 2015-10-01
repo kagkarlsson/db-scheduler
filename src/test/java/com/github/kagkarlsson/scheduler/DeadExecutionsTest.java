@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.task.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -41,13 +42,13 @@ public class DeadExecutionsTest {
 		taskResolver.addTask(oneTimeTask);
 		taskResolver.addTask(nonCompleting);
 
-		jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), taskResolver, new SchedulerName("scheduler1"));
+		jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
 
 		scheduler = new Scheduler(settableClock,
 				jdbcTaskRepository,
 				1,
 				MoreExecutors.newDirectExecutorService(),
-				new SchedulerName("test-scheduler"),
+				new SchedulerName.Fixed("test-scheduler"),
 				new Waiter(Duration.ZERO),
 				Duration.ofMinutes(1),
 				StatsRegistry.NOOP);

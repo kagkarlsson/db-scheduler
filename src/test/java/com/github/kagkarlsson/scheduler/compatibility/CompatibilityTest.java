@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
 import com.github.kagkarlsson.scheduler.*;
+import com.github.kagkarlsson.scheduler.task.*;
 import com.google.common.collect.Lists;
 import org.junit.After;
 import org.junit.Before;
@@ -41,7 +42,7 @@ public abstract class CompatibilityTest {
 		recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandler);
 
 		statsRegistry = new TestTasks.SimpleStatsRegistry();
-		scheduler = Scheduler.create(getDataSource(), new SchedulerName("scheduler1"), Lists.newArrayList(oneTime, recurring))
+		scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
 				.pollingInterval(Duration.ofMillis(10))
 				.heartbeatInterval(Duration.ofMillis(100))
 				.statsRegistry(statsRegistry)
@@ -76,7 +77,7 @@ public abstract class CompatibilityTest {
 		TaskResolver taskResolver = new TaskResolver(new ArrayList<>(), TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED);
 		taskResolver.addTask(oneTime);
 
-		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), taskResolver, new SchedulerName("scheduler1"));
+		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
 
 		final LocalDateTime now = LocalDateTime.now();
 

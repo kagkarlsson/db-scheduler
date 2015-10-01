@@ -13,26 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.task;
 
-import java.time.LocalDateTime;
-
-public class ExecutionOperations {
-
-	private final TaskRepository taskRepository;
-	private final Execution execution;
-
-	public ExecutionOperations(TaskRepository taskRepository, Execution execution) {
-		this.taskRepository = taskRepository;
-		this.execution = execution;
-	}
-
-	public void stop() {
-		taskRepository.remove(execution);
-	}
-
-	public void reschedule(LocalDateTime nextExecutionTime) {
-		taskRepository.reschedule(execution, nextExecutionTime);
-	}
-
+public interface ExecutionHandler {
+	void execute(TaskInstance taskInstance);
 }

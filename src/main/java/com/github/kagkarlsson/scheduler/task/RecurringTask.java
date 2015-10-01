@@ -13,25 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.task;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
+import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteReschedule;
+import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDeadExecution;
 
-public class FixedDelay implements Schedule {
+public abstract class RecurringTask extends Task {
 
-	private final Duration duration;
+	private final Schedule schedule;
 
-	private FixedDelay(Duration duration) {
-		this.duration = duration;
+	public RecurringTask(String name, Schedule schedule) {
+		super(name, new OnCompleteReschedule(schedule), new RescheduleDeadExecution());
+		this.schedule = schedule;
 	}
 
-	public static FixedDelay of(Duration duration) {
-		return new FixedDelay(duration);
+	public Schedule getSchedule() {
+		return schedule;
 	}
 
-	@Override
-	public LocalDateTime getNextExecutionTime(LocalDateTime from) {
-		return from.plus(duration);
-	}
 }

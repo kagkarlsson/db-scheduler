@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;

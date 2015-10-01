@@ -3,12 +3,13 @@ package com.github.kagkarlsson.scheduler.example;
 import com.github.kagkarlsson.scheduler.*;
 import com.github.kagkarlsson.scheduler.example.TasksMain.MyAdhocTask;
 import com.github.kagkarlsson.scheduler.example.TasksMain.MyHourlyTask;
+import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
+import com.github.kagkarlsson.scheduler.task.Task;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.time.Duration;
 
 import static java.time.LocalDateTime.now;
 
@@ -22,7 +23,7 @@ public class SchedulerMain {
 		Task myAdhocTask = new MyAdhocTask();
 
 		final Scheduler scheduler = Scheduler
-				.create(dataSource, new SchedulerName("myscheduler"), Lists.newArrayList(myRecurringTask, myAdhocTask))
+				.create(dataSource, Lists.newArrayList(myRecurringTask, myAdhocTask))
 				.build();
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {

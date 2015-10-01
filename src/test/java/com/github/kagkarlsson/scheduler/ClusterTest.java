@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.task.*;
 import com.google.common.collect.Lists;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,7 +34,8 @@ public class ClusterTest {
 	public void test_concurrency() throws InterruptedException {
 		final List<String> ids = IntStream.range(1, 1001).mapToObj(String::valueOf).collect(toList());
 		final CountDownLatch completeAllIds = new CountDownLatch(ids.size());
-		ResultRegisteringTask task = new ResultRegisteringTask("OneTime", (instance) -> {sleep(1);}, (id) -> completeAllIds.countDown());
+		final RecordResultAndStopExecutionOnComplete completed = new RecordResultAndStopExecutionOnComplete((id) -> completeAllIds.countDown());
+		final Task task = ComposableTask.customTask("Custom", completed, () -> sleep(1));
 
 		final TestTasks.SimpleStatsRegistry stats = new TestTasks.SimpleStatsRegistry();
 		final Scheduler scheduler1 = createScheduler("scheduler1", task, stats);
@@ -49,9 +51,9 @@ public class ClusterTest {
 
 			completeAllIds.await();
 
-			assertThat(task.failed.size(), is(0));
-			assertThat(task.ok.size(), is(ids.size()));
-			assertThat("Should contain no duplicates", new HashSet<>(task.ok).size(), is(ids.size()));
+			assertThat(completed.failed.size(), is(0));
+			assertThat(completed.ok.size(), is(ids.size()));
+			assertThat("Should contain no duplicates", new HashSet<>(completed.ok).size(), is(ids.size()));
 			assertThat(stats.unexpectedErrors.get(), is(0));
 
 		} finally {
@@ -60,8 +62,9 @@ public class ClusterTest {
 		}
 	}
 
-	private Scheduler createScheduler(String name, ResultRegisteringTask task, TestTasks.SimpleStatsRegistry stats) {
-		return Scheduler.create(DB.getDataSource(), new SchedulerName(name), Lists.newArrayList(task))
+	private Scheduler createScheduler(String name, Task task, TestTasks.SimpleStatsRegistry stats) {
+		return Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
+				.schedulerName(new SchedulerName.Fixed(name))
 				.pollingInterval(Duration.ofMillis(0))
 				.heartbeatInterval(Duration.ofMillis(100))
 				.statsRegistry(stats)
@@ -76,17 +79,13 @@ public class ClusterTest {
 		}
 	}
 
-	private static class ResultRegisteringTask extends OneTimeTask {
+	private static class ResultRegisteringTask extends Task {
 
 		private final ExecutionHandler executionHandler;
-		private final Consumer<String> onComplete;
-		private final List<String> ok = Collections.synchronizedList(new ArrayList<>());
-		private final List<String> failed = Collections.synchronizedList(new ArrayList<>());
 
-		public ResultRegisteringTask(String name, ExecutionHandler executionHandler, Consumer<String> onComplete) {
-			super(name);
+		public ResultRegisteringTask(String name, ExecutionHandler executionHandler, CompletionHandler completionHandler) {
+			super(name, completionHandler, new DeadExecutionHandler.CancelDeadExecution());
 			this.executionHandler = executionHandler;
-			this.onComplete = onComplete;
 		}
 
 		@Override
@@ -94,6 +93,17 @@ public class ClusterTest {
 			executionHandler.execute(taskInstance);
 		}
 
+	}
+
+	private static class RecordResultAndStopExecutionOnComplete implements CompletionHandler {
+
+		private final List<String> ok = Collections.synchronizedList(new ArrayList<>());
+		private final List<String> failed = Collections.synchronizedList(new ArrayList<>());
+		private final Consumer<String> onComplete;
+
+		RecordResultAndStopExecutionOnComplete(Consumer<String> onComplete) {
+			this.onComplete = onComplete;
+		}
 		@Override
 		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
 			final String instanceId = executionComplete.getExecution().taskInstance.getId();
@@ -102,7 +112,7 @@ public class ClusterTest {
 			} else {
 				failed.add(instanceId);
 			}
-			super.complete(executionComplete, executionOperations);
+			executionOperations.stop();
 			onComplete.accept(instanceId);
 		}
 	}

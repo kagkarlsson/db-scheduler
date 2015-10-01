@@ -1,6 +1,10 @@
 package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.*;
+import com.github.kagkarlsson.scheduler.task.FixedDelay;
+import com.github.kagkarlsson.scheduler.task.OneTimeTask;
+import com.github.kagkarlsson.scheduler.task.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +33,7 @@ public class TasksMain {
 		final MyHourlyTask hourlyTask = new MyHourlyTask();
 
 		final Scheduler scheduler = Scheduler
-				.create(dataSource, new SchedulerName("myscheduler"), Lists.newArrayList(hourlyTask))
+				.create(dataSource, Lists.newArrayList(hourlyTask))
 				.build();
 
 		// Schedule the task for execution now()
