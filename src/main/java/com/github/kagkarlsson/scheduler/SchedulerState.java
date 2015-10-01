@@ -13,10 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.SchedulerState;
+public interface SchedulerState {
 
-public interface ExecutionHandler {
-	void execute(TaskInstance taskInstance, ExecutionContext executionContext);
+	boolean isShuttingDown();
+
+	class SettableSchedulerState implements SchedulerState {
+
+		private boolean isShuttingDown;
+
+		@Override
+		public boolean isShuttingDown() {
+			return isShuttingDown;
+		}
+
+		public void setIsShuttingDown() {
+			this.isShuttingDown = true;
+		}
+	}
+
 }

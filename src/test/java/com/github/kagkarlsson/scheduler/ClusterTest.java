@@ -89,8 +89,8 @@ public class ClusterTest {
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance) {
-			executionHandler.execute(taskInstance);
+		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+			executionHandler.execute(taskInstance, executionContext);
 		}
 
 	}

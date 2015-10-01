@@ -8,13 +8,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestTasks {
 
-	public static final ExecutionHandler DO_NOTHING = (taskInstance -> {});
+	public static final ExecutionHandler DO_NOTHING = (taskInstance, executionContext) -> {};
 
 	public static OneTimeTask oneTime(String name, ExecutionHandler handler) {
 		return new OneTimeTask(name) {
 			@Override
-			public void execute(TaskInstance taskInstance) {
-				handler.execute(taskInstance);
+			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+				handler.execute(taskInstance, executionContext);
 			}
 		};
 	}
@@ -22,8 +22,8 @@ public class TestTasks {
 	public static RecurringTask recurring(String name, FixedDelay schedule, ExecutionHandler handler) {
 		return new RecurringTask(name, schedule) {
 			@Override
-			public void execute(TaskInstance taskInstance) {
-				handler.execute(taskInstance);
+			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+				handler.execute(taskInstance, executionContext);
 			}
 		};
 	}
@@ -40,7 +40,7 @@ public class TestTasks {
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance) {
+		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 			this.timesExecuted++;
 			try {
 				Thread.sleep(wait.toMillis());

@@ -22,7 +22,7 @@ public class InMemoryRepositoryTest {
 	@Before
 	public void setUp() {
 		taskRespository = new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1"));
-		oneTimeTask = TestTasks.oneTime("OneTime", instance -> {});
+		oneTimeTask = TestTasks.oneTime("OneTime", TestTasks.DO_NOTHING);
 		recurringTask = TestTasks.recurring("RecurringTask", FixedDelay.of(Duration.ofSeconds(1)), TestTasks.DO_NOTHING);
 	}
 

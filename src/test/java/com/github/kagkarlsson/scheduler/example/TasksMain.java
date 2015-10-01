@@ -1,10 +1,7 @@
 package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.*;
-import com.github.kagkarlsson.scheduler.task.FixedDelay;
-import com.github.kagkarlsson.scheduler.task.OneTimeTask;
-import com.github.kagkarlsson.scheduler.task.RecurringTask;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.*;
 import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +44,7 @@ public class TasksMain {
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance) {
+		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 			System.out.println("Executed!");
 		}
 	}
@@ -59,7 +56,7 @@ public class TasksMain {
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance) {
+		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 			System.out.println("Executed!");
 		}
 	}

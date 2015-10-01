@@ -15,12 +15,14 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.SchedulerState;
+
 public class ComposableTask {
 
 	public static RecurringTask recurringTask(String name, Schedule schedule, Runnable executionHandler) {
 		return new RecurringTask(name, schedule) {
 			@Override
-			public void execute(TaskInstance taskInstance) {
+			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 				executionHandler.run();
 			}
 		};
@@ -29,7 +31,7 @@ public class ComposableTask {
 	public static OneTimeTask onetimeTask(String name, Runnable executionHandler) {
 		return new OneTimeTask(name) {
 			@Override
-			public void execute(TaskInstance taskInstance) {
+			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 				executionHandler.run();
 			}
 		};
@@ -38,7 +40,7 @@ public class ComposableTask {
 	public static Task customTask(String name, CompletionHandler completionHandler, Runnable executionHandler) {
 		return new Task(name, completionHandler, new DeadExecutionHandler.RescheduleDeadExecution()) {
 			@Override
-			public void execute(TaskInstance taskInstance) {
+			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 				executionHandler.run();
 			}
 		};

@@ -38,10 +38,9 @@ public class SchedulerMain {
 
 		scheduler.scheduleForExecution(now(), myRecurringTask.instance(SINGLE_INSTANCE));
 		scheduler.scheduleForExecution(now().plusSeconds(20), myAdhocTask.instance("1045"));
-
 	}
 
-	private static final ExecutionHandler LOGGING_EXECUTION_HANDLER = taskInstance -> {
+	private static final ExecutionHandler LOGGING_EXECUTION_HANDLER = (taskInstance, executionContext) -> {
 		LOG.info("Executing task " + taskInstance.getTask().getName());
 	};
 

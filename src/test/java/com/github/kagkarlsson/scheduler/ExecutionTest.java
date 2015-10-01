@@ -17,7 +17,7 @@ public class ExecutionTest {
 	@Test
 	public void test_equals() {
 		LocalDateTime now = LocalDateTime.now();
-		OneTimeTask task = TestTasks.oneTime("OneTime", i -> {});
+		OneTimeTask task = TestTasks.oneTime("OneTime", (instance, executionContext) -> {});
 		RecurringTask task2 = TestTasks.recurring("Recurring", FixedDelay.of(Duration.ofHours(1)), TestTasks.DO_NOTHING);
 
 		assertEquals(new Execution(now, task.instance("id1")), new Execution(now, task.instance("id1")));

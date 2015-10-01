@@ -34,7 +34,7 @@ public abstract class Task implements ExecutionHandler {
 		return new TaskInstance(this, id);
 	}
 
-	public abstract void execute(TaskInstance taskInstance);
+	public abstract void execute(TaskInstance taskInstance, ExecutionContext executionContext);
 
 	public CompletionHandler getCompletionHandler() {
 		return completionHandler;

@@ -115,8 +115,8 @@ public class DeadExecutionsTest {
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance) {
-			handler.execute(taskInstance);
+		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+			handler.execute(taskInstance, executionContext);
 		}
 	}
 

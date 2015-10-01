@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
 import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,9 +45,8 @@ public class Scheduler {
 	private final ExecutorService updateHeartbeatExecutor;
 	private final Map<Execution, Execution> currentlyProcessing = Collections.synchronizedMap(new HashMap<>());
 	private final Waiter heartbeatWaiter;
+	private final SettableSchedulerState schedulerState = new SettableSchedulerState();
 	final Semaphore executorsSemaphore;
-
-	private boolean shutdownRequested = false;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, SchedulerName schedulerName,
 			  Waiter waiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry) {
@@ -82,7 +82,8 @@ public class Scheduler {
 	}
 
 	public void stop() {
-		shutdownRequested = true;
+		schedulerState.setIsShuttingDown();
+
 		LOG.info("Shutting down Scheduler.");
 		if (!ExecutorUtils.shutdownNowAndAwaitTermination(dueExecutor, Duration.ofSeconds(5))) {
 			LOG.warn("Failed to shutdown due-executor properly.");
@@ -118,7 +119,7 @@ public class Scheduler {
 		int count = 0;
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 		for (Execution e : dueExecutions) {
-			if (shutdownRequested) {
+			if (schedulerState.isShuttingDown()) {
 				LOG.info("Scheduler has been shutdown. Skipping {} due executions.", dueExecutions.size() - count);
 				return;
 			}
@@ -228,7 +229,7 @@ public class Scheduler {
 			try {
 				final Task task = execution.taskInstance.getTask();
 				LOG.debug("Executing " + execution);
-				task.execute(execution.taskInstance);
+				task.execute(execution.taskInstance, new ExecutionContext(schedulerState));
 				LOG.debug("Execution done");
 				complete(execution, ExecutionComplete.Result.OK);
 
@@ -265,13 +266,13 @@ public class Scheduler {
 
 		@Override
 		public void run() {
-			while (!shutdownRequested) {
+			while (!schedulerState.isShuttingDown()) {
 				try {
 					toRun.run();
 					waitBetweenRuns.doWait();
 
 				} catch (InterruptedException interruptedException) {
-					if (shutdownRequested) {
+					if (schedulerState.isShuttingDown()) {
 						LOG.debug("Thread '{}' interrupted due to shutdown.", Thread.currentThread().getName());
 					} else {
 						LOG.error("Unexpected interruption of thread. Will keep running.", interruptedException);

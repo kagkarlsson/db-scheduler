@@ -17,6 +17,15 @@ package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.SchedulerState;
 
-public interface ExecutionHandler {
-	void execute(TaskInstance taskInstance, ExecutionContext executionContext);
+public class ExecutionContext {
+
+	private SchedulerState schedulerState;
+
+	public ExecutionContext(SchedulerState schedulerState) {
+		this.schedulerState = schedulerState;
+	}
+
+	public SchedulerState getSchedulerState() {
+		return schedulerState;
+	}
 }
