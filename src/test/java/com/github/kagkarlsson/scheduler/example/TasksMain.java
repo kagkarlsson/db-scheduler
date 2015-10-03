@@ -32,40 +32,50 @@ public class TasksMain {
 		final Scheduler scheduler = Scheduler
 				.create(dataSource, hourlyTask)
 				.startTasks(hourlyTask)
+				.threads(5)
 				.build();
 
-		// Recurring task is automatically scheduled
+		// hourlyTask is automatically scheduled on startup if not already started (i.e. in the db)
 		scheduler.start();
 	}
 
 	public static class MyHourlyTask extends RecurringTask {
 
 		public MyHourlyTask() {
-			super("task_name", FixedDelay.of(Duration.ofHours(1)));
+			super("my-hourly-task", FixedDelay.of(Duration.ofHours(1)));
 		}
 
 		@Override
 		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 			System.out.println("Executed!");
 		}
+	}
+
+	private static void adhocExecution(DataSource dataSource) {
+
+		final MyAdhocTask myAdhocTask = new MyAdhocTask();
+
+		final Scheduler scheduler = Scheduler
+				.create(dataSource, myAdhocTask)
+				.threads(5)
+				.build();
+
+		scheduler.start();
+
+		// Schedule the task for execution a certain time in the future
+		scheduler.scheduleForExecution(LocalDateTime.now().plusMinutes(5), myAdhocTask.instance("1045"));
 	}
 
 	public static class MyAdhocTask extends OneTimeTask {
 
 		public MyAdhocTask() {
-			super("adhoc_task_name");
+			super("my-adhoc-task");
 		}
 
 		@Override
 		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 			System.out.println("Executed!");
 		}
-	}
-
-	private static void adhocExecution(Scheduler scheduler, MyAdhocTask myAdhocTask) {
-
-		// Schedule the task for execution a certain time in the future
-		scheduler.scheduleForExecution(LocalDateTime.now().plusMinutes(5), myAdhocTask.instance("1045"));
 	}
 
 }

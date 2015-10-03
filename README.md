@@ -1,32 +1,59 @@
 # db-scheduler
 
-Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.
+Persistent scheduler for future execution of tasks, recurring or ad-hoc.
+
+Inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
 
 ## Features
 
-* Cluster-friendly, guarantees execution by single scheduler instance.
-* Requires only one database-table for persistence.
-* Minimal dependencies (slf4j, micro-jdbc)
+* **Simple**.
+* **Cluster-friendly**. Guarantees execution by single scheduler instance.
+* **Persistent** tasks. Requires single database-table for persistence.
+* **Minimal dependencies** (slf4j)
 
+## Getting started
 
-## Examples
-### Recurring tasks
+1. Add maven dependency
+```
+<dependency>
+    <groupId>com.github.kagkarlsson</groupId>
+  	<artifactId>db-scheduler</artifactId>
+  	<version>1.2</version>
+</dependency>
+```
 
-Schedule the initial execution on start-up. If an execution is already scheduled for the task, the existing execution is kept. A RecurringTask will be re-scheduled according to the defined schedule upon completion.
+2. Create the `scheduled_tasks` table in your schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql) and [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql).
+
+3. Instantiate and start the scheduler.
 
 ```java
-private static void recurringTask(DataSource dataSource) {
+final MyHourlyTask hourlyTask = new MyHourlyTask();
 
-    final MyHourlyTask hourlyTask = new MyHourlyTask();
+final Scheduler scheduler = Scheduler
+    .create(dataSource, hourlyTask)
+    .startTasks(hourlyTask)
+    .threads(5)
+    .build();
 
-    final Scheduler scheduler = Scheduler
-            .create(dataSource, hourlyTask)
-            .startTasks(hourlyTask)
-            .build();
+scheduler.start();
+```
 
-    // Recurring task is automatically scheduled
-    scheduler.start();
-}
+## More examples
+### Recurring tasks
+
+Start the recurring task on start-up. Upon completion, `hourlyTask` will be re-scheduled according to the defined schedule.
+
+```java
+final MyHourlyTask hourlyTask = new MyHourlyTask();
+
+final Scheduler scheduler = Scheduler
+    .create(dataSource, hourlyTask)
+    .startTasks(hourlyTask)
+    .threads(5)
+    .build();
+
+// hourlyTask is automatically scheduled on startup if not already started (i.e. in the db)
+scheduler.start();
 ```
 
 Custom task class for a recurring task.
@@ -35,7 +62,7 @@ Custom task class for a recurring task.
 public static class MyHourlyTask extends RecurringTask {
 
   public MyHourlyTask() {
-    super("task_name", FixedDelay.of(Duration.ofHours(1)));
+    super("my-hourly-task", FixedDelay.of(Duration.ofHours(1)));
   }
 
   @Override
@@ -49,14 +76,20 @@ public static class MyHourlyTask extends RecurringTask {
 
 ### Ad-hoc tasks
 
-Schedule the task for execution at a certain time in the future. The instance-id may be used to encode metadata (e.g. an id), since the instance-id will be available for the execution-handler. An execution for a OneTimeTask is deleted upon completion.
+Schedule the ad-hoc task for execution at a certain time in the future. The instance-id may be used to encode metadata (e.g. an id), since the instance-id will be available for the execution-handler.
 
 ```java
-private static void adhocExecution(Scheduler scheduler, MyAdhocTask myAdhocTask) {
+final MyAdhocTask myAdhocTask = new MyAdhocTask();
 
-  // Schedule the task for execution a certain time in the future
-  scheduler.scheduleForExecution(LocalDateTime.now().plusMinutes(5), myAdhocTask.instance("1045"));
-}
+final Scheduler scheduler = Scheduler
+    .create(dataSource, myAdhocTask)
+    .threads(5)
+    .build();
+
+scheduler.start();
+
+// Schedule the task for execution a certain time in the future
+scheduler.scheduleForExecution(LocalDateTime.now().plusMinutes(5), myAdhocTask.instance("1045"));
 ```
 
 Custom task class for an ad-hoc task.
@@ -65,7 +98,7 @@ Custom task class for an ad-hoc task.
 public static class MyAdhocTask extends OneTimeTask {
 
   public MyAdhocTask() {
-    super("adhoc_task_name");
+    super("my-adhoc-task");
   }
 
   @Override
@@ -75,10 +108,7 @@ public static class MyAdhocTask extends OneTimeTask {
 }
 ```
 
-
-
-
-### Instantiating and starting the Scheduler
+### Register shutdown-hook for graceful shutdown
 
 ```java
 RecurringTask myRecurringTask = new MyHourlyTask();
@@ -90,15 +120,12 @@ final Scheduler scheduler = Scheduler
     .build();
 
 Runtime.getRuntime().addShutdownHook(new Thread() {
-    @Override
-    public void run() {
-        LOG.info("Received shutdown signal.");
-        scheduler.stop();
-    }
+  @Override
+  public void run() {
+    LOG.info("Received shutdown signal.");
+    scheduler.stop();
+  }
 });
 
 scheduler.start();
-
-// schedule one-time task for execution. recurring task is automatically scheduled
-scheduler.scheduleForExecution(now().plusSeconds(20), myAdhocTask.instance("1045"));
 ```

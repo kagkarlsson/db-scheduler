@@ -1,7 +1,8 @@
 
-- only update heartbeats if execution older than one heartbeat interval/cycles
 
 next
+
+- only update heartbeats if execution older than one heartbeat interval/cycles
 
 - customizable table-name
 

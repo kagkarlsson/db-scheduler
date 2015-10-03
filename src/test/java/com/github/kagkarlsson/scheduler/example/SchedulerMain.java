@@ -37,9 +37,6 @@ public class SchedulerMain {
 		});
 
 		scheduler.start();
-
-		// schedule one-time task for execution. recurring task is automatically scheduled
-		scheduler.scheduleForExecution(now().plusSeconds(20), myAdhocTask.instance("1045"));
 	}
 
 	public static void main(String[] args) throws Throwable {
