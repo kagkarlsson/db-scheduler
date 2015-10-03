@@ -18,7 +18,7 @@ Inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorServ
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
   	<artifactId>db-scheduler</artifactId>
-  	<version>1.2</version>
+  	<version>1.3</version>
 </dependency>
 ```
 
