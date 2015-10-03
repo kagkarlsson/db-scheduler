@@ -17,15 +17,15 @@ Schedule the initial execution on start-up. If an execution is already scheduled
 ```java
 private static void recurringTask(DataSource dataSource) {
 
-  final MyHourlyTask hourlyTask = new MyHourlyTask();
+    final MyHourlyTask hourlyTask = new MyHourlyTask();
 
-  final Scheduler scheduler = Scheduler
-      .create(dataSource)
-      .recurringTasks(newArrayList( hourlyTask ))
-      .build();
+    final Scheduler scheduler = Scheduler
+            .create(dataSource, hourlyTask)
+            .startTasks(hourlyTask)
+            .build();
 
-  // Recurring task is automatically scheduled
-  scheduler.start();
+    // Recurring task is automatically scheduled
+    scheduler.start();
 }
 ```
 
@@ -85,16 +85,16 @@ RecurringTask myRecurringTask = new MyHourlyTask();
 Task myAdhocTask = new MyAdhocTask();
 
 final Scheduler scheduler = Scheduler
-    .create(dataSource, newArrayList( myAdhocTask ))
-    .recurringTasks(newArrayList( myRecurringTask ))
+    .create(dataSource, myAdhocTask, myRecurringTask )
+    .startTasks(myRecurringTask)
     .build();
 
 Runtime.getRuntime().addShutdownHook(new Thread() {
-  @Override
-  public void run() {
-    LOG.info("Received shutdown signal.");
-    scheduler.stop();
-  }
+    @Override
+    public void run() {
+        LOG.info("Received shutdown signal.");
+        scheduler.stop();
+    }
 });
 
 scheduler.start();

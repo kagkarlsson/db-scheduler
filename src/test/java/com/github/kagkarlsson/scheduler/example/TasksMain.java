@@ -1,16 +1,14 @@
 package com.github.kagkarlsson.scheduler.example;
 
-import com.github.kagkarlsson.scheduler.*;
+import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
+import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.*;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.LocalDateTime;
-
-import static com.google.common.collect.Lists.newArrayList;
 
 public class TasksMain {
 	private static final Logger LOG = LoggerFactory.getLogger(TasksMain.class);
@@ -32,8 +30,8 @@ public class TasksMain {
 		final MyHourlyTask hourlyTask = new MyHourlyTask();
 
 		final Scheduler scheduler = Scheduler
-				.create(dataSource)
-				.recurringTasks(newArrayList( hourlyTask ))
+				.create(dataSource, hourlyTask)
+				.startTasks(hourlyTask)
 				.build();
 
 		// Recurring task is automatically scheduled

@@ -16,22 +16,7 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteReschedule;
-import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDeadExecution;
 
-import java.time.LocalDateTime;
-
-public abstract class RecurringTask extends Task implements OnStartup {
-
-	public static final String INSTANCE = "recurring";
-
-	public RecurringTask(String name, Schedule schedule) {
-		super(name, new OnCompleteReschedule(schedule), new RescheduleDeadExecution());
-	}
-
-	@Override
-	public void onStartup(Scheduler scheduler) {
-		scheduler.scheduleForExecution(LocalDateTime.now(), this.instance(INSTANCE));
-	}
-
+public interface OnStartup {
+	void onStartup(Scheduler scheduler);
 }

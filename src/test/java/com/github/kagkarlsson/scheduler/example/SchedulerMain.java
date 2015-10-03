@@ -6,7 +6,6 @@ import com.github.kagkarlsson.scheduler.example.TasksMain.MyHourlyTask;
 import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.Task;
-import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +24,8 @@ public class SchedulerMain {
 		Task myAdhocTask = new MyAdhocTask();
 
 		final Scheduler scheduler = Scheduler
-				.create(dataSource, newArrayList( myAdhocTask ))
-				.recurringTasks(newArrayList( myRecurringTask ))
+				.create(dataSource, myAdhocTask, myRecurringTask )
+				.startTasks(myRecurringTask)
 				.build();
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -42,10 +41,6 @@ public class SchedulerMain {
 		// schedule one-time task for execution. recurring task is automatically scheduled
 		scheduler.scheduleForExecution(now().plusSeconds(20), myAdhocTask.instance("1045"));
 	}
-
-	private static final ExecutionHandler LOGGING_EXECUTION_HANDLER = (taskInstance, executionContext) -> {
-		LOG.info("Executing task " + taskInstance.getTask().getName());
-	};
 
 	public static void main(String[] args) throws Throwable {
 		try {
