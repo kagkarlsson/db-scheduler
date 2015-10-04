@@ -24,7 +24,7 @@ public class SchedulerMain {
 		Task myAdhocTask = new MyAdhocTask();
 
 		final Scheduler scheduler = Scheduler
-				.create(dataSource, myAdhocTask, myRecurringTask )
+				.create(dataSource, myAdhocTask)
 				.startTasks(myRecurringTask)
 				.build();
 

@@ -6,10 +6,10 @@ Inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorServ
 
 ## Features
 
-* **Simple**.
 * **Cluster-friendly**. Guarantees execution by single scheduler instance.
 * **Persistent** tasks. Requires single database-table for persistence.
-* **Minimal dependencies** (slf4j)
+* **Simple**.
+* **Minimal dependencies**. (slf4j)
 
 ## Getting started
 
@@ -18,7 +18,7 @@ Inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorServ
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
   	<artifactId>db-scheduler</artifactId>
-  	<version>1.3</version>
+  	<version>1.4-SNAPSHOT</version>
 </dependency>
 ```
 
@@ -30,10 +30,10 @@ Inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorServ
 final MyHourlyTask hourlyTask = new MyHourlyTask();
 
 final Scheduler scheduler = Scheduler
-    .create(dataSource, hourlyTask)
-    .startTasks(hourlyTask)
-    .threads(5)
-    .build();
+        .create(dataSource)
+        .startTasks(hourlyTask)
+        .threads(5)
+        .build();
 
 scheduler.start();
 ```
@@ -47,10 +47,10 @@ Start the recurring task on start-up. Upon completion, `hourlyTask` will be re-s
 final MyHourlyTask hourlyTask = new MyHourlyTask();
 
 final Scheduler scheduler = Scheduler
-    .create(dataSource, hourlyTask)
-    .startTasks(hourlyTask)
-    .threads(5)
-    .build();
+        .create(dataSource)
+        .startTasks(hourlyTask)
+        .threads(5)
+        .build();
 
 // hourlyTask is automatically scheduled on startup if not already started (i.e. in the db)
 scheduler.start();
@@ -82,14 +82,14 @@ Schedule the ad-hoc task for execution at a certain time in the future. The inst
 final MyAdhocTask myAdhocTask = new MyAdhocTask();
 
 final Scheduler scheduler = Scheduler
-    .create(dataSource, myAdhocTask)
-    .threads(5)
-    .build();
+        .create(dataSource, myAdhocTask)
+        .threads(5)
+        .build();
 
 scheduler.start();
 
 // Schedule the task for execution a certain time in the future
-scheduler.scheduleForExecution(LocalDateTime.now().plusMinutes(5), myAdhocTask.instance("1045"));
+scheduler.scheduleForExecution(LocalDateTime.now().plusSeconds(5), myAdhocTask.instance("1045"));
 ```
 
 Custom task class for an ad-hoc task.
@@ -108,6 +108,24 @@ public static class MyAdhocTask extends OneTimeTask {
 }
 ```
 
+### Simpler task definition
+
+Less verbose task-definitions using `ComposableTask`.
+
+```java
+final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
+                () -> System.out.println("Executed!"));
+
+final Scheduler scheduler = Scheduler
+        .create(dataSource)
+        .startTasks(myHourlyTask)
+        .threads(5)
+        .build();
+
+scheduler.start();
+```
+
+
 ### Register shutdown-hook for graceful shutdown
 
 ```java
@@ -115,16 +133,16 @@ RecurringTask myRecurringTask = new MyHourlyTask();
 Task myAdhocTask = new MyAdhocTask();
 
 final Scheduler scheduler = Scheduler
-    .create(dataSource, myAdhocTask, myRecurringTask )
-    .startTasks(myRecurringTask)
-    .build();
+        .create(dataSource, myAdhocTask)
+        .startTasks(myRecurringTask)
+        .build();
 
 Runtime.getRuntime().addShutdownHook(new Thread() {
-  @Override
-  public void run() {
-    LOG.info("Received shutdown signal.");
-    scheduler.stop();
-  }
+    @Override
+    public void run() {
+        LOG.info("Received shutdown signal.");
+        scheduler.stop();
+    }
 });
 
 scheduler.start();

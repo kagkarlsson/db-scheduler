@@ -307,22 +307,23 @@ public class Scheduler {
 		private SchedulerName schedulerName = new SchedulerName.Hostname();
 		private int executorThreads = 10;
 		private List<Task> knownTasks = new ArrayList<>();
+		private List<OnStartup> startTasks = new ArrayList<>();
 		private Waiter waiter = new Waiter(Duration.ofSeconds(1));
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
-		private List<OnStartup> startTasks = new ArrayList<>();
 
 		public Builder(DataSource dataSource, List<Task> knownTasks) {
 			this.dataSource = dataSource;
-			this.knownTasks = knownTasks;
+			this.knownTasks.addAll(knownTasks);
 		}
 
-		public Builder startTasks(OnStartup ... startTasks) {
+		public <T extends Task & OnStartup> Builder startTasks(T ... startTasks) {
 			return startTasks(Arrays.asList(startTasks));
 		}
 
-		public Builder startTasks(List<OnStartup> startTasks) {
-			this.startTasks = startTasks;
+		public <T extends Task & OnStartup> Builder startTasks(List<T> startTasks) {
+			knownTasks.addAll(startTasks);
+			this.startTasks.addAll(startTasks);
 			return this;
 		}
 
@@ -352,8 +353,7 @@ public class Scheduler {
 		}
 
 		public Scheduler build() {
-			List<Task> allKnownTasks = new ArrayList<>(knownTasks);
-			final TaskResolver taskResolver = new TaskResolver(allKnownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
+			final TaskResolver taskResolver = new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, schedulerName);
 
 			return new Scheduler(new SystemClock(), taskRepository, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
