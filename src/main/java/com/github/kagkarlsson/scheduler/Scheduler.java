@@ -47,7 +47,7 @@ public class Scheduler {
 	private final ExecutorService dueExecutor;
 	private final ExecutorService detectDeadExecutor;
 	private final ExecutorService updateHeartbeatExecutor;
-	private final Map<Execution, Execution> currentlyProcessing = Collections.synchronizedMap(new HashMap<>());
+	private final Map<Execution, CurrentlyExecuting> currentlyProcessing = Collections.synchronizedMap(new HashMap<>());
 	private final Waiter heartbeatWaiter;
 	private final SettableSchedulerState schedulerState = new SettableSchedulerState();
 	final Semaphore executorsSemaphore;
@@ -107,12 +107,16 @@ public class Scheduler {
 			LOG.info("Scheduler stopped.");
 		} else {
 			LOG.warn("Scheduler stopped, but some tasks did not complete. Was currently running the following executions:\n{}",
-					new ArrayList<>(currentlyProcessing.values()).stream().map(Execution::toString).collect(Collectors.joining("\n")));
+					new ArrayList<>(currentlyProcessing.keySet()).stream().map(Execution::toString).collect(Collectors.joining("\n")));
 		}
 	}
 
 	public void scheduleForExecution(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
 		taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
+	}
+
+	public List<CurrentlyExecuting> getCurrentlyExecuting() {
+		return new ArrayList<>(currentlyProcessing.values());
 	}
 
 	void executeDue() {
@@ -159,7 +163,7 @@ public class Scheduler {
 				if (!pickedExecution.isPresent()) {
 					executorsSemaphore.release();
 				} else {
-					currentlyProcessing.put(pickedExecution.get(), pickedExecution.get());
+					currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
 				}
 				return pickedExecution;
 
@@ -209,7 +213,7 @@ public class Scheduler {
 
 		LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
 		LocalDateTime now = clock.now();
-		new ArrayList<>(currentlyProcessing.values()).stream().forEach(execution -> {
+		new ArrayList<>(currentlyProcessing.keySet()).stream().forEach(execution -> {
 			LOG.trace("Updating heartbeat for execution: " + execution);
 			try {
 				taskRepository.updateHeartbeat(execution, now);

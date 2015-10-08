@@ -4,6 +4,7 @@ import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestTasks {
@@ -46,6 +47,24 @@ public class TestTasks {
 				Thread.sleep(wait.toMillis());
 			} catch (InterruptedException e) {
 				LoggerFactory.getLogger(CountingHandler.class).info("Interrupted.");
+			}
+		}
+	}
+
+	public static class WaitingHandler implements ExecutionHandler {
+
+		private final CountDownLatch waitForNotify;
+
+		public WaitingHandler() {
+			waitForNotify = new CountDownLatch(1);
+		}
+
+		@Override
+		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+			try {
+				waitForNotify.await();
+			} catch (InterruptedException e) {
+				LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
 			}
 		}
 	}

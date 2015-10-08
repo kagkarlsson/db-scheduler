@@ -10,7 +10,9 @@ import org.junit.Test;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.concurrent.Executors;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -68,5 +70,20 @@ public class SchedulerTest {
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
 	}
+
+	@Test
+	public void scheduler_should_track_duration() {
+		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), 1, Executors.newSingleThreadExecutor(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
+		OneTimeTask oneTimeTask = TestTasks.oneTime("OneTime", new TestTasks.WaitingHandler());
+
+		scheduler.scheduleForExecution(clock.now(), oneTimeTask.instance("1"));
+		scheduler.executeDue();
+
+		assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));
+		clock.set(clock.now.plusMinutes(1));
+
+		assertThat(scheduler.getCurrentlyExecuting().get(0).getDuration(), is(Duration.ofMinutes(1)));
+	}
+
 
 }
