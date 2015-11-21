@@ -1,8 +1,5 @@
 
-
 next
-
-- only update heartbeats if execution older than one heartbeat interval/cycles
 
 - customizable table-name
 
@@ -10,9 +7,12 @@ next
 
 - profile for varying target db (hsql/postgresql) for tests
 
-- cron schedule?
-   - https://github.com/jmrozanec/cron-utils
+- only update heartbeats if execution older than one heartbeat interval/cycles
+
 
 future
 - support transactional taskRepositories
    - so far, jdbctaskrepository requires TransactionAwareDataSource for reliable scheduling of new tasks in transaction
+- cron schedule? (separate artifact if dependencies)
+   - https://github.com/jmrozanec/cron-utils
+
