@@ -74,7 +74,7 @@ public abstract class CompatibilityTest {
 
 	@Test
 	public void test_jdbc_repository_compatibility() {
-		TaskResolver taskResolver = new TaskResolver(new ArrayList<>(), TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED);
+		TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED, new ArrayList<>());
 		taskResolver.addTask(oneTime);
 
 		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));

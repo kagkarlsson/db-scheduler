@@ -16,9 +16,11 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.Task;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,7 +32,11 @@ public class TaskResolver {
 	private final OnCannotResolve onCannotResolve;
 	private final Map<String, Task> taskMap;
 
-	public TaskResolver(List<Task> knownTasks, OnCannotResolve onCannotResolve) {
+	public TaskResolver(OnCannotResolve onCannotResolve, Task ... knownTasks) {
+		this(onCannotResolve, Arrays.asList(knownTasks));
+	}
+
+	public TaskResolver(OnCannotResolve onCannotResolve, List<Task> knownTasks) {
 		this.onCannotResolve = onCannotResolve;
 		this.taskMap = knownTasks.stream().collect(Collectors.toMap(Task::getName, identity()));
 	}

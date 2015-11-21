@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 
-public class Scheduler {
+public class Scheduler implements SchedulerClient {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 	public static final Duration SHUTDOWN_WAIT = Duration.ofMinutes(30);
@@ -111,6 +111,7 @@ public class Scheduler {
 		}
 	}
 
+	@Override
 	public void scheduleForExecution(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
 		taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
 	}
@@ -357,7 +358,7 @@ public class Scheduler {
 		}
 
 		public Scheduler build() {
-			final TaskResolver taskResolver = new TaskResolver(knownTasks, TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED);
+			final TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED, knownTasks);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, schedulerName);
 
 			return new Scheduler(new SystemClock(), taskRepository, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);

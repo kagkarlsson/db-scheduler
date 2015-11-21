@@ -38,9 +38,7 @@ public class DeadExecutionsTest {
 		deadExecutionHandler = new RescheduleDead();
 		nonCompleting = new NonCompletingTask("NonCompleting", nonCompletingExecutionHandler, deadExecutionHandler);
 
-		TaskResolver taskResolver = new TaskResolver(new ArrayList<>(), TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED);
-		taskResolver.addTask(oneTimeTask);
-		taskResolver.addTask(nonCompleting);
+		TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED, oneTimeTask, nonCompleting);
 
 		jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
 
