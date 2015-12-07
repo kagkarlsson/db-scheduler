@@ -81,9 +81,9 @@ public class Scheduler implements SchedulerClient {
 	public void start() {
 		LOG.info("Starting scheduler");
 
-		dueExecutor.submit(new RunUntilShutdown(this::executeDue, waiter));
-		detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter));
-		updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter));
+		dueExecutor.submit(new RunUntilShutdown(this::executeDue, waiter, schedulerState, statsRegistry));
+		detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter, schedulerState, statsRegistry));
+		updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter, schedulerState, statsRegistry));
 
 		onStartup.stream().forEach(os -> os.onStartup(this));
 	}
@@ -267,13 +267,17 @@ public class Scheduler implements SchedulerClient {
 		}
 	}
 
-	private class RunUntilShutdown implements Runnable {
+	static class RunUntilShutdown implements Runnable {
 		private final Runnable toRun;
 		private final Waiter waitBetweenRuns;
+		private final SchedulerState schedulerState;
+		private final StatsRegistry statsRegistry;
 
-		public RunUntilShutdown(Runnable toRun, Waiter waitBetweenRuns) {
+		public RunUntilShutdown(Runnable toRun, Waiter waitBetweenRuns, SchedulerState schedulerState, StatsRegistry statsRegistry) {
 			this.toRun = toRun;
 			this.waitBetweenRuns = waitBetweenRuns;
+			this.schedulerState = schedulerState;
+			this.statsRegistry = statsRegistry;
 		}
 
 		@Override
@@ -281,8 +285,13 @@ public class Scheduler implements SchedulerClient {
 			while (!schedulerState.isShuttingDown()) {
 				try {
 					toRun.run();
-					waitBetweenRuns.doWait();
+				} catch (Throwable e) {
+					LOG.error("Unhandled exception. Will keep running.", e);
+					statsRegistry.registerUnexpectedError();
+				}
 
+				try {
+					waitBetweenRuns.doWait();
 				} catch (InterruptedException interruptedException) {
 					if (schedulerState.isShuttingDown()) {
 						LOG.debug("Thread '{}' interrupted due to shutdown.", Thread.currentThread().getName());
@@ -290,9 +299,6 @@ public class Scheduler implements SchedulerClient {
 						LOG.error("Unexpected interruption of thread. Will keep running.", interruptedException);
 						statsRegistry.registerUnexpectedError();
 					}
-				} catch (Throwable e) {
-					LOG.error("Unhandled exception. Will keep running.", e);
-					statsRegistry.registerUnexpectedError();
 				}
 			}
 		}
