@@ -323,7 +323,7 @@ public class Scheduler implements SchedulerClient {
 		private int executorThreads = 10;
 		private List<Task> knownTasks = new ArrayList<>();
 		private List<OnStartup> startTasks = new ArrayList<>();
-		private Waiter waiter = new Waiter(Duration.ofSeconds(1));
+		private Waiter waiter = new Waiter(Duration.ofSeconds(10));
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 
