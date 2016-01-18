@@ -96,7 +96,7 @@ public abstract class CompatibilityTest {
 		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
 		assertThat(jdbcTaskRepository.getOldExecutions(now.plusDays(1)), hasSize(1));
 
-		jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1));
+		jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1));
 		assertThat(jdbcTaskRepository.getDue(now), hasSize(0));
 		assertThat(jdbcTaskRepository.getDue(now.plusMinutes(1)), hasSize(1));
 

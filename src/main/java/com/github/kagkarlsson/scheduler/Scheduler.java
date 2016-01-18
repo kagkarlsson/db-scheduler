@@ -120,6 +120,10 @@ public class Scheduler implements SchedulerClient {
 		return new ArrayList<>(currentlyProcessing.values());
 	}
 
+	public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {
+		return taskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
+	}
+
 	void executeDue() {
 		if (executorsSemaphore.availablePermits() <= 0) {
 			return;

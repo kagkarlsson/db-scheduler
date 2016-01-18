@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,6 +88,7 @@ public class TasksMain {
 		final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
 						() -> System.out.println("Executed!"));
 
+
 		final Scheduler scheduler = Scheduler
 				.create(dataSource)
 				.startTasks(myHourlyTask)
@@ -94,7 +96,42 @@ public class TasksMain {
 				.build();
 
 		scheduler.start();
+
+		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
+				(taskInstance, context) -> System.out.println("One-time with id "+taskInstance.getId()+" executed!"));
+
+		scheduler.scheduleForExecution(LocalDateTime.now().plusDays(1), oneTimeTask.instance("1001"));
 	}
+
+
+	private static void springWorkerExample(DataSource dataSource, MySpringWorker mySpringWorker) {
+
+		// instantiate and start the scheduler somewhere in your application
+		final Scheduler scheduler = Scheduler
+				.create(dataSource)
+				.threads(2)
+				.build();
+		scheduler.start();
+
+		// define a task and a handler that named task, MySpringWorker implements the ExecutionHandler interface
+		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task", mySpringWorker);
+
+		// schedule a future execution for the task with a custom id (currently the only form for context supported)
+		scheduler.scheduleForExecution(LocalDateTime.now().plusDays(1), oneTimeTask.instance("1001"));
+	}
+
+
+	public static class MySpringWorker implements ExecutionHandler {
+		public MySpringWorker() {
+			// could be instantiated by Spring
+		}
+
+		@Override
+		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+			System.out.println("Executed task with id="+taskInstance.getId());
+		}
+	}
+
 
 	public static class MyExecutionHandler implements ExecutionHandler {
 

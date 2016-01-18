@@ -46,7 +46,7 @@ public interface CompletionHandler {
 		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
 			LocalDateTime nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
 			LOG.debug("Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
-			executionOperations.reschedule(nextExecution);
+			executionOperations.reschedule(executionComplete, nextExecution);
 		}
 	}
 

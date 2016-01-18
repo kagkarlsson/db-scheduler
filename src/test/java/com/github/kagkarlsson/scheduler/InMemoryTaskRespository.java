@@ -4,6 +4,7 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,7 +44,8 @@ public class InMemoryTaskRespository implements TaskRepository {
 	}
 
 	@Override
-	public synchronized void reschedule(Execution execution, LocalDateTime nextExecutionTime) {
+	public synchronized void reschedule(Execution execution, LocalDateTime nextExecutionTime,
+										LocalDateTime lastSuccess, LocalDateTime lastFailure) {
 		futureExecutions.remove(execution);
 		futureExecutions.add(new Execution(nextExecutionTime, execution.taskInstance));
 	}
@@ -72,6 +74,11 @@ public class InMemoryTaskRespository implements TaskRepository {
 	@Override
 	public void updateHeartbeat(Execution execution, LocalDateTime heartbeatTime) {
 		throw new UnsupportedOperationException("not implemented");
+	}
+
+	@Override
+	public List<Execution> getExecutionsFailingLongerThan(Duration interval) {
+		return new ArrayList<>();
 	}
 
 	@Override

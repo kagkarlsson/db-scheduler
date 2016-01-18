@@ -17,6 +17,7 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -27,11 +28,13 @@ public interface TaskRepository {
 	List<Execution> getDue(LocalDateTime now);
 
 	void remove(Execution execution);
-	void reschedule(Execution execution, LocalDateTime nextExecutionTime);
+	void reschedule(Execution execution, LocalDateTime nextExecutionTime, LocalDateTime lastSuccess, LocalDateTime lastFailure);
 
 	Optional<Execution> pick(Execution e, LocalDateTime timePicked);
 
 	List<Execution> getOldExecutions(LocalDateTime olderThan);
 
 	void updateHeartbeat(Execution execution, LocalDateTime heartbeatTime);
+
+	List<Execution> getExecutionsFailingLongerThan(Duration interval);
 }

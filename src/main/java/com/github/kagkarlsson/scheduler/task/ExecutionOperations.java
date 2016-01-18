@@ -33,8 +33,13 @@ public class ExecutionOperations {
 		taskRepository.remove(execution);
 	}
 
-	public void reschedule(LocalDateTime nextExecutionTime) {
-		taskRepository.reschedule(execution, nextExecutionTime);
+	public void reschedule(ExecutionComplete completed, LocalDateTime nextExecutionTime) {
+		if (completed.getResult() == ExecutionComplete.Result.OK) {
+			taskRepository.reschedule(execution, nextExecutionTime, completed.getTimeDone(), execution.lastFailure);
+		} else {
+			taskRepository.reschedule(execution, nextExecutionTime, execution.lastSuccess, completed.getTimeDone());
+		}
+
 	}
 
 }

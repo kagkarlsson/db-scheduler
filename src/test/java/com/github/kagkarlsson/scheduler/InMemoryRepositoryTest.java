@@ -87,7 +87,7 @@ public class InMemoryRepositoryTest {
 
 		Execution execution = due.get(0);
 		taskRespository.pick(execution, now);
-		taskRespository.reschedule(execution, now.plusMinutes(1));
+		taskRespository.reschedule(execution, now.plusMinutes(1), null, null);
 
 		assertThat(taskRespository.getDue(now), hasSize(0));
 		assertThat(taskRespository.getDue(now.plusMinutes(1)), hasSize(1));

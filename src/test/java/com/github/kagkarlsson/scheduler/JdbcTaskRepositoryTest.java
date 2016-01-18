@@ -8,6 +8,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.IntStream;
@@ -121,7 +122,7 @@ public class JdbcTaskRepositoryTest {
 		final Execution execution = due.get(0);
 		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
 		assertThat(pickedExecution.isPresent(), is(true));
-		taskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1));
+		taskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now, null);
 
 		assertThat(taskRepository.pick(pickedExecution.get(), now).isPresent(), is(false));
 	}
@@ -137,7 +138,7 @@ public class JdbcTaskRepositoryTest {
 		Execution execution = due.get(0);
 		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
 		final LocalDateTime nextExecutionTime = now.plusMinutes(1);
-		taskRepository.reschedule(pickedExecution.get(), nextExecutionTime);
+		taskRepository.reschedule(pickedExecution.get(), nextExecutionTime, now, null);
 
 		assertThat(taskRepository.getDue(now), hasSize(0));
 		assertThat(taskRepository.getDue(nextExecutionTime), hasSize(1));
@@ -149,5 +150,34 @@ public class JdbcTaskRepositoryTest {
 		assertThat(nextExecution.get().executionTime, is(nextExecutionTime));
 	}
 
+	@Test
+	public void test_get_failing_executions() {
+		LocalDateTime now = LocalDateTime.now();
+		final TaskInstance instance = oneTimeTask.instance("id1");
+		taskRepository.createIfNotExists(new Execution(now, instance));
+
+		List<Execution> due = taskRepository.getDue(now);
+		assertThat(due, hasSize(1));
+
+		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
+
+		taskRepository.reschedule(getSingleExecution(), now, now, null);
+		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
+
+		taskRepository.reschedule(getSingleExecution(), now, null, now);
+		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
+		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofMinutes(1)), hasSize(1));
+		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofDays(1)), hasSize(1));
+
+		taskRepository.reschedule(getSingleExecution(), now, now.minusMinutes(1), now);
+		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
+		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofSeconds(1)), hasSize(1));
+		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofHours(1)), hasSize(0));
+	}
+
+	private Execution getSingleExecution() {
+		List<Execution> due = taskRepository.getDue(LocalDateTime.now());
+		return due.get(0);
+	}
 
 }

@@ -25,16 +25,21 @@ public final class Execution {
 	public String pickedBy;
 	public LocalDateTime lastHeartbeat;
 	public long version;
+	public LocalDateTime lastFailure;
+	public LocalDateTime lastSuccess;
 
 	public Execution(LocalDateTime executionTime, TaskInstance taskInstance) {
-		this(executionTime, taskInstance, false, null, null, 1L);
+		this(executionTime, taskInstance, false, null, null, null, null, 1L);
 	}
 
-	public Execution(LocalDateTime executionTime, TaskInstance taskInstance, boolean picked, String pickedBy, LocalDateTime lastHeartbeat, long version) {
+	public Execution(LocalDateTime executionTime, TaskInstance taskInstance, boolean picked, String pickedBy,
+					 LocalDateTime lastSuccess, LocalDateTime lastFailure, LocalDateTime lastHeartbeat, long version) {
 		this.executionTime = executionTime;
 		this.taskInstance = taskInstance;
 		this.picked = picked;
 		this.pickedBy = pickedBy;
+		this.lastFailure = lastFailure;
+		this.lastSuccess = lastSuccess;
 		this.lastHeartbeat = lastHeartbeat;
 		this.version = version;
 	}
