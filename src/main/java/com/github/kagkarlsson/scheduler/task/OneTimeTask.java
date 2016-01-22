@@ -17,8 +17,12 @@ package com.github.kagkarlsson.scheduler.task;
 
 public abstract class OneTimeTask extends Task {
 
-	public OneTimeTask(String name) {
+	public OneTimeTask(final String name) {
 		super(name, new CompletionHandler.OnCompleteRemove(), new DeadExecutionHandler.RescheduleDeadExecution());
+	}
+
+	public OneTimeTask(final String name, final CompletionHandler completionHandler) {
+		super(name, completionHandler, new DeadExecutionHandler.RescheduleDeadExecution());
 	}
 
 }

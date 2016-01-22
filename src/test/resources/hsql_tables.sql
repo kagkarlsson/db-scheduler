@@ -8,5 +8,6 @@ create table scheduled_tasks (
 	last_failure TIMESTAMP(6),
 	last_heartbeat TIMESTAMP(6),
 	version BIGINT,
+    complete BIT DEFAULT FALSE,
 	PRIMARY KEY (task_name, task_instance)
 )

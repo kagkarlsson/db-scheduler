@@ -8,5 +8,6 @@ create table scheduled_tasks (
 	last_failure TIMESTAMP(6),
 	last_heartbeat TIMESTAMP(6),
 	version NUMBER(19,0),
+    complete NUMBER(1,0),
 	PRIMARY KEY (task_name, task_instance)
 );

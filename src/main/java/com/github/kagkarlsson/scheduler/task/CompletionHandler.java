@@ -15,10 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import java.time.LocalDateTime;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.LocalDateTime;
 
 public interface CompletionHandler {
 
@@ -28,8 +28,16 @@ public interface CompletionHandler {
 	class OnCompleteRemove implements CompletionHandler {
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
-			executionOperations.stop();
+		public void complete(final ExecutionComplete executionComplete, final ExecutionOperations executionOperations) {
+			executionOperations.remove();
+		}
+	}
+
+	class OnCompleteMark implements CompletionHandler {
+
+		@Override
+		public void complete(final ExecutionComplete executionComplete, final ExecutionOperations executionOperations) {
+			executionOperations.markComplete();
 		}
 	}
 
@@ -38,13 +46,13 @@ public interface CompletionHandler {
 		private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReschedule.class);
 		private final Schedule schedule;
 
-		OnCompleteReschedule(Schedule schedule) {
+		OnCompleteReschedule(final Schedule schedule) {
 			this.schedule = schedule;
 		}
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
-			LocalDateTime nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
+		public void complete(final ExecutionComplete executionComplete, final ExecutionOperations executionOperations) {
+			final LocalDateTime nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
 			LOG.debug("Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
 			executionOperations.reschedule(executionComplete, nextExecution);
 		}

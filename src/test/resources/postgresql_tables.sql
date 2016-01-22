@@ -8,5 +8,6 @@ create table scheduled_tasks (
   last_failure timestamp with time zone,
   last_heartbeat timestamp with time zone,
   version BIGINT,
+  complete boolean DEFAULT false, 
   PRIMARY KEY (task_name, task_instance)
 )

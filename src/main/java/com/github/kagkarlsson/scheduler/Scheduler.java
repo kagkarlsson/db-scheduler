@@ -15,22 +15,36 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
-import com.github.kagkarlsson.scheduler.task.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.github.kagkarlsson.scheduler.ExecutorUtils.*;
 
-import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Collectors;
 
-import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
+import javax.sql.DataSource;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
+import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
+import com.github.kagkarlsson.scheduler.task.OnStartup;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
 public class Scheduler implements SchedulerClient {
 
@@ -52,17 +66,17 @@ public class Scheduler implements SchedulerClient {
 	private final SettableSchedulerState schedulerState = new SettableSchedulerState();
 	final Semaphore executorsSemaphore;
 
-	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, SchedulerName schedulerName,
-			  Waiter waiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+	Scheduler(final Clock clock, final TaskRepository taskRepository, final int maxThreads, final SchedulerName schedulerName,
+			final Waiter waiter, final Duration updateHeartbeatWaiter, final StatsRegistry statsRegistry, final List<OnStartup> onStartup) {
 		this(clock, taskRepository, maxThreads, defaultExecutorService(maxThreads, schedulerName), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry, onStartup);
 	}
 
-	private static ExecutorService defaultExecutorService(int maxThreads, SchedulerName schedulerName) {
+	private static ExecutorService defaultExecutorService(final int maxThreads, final SchedulerName schedulerName) {
 		return Executors.newFixedThreadPool(maxThreads, defaultThreadFactoryWithPrefix(schedulerName.getName() + "-"));
 	}
 
-	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
-			  Waiter waiter, Duration heartbeatInterval, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+	Scheduler(final Clock clock, final TaskRepository taskRepository, final int maxThreads, final ExecutorService executorService, final SchedulerName schedulerName,
+			final Waiter waiter, final Duration heartbeatInterval, final StatsRegistry statsRegistry, final List<OnStartup> onStartup) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.executorService = executorService;
@@ -112,7 +126,7 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	@Override
-	public void scheduleForExecution(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
+	public void scheduleForExecution(final LocalDateTime exeecutionTime, final TaskInstance taskInstance) {
 		taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
 	}
 
@@ -120,7 +134,7 @@ public class Scheduler implements SchedulerClient {
 		return new ArrayList<>(currentlyProcessing.values());
 	}
 
-	public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {
+	public List<Execution> getFailingExecutions(final Duration failingAtLeastFor) {
 		return taskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
 	}
 
@@ -129,12 +143,12 @@ public class Scheduler implements SchedulerClient {
 			return;
 		}
 
-		LocalDateTime now = clock.now();
-		List<Execution> dueExecutions = taskRepository.getDue(now);
+		final LocalDateTime now = clock.now();
+		final List<Execution> dueExecutions = taskRepository.getDue(now);
 
 		int count = 0;
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
-		for (Execution e : dueExecutions) {
+		for (final Execution e : dueExecutions) {
 			if (schedulerState.isShuttingDown()) {
 				LOG.info("Scheduler has been shutdown. Skipping {} due executions.", dueExecutions.size() - count);
 				return;
@@ -143,15 +157,15 @@ public class Scheduler implements SchedulerClient {
 			final Optional<Execution> pickedExecution;
 			try {
 				pickedExecution = aquireExecutorAndPickExecution(e);
-			} catch (NoAvailableExecutors ex) {
+			} catch (final NoAvailableExecutors ex) {
 				LOG.debug("No available executors. Skipping {} due executions.", dueExecutions.size() - count);
 				return;
 			}
 
 			if (pickedExecution.isPresent()) {
 				CompletableFuture
-						.runAsync(new ExecuteTask(pickedExecution.get()), executorService)
-						.thenRun(() -> releaseExecutor(pickedExecution.get()));
+				.runAsync(new ExecuteTask(pickedExecution.get()), executorService)
+				.thenRun(() -> releaseExecutor(pickedExecution.get()));
 			} else {
 				LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
 				return;
@@ -160,7 +174,7 @@ public class Scheduler implements SchedulerClient {
 		}
 	}
 
-	private Optional<Execution> aquireExecutorAndPickExecution(Execution execution) {
+	private Optional<Execution> aquireExecutorAndPickExecution(final Execution execution) {
 		if (executorsSemaphore.tryAcquire()) {
 			try {
 				final Optional<Execution> pickedExecution = taskRepository.pick(execution, clock.now());
@@ -172,7 +186,7 @@ public class Scheduler implements SchedulerClient {
 				}
 				return pickedExecution;
 
-			} catch (Throwable t) {
+			} catch (final Throwable t) {
 				executorsSemaphore.release();
 				throw t;
 			}
@@ -181,7 +195,7 @@ public class Scheduler implements SchedulerClient {
 		}
 	}
 
-	private void releaseExecutor(Execution execution) {
+	private void releaseExecutor(final Execution execution) {
 		executorsSemaphore.release();
 		if (currentlyProcessing.remove(execution) == null) {
 			LOG.error("Released execution was not found in collection of executions currently being processed. Should never happen.");
@@ -191,16 +205,16 @@ public class Scheduler implements SchedulerClient {
 
 	void detectDeadExecutions() {
 		LOG.debug("Checking for dead executions.");
-		LocalDateTime now = clock.now();
+		final LocalDateTime now = clock.now();
 		final LocalDateTime oldAgeLimit = now.minus(getMaxAgeBeforeConsideredDead());
-		List<Execution> oldExecutions = taskRepository.getOldExecutions(oldAgeLimit);
+		final List<Execution> oldExecutions = taskRepository.getOldExecutions(oldAgeLimit);
 
 		if (!oldExecutions.isEmpty()) {
 			oldExecutions.stream().forEach(execution -> {
 				LOG.info("Found dead execution. Delegating handling to task. Execution: " + execution);
 				try {
 					execution.taskInstance.getTask().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(taskRepository, execution));
-				} catch (Throwable e) {
+				} catch (final Throwable e) {
 					LOG.error("Failed while handling dead execution {}. Will be tried again later.", execution, e);
 					statsRegistry.registerUnexpectedError();
 				}
@@ -217,12 +231,12 @@ public class Scheduler implements SchedulerClient {
 		}
 
 		LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
-		LocalDateTime now = clock.now();
+		final LocalDateTime now = clock.now();
 		new ArrayList<>(currentlyProcessing.keySet()).stream().forEach(execution -> {
 			LOG.trace("Updating heartbeat for execution: " + execution);
 			try {
 				taskRepository.updateHeartbeat(execution, now);
-			} catch (Throwable e) {
+			} catch (final Throwable e) {
 				LOG.error("Failed while updating heartbeat for execution {}. Will try again later.", execution, e);
 				statsRegistry.registerUnexpectedError();
 			}
@@ -236,7 +250,7 @@ public class Scheduler implements SchedulerClient {
 	private class ExecuteTask implements Runnable {
 		private final Execution execution;
 
-		private ExecuteTask(Execution execution) {
+		private ExecuteTask(final Execution execution) {
 			this.execution = execution;
 		}
 
@@ -249,21 +263,21 @@ public class Scheduler implements SchedulerClient {
 				LOG.debug("Execution done");
 				complete(execution, ExecutionComplete.Result.OK);
 
-			} catch (RuntimeException unhandledException) {
+			} catch (final RuntimeException unhandledException) {
 				LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
 				complete(execution, ExecutionComplete.Result.FAILED);
 
-			} catch (Throwable unhandledError) {
+			} catch (final Throwable unhandledError) {
 				LOG.error("Error during execution. Treating as failure.", unhandledError);
 				complete(execution, ExecutionComplete.Result.FAILED);
 			}
 		}
 
-		private void complete(Execution execution, ExecutionComplete.Result result) {
+		private void complete(final Execution execution, final ExecutionComplete.Result result) {
 			try {
 				final Task task = execution.taskInstance.getTask();
 				task.getCompletionHandler().complete(new ExecutionComplete(execution, clock.now(), result), new ExecutionOperations(taskRepository, execution));
-			} catch (Throwable e) {
+			} catch (final Throwable e) {
 				statsRegistry.registerUnexpectedError();
 				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +
 						"The execution should be detected as dead in {}, and handled according to the tasks DeadExecutionHandler.", execution, getMaxAgeBeforeConsideredDead(), e);
@@ -277,7 +291,7 @@ public class Scheduler implements SchedulerClient {
 		private final SchedulerState schedulerState;
 		private final StatsRegistry statsRegistry;
 
-		public RunUntilShutdown(Runnable toRun, Waiter waitBetweenRuns, SchedulerState schedulerState, StatsRegistry statsRegistry) {
+		public RunUntilShutdown(final Runnable toRun, final Waiter waitBetweenRuns, final SchedulerState schedulerState, final StatsRegistry statsRegistry) {
 			this.toRun = toRun;
 			this.waitBetweenRuns = waitBetweenRuns;
 			this.schedulerState = schedulerState;
@@ -289,14 +303,14 @@ public class Scheduler implements SchedulerClient {
 			while (!schedulerState.isShuttingDown()) {
 				try {
 					toRun.run();
-				} catch (Throwable e) {
+				} catch (final Throwable e) {
 					LOG.error("Unhandled exception. Will keep running.", e);
 					statsRegistry.registerUnexpectedError();
 				}
 
 				try {
 					waitBetweenRuns.doWait();
-				} catch (InterruptedException interruptedException) {
+				} catch (final InterruptedException interruptedException) {
 					if (schedulerState.isShuttingDown()) {
 						LOG.debug("Thread '{}' interrupted due to shutdown.", Thread.currentThread().getName());
 					} else {
@@ -308,11 +322,11 @@ public class Scheduler implements SchedulerClient {
 		}
 	}
 
-	public static Builder create(DataSource dataSource, Task ... knownTasks) {
+	public static Builder create(final DataSource dataSource, final Task ... knownTasks) {
 		return create(dataSource, Arrays.asList(knownTasks));
 	}
 
-	public static Builder create(DataSource dataSource, List<Task> knownTasks) {
+	public static Builder create(final DataSource dataSource, final List<Task> knownTasks) {
 		return new Builder(dataSource, knownTasks);
 	}
 
@@ -321,48 +335,48 @@ public class Scheduler implements SchedulerClient {
 		private final DataSource dataSource;
 		private SchedulerName schedulerName = new SchedulerName.Hostname();
 		private int executorThreads = 10;
-		private List<Task> knownTasks = new ArrayList<>();
-		private List<OnStartup> startTasks = new ArrayList<>();
+		private final List<Task> knownTasks = new ArrayList<>();
+		private final List<OnStartup> startTasks = new ArrayList<>();
 		private Waiter waiter = new Waiter(Duration.ofSeconds(10));
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 
-		public Builder(DataSource dataSource, List<Task> knownTasks) {
+		public Builder(final DataSource dataSource, final List<Task> knownTasks) {
 			this.dataSource = dataSource;
 			this.knownTasks.addAll(knownTasks);
 		}
 
-		public <T extends Task & OnStartup> Builder startTasks(T ... startTasks) {
+		public <T extends Task & OnStartup> Builder startTasks(final T ... startTasks) {
 			return startTasks(Arrays.asList(startTasks));
 		}
 
-		public <T extends Task & OnStartup> Builder startTasks(List<T> startTasks) {
+		public <T extends Task & OnStartup> Builder startTasks(final List<T> startTasks) {
 			knownTasks.addAll(startTasks);
 			this.startTasks.addAll(startTasks);
 			return this;
 		}
 
-		public Builder pollingInterval(Duration pollingInterval) {
+		public Builder pollingInterval(final Duration pollingInterval) {
 			waiter = new Waiter(pollingInterval);
 			return this;
 		}
 
-		public Builder heartbeatInterval(Duration duration) {
+		public Builder heartbeatInterval(final Duration duration) {
 			this.heartbeatInterval = duration;
 			return this;
 		}
 
-		public Builder threads(int numberOfThreads) {
+		public Builder threads(final int numberOfThreads) {
 			this.executorThreads = numberOfThreads;
 			return this;
 		}
 
-		public Builder statsRegistry(StatsRegistry statsRegistry) {
+		public Builder statsRegistry(final StatsRegistry statsRegistry) {
 			this.statsRegistry = statsRegistry;
 			return this;
 		}
 
-		public Builder schedulerName(SchedulerName schedulerName) {
+		public Builder schedulerName(final SchedulerName schedulerName) {
 			this.schedulerName = schedulerName;
 			return this;
 		}
@@ -377,5 +391,10 @@ public class Scheduler implements SchedulerClient {
 
 
 	public static class NoAvailableExecutors extends RuntimeException {
+	}
+
+	public void registerTask(final Task task) {
+		taskRepository.registerTask(task);
+
 	}
 }

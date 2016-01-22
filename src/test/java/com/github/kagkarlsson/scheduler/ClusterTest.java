@@ -112,7 +112,7 @@ public class ClusterTest {
 			} else {
 				failed.add(instanceId);
 			}
-			executionOperations.stop();
+			executionOperations.remove();
 			onComplete.accept(instanceId);
 		}
 	}

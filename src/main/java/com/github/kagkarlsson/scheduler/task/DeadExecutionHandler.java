@@ -40,7 +40,7 @@ public interface DeadExecutionHandler {
 		@Override
 		public void deadExecution(Execution execution, ExecutionOperations executionOperations) {
 			LOG.error("Cancelling dead execution: " + execution);
-			executionOperations.stop();
+			executionOperations.remove();
 		}
 	}
 }

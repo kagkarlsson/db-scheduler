@@ -15,31 +15,35 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.TaskRepository;
-
 import java.time.LocalDateTime;
+
+import com.github.kagkarlsson.scheduler.TaskRepository;
 
 public class ExecutionOperations {
 
 	private final TaskRepository taskRepository;
 	private final Execution execution;
 
-	public ExecutionOperations(TaskRepository taskRepository, Execution execution) {
+	public ExecutionOperations(final TaskRepository taskRepository, final Execution execution) {
 		this.taskRepository = taskRepository;
 		this.execution = execution;
 	}
 
-	public void stop() {
+	public void remove() {
 		taskRepository.remove(execution);
 	}
 
-	public void reschedule(ExecutionComplete completed, LocalDateTime nextExecutionTime) {
+	public void reschedule(final ExecutionComplete completed, final LocalDateTime nextExecutionTime) {
 		if (completed.getResult() == ExecutionComplete.Result.OK) {
 			taskRepository.reschedule(execution, nextExecutionTime, completed.getTimeDone(), execution.lastFailure);
 		} else {
 			taskRepository.reschedule(execution, nextExecutionTime, execution.lastSuccess, completed.getTimeDone());
 		}
 
+	}
+
+	public void markComplete() {
+		taskRepository.markComplete(execution);
 	}
 
 }
