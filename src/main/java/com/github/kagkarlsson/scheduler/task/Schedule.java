@@ -15,8 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface Schedule {
-	LocalDateTime getNextExecutionTime(LocalDateTime timeDone);
+	Instant getNextExecutionTime(Instant timeDone);
 }

@@ -18,23 +18,23 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.task.Execution;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
 public interface TaskRepository {
 
 	boolean createIfNotExists(Execution execution);
-	List<Execution> getDue(LocalDateTime now);
+	List<Execution> getDue(Instant now);
 
 	void remove(Execution execution);
-	void reschedule(Execution execution, LocalDateTime nextExecutionTime, LocalDateTime lastSuccess, LocalDateTime lastFailure);
+	void reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure);
 
-	Optional<Execution> pick(Execution e, LocalDateTime timePicked);
+	Optional<Execution> pick(Execution e, Instant timePicked);
 
-	List<Execution> getOldExecutions(LocalDateTime olderThan);
+	List<Execution> getOldExecutions(Instant olderThan);
 
-	void updateHeartbeat(Execution execution, LocalDateTime heartbeatTime);
+	void updateHeartbeat(Execution execution, Instant heartbeatTime);
 
 	List<Execution> getExecutionsFailingLongerThan(Duration interval);
 }

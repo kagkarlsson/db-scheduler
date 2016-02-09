@@ -3,16 +3,12 @@ package com.github.kagkarlsson.scheduler.example;
 import com.github.kagkarlsson.scheduler.*;
 import com.github.kagkarlsson.scheduler.example.TasksMain.MyAdhocTask;
 import com.github.kagkarlsson.scheduler.example.TasksMain.MyHourlyTask;
-import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-
-import static com.google.common.collect.Lists.newArrayList;
-import static java.time.LocalDateTime.now;
 
 public class SchedulerMain {
 	private static final Logger LOG = LoggerFactory.getLogger(SchedulerMain.class);

@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -112,7 +112,7 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	@Override
-	public void scheduleForExecution(LocalDateTime exeecutionTime, TaskInstance taskInstance) {
+	public void scheduleForExecution(Instant exeecutionTime, TaskInstance taskInstance) {
 		taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
 	}
 
@@ -129,7 +129,7 @@ public class Scheduler implements SchedulerClient {
 			return;
 		}
 
-		LocalDateTime now = clock.now();
+		Instant now = clock.now();
 		List<Execution> dueExecutions = taskRepository.getDue(now);
 
 		int count = 0;
@@ -191,8 +191,8 @@ public class Scheduler implements SchedulerClient {
 
 	void detectDeadExecutions() {
 		LOG.debug("Checking for dead executions.");
-		LocalDateTime now = clock.now();
-		final LocalDateTime oldAgeLimit = now.minus(getMaxAgeBeforeConsideredDead());
+		Instant now = clock.now();
+		final Instant oldAgeLimit = now.minus(getMaxAgeBeforeConsideredDead());
 		List<Execution> oldExecutions = taskRepository.getOldExecutions(oldAgeLimit);
 
 		if (!oldExecutions.isEmpty()) {
@@ -217,7 +217,7 @@ public class Scheduler implements SchedulerClient {
 		}
 
 		LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
-		LocalDateTime now = clock.now();
+		Instant now = clock.now();
 		new ArrayList<>(currentlyProcessing.keySet()).stream().forEach(execution -> {
 			LOG.trace("Updating heartbeat for execution: " + execution);
 			try {

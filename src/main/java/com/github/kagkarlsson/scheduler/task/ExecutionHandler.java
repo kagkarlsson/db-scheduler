@@ -15,8 +15,6 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.SchedulerState;
-
 public interface ExecutionHandler {
 	void execute(TaskInstance taskInstance, ExecutionContext executionContext);
 }

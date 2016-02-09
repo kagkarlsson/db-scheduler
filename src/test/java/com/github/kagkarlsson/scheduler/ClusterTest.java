@@ -7,7 +7,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -46,7 +46,7 @@ public class ClusterTest {
 			scheduler2.start();
 
 			ids.forEach(id -> {
-				scheduler1.scheduleForExecution(LocalDateTime.now(), task.instance(id));
+				scheduler1.scheduleForExecution(Instant.now(), task.instance(id));
 			});
 
 			completeAllIds.await();

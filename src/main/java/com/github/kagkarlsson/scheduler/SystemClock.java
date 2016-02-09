@@ -15,12 +15,12 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class SystemClock implements Clock {
 
 	@Override
-	public LocalDateTime now() {
-		return LocalDateTime.now();
+	public Instant now() {
+		return Instant.now();
 	}
 }

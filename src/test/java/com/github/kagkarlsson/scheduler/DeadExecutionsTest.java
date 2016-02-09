@@ -8,7 +8,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -56,17 +56,17 @@ public class DeadExecutionsTest {
 
 	@Test
 	public void scheduler_should_handle_dead_executions() {
-		final LocalDateTime now = settableClock.now();
+		final Instant now = settableClock.now();
 
 		final TaskInstance taskInstance = oneTimeTask.instance("id1");
-		final Execution execution1 = new Execution(now.minusDays(1), taskInstance);
+		final Execution execution1 = new Execution(now.minus(Duration.ofDays(1)), taskInstance);
 		jdbcTaskRepository.createIfNotExists(execution1);
 
 		final List<Execution> due = jdbcTaskRepository.getDue(now);
 		assertThat(due, Matchers.hasSize(1));
 		final Execution execution = due.get(0);
 		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(execution, now);
-		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.minusHours(1));
+		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.minus(Duration.ofHours(1)));
 
 		scheduler.detectDeadExecutions();
 
@@ -75,14 +75,14 @@ public class DeadExecutionsTest {
 		assertThat(rescheduled.get().picked, is(false));
 		assertThat(rescheduled.get().pickedBy, nullValue());
 
-		assertThat(jdbcTaskRepository.getDue(LocalDateTime.now()), hasSize(1));
+		assertThat(jdbcTaskRepository.getDue(Instant.now()), hasSize(1));
 	}
 
 	@Test
 	public void scheduler_should_detect_dead_execution_that_never_updated_heartbeat() {
-		final LocalDateTime now = LocalDateTime.now();
-		settableClock.set(now.minusHours(1));
-		final LocalDateTime oneHourAgo = settableClock.now();
+		final Instant now = Instant.now();
+		settableClock.set(now.minus(Duration.ofHours(1)));
+		final Instant oneHourAgo = settableClock.now();
 
 		final TaskInstance taskInstance = nonCompleting.instance("id1");
 		final Execution execution1 = new Execution(oneHourAgo, taskInstance);
@@ -94,12 +94,12 @@ public class DeadExecutionsTest {
 		scheduler.executeDue();
 		assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
 
-		settableClock.set(LocalDateTime.now());
+		settableClock.set(Instant.now());
 
 		scheduler.detectDeadExecutions();
 		assertThat(deadExecutionHandler.timesCalled, is(1));
 
-		settableClock.set(LocalDateTime.now());
+		settableClock.set(Instant.now());
 
 		scheduler.executeDue();
 		assertThat(nonCompletingExecutionHandler.timesExecuted, is(2));

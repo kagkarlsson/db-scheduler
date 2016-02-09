@@ -15,8 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface Clock {
-	LocalDateTime now();
+	Instant now();
 }

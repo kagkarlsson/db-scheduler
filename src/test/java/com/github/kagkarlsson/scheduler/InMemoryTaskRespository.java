@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,14 +44,14 @@ public class InMemoryTaskRespository implements TaskRepository {
 	}
 
 	@Override
-	public synchronized void reschedule(Execution execution, LocalDateTime nextExecutionTime,
-										LocalDateTime lastSuccess, LocalDateTime lastFailure) {
+	public synchronized void reschedule(Execution execution, Instant nextExecutionTime,
+										Instant lastSuccess, Instant lastFailure) {
 		futureExecutions.remove(execution);
 		futureExecutions.add(new Execution(nextExecutionTime, execution.taskInstance));
 	}
 
 	@Override
-	public Optional<Execution> pick(Execution e, LocalDateTime timePicked) {
+	public Optional<Execution> pick(Execution e, Instant timePicked) {
 		for (Execution futureExecution : futureExecutions) {
 			if (futureExecution.equals(e)) {
 				futureExecution.setPicked(schedulerName.getName(), timePicked);
@@ -62,9 +62,9 @@ public class InMemoryTaskRespository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getOldExecutions(LocalDateTime olderThan) {
+	public List<Execution> getOldExecutions(Instant olderThan) {
 		List<Execution> due = futureExecutions.stream()
-				.filter(e -> e.executionTime.isBefore(olderThan) || e.executionTime.isEqual(olderThan))
+				.filter(e -> e.executionTime.isBefore(olderThan) || e.executionTime.equals(olderThan))
 				.filter(e -> e.picked)
 				.collect(Collectors.toList());
 		Collections.sort(due, Comparator.comparing(Execution::getExecutionTime));
@@ -72,7 +72,7 @@ public class InMemoryTaskRespository implements TaskRepository {
 	}
 
 	@Override
-	public void updateHeartbeat(Execution execution, LocalDateTime heartbeatTime) {
+	public void updateHeartbeat(Execution execution, Instant heartbeatTime) {
 		throw new UnsupportedOperationException("not implemented");
 	}
 
@@ -82,9 +82,9 @@ public class InMemoryTaskRespository implements TaskRepository {
 	}
 
 	@Override
-	public synchronized List<Execution> getDue(LocalDateTime now) {
+	public synchronized List<Execution> getDue(Instant now) {
 		List<Execution> due = futureExecutions.stream()
-				.filter(e -> e.executionTime.isBefore(now) || e.executionTime.isEqual(now))
+				.filter(e -> e.executionTime.isBefore(now) || e.executionTime.equals(now))
 				.filter(e -> !e.picked)
 				.collect(Collectors.toList());
 		Collections.sort(due, Comparator.comparing(Execution::getExecutionTime));

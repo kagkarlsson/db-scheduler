@@ -19,7 +19,7 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteReschedule;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDeadExecution;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public abstract class RecurringTask extends Task implements OnStartup {
 
@@ -31,7 +31,7 @@ public abstract class RecurringTask extends Task implements OnStartup {
 
 	@Override
 	public void onStartup(Scheduler scheduler) {
-		scheduler.scheduleForExecution(LocalDateTime.now(), this.instance(INSTANCE));
+		scheduler.scheduleForExecution(Instant.now(), this.instance(INSTANCE));
 	}
 
 }

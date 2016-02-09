@@ -8,7 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.concurrent.Executors;
 
@@ -34,7 +34,7 @@ public class SchedulerTest {
 	public void scheduler_should_execute_task_when_exactly_due() {
 		OneTimeTask oneTimeTask = TestTasks.oneTime("OneTime", handler);
 
-		LocalDateTime executionTime = clock.now().plusMinutes(1);
+		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
 		scheduler.scheduleForExecution(executionTime, oneTimeTask.instance("1"));
 
 		scheduler.executeDue();
@@ -54,7 +54,7 @@ public class SchedulerTest {
 
 		assertThat(handler.timesExecuted, is(1));
 
-		LocalDateTime nextExecutionTime = clock.now().plusHours(1);
+		Instant nextExecutionTime = clock.now().plus(Duration.ofHours(1));
 		clock.set(nextExecutionTime);
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(2));
@@ -80,7 +80,7 @@ public class SchedulerTest {
 		scheduler.executeDue();
 
 		assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));
-		clock.set(clock.now.plusMinutes(1));
+		clock.set(clock.now.plus(Duration.ofMinutes(1)));
 
 		assertThat(scheduler.getCurrentlyExecuting().get(0).getDuration(), is(Duration.ofMinutes(1)));
 	}

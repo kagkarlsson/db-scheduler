@@ -15,25 +15,25 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 public final class Execution {
 	public final TaskInstance taskInstance;
-	public final LocalDateTime executionTime;
+	public final Instant executionTime;
 	public boolean picked;
 	public String pickedBy;
-	public LocalDateTime lastHeartbeat;
+	public Instant lastHeartbeat;
 	public long version;
-	public LocalDateTime lastFailure;
-	public LocalDateTime lastSuccess;
+	public Instant lastFailure;
+	public Instant lastSuccess;
 
-	public Execution(LocalDateTime executionTime, TaskInstance taskInstance) {
+	public Execution(Instant executionTime, TaskInstance taskInstance) {
 		this(executionTime, taskInstance, false, null, null, null, null, 1L);
 	}
 
-	public Execution(LocalDateTime executionTime, TaskInstance taskInstance, boolean picked, String pickedBy,
-					 LocalDateTime lastSuccess, LocalDateTime lastFailure, LocalDateTime lastHeartbeat, long version) {
+	public Execution(Instant executionTime, TaskInstance taskInstance, boolean picked, String pickedBy,
+					 Instant lastSuccess, Instant lastFailure, Instant lastHeartbeat, long version) {
 		this.executionTime = executionTime;
 		this.taskInstance = taskInstance;
 		this.picked = picked;
@@ -44,13 +44,13 @@ public final class Execution {
 		this.version = version;
 	}
 
-	public void setPicked(String pickedBy, LocalDateTime timePicked) {
+	public void setPicked(String pickedBy, Instant timePicked) {
 		this.pickedBy = pickedBy;
 		this.picked = true;
 		this.lastHeartbeat = timePicked;
 	}
 
-	public LocalDateTime getExecutionTime() {
+	public Instant getExecutionTime() {
 		return executionTime;
 	}
 

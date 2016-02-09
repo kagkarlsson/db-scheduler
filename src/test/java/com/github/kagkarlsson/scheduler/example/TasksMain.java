@@ -8,7 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 
 import static java.time.Duration.ofHours;
 
@@ -67,7 +68,7 @@ public class TasksMain {
 		scheduler.start();
 
 		// Schedule the task for execution a certain time in the future
-		scheduler.scheduleForExecution(LocalDateTime.now().plusSeconds(5), myAdhocTask.instance("1045"));
+		scheduler.scheduleForExecution(Instant.now().plusSeconds(5), myAdhocTask.instance("1045"));
 	}
 
 	public static class MyAdhocTask extends OneTimeTask {
@@ -100,7 +101,7 @@ public class TasksMain {
 		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
 				(taskInstance, context) -> System.out.println("One-time with id "+taskInstance.getId()+" executed!"));
 
-		scheduler.scheduleForExecution(LocalDateTime.now().plusDays(1), oneTimeTask.instance("1001"));
+		scheduler.scheduleForExecution(Instant.now().plus(Duration.ofDays(1)), oneTimeTask.instance("1001"));
 	}
 
 
@@ -117,7 +118,7 @@ public class TasksMain {
 		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task", mySpringWorker);
 
 		// schedule a future execution for the task with a custom id (currently the only form for context supported)
-		scheduler.scheduleForExecution(LocalDateTime.now().plusDays(1), oneTimeTask.instance("1001"));
+		scheduler.scheduleForExecution(Instant.now().plus(Duration.ofDays(1)), oneTimeTask.instance("1001"));
 	}
 
 

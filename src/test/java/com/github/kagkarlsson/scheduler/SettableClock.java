@@ -1,17 +1,17 @@
 package com.github.kagkarlsson.scheduler;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class SettableClock implements Clock {
 
-	public LocalDateTime now = LocalDateTime.now();
+	public Instant now = Instant.now();
 
 	@Override
-	public LocalDateTime now() {
+	public Instant now() {
 		return now;
 	}
 
-	public void set(LocalDateTime newNow) {
+	public void set(Instant newNow) {
 		this.now = newNow;
 	}
 }

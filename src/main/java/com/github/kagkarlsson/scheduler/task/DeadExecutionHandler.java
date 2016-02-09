@@ -18,7 +18,7 @@ package com.github.kagkarlsson.scheduler.task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface DeadExecutionHandler {
 	void deadExecution(Execution execution, ExecutionOperations executionOperations);
@@ -28,7 +28,7 @@ public interface DeadExecutionHandler {
 
 		@Override
 		public void deadExecution(Execution execution, ExecutionOperations executionOperations) {
-			final LocalDateTime now = LocalDateTime.now();
+			final Instant now = Instant.now();
 			LOG.warn("Rescheduling dead execution: " + execution + " to " + now);
 			executionOperations.reschedule(new ExecutionComplete(execution, now, ExecutionComplete.Result.FAILED), now);
 		}

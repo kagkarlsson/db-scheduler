@@ -16,7 +16,7 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class FixedDelay implements Schedule {
 
@@ -31,7 +31,7 @@ public class FixedDelay implements Schedule {
 	}
 
 	@Override
-	public LocalDateTime getNextExecutionTime(LocalDateTime from) {
+	public Instant getNextExecutionTime(Instant from) {
 		return from.plus(duration);
 	}
 }

@@ -9,7 +9,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -39,7 +39,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Test
 	public void test_createIfNotExists() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 
 		TaskInstance instance1 = oneTimeTask.instance("id1");
 		TaskInstance instance2 = oneTimeTask.instance("id2");
@@ -52,7 +52,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Test
 	public void get_due_should_only_include_due_executions() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 
 		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
 		assertThat(taskRepository.getDue(now), hasSize(1));
@@ -61,7 +61,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Test
 	public void get_due_should_honor_max_results_limit() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 
 		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
 		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id2")));
@@ -71,7 +71,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Test
 	public void get_due_should_be_sorted() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		IntStream.range(0, 100).forEach(i ->
 						taskRepository.createIfNotExists(new Execution(now.minusSeconds(new Random().nextInt(10000)), oneTimeTask.instance("id" + i)))
 		);
@@ -85,7 +85,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Test
 	public void picked_executions_should_not_be_returned_as_due() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
 		List<Execution> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
@@ -96,7 +96,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Test
 	public void picked_execution_should_have_information_about_which_scheduler_processes_it() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		final TaskInstance instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 		List<Execution> due = taskRepository.getDue(now);
@@ -113,7 +113,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Test
 	public void should_not_be_able_to_pick_execution_that_has_been_rescheduled() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		final TaskInstance instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 
@@ -129,7 +129,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Test
 	public void reschedule_should_move_execution_in_time() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		final TaskInstance instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 		List<Execution> due = taskRepository.getDue(now);
@@ -137,7 +137,7 @@ public class JdbcTaskRepositoryTest {
 
 		Execution execution = due.get(0);
 		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
-		final LocalDateTime nextExecutionTime = now.plusMinutes(1);
+		final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
 		taskRepository.reschedule(pickedExecution.get(), nextExecutionTime, now, null);
 
 		assertThat(taskRepository.getDue(now), hasSize(0));
@@ -152,7 +152,7 @@ public class JdbcTaskRepositoryTest {
 
 	@Test
 	public void test_get_failing_executions() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		final TaskInstance instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 
@@ -169,14 +169,14 @@ public class JdbcTaskRepositoryTest {
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofMinutes(1)), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofDays(1)), hasSize(1));
 
-		taskRepository.reschedule(getSingleExecution(), now, now.minusMinutes(1), now);
+		taskRepository.reschedule(getSingleExecution(), now, now.minus(Duration.ofMinutes(1)), now);
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofSeconds(1)), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofHours(1)), hasSize(0));
 	}
 
 	private Execution getSingleExecution() {
-		List<Execution> due = taskRepository.getDue(LocalDateTime.now());
+		List<Execution> due = taskRepository.getDue(Instant.now());
 		return due.get(0);
 	}
 

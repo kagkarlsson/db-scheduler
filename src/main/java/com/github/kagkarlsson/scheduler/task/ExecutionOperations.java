@@ -17,7 +17,7 @@ package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.TaskRepository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class ExecutionOperations {
 
@@ -33,7 +33,7 @@ public class ExecutionOperations {
 		taskRepository.remove(execution);
 	}
 
-	public void reschedule(ExecutionComplete completed, LocalDateTime nextExecutionTime) {
+	public void reschedule(ExecutionComplete completed, Instant nextExecutionTime) {
 		if (completed.getResult() == ExecutionComplete.Result.OK) {
 			taskRepository.reschedule(execution, nextExecutionTime, completed.getTimeDone(), execution.lastFailure);
 		} else {

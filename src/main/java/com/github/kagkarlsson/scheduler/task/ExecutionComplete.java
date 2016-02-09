@@ -15,14 +15,14 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class ExecutionComplete {
 	private final Execution execution;
-	private final LocalDateTime timeDone;
+	private final Instant timeDone;
 	private final Result result;
 
-	public ExecutionComplete(Execution execution, LocalDateTime timeDone, Result result) {
+	public ExecutionComplete(Execution execution, Instant timeDone, Result result) {
 		this.execution = execution;
 		this.timeDone = timeDone;
 		this.result = result;
@@ -32,7 +32,7 @@ public class ExecutionComplete {
 		return execution;
 	}
 
-	public LocalDateTime getTimeDone() {
+	public Instant getTimeDone() {
 		return timeDone;
 	}
 

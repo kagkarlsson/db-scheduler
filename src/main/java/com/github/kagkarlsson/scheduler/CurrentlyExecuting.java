@@ -19,16 +19,13 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.time.Instant;
 
 public class CurrentlyExecuting {
 
 	private final Execution execution;
 	private final Clock clock;
-	private final LocalDateTime startTime;
+	private final Instant startTime;
 
 	public CurrentlyExecuting(Execution execution, Clock clock) {
 		this.execution = execution;

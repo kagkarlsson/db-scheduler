@@ -3,7 +3,9 @@ package com.github.kagkarlsson.scheduler.task;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -11,7 +13,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class SchedulesTest {
-	private static final LocalDateTime NOON = LocalDateTime.now().toLocalDate().atTime(12, 0);
+	private static final Instant NOON_TODAY = ZonedDateTime.now().withHour(12).withMinute(0).withSecond(0).withNano(0).toInstant();
 
 	@Test
 	public void should_validate_pattern() {
@@ -26,13 +28,13 @@ public class SchedulesTest {
 
 		assertParsable("DAILY|12:00", Daily.class);
 		Schedule dailySchedule = assertParsable("DAILY|12:00,13:00", Daily.class);
-		assertThat(dailySchedule.getNextExecutionTime(NOON), is(NOON.plusHours(1)));
+		assertThat(dailySchedule.getNextExecutionTime(NOON_TODAY), is(NOON_TODAY.plus(Duration.ofHours(1))));
 
 		assertIllegalArgument("FIXED_DELAY|");
 		assertIllegalArgument("FIXED_DELAY|123");
 
 		Schedule fixedDelaySchedule = assertParsable("FIXED_DELAY|10s", FixedDelay.class);
-		assertThat(fixedDelaySchedule.getNextExecutionTime(NOON), is(NOON.plusSeconds(10)));
+		assertThat(fixedDelaySchedule.getNextExecutionTime(NOON_TODAY), is(NOON_TODAY.plusSeconds(10)));
 	}
 
 	private Schedule assertParsable(String schedule, Class clazz) {

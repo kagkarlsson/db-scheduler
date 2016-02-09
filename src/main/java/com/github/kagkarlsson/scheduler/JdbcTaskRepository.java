@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -56,7 +56,7 @@ public class JdbcTaskRepository implements TaskRepository {
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTask().getName());
 						p.setString(2, execution.taskInstance.getId());
-						p.setTimestamp(3, Timestamp.valueOf(execution.executionTime));
+						p.setTimestamp(3, Timestamp.from(execution.executionTime));
 						p.setBoolean(4, false);
 						p.setLong(5, 1L);
 					});
@@ -79,16 +79,16 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getDue(LocalDateTime now) {
+	public List<Execution> getDue(Instant now) {
 		return getDue(now, MAX_DUE_RESULTS);
 	}
 
-	public List<Execution> getDue(LocalDateTime now, int limit) {
+	public List<Execution> getDue(Instant now, int limit) {
 		return jdbcRunner.query(
 				"select * from scheduled_tasks where picked = ? and execution_time <= ? order by execution_time asc",
 				(PreparedStatement p) -> {
 					p.setBoolean(1, false);
-					p.setTimestamp(2, Timestamp.valueOf(now));
+					p.setTimestamp(2, Timestamp.from(now));
 					p.setMaxRows(limit);
 				},
 				new ExecutionResultSetMapper()
@@ -112,7 +112,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public void reschedule(Execution execution, LocalDateTime nextExecutionTime, LocalDateTime lastSuccess, LocalDateTime lastFailure) {
+	public void reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure) {
 		final int updated = jdbcRunner.execute(
 				"update scheduled_tasks set " +
 						"picked = ?, " +
@@ -129,9 +129,9 @@ public class JdbcTaskRepository implements TaskRepository {
 					ps.setBoolean(1, false);
 					ps.setString(2, null);
 					ps.setTimestamp(3, null);
-					ps.setTimestamp(4, ofNullable(lastSuccess).map(Timestamp::valueOf).orElse(null));
-					ps.setTimestamp(5, ofNullable(lastFailure).map(Timestamp::valueOf).orElse(null));
-					ps.setTimestamp(6, Timestamp.valueOf(nextExecutionTime));
+					ps.setTimestamp(4, ofNullable(lastSuccess).map(Timestamp::from).orElse(null));
+					ps.setTimestamp(5, ofNullable(lastFailure).map(Timestamp::from).orElse(null));
+					ps.setTimestamp(6, Timestamp.from(nextExecutionTime));
 					ps.setString(7, execution.taskInstance.getTaskName());
 					ps.setString(8, execution.taskInstance.getId());
 					ps.setLong(9, execution.version);
@@ -143,7 +143,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public Optional<Execution> pick(Execution e, LocalDateTime timePicked) {
+	public Optional<Execution> pick(Execution e, Instant timePicked) {
 		final int updated = jdbcRunner.execute(
 				"update scheduled_tasks set picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
 						"where picked = ? " +
@@ -153,7 +153,7 @@ public class JdbcTaskRepository implements TaskRepository {
 				ps -> {
 					ps.setBoolean(1, true);
 					ps.setString(2, schedulerSchedulerName.getName());
-					ps.setTimestamp(3, Timestamp.valueOf(timePicked));
+					ps.setTimestamp(3, Timestamp.from(timePicked));
 					ps.setBoolean(4, false);
 					ps.setString(5, e.taskInstance.getTaskName());
 					ps.setString(6, e.taskInstance.getId());
@@ -177,19 +177,19 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getOldExecutions(LocalDateTime olderThan) {
+	public List<Execution> getOldExecutions(Instant olderThan) {
 		return jdbcRunner.query(
 				"select * from scheduled_tasks where picked = ? and last_heartbeat <= ? order by last_heartbeat asc",
 				(PreparedStatement p) -> {
 					p.setBoolean(1, true);
-					p.setTimestamp(2, Timestamp.valueOf(olderThan));
+					p.setTimestamp(2, Timestamp.from(olderThan));
 				},
 				new ExecutionResultSetMapper()
 		);
 	}
 
 	@Override
-	public void updateHeartbeat(Execution e, LocalDateTime newHeartbeat) {
+	public void updateHeartbeat(Execution e, Instant newHeartbeat) {
 
 		final int updated = jdbcRunner.execute(
 				"update scheduled_tasks set last_heartbeat = ? " +
@@ -197,7 +197,7 @@ public class JdbcTaskRepository implements TaskRepository {
 						"and task_instance = ? " +
 						"and version = ?",
 				ps -> {
-					ps.setTimestamp(1, Timestamp.valueOf(newHeartbeat));
+					ps.setTimestamp(1, Timestamp.from(newHeartbeat));
 					ps.setString(2, e.taskInstance.getTaskName());
 					ps.setString(3, e.taskInstance.getId());
 					ps.setLong(4, e.version);
@@ -220,7 +220,7 @@ public class JdbcTaskRepository implements TaskRepository {
 						"	(last_success is null and last_failure is not null)" +
 						"	or (last_failure is not null and last_success < ?)",
 				(PreparedStatement p) -> {
-					p.setTimestamp(1, Timestamp.valueOf(LocalDateTime.now().minus(interval)));
+					p.setTimestamp(1, Timestamp.from(Instant.now().minus(interval)));
 				},
 				new ExecutionResultSetMapper()
 		);
@@ -257,16 +257,16 @@ public class JdbcTaskRepository implements TaskRepository {
 
 				String taskInstance = rs.getString("task_instance");
 
-				LocalDateTime executionTime = rs.getTimestamp("execution_time").toLocalDateTime();
+				Instant executionTime = rs.getTimestamp("execution_time").toInstant();
 
 				boolean picked = rs.getBoolean("picked");
 				final String pickedBy = rs.getString("picked_by");
-				LocalDateTime lastSuccess = ofNullable(rs.getTimestamp("last_success"))
-						.map(Timestamp::toLocalDateTime).orElse(null);
-				LocalDateTime lastFailure = ofNullable(rs.getTimestamp("last_failure"))
-						.map(Timestamp::toLocalDateTime).orElse(null);
-				LocalDateTime lastHeartbeat = ofNullable(rs.getTimestamp("last_heartbeat"))
-						.map(Timestamp::toLocalDateTime).orElse(null);
+				Instant lastSuccess = ofNullable(rs.getTimestamp("last_success"))
+						.map(Timestamp::toInstant).orElse(null);
+				Instant lastFailure = ofNullable(rs.getTimestamp("last_failure"))
+						.map(Timestamp::toInstant).orElse(null);
+				Instant lastHeartbeat = ofNullable(rs.getTimestamp("last_heartbeat"))
+						.map(Timestamp::toInstant).orElse(null);
 				long version = rs.getLong("version");
 				executions.add(new Execution(executionTime, new TaskInstance(task, taskInstance), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
 			}

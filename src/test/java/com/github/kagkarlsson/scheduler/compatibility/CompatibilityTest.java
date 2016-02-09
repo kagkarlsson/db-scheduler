@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -58,12 +58,12 @@ public abstract class CompatibilityTest {
 	public void test_compatibility() {
 		scheduler.start();
 
-		scheduler.scheduleForExecution(LocalDateTime.now(), oneTime.instance("id1"));
-		scheduler.scheduleForExecution(LocalDateTime.now(), oneTime.instance("id1")); //duplicate
-		scheduler.scheduleForExecution(LocalDateTime.now(), recurring.instance("id1"));
-		scheduler.scheduleForExecution(LocalDateTime.now(), recurring.instance("id2"));
-		scheduler.scheduleForExecution(LocalDateTime.now(), recurring.instance("id3"));
-		scheduler.scheduleForExecution(LocalDateTime.now(), recurring.instance("id4"));
+		scheduler.scheduleForExecution(Instant.now(), oneTime.instance("id1"));
+		scheduler.scheduleForExecution(Instant.now(), oneTime.instance("id1")); //duplicate
+		scheduler.scheduleForExecution(Instant.now(), recurring.instance("id1"));
+		scheduler.scheduleForExecution(Instant.now(), recurring.instance("id2"));
+		scheduler.scheduleForExecution(Instant.now(), recurring.instance("id3"));
+		scheduler.scheduleForExecution(Instant.now(), recurring.instance("id4"));
 
 		sleep(Duration.ofSeconds(10));
 
@@ -79,7 +79,7 @@ public abstract class CompatibilityTest {
 
 		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
 
-		final LocalDateTime now = LocalDateTime.now();
+		final Instant now = Instant.now();
 
 		final TaskInstance taskInstance = oneTime.instance("id1");
 		final Execution newExecution = new Execution(now, taskInstance);
@@ -88,17 +88,17 @@ public abstract class CompatibilityTest {
 
 		final List<Execution> due = jdbcTaskRepository.getDue(now);
 		assertThat(due, hasSize(1));
-		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), LocalDateTime.now());
+		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), Instant.now());
 		assertThat(pickedExecution.isPresent(), is(true));
 
 		assertThat(jdbcTaskRepository.getDue(now), hasSize(0));
 
 		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
-		assertThat(jdbcTaskRepository.getOldExecutions(now.plusDays(1)), hasSize(1));
+		assertThat(jdbcTaskRepository.getOldExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
 
 		jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1));
 		assertThat(jdbcTaskRepository.getDue(now), hasSize(0));
-		assertThat(jdbcTaskRepository.getDue(now.plusMinutes(1)), hasSize(1));
+		assertThat(jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1))), hasSize(1));
 
 		final Optional<Execution> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
 		assertThat(rescheduled.isPresent(), is(true));

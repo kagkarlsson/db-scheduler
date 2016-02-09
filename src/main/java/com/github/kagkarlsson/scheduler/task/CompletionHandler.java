@@ -18,7 +18,7 @@ package com.github.kagkarlsson.scheduler.task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface CompletionHandler {
 
@@ -44,7 +44,7 @@ public interface CompletionHandler {
 
 		@Override
 		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
-			LocalDateTime nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
+			Instant nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
 			LOG.debug("Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
 			executionOperations.reschedule(executionComplete, nextExecution);
 		}

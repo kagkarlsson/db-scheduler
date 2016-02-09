@@ -5,7 +5,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -28,7 +28,7 @@ public class InMemoryRepositoryTest {
 
 	@Test
 	public void test_createIfNotExists() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 
 		TaskInstance instance1 = oneTimeTask.instance("id1");
 		TaskInstance instance2 = oneTimeTask.instance("id2");
@@ -46,7 +46,7 @@ public class InMemoryRepositoryTest {
 
 	@Test
 	public void get_due_should_only_include_due_executions() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 
 		taskRespository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
 		assertThat(taskRespository.getDue(now), hasSize(1));
@@ -55,7 +55,7 @@ public class InMemoryRepositoryTest {
 
 	@Test
 	public void get_due_should_be_sorted() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		IntStream.range(0, 100).forEach(i ->
 						taskRespository.createIfNotExists(new Execution(now.minusSeconds(new Random().nextInt(10000)), oneTimeTask.instance("id" + i)))
 		);
@@ -69,7 +69,7 @@ public class InMemoryRepositoryTest {
 
 	@Test
 	public void picked_executions_should_not_be_returned_as_due() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		taskRespository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
 		List<Execution> due = taskRespository.getDue(now);
 		assertThat(due, hasSize(1));
@@ -80,16 +80,16 @@ public class InMemoryRepositoryTest {
 
 	@Test
 	public void reschedule_should_move_execution_in_time() {
-		LocalDateTime now = LocalDateTime.now();
+		Instant now = Instant.now();
 		taskRespository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
 		List<Execution> due = taskRespository.getDue(now);
 		assertThat(due, hasSize(1));
 
 		Execution execution = due.get(0);
 		taskRespository.pick(execution, now);
-		taskRespository.reschedule(execution, now.plusMinutes(1), null, null);
+		taskRespository.reschedule(execution, now.plus(Duration.ofMinutes(1)), null, null);
 
 		assertThat(taskRespository.getDue(now), hasSize(0));
-		assertThat(taskRespository.getDue(now.plusMinutes(1)), hasSize(1));
+		assertThat(taskRespository.getDue(now.plus(Duration.ofMinutes(1))), hasSize(1));
 	}
 }

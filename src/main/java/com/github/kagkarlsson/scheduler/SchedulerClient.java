@@ -15,7 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 
 import javax.sql.DataSource;
@@ -26,9 +26,9 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
 public interface SchedulerClient {
 	
-	void scheduleForExecution(LocalDateTime exeecutionTime, TaskInstance taskInstance);
+	void scheduleForExecution(Instant exeecutionTime, TaskInstance taskInstance);
 	
-	public static class Builder {
+	class Builder {
 		
 		private DataSource dataSource;
 
@@ -47,7 +47,7 @@ public interface SchedulerClient {
 		}
 	}
 	
-	static class StandardSchedulerClient implements SchedulerClient {
+	class StandardSchedulerClient implements SchedulerClient {
 
 		private TaskRepository taskRepository;
 		
@@ -56,7 +56,7 @@ public interface SchedulerClient {
 		}
 		
 		@Override
-		public void scheduleForExecution(LocalDateTime exeecutionTime,
+		public void scheduleForExecution(Instant exeecutionTime,
 				TaskInstance taskInstance) {
 			taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
 		} 
