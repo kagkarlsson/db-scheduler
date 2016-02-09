@@ -1,12 +1,12 @@
 create table scheduled_tasks (
-  task_name varchar(100),
-  task_instance varchar(100),
-  execution_time timestamp with time zone,
-  picked BOOLEAN,
-  picked_by varchar(50),
+  task_name text not null,
+  task_instance text not null,
+  execution_time timestamp with time zone not null,
+  picked BOOLEAN not null,
+  picked_by text,
   last_success timestamp with time zone,
   last_failure timestamp with time zone,
   last_heartbeat timestamp with time zone,
-  version BIGINT,
+  version BIGINT not null,
   PRIMARY KEY (task_name, task_instance)
 )
