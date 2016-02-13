@@ -39,6 +39,24 @@ scheduler.start();
 ```
 
 ## More examples
+
+### Simple task definition
+
+Less verbose task-definitions using `ComposableTask`.
+
+```java
+final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
+                () -> System.out.println("Executed!"));
+
+final Scheduler scheduler = Scheduler
+        .create(dataSource)
+        .startTasks(myHourlyTask)
+        .threads(5)
+        .build();
+
+scheduler.start();
+```
+
 ### Recurring tasks
 
 Start the recurring task on start-up. Upon completion, `hourlyTask` will be re-scheduled according to the defined schedule.
@@ -89,7 +107,7 @@ final Scheduler scheduler = Scheduler
 scheduler.start();
 
 // Schedule the task for execution a certain time in the future
-scheduler.scheduleForExecution(LocalDateTime.now().plusSeconds(5), myAdhocTask.instance("1045"));
+scheduler.scheduleForExecution(Instant.now().plusSeconds(5), myAdhocTask.instance("1045"));
 ```
 
 Custom task class for an ad-hoc task.
@@ -106,23 +124,6 @@ public static class MyAdhocTask extends OneTimeTask {
     System.out.println("Executed!");
   }
 }
-```
-
-### Simpler task definition
-
-Less verbose task-definitions using `ComposableTask`.
-
-```java
-final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
-                () -> System.out.println("Executed!"));
-
-final Scheduler scheduler = Scheduler
-        .create(dataSource)
-        .startTasks(myHourlyTask)
-        .threads(5)
-        .build();
-
-scheduler.start();
 ```
 
 
