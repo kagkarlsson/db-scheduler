@@ -51,6 +51,12 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public boolean createIfNotExists(Execution execution) {
 		try {
+			Optional<Execution> existingExecution = getExecution(execution.taskInstance);
+			if (existingExecution.isPresent()) {
+				LOG.debug("Execution not created, it already exists. Due: {}", existingExecution.get().executionTime);
+				return false;
+			}
+
 			jdbcRunner.execute(
 					"insert into scheduled_tasks(task_name, task_instance, execution_time, picked, version) values(?, ?, ?, ?, ?)",
 					(PreparedStatement p) -> {
@@ -64,16 +70,11 @@ public class JdbcTaskRepository implements TaskRepository {
 
 		} catch (SQLRuntimeException e) {
 			LOG.debug("Exception when inserting execution. Assuming it to be a constraint violation.", e);
-			final Boolean exists = jdbcRunner.query("select 1 from scheduled_tasks where task_name = ? and task_instance = ?",
-					ps -> {
-						ps.setString(1, execution.taskInstance.getTaskName());
-						ps.setString(2, execution.taskInstance.getId());
-					},
-					Mappers.NON_EMPTY_RESULTSET);
-			if (!exists) {
+			Optional<Execution> existingExecution = getExecution(execution.taskInstance);
+			if (!existingExecution.isPresent()) {
 				throw new RuntimeException("Failed to add new execution.", e);
 			}
-			LOG.debug("Exception was due to a constraint violation. Another thread inserted the execution.");
+			LOG.debug("Execution not created, another thread created it.");
 			return false;
 		}
 	}

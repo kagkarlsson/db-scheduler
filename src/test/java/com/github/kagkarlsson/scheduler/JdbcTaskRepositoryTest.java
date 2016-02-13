@@ -23,8 +23,7 @@ public class JdbcTaskRepositoryTest {
 
 	public static final String SCHEDULER_NAME = "scheduler1";
 	@Rule
-	public HsqlTestDatabaseRule DB = new HsqlTestDatabaseRule();
-//	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
+	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
 
 	private JdbcTaskRepository taskRepository;
 	private OneTimeTask oneTimeTask;
