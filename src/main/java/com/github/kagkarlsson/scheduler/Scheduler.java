@@ -81,11 +81,22 @@ public class Scheduler implements SchedulerClient {
 	public void start() {
 		LOG.info("Starting scheduler");
 
+		executeOnStartup(onStartup);
+
 		dueExecutor.submit(new RunUntilShutdown(this::executeDue, waiter, schedulerState, statsRegistry));
 		detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter, schedulerState, statsRegistry));
 		updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter, schedulerState, statsRegistry));
+	}
 
-		onStartup.stream().forEach(os -> os.onStartup(this));
+	private void executeOnStartup(List<OnStartup> onStartup) {
+		onStartup.forEach(os -> {
+			try {
+				os.onStartup(this);
+			} catch (Exception e) {
+				LOG.error("Unexpected error while executing OnStartup tasks. Continuing.", e);
+				statsRegistry.registerUnexpectedError();
+			}
+		});
 	}
 
 	public void stop() {
@@ -154,7 +165,6 @@ public class Scheduler implements SchedulerClient {
 						.thenRun(() -> releaseExecutor(pickedExecution.get()));
 			} else {
 				LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
-				return;
 			}
 			count++;
 		}
