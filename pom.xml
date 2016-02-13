@@ -32,6 +32,8 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<skipChecks>false</skipChecks>
 		<failOnMissingHeader>true</failOnMissingHeader>
+		<slf4j.version>1.7.7</slf4j.version>
+		<hamcrest.version>1.3</hamcrest.version>
 	</properties>
 
 	<dependencies>
@@ -43,16 +45,16 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.7</version>
+			<version>${slf4j.version}</version>
 		</dependency>
 
+		<!-- Test -->
 		<dependency>
-			<groupId>ch.qos.logback</groupId>
-			<artifactId>logback-classic</artifactId>
-			<version>1.1.3</version>
-			<scope>runtime</scope>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>${slf4j.version}</version>
+			<scope>test</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
@@ -62,13 +64,13 @@
 		<dependency>
 			<groupId>org.hamcrest</groupId>
 			<artifactId>hamcrest-core</artifactId>
-			<version>1.3</version>
+			<version>${hamcrest.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.hamcrest</groupId>
 			<artifactId>hamcrest-library</artifactId>
-			<version>1.3</version>
+			<version>${hamcrest.version}</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -173,10 +175,8 @@
 								</excludes>
 								<includes>
 									<include>com.github.kagkarlsson:micro-jdbc</include>
-									<include>com.google.guava:guava</include>
 									<include>org.slf4j:slf4j-api</include>
-									<include>ch.qos.logback:logback-core</include>
-									<include>ch.qos.logback:logback-classic</include>
+									<include>org.slf4j:slf4j-simple</include>
 									<!-- Tests -->
 									<include>org.hamcrest:hamcrest-core</include>
 									<include>org.hamcrest:hamcrest-library</include>
@@ -184,6 +184,7 @@
 									<include>org.mockito:mockito-core</include>
 									<include>org.objenesis:objenesis</include>
 									<include>org.hsqldb:hsqldb</include>
+									<include>com.google.guava:guava</include>
 									<include>com.google.inject:guice</include>
 									<include>com.zaxxer:HikariCP</include>
 									<include>org.javassist:javassist</include>

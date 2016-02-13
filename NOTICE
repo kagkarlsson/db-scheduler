@@ -33,8 +33,6 @@ This software includes third party software subject to the following licenses:
   jDBI under Apache License 2.0
   JGraphT under GNU Lesser General Public License Version 2.1, February 1999
   JUnit under Eclipse Public License 1.0
-  Logback Classic Module under Eclipse Public License - v 1.0 or GNU Lesser General Public License
-  Logback Core Module under Eclipse Public License - v 1.0 or GNU Lesser General Public License
   Micro JDBC under The Apache Software License, Version 2.0
   migratory-core under Apache 2
   otj-config under Apache License, Version 2.0
@@ -42,5 +40,6 @@ This software includes third party software subject to the following licenses:
   otj-tinyhttp under Apache License, Version 2.0
   PostgreSQL JDBC Driver under BSD License
   SLF4J API Module under MIT License
+  SLF4J Simple Binding under MIT License
 
 

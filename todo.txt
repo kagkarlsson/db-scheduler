@@ -1,10 +1,6 @@
 
 next
 
-- hourly-schedule similary to daily schedule
-
-- try to avoid constraint violation when init-ing schedules on startup
-
 - customizable table-name
 
 - support simple form of metadata for each execution, e.g. some form of ids
