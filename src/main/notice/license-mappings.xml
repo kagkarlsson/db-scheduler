@@ -7,13 +7,13 @@
 	<artifact>
 		<groupId>com.opentable.components</groupId>
 		<artifactId>otj-config</artifactId>
-		<version>1.2.0</version>
+		<version>1.3.2</version>
 		<license>Apache License, Version 2.0</license>
 	</artifact>
 	<artifact>
 		<groupId>com.opentable.components</groupId>
 		<artifactId>otj-pg-embedded</artifactId>
-		<version>0.4.0</version>
+		<version>0.4.4</version>
 		<license>Apache License, Version 2.0</license>
 	</artifact>
 	<artifact>
