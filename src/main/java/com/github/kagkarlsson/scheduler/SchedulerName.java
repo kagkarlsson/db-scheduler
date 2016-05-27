@@ -42,15 +42,20 @@ public interface SchedulerName {
 
 	class Hostname implements SchedulerName {
 		private static final Logger LOG = LoggerFactory.getLogger(Hostname.class);
+		private String cachedHostname;
+		
+		public Hostname() {
+			try {
+				cachedHostname = InetAddress.getLocalHost().getHostName();
+			} catch (UnknownHostException e) {
+				LOG.warn("Failed to resolve hostname. Using dummy-name for scheduler.");
+				cachedHostname = "failed.hostname.lookup";
+			}
+		}
 
 		@Override
 		public String getName() {
-			try {
-				return InetAddress.getLocalHost().getHostName();
-			} catch (UnknownHostException e) {
-				LOG.warn("Failed to resolve hostname. Using dummy-name for scheduler.");
-				return "failed.hostname.lookup";
-			}
+			return cachedHostname;
 		}
 	}
 }
