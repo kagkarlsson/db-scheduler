@@ -122,7 +122,7 @@ public class JdbcTaskRepository implements TaskRepository {
 						"last_success = ?, " +
 						"last_failure = ?, " +
 						"execution_time = ?, " +
-						"version = version + 1" +
+						"version = version + 1 " +
 						"where task_name = ? " +
 						"and task_instance = ? " +
 						"and version = ?",
@@ -149,7 +149,7 @@ public class JdbcTaskRepository implements TaskRepository {
 				"update scheduled_tasks set picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
 						"where picked = ? " +
 						"and task_name = ? " +
-						"and task_instance = ?" +
+						"and task_instance = ? " +
 						"and version = ?",
 				ps -> {
 					ps.setBoolean(1, true);
