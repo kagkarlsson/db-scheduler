@@ -18,11 +18,11 @@ Inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorServ
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
   	<artifactId>db-scheduler</artifactId>
-  	<version>1.6-SNAPSHOT</version>
+  	<version>1.9</version>
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql) and [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql).
+2. Create the `scheduled_tasks` table in your schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).
 
 3. Instantiate and start the scheduler.
 
