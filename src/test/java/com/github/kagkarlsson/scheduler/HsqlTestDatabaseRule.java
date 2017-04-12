@@ -22,7 +22,7 @@ public class HsqlTestDatabaseRule extends ExternalResource {
 	@Override
 	public void before() throws Throwable {
 		HikariConfig config = new HikariConfig();
-		config.setJdbcUrl("jdbc:hsqldb:mem:schedule_testing");
+		config.setJdbcUrl("jdbc:hsqldb:mem:schedule_testing;sql.syntax_mys=true");
 		config.setUsername("sa");
 		config.setPassword("");
 

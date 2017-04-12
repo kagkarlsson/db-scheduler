@@ -21,10 +21,18 @@ public final class TaskInstance {
 
 	private final Task task;
 	private final String id;
+	private final String state;
 
 	public TaskInstance(Task task, String id) {
 		this.task = task;
 		this.id = id;
+		this.state = null;
+	}
+
+	private TaskInstance(Task task, String id, String state) {
+		this.task = task;
+		this.id = id;
+		this.state = state;
 	}
 
 	public String getTaskAndInstance() {
@@ -41,6 +49,14 @@ public final class TaskInstance {
 
 	public String getId() {
 		return id;
+	}
+
+	public TaskInstance withState(String serializedState) {
+		return new TaskInstance(task, id, serializedState);
+	}
+
+	public String getState() {
+		return this.state;
 	}
 
 	@Override
@@ -61,6 +77,7 @@ public final class TaskInstance {
 	public String toString() {
 		return "TaskInstance: " +
 				"task=" + task.getName() +
-				", id=" + id;
+				", id=" + id +
+				", state=" + state;
 	}
 }

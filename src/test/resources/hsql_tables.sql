@@ -1,6 +1,7 @@
 create table scheduled_tasks (
 	task_name varchar(100),
 	task_instance varchar(100),
+	task_state text,
 	execution_time TIMESTAMP(6),
 	picked BIT,
 	picked_by varchar(50),

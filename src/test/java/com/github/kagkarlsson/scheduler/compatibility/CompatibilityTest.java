@@ -74,6 +74,15 @@ public abstract class CompatibilityTest {
 
 	@Test
 	public void test_jdbc_repository_compatibility() {
+		doJDBCRepositoryCompatibilityTestUsingState(null);
+	}
+
+	@Test
+	public void test_jdbc_repository_compatibility_with_state() {
+		doJDBCRepositoryCompatibilityTestUsingState("my state");
+	}
+
+	private void doJDBCRepositoryCompatibilityTestUsingState(String state) {
 		TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED, new ArrayList<>());
 		taskResolver.addTask(oneTime);
 
@@ -81,7 +90,7 @@ public abstract class CompatibilityTest {
 
 		final LocalDateTime now = LocalDateTime.now();
 
-		final TaskInstance taskInstance = oneTime.instance("id1");
+		final TaskInstance taskInstance = oneTime.instance("id1").withState(state);
 		final Execution newExecution = new Execution(now, taskInstance);
 		jdbcTaskRepository.createIfNotExists(newExecution);
 		assertThat(jdbcTaskRepository.getExecution(taskInstance).get().getExecutionTime(), is(now));
@@ -105,6 +114,7 @@ public abstract class CompatibilityTest {
 		assertThat(rescheduled.get().lastHeartbeat, nullValue());
 		assertThat(rescheduled.get().isPicked(), is(false));
 		assertThat(rescheduled.get().pickedBy, nullValue());
+		assertThat(rescheduled.get().taskInstance.getState(), is(state));
 		jdbcTaskRepository.remove(rescheduled.get());
 	}
 
