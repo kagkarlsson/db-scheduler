@@ -21,10 +21,18 @@ public final class TaskInstance {
 
 	private final Task task;
 	private final String id;
+	private final byte[] state;
 
 	public TaskInstance(Task task, String id) {
 		this.task = task;
 		this.id = id;
+		this.state = null;
+	}
+
+	private TaskInstance(Task task, String id, byte[] state) {
+		this.task = task;
+		this.id = id;
+		this.state = state;
 	}
 
 	public String getTaskAndInstance() {
@@ -41,6 +49,14 @@ public final class TaskInstance {
 
 	public String getId() {
 		return id;
+	}
+
+	public TaskInstance withState(byte[] state) {
+		return new TaskInstance(task, id, state);
+	}
+
+	public byte[] getState() {
+		return this.state;
 	}
 
 	@Override
