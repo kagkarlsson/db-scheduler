@@ -24,12 +24,10 @@ public final class TaskInstance {
 	private final byte[] data;
 
 	public TaskInstance(Task task, String id) {
-		this.task = task;
-		this.id = id;
-		this.data = null;
+		this(task, id, null);
 	}
 
-	private TaskInstance(Task task, String id, byte[] data) {
+	public TaskInstance(Task task, String id, byte[] data) {
 		this.task = task;
 		this.id = id;
 		this.data = data;
@@ -49,10 +47,6 @@ public final class TaskInstance {
 
 	public String getId() {
 		return id;
-	}
-
-	public TaskInstance withData(byte[] data) {
-		return new TaskInstance(task, id, data);
 	}
 
 	public byte[] getData() {

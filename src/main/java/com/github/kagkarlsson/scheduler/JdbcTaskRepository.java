@@ -270,7 +270,7 @@ public class JdbcTaskRepository implements TaskRepository {
 				Instant lastHeartbeat = ofNullable(rs.getTimestamp("last_heartbeat"))
 						.map(Timestamp::toInstant).orElse(null);
 				long version = rs.getLong("version");
-				executions.add(new Execution(executionTime, new TaskInstance(task, taskInstance).withData(data), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
+				executions.add(new Execution(executionTime, new TaskInstance(task, taskInstance, data), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
 			}
 			return executions;
 		}

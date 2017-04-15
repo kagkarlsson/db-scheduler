@@ -91,7 +91,7 @@ public abstract class CompatibilityTest {
 
 		final Instant now = Instant.now();
 
-		final TaskInstance taskInstance = oneTime.instance("id1").withData(data);
+		final TaskInstance taskInstance = oneTime.instance("id1", data);
 		final Execution newExecution = new Execution(now, taskInstance);
 		jdbcTaskRepository.createIfNotExists(newExecution);
 		assertThat(jdbcTaskRepository.getExecution(taskInstance).get().getExecutionTime(), is(now));
