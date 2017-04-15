@@ -57,11 +57,11 @@ public class JdbcTaskRepository implements TaskRepository {
 			}
 
 			jdbcRunner.execute(
-					"insert into scheduled_tasks(task_name, task_instance, task_state, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
+					"insert into scheduled_tasks(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTask().getName());
 						p.setString(2, execution.taskInstance.getId());
-						p.setObject(3, execution.taskInstance.getState());
+						p.setObject(3, execution.taskInstance.getData());
 						p.setTimestamp(4, Timestamp.from(execution.executionTime));
 						p.setBoolean(5, false);
 						p.setLong(6, 1L);
@@ -257,7 +257,7 @@ public class JdbcTaskRepository implements TaskRepository {
 				}
 
 				String taskInstance = rs.getString("task_instance");
-				byte[] state = rs.getBytes("task_state");
+				byte[] data = rs.getBytes("task_data");
 
 				Instant executionTime = rs.getTimestamp("execution_time").toInstant();
 
@@ -270,7 +270,7 @@ public class JdbcTaskRepository implements TaskRepository {
 				Instant lastHeartbeat = ofNullable(rs.getTimestamp("last_heartbeat"))
 						.map(Timestamp::toInstant).orElse(null);
 				long version = rs.getLong("version");
-				executions.add(new Execution(executionTime, new TaskInstance(task, taskInstance).withState(state), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
+				executions.add(new Execution(executionTime, new TaskInstance(task, taskInstance).withData(data), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
 			}
 			return executions;
 		}

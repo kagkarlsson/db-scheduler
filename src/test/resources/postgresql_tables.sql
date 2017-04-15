@@ -1,7 +1,7 @@
 create table scheduled_tasks (
   task_name text not null,
   task_instance text not null,
-  task_state bytea,
+  task_data bytea,
   execution_time timestamp with time zone not null,
   picked BOOLEAN not null,
   picked_by text,

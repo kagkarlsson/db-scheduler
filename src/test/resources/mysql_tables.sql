@@ -1,7 +1,7 @@
 create table scheduled_tasks (
   task_name varchar(40) not null,
   task_instance varchar(40) not null,
-  task_state blob,
+  task_data blob,
   execution_time timestamp(6) not null,
   picked BOOLEAN not null,
   picked_by varchar(40),
