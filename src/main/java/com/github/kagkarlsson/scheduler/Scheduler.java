@@ -32,12 +32,11 @@ import java.util.stream.Collectors;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 
-public class Scheduler implements SchedulerClient {
+public class Scheduler extends SchedulerClient.StandardSchedulerClient {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 	public static final Duration SHUTDOWN_WAIT = Duration.ofMinutes(30);
 	private final Clock clock;
-	private final TaskRepository taskRepository;
 	private final ExecutorService executorService;
 	private final Waiter waiter;
 	private final List<OnStartup> onStartup;
@@ -63,8 +62,8 @@ public class Scheduler implements SchedulerClient {
 
 	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
 			  Waiter waiter, Duration heartbeatInterval, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+		super(taskRepository);
 		this.clock = clock;
-		this.taskRepository = taskRepository;
 		this.executorService = executorService;
 		this.waiter = waiter;
 		this.onStartup = onStartup;
@@ -120,11 +119,6 @@ public class Scheduler implements SchedulerClient {
 			LOG.warn("Scheduler stopped, but some tasks did not complete. Was currently running the following executions:\n{}",
 					new ArrayList<>(currentlyProcessing.keySet()).stream().map(Execution::toString).collect(Collectors.joining("\n")));
 		}
-	}
-
-	@Override
-	public void scheduleForExecution(Instant exeecutionTime, TaskInstance taskInstance) {
-		taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
 	}
 
 	public List<CurrentlyExecuting> getCurrentlyExecuting() {

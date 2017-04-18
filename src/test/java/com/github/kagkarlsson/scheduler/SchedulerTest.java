@@ -46,6 +46,23 @@ public class SchedulerTest {
 	}
 
 	@Test
+	public void scheduler_should_not_execute_canceled_tasks() {
+		String taskName = "OneTime";
+		OneTimeTask oneTimeTask = TestTasks.oneTime(taskName, handler);
+
+		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
+		String instanceId = "1";
+		scheduler.scheduleForExecution(executionTime, oneTimeTask.instance(instanceId));
+		scheduler.cancelSchedule(taskName, instanceId);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(0));
+
+		clock.set(executionTime);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(0));
+	}
+
+	@Test
 	public void scheduler_should_execute_recurring_task_and_reschedule() {
 		RecurringTask recurringTask = TestTasks.recurring("Recurring", FixedDelay.of(Duration.ofHours(1)), handler);
 

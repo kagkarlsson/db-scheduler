@@ -17,6 +17,7 @@ package com.github.kagkarlsson.scheduler;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Optional;
 
 import javax.sql.DataSource;
 
@@ -27,9 +28,11 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 public interface SchedulerClient {
 	
 	void scheduleForExecution(Instant exeecutionTime, TaskInstance taskInstance);
-	
+
+	void cancelSchedule(String taskName, String instanceId);
+
 	class Builder {
-		
+
 		private DataSource dataSource;
 
 		private Builder(DataSource dataSource) {
@@ -46,10 +49,10 @@ public interface SchedulerClient {
 			return new StandardSchedulerClient(taskRepository);
 		}
 	}
-	
+
 	class StandardSchedulerClient implements SchedulerClient {
 
-		private TaskRepository taskRepository;
+		protected TaskRepository taskRepository;
 		
 		StandardSchedulerClient(TaskRepository taskRepository) {
 			this.taskRepository = taskRepository;
@@ -59,7 +62,17 @@ public interface SchedulerClient {
 		public void scheduleForExecution(Instant exeecutionTime,
 				TaskInstance taskInstance) {
 			taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
-		} 
+		}
+
+		@Override
+		public void cancelSchedule(String taskName, String instanceId) {
+			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
+			if(execution.isPresent()) {
+				taskRepository.remove(execution.get());
+			} else {
+				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%' and id '%s' was found." , taskName, instanceId));
+			}
+		}
 	}
 	
 	static class SchedulerClientName implements SchedulerName {
