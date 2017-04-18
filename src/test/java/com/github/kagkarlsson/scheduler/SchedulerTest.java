@@ -46,6 +46,28 @@ public class SchedulerTest {
 	}
 
 	@Test
+	public void scheduler_should_execute_rescheduled_task_when_exactly_due() {
+		String taskName = "OneTime";
+		OneTimeTask oneTimeTask = TestTasks.oneTime(taskName, handler);
+
+		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
+		String instanceId = "1";
+		scheduler.scheduleForExecution(executionTime, oneTimeTask.instance(instanceId));
+		Instant reScheduledExecutionTime = clock.now().plus(Duration.ofMinutes(2));
+		scheduler.reschedule(taskName, instanceId, reScheduledExecutionTime);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(0));
+
+		clock.set(executionTime);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(0));
+
+		clock.set(reScheduledExecutionTime);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(1));
+	}
+
+	@Test
 	public void scheduler_should_not_execute_canceled_tasks() {
 		String taskName = "OneTime";
 		OneTimeTask oneTimeTask = TestTasks.oneTime(taskName, handler);

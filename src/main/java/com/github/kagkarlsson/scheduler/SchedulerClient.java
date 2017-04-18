@@ -29,6 +29,8 @@ public interface SchedulerClient {
 	
 	void scheduleForExecution(Instant exeecutionTime, TaskInstance taskInstance);
 
+	void reschedule(String taskName, String instanceId, Instant newExecutionTime);
+
 	void cancelSchedule(String taskName, String instanceId);
 
 	class Builder {
@@ -62,6 +64,16 @@ public interface SchedulerClient {
 		public void scheduleForExecution(Instant exeecutionTime,
 				TaskInstance taskInstance) {
 			taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
+		}
+
+		@Override
+		public void reschedule(String taskName, String instanceId, Instant newExecutionTime) {
+			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
+			if(execution.isPresent()) {
+				taskRepository.reschedule(execution.get(), newExecutionTime, null, null);
+			} else {
+				throw new RuntimeException(String.format("Could not reschedule - no task with name '%' and id '%s' was found." , taskName, instanceId));
+			}
 		}
 
 		@Override
