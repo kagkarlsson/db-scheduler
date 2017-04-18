@@ -34,7 +34,7 @@ public abstract class Task implements ExecutionHandler {
 		return new TaskInstance(this, id);
 	}
 
-	public TaskInstance instance(String id, byte[] data) {
+	public <T> TaskInstance<T> instance(String id, T data) {
 		return new TaskInstance(this, id, data);
 	}
 

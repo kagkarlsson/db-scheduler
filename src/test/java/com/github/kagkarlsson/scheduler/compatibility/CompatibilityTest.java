@@ -80,25 +80,39 @@ public abstract class CompatibilityTest {
 
 	@Test
 	public void test_jdbc_repository_compatibility_with_data() {
-		doJDBCRepositoryCompatibilityTestUsingData("my data".getBytes(StandardCharsets.UTF_8));
+		doJDBCRepositoryCompatibilityTestUsingData("my data");
 	}
 
-	private void doJDBCRepositoryCompatibilityTestUsingData(byte[] data) {
+	private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
 		TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED, new ArrayList<>());
 		taskResolver.addTask(oneTime);
 
-		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
+		Serializer<String> serializer = new Serializer<String>() {
+			@Override
+			public byte[] serialize(String data) {
+				if(data == null) return null;
+				return data.getBytes(StandardCharsets.UTF_8);
+			}
+
+			@Override
+			public String deserialize(byte[] serializedData) {
+				if(serializedData == null) return null;
+				return new String(serializedData, StandardCharsets.UTF_8);
+			}
+		};
+
+		final JdbcTaskRepository<String> jdbcTaskRepository = new JdbcTaskRepository<>(getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"), serializer);
 
 		final Instant now = Instant.now();
 
-		final TaskInstance taskInstance = oneTime.instance("id1", data);
-		final Execution newExecution = new Execution(now, taskInstance);
+		final TaskInstance<String> taskInstance = oneTime.instance("id1", data);
+		final Execution<String> newExecution = new Execution<>(now, taskInstance);
 		jdbcTaskRepository.createIfNotExists(newExecution);
 		assertThat(jdbcTaskRepository.getExecution(taskInstance).get().getExecutionTime(), is(now));
 
-		final List<Execution> due = jdbcTaskRepository.getDue(now);
+		final List<Execution<String>> due = jdbcTaskRepository.getDue(now);
 		assertThat(due, hasSize(1));
-		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), Instant.now());
+		final Optional<Execution<String>> pickedExecution = jdbcTaskRepository.pick(due.get(0), Instant.now());
 		assertThat(pickedExecution.isPresent(), is(true));
 
 		assertThat(jdbcTaskRepository.getDue(now), hasSize(0));
@@ -110,7 +124,7 @@ public abstract class CompatibilityTest {
 		assertThat(jdbcTaskRepository.getDue(now), hasSize(0));
 		assertThat(jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1))), hasSize(1));
 
-		final Optional<Execution> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
+		final Optional<Execution<String>> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
 		assertThat(rescheduled.isPresent(), is(true));
 		assertThat(rescheduled.get().lastHeartbeat, nullValue());
 		assertThat(rescheduled.get().isPicked(), is(false));

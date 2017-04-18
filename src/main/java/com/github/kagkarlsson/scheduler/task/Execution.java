@@ -18,8 +18,8 @@ package com.github.kagkarlsson.scheduler.task;
 import java.time.Instant;
 import java.util.Objects;
 
-public final class Execution {
-	public final TaskInstance taskInstance;
+public final class Execution<T> {
+	public final TaskInstance<T> taskInstance;
 	public final Instant executionTime;
 	public boolean picked;
 	public String pickedBy;
@@ -28,11 +28,11 @@ public final class Execution {
 	public Instant lastFailure;
 	public Instant lastSuccess;
 
-	public Execution(Instant executionTime, TaskInstance taskInstance) {
+	public Execution(Instant executionTime, TaskInstance<T> taskInstance) {
 		this(executionTime, taskInstance, false, null, null, null, null, 1L);
 	}
 
-	public Execution(Instant executionTime, TaskInstance taskInstance, boolean picked, String pickedBy,
+	public Execution(Instant executionTime, TaskInstance<T> taskInstance, boolean picked, String pickedBy,
 					 Instant lastSuccess, Instant lastFailure, Instant lastHeartbeat, long version) {
 		this.executionTime = executionTime;
 		this.taskInstance = taskInstance;
