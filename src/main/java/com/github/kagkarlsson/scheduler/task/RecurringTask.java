@@ -21,7 +21,7 @@ import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDead
 
 import java.time.Instant;
 
-public abstract class RecurringTask extends Task implements OnStartup {
+public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 
 	public static final String INSTANCE = "recurring";
 
