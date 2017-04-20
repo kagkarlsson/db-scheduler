@@ -1,9 +1,14 @@
 
 next
 
-- customizable table-name
+- improve documentation
+  - clean up, remove unnecessary examples
+  - example for one-time task with state
+  - migration guide for updating to newer versions (new column)
 
-- support simple form of metadata for each execution, e.g. some form of ids
+- automatic tests for oracle and mysql using docker containers? (how easy is that?)
+
+- customizable table-name
 
 - profile for varying target db (hsql/postgresql) for tests
 
