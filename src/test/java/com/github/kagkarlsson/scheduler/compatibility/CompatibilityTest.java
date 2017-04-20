@@ -11,6 +11,7 @@ import org.junit.rules.Timeout;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -74,6 +75,15 @@ public abstract class CompatibilityTest {
 
 	@Test
 	public void test_jdbc_repository_compatibility() {
+		doJDBCRepositoryCompatibilityTestUsingData(null);
+	}
+
+	@Test
+	public void test_jdbc_repository_compatibility_with_data() {
+		doJDBCRepositoryCompatibilityTestUsingData("my data".getBytes(StandardCharsets.UTF_8));
+	}
+
+	private void doJDBCRepositoryCompatibilityTestUsingData(byte[] data) {
 		TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED, new ArrayList<>());
 		taskResolver.addTask(oneTime);
 
@@ -81,7 +91,7 @@ public abstract class CompatibilityTest {
 
 		final Instant now = Instant.now();
 
-		final TaskInstance taskInstance = oneTime.instance("id1");
+		final TaskInstance taskInstance = oneTime.instance("id1", data);
 		final Execution newExecution = new Execution(now, taskInstance);
 		jdbcTaskRepository.createIfNotExists(newExecution);
 		assertThat(jdbcTaskRepository.getExecution(taskInstance).get().getExecutionTime(), is(now));
@@ -105,6 +115,7 @@ public abstract class CompatibilityTest {
 		assertThat(rescheduled.get().lastHeartbeat, nullValue());
 		assertThat(rescheduled.get().isPicked(), is(false));
 		assertThat(rescheduled.get().pickedBy, nullValue());
+		assertThat(rescheduled.get().taskInstance.getData(), is(data));
 		jdbcTaskRepository.remove(rescheduled.get());
 	}
 

@@ -34,6 +34,10 @@ public abstract class Task implements ExecutionHandler {
 		return new TaskInstance(this, id);
 	}
 
+	public TaskInstance instance(String id, byte[] data) {
+		return new TaskInstance(this, id, data);
+	}
+
 	public abstract void execute(TaskInstance taskInstance, ExecutionContext executionContext);
 
 	public CompletionHandler getCompletionHandler() {
