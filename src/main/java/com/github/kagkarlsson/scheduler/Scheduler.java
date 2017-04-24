@@ -255,7 +255,7 @@ public class Scheduler implements SchedulerClient {
 			try {
 				final Task task = execution.taskInstance.getTask();
 				LOG.debug("Executing " + execution);
-				task.execute(execution.taskInstance, new ExecutionContext(schedulerState));
+				task.execute(execution.taskInstance, new ExecutionContext(schedulerState, execution));
 				LOG.debug("Execution done");
 				complete(execution, ExecutionComplete.Result.OK);
 
