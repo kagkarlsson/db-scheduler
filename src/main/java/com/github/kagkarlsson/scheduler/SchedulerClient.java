@@ -84,6 +84,10 @@ public interface SchedulerClient {
 		public void reschedule(String taskName, String instanceId, Instant newExecutionTime) {
 			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
 			if(execution.isPresent()) {
+			    if(execution.get().isPicked()) {
+                    throw new RuntimeException(String.format("Could not reschedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
+                }
+
 				taskRepository.reschedule(execution.get(), newExecutionTime, null, null);
 			} else {
 				throw new RuntimeException(String.format("Could not reschedule - no task with name '%' and id '%s' was found." , taskName, instanceId));
@@ -94,7 +98,11 @@ public interface SchedulerClient {
 		public void cancel(String taskName, String instanceId) {
 			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
 			if(execution.isPresent()) {
-				taskRepository.remove(execution.get());
+                if(execution.get().isPicked()) {
+                    throw new RuntimeException(String.format("Could not cancel schedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
+                }
+
+                taskRepository.remove(execution.get());
 			} else {
 				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%' and id '%s' was found." , taskName, instanceId));
 			}
