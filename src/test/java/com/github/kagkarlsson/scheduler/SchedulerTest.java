@@ -75,7 +75,7 @@ public class SchedulerTest {
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
 		String instanceId = "1";
 		scheduler.schedule(executionTime, oneTimeTask.instance(instanceId));
-		scheduler.cancelSchedule(taskName, instanceId);
+		scheduler.cancel(taskName, instanceId);
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
 

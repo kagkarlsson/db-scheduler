@@ -39,7 +39,7 @@ public interface SchedulerClient {
 
 	void reschedule(String taskName, String instanceId, Instant newExecutionTime);
 
-	void cancelSchedule(String taskName, String instanceId);
+	void cancel(String taskName, String instanceId);
 
 	class Builder {
 
@@ -91,7 +91,7 @@ public interface SchedulerClient {
 		}
 
 		@Override
-		public void cancelSchedule(String taskName, String instanceId) {
+		public void cancel(String taskName, String instanceId) {
 			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
 			if(execution.isPresent()) {
 				taskRepository.remove(execution.get());
