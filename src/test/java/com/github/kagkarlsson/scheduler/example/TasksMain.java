@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -24,7 +25,8 @@ public class TasksMain {
 
 //			recurringTask(dataSource);
 //			adhocExecution(dataSource);
-			simplerTaskDefinition(dataSource);
+			adhocExecutionWithData(dataSource);
+//			simplerTaskDefinition(dataSource);
 		} catch (Exception e) {
 			LOG.error("Error", e);
 		}
@@ -80,6 +82,41 @@ public class TasksMain {
 		@Override
 		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 			System.out.println("Executed!");
+		}
+	}
+
+	private static void adhocExecutionWithData(DataSource dataSource) {
+
+		final MyAdhocTaskWithData myAdhocTask = new MyAdhocTaskWithData();
+
+		final Scheduler scheduler = Scheduler
+				.create(dataSource, myAdhocTask)
+				.threads(5)
+				.build();
+
+		scheduler.start();
+
+		// Schedule the task for execution a certain time in the future
+		scheduler.scheduleForExecution(Instant.now().plusSeconds(5), myAdhocTask.instance("1045", new MyData(1001L)));
+	}
+
+	public static class MyData implements Serializable {
+		public final long primaryKey;
+
+		public MyData(long primaryKey) {
+			this.primaryKey = primaryKey;
+		}
+	}
+
+	public static class MyAdhocTaskWithData extends OneTimeTaskWithData<MyData> {
+
+		public MyAdhocTaskWithData() {
+			super("my-adhoc-task-with-data", new JavaSerializer<>());
+		}
+
+		@Override
+		public void execute(TaskInstance taskInstance, MyData taskData, ExecutionContext executionContext) {
+			System.out.println("Executed with data: primaryKey=" + taskData.primaryKey);
 		}
 	}
 
