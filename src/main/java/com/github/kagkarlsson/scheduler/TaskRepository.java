@@ -22,19 +22,19 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-public interface TaskRepository {
+public interface TaskRepository<T> {
 
-	boolean createIfNotExists(Execution execution);
-	List<Execution> getDue(Instant now);
+	boolean createIfNotExists(Execution<T> execution);
+	List<Execution<T>> getDue(Instant now);
 
-	void remove(Execution execution);
-	void reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure);
+	void remove(Execution<T> execution);
+	void reschedule(Execution<T> execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure);
 
-	Optional<Execution> pick(Execution e, Instant timePicked);
+	Optional<Execution<T>> pick(Execution<T> e, Instant timePicked);
 
-	List<Execution> getOldExecutions(Instant olderThan);
+	List<Execution<T>> getOldExecutions(Instant olderThan);
 
-	void updateHeartbeat(Execution execution, Instant heartbeatTime);
+	void updateHeartbeat(Execution<T> execution, Instant heartbeatTime);
 
-	List<Execution> getExecutionsFailingLongerThan(Duration interval);
+	List<Execution<T>> getExecutionsFailingLongerThan(Duration interval);
 }

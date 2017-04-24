@@ -25,7 +25,7 @@ public class JdbcTaskRepositoryTest {
 	@Rule
 	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
 
-	private JdbcTaskRepository taskRepository;
+	private JdbcTaskRepository<Object> taskRepository;
 	private OneTimeTask oneTimeTask;
 
 	@Before
@@ -33,7 +33,7 @@ public class JdbcTaskRepositoryTest {
 		oneTimeTask = TestTasks.oneTime("OneTime", TestTasks.DO_NOTHING);
 		List<Task> knownTasks = new ArrayList<>();
 		knownTasks.add(oneTimeTask);
-		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED, knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
+		taskRepository = new JdbcTaskRepository<>(DB.getDataSource(), new TaskResolver(TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED, knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
 	}
 
 	@Test
@@ -74,7 +74,7 @@ public class JdbcTaskRepositoryTest {
 		IntStream.range(0, 100).forEach(i ->
 						taskRepository.createIfNotExists(new Execution(now.minusSeconds(new Random().nextInt(10000)), oneTimeTask.instance("id" + i)))
 		);
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution<Object>> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(100));
 
 		List<Execution> sortedDue = new ArrayList<>(due);
@@ -86,7 +86,7 @@ public class JdbcTaskRepositoryTest {
 	public void picked_executions_should_not_be_returned_as_due() {
 		Instant now = Instant.now();
 		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution<Object>> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
 
 		taskRepository.pick(due.get(0), now);
@@ -98,7 +98,7 @@ public class JdbcTaskRepositoryTest {
 		Instant now = Instant.now();
 		final TaskInstance instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution<Object>> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
 		taskRepository.pick(due.get(0), now);
 
@@ -116,10 +116,10 @@ public class JdbcTaskRepositoryTest {
 		final TaskInstance instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution<Object>> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
 		final Execution execution = due.get(0);
-		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
+		final Optional<Execution<Object>> pickedExecution = taskRepository.pick(execution, now);
 		assertThat(pickedExecution.isPresent(), is(true));
 		taskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now, null);
 
@@ -131,11 +131,11 @@ public class JdbcTaskRepositoryTest {
 		Instant now = Instant.now();
 		final TaskInstance instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution<Object>> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
 
 		Execution execution = due.get(0);
-		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
+		final Optional<Execution<Object>> pickedExecution = taskRepository.pick(execution, now);
 		final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
 		taskRepository.reschedule(pickedExecution.get(), nextExecutionTime, now, null);
 
@@ -155,7 +155,7 @@ public class JdbcTaskRepositoryTest {
 		final TaskInstance instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution<Object>> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
 
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
@@ -175,7 +175,7 @@ public class JdbcTaskRepositoryTest {
 	}
 
 	private Execution getSingleExecution() {
-		List<Execution> due = taskRepository.getDue(Instant.now());
+		List<Execution<Object>> due = taskRepository.getDue(Instant.now());
 		return due.get(0);
 	}
 

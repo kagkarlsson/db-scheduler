@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.io.*;
 import java.sql.*;
 import java.time.Duration;
 import java.time.Instant;
@@ -34,23 +35,48 @@ import java.util.Optional;
 
 import static java.util.Optional.ofNullable;
 
-public class JdbcTaskRepository implements TaskRepository {
+public class JdbcTaskRepository<T> implements TaskRepository<T> {
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
 	private static final int MAX_DUE_RESULTS = 10_000;
 	private final TaskResolver taskResolver;
 	private final SchedulerName schedulerSchedulerName;
 	private final JdbcRunner jdbcRunner;
 
+	private final static Serializer JAVA_SERIALIZER = new Serializer<Object>() {
+		public byte[] serialize(Object data) {
+            try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos)) {
+                out.writeObject(data);
+                return bos.toByteArray();
+            } catch(Exception e) {
+                throw new RuntimeException("Failed to serialize data", e);
+            }
+		}
+		public Object deserialize(byte[] serializedData) {
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(serializedData);
+                 ObjectInput in = new ObjectInputStream(bis)) {
+                return in.readObject();
+            } catch(Exception e) {
+                throw new RuntimeException("Failed to deserialize data", e);
+            }
+        }
+	};
+	private final Serializer<T> serializer;
+
 	public JdbcTaskRepository(DataSource dataSource, TaskResolver taskResolver, SchedulerName schedulerSchedulerName) {
+		this(dataSource, taskResolver, schedulerSchedulerName, JAVA_SERIALIZER);
+	}
+
+	public JdbcTaskRepository(DataSource dataSource, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer<T> serializer) {
 		this.taskResolver = taskResolver;
 		this.schedulerSchedulerName = schedulerSchedulerName;
 		this.jdbcRunner = new JdbcRunner(dataSource);
+		this.serializer = serializer;
 	}
 
 	@Override
-	public boolean createIfNotExists(Execution execution) {
+	public boolean createIfNotExists(Execution<T> execution) {
 		try {
-			Optional<Execution> existingExecution = getExecution(execution.taskInstance);
+			Optional<Execution<T>> existingExecution = getExecution(execution.taskInstance);
 			if (existingExecution.isPresent()) {
 				LOG.debug("Execution not created, it already exists. Due: {}", existingExecution.get().executionTime);
 				return false;
@@ -61,7 +87,7 @@ public class JdbcTaskRepository implements TaskRepository {
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTask().getName());
 						p.setString(2, execution.taskInstance.getId());
-						p.setObject(3, execution.taskInstance.getData());
+						p.setObject(3, serializer.serialize(execution.taskInstance.getData()));
 						p.setTimestamp(4, Timestamp.from(execution.executionTime));
 						p.setBoolean(5, false);
 						p.setLong(6, 1L);
@@ -70,7 +96,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
 		} catch (SQLRuntimeException e) {
 			LOG.debug("Exception when inserting execution. Assuming it to be a constraint violation.", e);
-			Optional<Execution> existingExecution = getExecution(execution.taskInstance);
+			Optional<Execution<T>> existingExecution = getExecution(execution.taskInstance);
 			if (!existingExecution.isPresent()) {
 				throw new RuntimeException("Failed to add new execution.", e);
 			}
@@ -80,11 +106,11 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getDue(Instant now) {
+	public List<Execution<T>> getDue(Instant now) {
 		return getDue(now, MAX_DUE_RESULTS);
 	}
 
-	public List<Execution> getDue(Instant now, int limit) {
+	public List<Execution<T>> getDue(Instant now, int limit) {
 		return jdbcRunner.query(
 				"select * from scheduled_tasks where picked = ? and execution_time <= ? order by execution_time asc",
 				(PreparedStatement p) -> {
@@ -144,7 +170,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public Optional<Execution> pick(Execution e, Instant timePicked) {
+	public Optional<Execution<T>> pick(Execution e, Instant timePicked) {
 		final int updated = jdbcRunner.execute(
 				"update scheduled_tasks set picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
 						"where picked = ? " +
@@ -165,7 +191,7 @@ public class JdbcTaskRepository implements TaskRepository {
 			LOG.trace("Failed to pick execution. It must have been picked by another scheduler.", e);
 			return Optional.empty();
 		} else if (updated == 1) {
-			final Optional<Execution> pickedExecution = getExecution(e.taskInstance);
+			final Optional<Execution<T>> pickedExecution = (Optional)getExecution(e.taskInstance);
 			if (!pickedExecution.isPresent()) {
 				throw new IllegalStateException("Unable to find picked execution. Must have been deleted by another thread. Indicates a bug.");
 			} else if (!pickedExecution.get().isPicked()) {
@@ -178,7 +204,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getOldExecutions(Instant olderThan) {
+	public List<Execution<T>> getOldExecutions(Instant olderThan) {
 		return jdbcRunner.query(
 				"select * from scheduled_tasks where picked = ? and last_heartbeat <= ? order by last_heartbeat asc",
 				(PreparedStatement p) -> {
@@ -215,7 +241,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getExecutionsFailingLongerThan(Duration interval) {
+	public List<Execution<T>> getExecutionsFailingLongerThan(Duration interval) {
 		return jdbcRunner.query(
 				"select * from scheduled_tasks where " +
 						"	(last_success is null and last_failure is not null)" +
@@ -227,8 +253,8 @@ public class JdbcTaskRepository implements TaskRepository {
 		);
 	}
 
-	public Optional<Execution> getExecution(TaskInstance taskInstance) {
-		final List<Execution> executions = jdbcRunner.query(
+	public Optional<Execution<T>> getExecution(TaskInstance<T> taskInstance) {
+		final List<Execution<T>> executions = jdbcRunner.query(
 				"select * from scheduled_tasks where task_name = ? and task_instance = ?",
 				(PreparedStatement p) -> {
 					p.setString(1, taskInstance.getTaskName());
@@ -240,14 +266,14 @@ public class JdbcTaskRepository implements TaskRepository {
 			throw new RuntimeException("Found more than one matching execution for taskInstance: " + taskInstance);
 		}
 
-		return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.<Execution>empty();
+		return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.empty();
 	}
 
-	private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
+	private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution<T>>> {
 		@Override
-		public List<Execution> map(ResultSet rs) throws SQLException {
+		public List<Execution<T>> map(ResultSet rs) throws SQLException {
 
-			List<Execution> executions = new ArrayList<>();
+			List<Execution<T>> executions = new ArrayList<>();
 			while (rs.next()) {
 				String taskName = rs.getString("task_name");
 				Task task = taskResolver.resolve(taskName);
@@ -270,7 +296,7 @@ public class JdbcTaskRepository implements TaskRepository {
 				Instant lastHeartbeat = ofNullable(rs.getTimestamp("last_heartbeat"))
 						.map(Timestamp::toInstant).orElse(null);
 				long version = rs.getLong("version");
-				executions.add(new Execution(executionTime, new TaskInstance(task, taskInstance, data), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
+				executions.add(new Execution<>(executionTime, new TaskInstance<>(task, taskInstance, () -> serializer.deserialize(data)), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
 			}
 			return executions;
 		}

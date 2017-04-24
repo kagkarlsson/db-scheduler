@@ -15,7 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-public abstract class Task implements ExecutionHandler {
+public abstract class Task<T> implements ExecutionHandler<T> {
 	protected final String name;
 	private final CompletionHandler completionHandler;
 	private final DeadExecutionHandler deadExecutionHandler;
@@ -34,11 +34,11 @@ public abstract class Task implements ExecutionHandler {
 		return new TaskInstance(this, id);
 	}
 
-	public TaskInstance instance(String id, byte[] data) {
-		return new TaskInstance(this, id, data);
+	public TaskInstance<T> instance(String id, T data) {
+		return new TaskInstance<>(this, id, data);
 	}
 
-	public abstract void execute(TaskInstance taskInstance, ExecutionContext executionContext);
+	public abstract void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
 	public CompletionHandler getCompletionHandler() {
 		return completionHandler;

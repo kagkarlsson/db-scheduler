@@ -15,6 +15,6 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-public interface ExecutionHandler {
-	void execute(TaskInstance taskInstance, ExecutionContext executionContext);
+public interface ExecutionHandler<T> {
+	void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 }

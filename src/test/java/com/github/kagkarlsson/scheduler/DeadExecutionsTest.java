@@ -25,7 +25,7 @@ public class DeadExecutionsTest {
 	private Scheduler scheduler;
 	private SettableClock settableClock;
 	private OneTimeTask oneTimeTask;
-	private JdbcTaskRepository jdbcTaskRepository;
+	private JdbcTaskRepository<Object> jdbcTaskRepository;
 	private NonCompletingTask nonCompleting;
 	private TestTasks.CountingHandler nonCompletingExecutionHandler;
 	private RescheduleDead deadExecutionHandler;
@@ -62,10 +62,10 @@ public class DeadExecutionsTest {
 		final Execution execution1 = new Execution(now.minus(Duration.ofDays(1)), taskInstance);
 		jdbcTaskRepository.createIfNotExists(execution1);
 
-		final List<Execution> due = jdbcTaskRepository.getDue(now);
+		final List<Execution<Object>> due = jdbcTaskRepository.getDue(now);
 		assertThat(due, Matchers.hasSize(1));
 		final Execution execution = due.get(0);
-		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(execution, now);
+		final Optional<Execution<Object>> pickedExecution = jdbcTaskRepository.pick(execution, now);
 		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.minus(Duration.ofHours(1)));
 
 		scheduler.detectDeadExecutions();
