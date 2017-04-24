@@ -32,11 +32,13 @@ import java.util.stream.Collectors;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 
-public class Scheduler extends SchedulerClient.StandardSchedulerClient {
+public class Scheduler implements SchedulerClient {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 	public static final Duration SHUTDOWN_WAIT = Duration.ofMinutes(30);
+	private final SchedulerClient delegate;
 	private final Clock clock;
+	private final TaskRepository taskRepository;
 	private final ExecutorService executorService;
 	private final Waiter waiter;
 	private final List<OnStartup> onStartup;
@@ -62,8 +64,8 @@ public class Scheduler extends SchedulerClient.StandardSchedulerClient {
 
 	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
 			  Waiter waiter, Duration heartbeatInterval, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
-		super(taskRepository);
 		this.clock = clock;
+		this.taskRepository = taskRepository;
 		this.executorService = executorService;
 		this.waiter = waiter;
 		this.onStartup = onStartup;
@@ -75,6 +77,7 @@ public class Scheduler extends SchedulerClient.StandardSchedulerClient {
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-detect-dead-"));
 		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-update-heartbeat-"));
 		executorsSemaphore = new Semaphore(maxThreads);
+		delegate = new StandardSchedulerClient(taskRepository);
 	}
 
 	public void start() {
@@ -119,6 +122,26 @@ public class Scheduler extends SchedulerClient.StandardSchedulerClient {
 			LOG.warn("Scheduler stopped, but some tasks did not complete. Was currently running the following executions:\n{}",
 					new ArrayList<>(currentlyProcessing.keySet()).stream().map(Execution::toString).collect(Collectors.joining("\n")));
 		}
+	}
+
+	@Override
+	public void scheduleForExecution(Instant executionTime, TaskInstance taskInstance) {
+		this.schedule(executionTime, taskInstance);
+	}
+
+	@Override
+	public void schedule(Instant executionTime, TaskInstance taskInstance) {
+		this.delegate.schedule(executionTime, taskInstance);
+	}
+
+	@Override
+	public void reschedule(String taskName, String instanceId, Instant newExecutionTime) {
+		this.delegate.reschedule(taskName, instanceId, newExecutionTime);
+	}
+
+	@Override
+	public void cancel(String taskName, String instanceId) {
+		this.delegate.cancel(taskName, instanceId);
 	}
 
 	public List<CurrentlyExecuting> getCurrentlyExecuting() {
