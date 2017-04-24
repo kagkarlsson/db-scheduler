@@ -46,7 +46,7 @@ public class ClusterTest {
 			scheduler2.start();
 
 			ids.forEach(id -> {
-				scheduler1.scheduleForExecution(Instant.now(), task.instance(id));
+				scheduler1.schedule(Instant.now(), task.instance(id));
 			});
 
 			completeAllIds.await();

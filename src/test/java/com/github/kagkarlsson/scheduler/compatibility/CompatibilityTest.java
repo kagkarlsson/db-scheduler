@@ -58,12 +58,12 @@ public abstract class CompatibilityTest {
 	public void test_compatibility() {
 		scheduler.start();
 
-		scheduler.scheduleForExecution(Instant.now(), oneTime.instance("id1"));
-		scheduler.scheduleForExecution(Instant.now(), oneTime.instance("id1")); //duplicate
-		scheduler.scheduleForExecution(Instant.now(), recurring.instance("id1"));
-		scheduler.scheduleForExecution(Instant.now(), recurring.instance("id2"));
-		scheduler.scheduleForExecution(Instant.now(), recurring.instance("id3"));
-		scheduler.scheduleForExecution(Instant.now(), recurring.instance("id4"));
+		scheduler.schedule(Instant.now(), oneTime.instance("id1"));
+		scheduler.schedule(Instant.now(), oneTime.instance("id1")); //duplicate
+		scheduler.schedule(Instant.now(), recurring.instance("id1"));
+		scheduler.schedule(Instant.now(), recurring.instance("id2"));
+		scheduler.schedule(Instant.now(), recurring.instance("id3"));
+		scheduler.schedule(Instant.now(), recurring.instance("id4"));
 
 		sleep(Duration.ofSeconds(10));
 

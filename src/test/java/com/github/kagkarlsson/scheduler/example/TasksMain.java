@@ -68,7 +68,7 @@ public class TasksMain {
 		scheduler.start();
 
 		// Schedule the task for execution a certain time in the future
-		scheduler.scheduleForExecution(Instant.now().plusSeconds(5), myAdhocTask.instance("1045"));
+		scheduler.schedule(Instant.now().plusSeconds(5), myAdhocTask.instance("1045"));
 	}
 
 	public static class MyAdhocTask extends OneTimeTask {
@@ -101,7 +101,7 @@ public class TasksMain {
 		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
 				(taskInstance, context) -> System.out.println("One-time with id "+taskInstance.getId()+" executed!"));
 
-		scheduler.scheduleForExecution(Instant.now().plus(Duration.ofDays(1)), oneTimeTask.instance("1001"));
+		scheduler.schedule(Instant.now().plus(Duration.ofDays(1)), oneTimeTask.instance("1001"));
 	}
 
 
@@ -118,7 +118,7 @@ public class TasksMain {
 		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task", mySpringWorker);
 
 		// schedule a future execution for the task with a custom id (currently the only form for context supported)
-		scheduler.scheduleForExecution(Instant.now().plus(Duration.ofDays(1)), oneTimeTask.instance("1001"));
+		scheduler.schedule(Instant.now().plus(Duration.ofDays(1)), oneTimeTask.instance("1001"));
 	}
 
 

@@ -69,6 +69,7 @@ public interface SchedulerClient {
 		}
 		
 		@Override
+        @Deprecated
 		public void scheduleForExecution(Instant executionTime,
 				TaskInstance taskInstance) {
 			schedule(executionTime, taskInstance);
