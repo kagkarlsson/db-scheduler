@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.task.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,9 +53,10 @@ public class SchedulerTest {
 
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
 		String instanceId = "1";
-		scheduler.schedule(executionTime, oneTimeTask.instance(instanceId));
+		TaskInstance oneTimeTaskInstance = oneTimeTask.instance(instanceId);
+		scheduler.schedule(executionTime, oneTimeTaskInstance);
 		Instant reScheduledExecutionTime = clock.now().plus(Duration.ofMinutes(2));
-		scheduler.reschedule(taskName, instanceId, reScheduledExecutionTime);
+		scheduler.reschedule(oneTimeTaskInstance, reScheduledExecutionTime);
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
 
@@ -74,8 +76,9 @@ public class SchedulerTest {
 
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
 		String instanceId = "1";
-		scheduler.schedule(executionTime, oneTimeTask.instance(instanceId));
-		scheduler.cancel(taskName, instanceId);
+		TaskInstance oneTimeTaskInstance = oneTimeTask.instance(instanceId);
+		scheduler.schedule(executionTime, oneTimeTaskInstance);
+		scheduler.cancel(oneTimeTaskInstance);
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
 

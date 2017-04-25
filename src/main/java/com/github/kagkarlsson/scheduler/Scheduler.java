@@ -135,13 +135,13 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	@Override
-	public void reschedule(String taskName, String instanceId, Instant newExecutionTime) {
-		this.delegate.reschedule(taskName, instanceId, newExecutionTime);
+	public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+		this.delegate.reschedule(taskInstanceId, newExecutionTime);
 	}
 
 	@Override
-	public void cancel(String taskName, String instanceId) {
-		this.delegate.cancel(taskName, instanceId);
+	public void cancel(TaskInstanceId taskInstanceId) {
+		this.delegate.cancel(taskInstanceId);
 	}
 
 	public List<CurrentlyExecuting> getCurrentlyExecuting() {

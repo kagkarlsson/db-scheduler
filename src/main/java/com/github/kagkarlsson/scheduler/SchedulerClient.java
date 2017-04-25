@@ -24,6 +24,7 @@ import javax.sql.DataSource;
 import com.github.kagkarlsson.scheduler.TaskResolver.OnCannotResolve;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 
 public interface SchedulerClient {
 
@@ -37,9 +38,9 @@ public interface SchedulerClient {
 
 	void schedule(Instant executionTime, TaskInstance taskInstance);
 
-	void reschedule(String taskName, String instanceId, Instant newExecutionTime);
+	void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
-	void cancel(String taskName, String instanceId);
+	void cancel(TaskInstanceId taskInstanceId);
 
 	class Builder {
 
@@ -81,7 +82,9 @@ public interface SchedulerClient {
 		}
 
 		@Override
-		public void reschedule(String taskName, String instanceId, Instant newExecutionTime) {
+		public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+			String taskName = taskInstanceId.getTaskName();
+			String instanceId = taskInstanceId.getId();
 			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
 			if(execution.isPresent()) {
 			    if(execution.get().isPicked()) {
@@ -95,7 +98,9 @@ public interface SchedulerClient {
 		}
 
 		@Override
-		public void cancel(String taskName, String instanceId) {
+		public void cancel(TaskInstanceId taskInstanceId) {
+			String taskName = taskInstanceId.getTaskName();
+			String instanceId = taskInstanceId.getId();
 			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
 			if(execution.isPresent()) {
                 if(execution.get().isPicked()) {
@@ -109,7 +114,7 @@ public interface SchedulerClient {
 		}
 	}
 	
-	static class SchedulerClientName implements SchedulerName {
+	class SchedulerClientName implements SchedulerName {
 		@Override
 		public String getName() {
 			return "SchedulerClient";
