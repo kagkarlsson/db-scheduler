@@ -21,15 +21,14 @@ import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDead
 
 import java.time.Instant;
 
-public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
+import static com.github.kagkarlsson.scheduler.task.Task.Serializer.NO_SERIALIZER;
+
+public abstract class RecurringTask extends Task<Void> implements OnStartup {
 
 	public static final String INSTANCE = "recurring";
 
 	public RecurringTask(String name, Schedule schedule) {
-		super(name, new OnCompleteReschedule(schedule), new RescheduleDeadExecution());
-	}
-	public RecurringTask(String name, Schedule schedule, Serializer<T> serializer) {
-		super(name, new OnCompleteReschedule(schedule), new RescheduleDeadExecution(), serializer);
+		super(name, new OnCompleteReschedule(schedule), new RescheduleDeadExecution(), NO_SERIALIZER);
 	}
 
 	@Override

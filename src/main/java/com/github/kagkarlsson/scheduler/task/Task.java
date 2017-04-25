@@ -67,7 +67,17 @@ public abstract class Task<T> implements ExecutionHandler<T> {
 	public interface Serializer<T> {
 		byte[] serialize(T data);
 		T deserialize(byte[] serializedData);
+        Serializer NO_SERIALIZER = new Serializer<Void>() {
+            @Override
+            public byte[] serialize(Void data) {
+                return new byte[0];
+            }
 
+            @Override
+            public Void deserialize(byte[] serializedData) {
+                return null;
+            }
+        };
 		Serializer JAVA_SERIALIZER = new Serializer<Object>() {
 			public byte[] serialize(Object data) {
 				if(data == null) return null;

@@ -44,10 +44,10 @@ public class TestTasks {
 		};
 	}
 
-	public static <T> RecurringTask<T> recurring(String name, FixedDelay schedule, ExecutionHandler<T> handler) {
-		return new RecurringTask<T>(name, schedule) {
+	public static RecurringTask recurring(String name, FixedDelay schedule, ExecutionHandler<Void> handler) {
+		return new RecurringTask(name, schedule) {
 			@Override
-			public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+			public void execute(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
 			}
 		};
