@@ -30,19 +30,18 @@ public final class TaskInstance<T> {
 	}
 
     public TaskInstance(Task<T> task, String id, T data) {
-        this(task, id, () -> data);
+        this.task = task;
+        this.id = id;
+        this.dataSupplier = () -> data;
+        this.serializedDataSupplier = memoize(() -> this.task.serializer.serialize(data));
     }
 
     public TaskInstance(Task<T> task, String id, byte[] serializedData) {
-        this(task, id, () -> task.serializer.deserialize(serializedData));
+        this.task = task;
+        this.id = id;
+        this.serializedDataSupplier = () -> serializedData;
+        this.dataSupplier = memoize(() -> this.task.serializer.deserialize(serializedData));
     }
-
-	public TaskInstance(Task<T> task, String id, Supplier<T> dataSupplier) {
-		this.task = task;
-		this.id = id;
-		this.dataSupplier = memoize(dataSupplier);
-		this.serializedDataSupplier = memoize(() -> task.serializer.serialize(this.dataSupplier.get()));
-	}
 
 	public String getTaskAndInstance() {
 		return task.getName() + "_" + id;
