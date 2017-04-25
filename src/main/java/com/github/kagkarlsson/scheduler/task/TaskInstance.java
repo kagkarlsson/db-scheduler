@@ -16,21 +16,32 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
-public final class TaskInstance {
+public final class TaskInstance<T> {
 
-	private final Task task;
+	private final Task<T> task;
 	private final String id;
-	private final byte[] data;
+	private final Supplier<T> dataSupplier;
+	private final Supplier<byte[]> serializedDataSupplier;
 
-	public TaskInstance(Task task, String id) {
-		this(task, id, null);
+	public TaskInstance(Task<T> task, String id) {
+		this(task, id, (T) null);
 	}
 
-	public TaskInstance(Task task, String id, byte[] data) {
+    public TaskInstance(Task<T> task, String id, T data) {
+        this(task, id, () -> data);
+    }
+
+    public TaskInstance(Task<T> task, String id, byte[] serializedData) {
+        this(task, id, () -> task.serializer.deserialize(serializedData));
+    }
+
+	public TaskInstance(Task<T> task, String id, Supplier<T> dataSupplier) {
 		this.task = task;
 		this.id = id;
-		this.data = data;
+		this.dataSupplier = memoize(dataSupplier);
+		this.serializedDataSupplier = memoize(() -> task.serializer.serialize(this.dataSupplier.get()));
 	}
 
 	public String getTaskAndInstance() {
@@ -49,8 +60,12 @@ public final class TaskInstance {
 		return id;
 	}
 
-	public byte[] getData() {
-		return this.data;
+	public T getData() {
+		return dataSupplier.get();
+	}
+
+	public byte[] getSerializedData() {
+		return serializedDataSupplier.get();
 	}
 
 	@Override
@@ -73,4 +88,22 @@ public final class TaskInstance {
 				"task=" + task.getName() +
 				", id=" + id;
 	}
+
+    private static <T> Supplier<T> memoize(Supplier<T> original) {
+        return new Supplier<T>() {
+            Supplier<T> delegate = this::firstTime;
+            boolean initialized;
+            public T get() {
+                return delegate.get();
+            }
+            private synchronized T firstTime() {
+                if(!initialized) {
+                    T value = original.get();
+                    delegate = () -> value;
+                    initialized = true;
+                }
+                return delegate.get();
+            }
+        };
+    }
 }

@@ -2,7 +2,6 @@ package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +23,8 @@ public class TasksMain {
 
 //			recurringTask(dataSource);
 //			adhocExecution(dataSource);
-			simplerTaskDefinition(dataSource);
+			typedAdhocExecution(dataSource);
+//			simplerTaskDefinition(dataSource);
 		} catch (Exception e) {
 			LOG.error("Error", e);
 		}
@@ -83,6 +83,32 @@ public class TasksMain {
 		}
 	}
 
+	private static void typedAdhocExecution(DataSource dataSource) {
+
+		final MyTypedAdhocTask myAdhocTask = new MyTypedAdhocTask();
+
+		final Scheduler scheduler = Scheduler
+				.create(dataSource, myAdhocTask)
+				.threads(5)
+				.build();
+
+		scheduler.start();
+
+		// Schedule the task for execution a certain time in the future
+		scheduler.scheduleForExecution(Instant.now().plusSeconds(5), myAdhocTask.instance("1045", "Some data!"));
+	}
+
+	public static class MyTypedAdhocTask extends OneTimeTask<String> {
+
+		public MyTypedAdhocTask() {
+			super("my-typed-adhoc-task");
+		}
+
+		@Override
+		public void execute(TaskInstance<String> taskInstance, ExecutionContext executionContext) {
+			System.out.println(String.format("Executed! with data '%s'", taskInstance.getData()));
+		}
+	}
 
 	private static void simplerTaskDefinition(DataSource dataSource) {
 

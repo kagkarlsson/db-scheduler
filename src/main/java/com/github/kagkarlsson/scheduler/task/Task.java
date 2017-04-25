@@ -15,30 +15,40 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-public abstract class Task implements ExecutionHandler {
+import java.io.*;
+
+import static com.github.kagkarlsson.scheduler.task.Task.Serializer.JAVA_SERIALIZER;
+
+public abstract class Task<T> implements ExecutionHandler<T> {
 	protected final String name;
 	private final CompletionHandler completionHandler;
 	private final DeadExecutionHandler deadExecutionHandler;
+	protected final Serializer<T> serializer;
 
 	public Task(String name, CompletionHandler completionHandler, DeadExecutionHandler deadExecutionHandler) {
+		this(name, completionHandler, deadExecutionHandler, JAVA_SERIALIZER);
+	}
+
+	public Task(String name, CompletionHandler completionHandler, DeadExecutionHandler deadExecutionHandler, Serializer<T> serializer) {
 		this.name = name;
 		this.completionHandler = completionHandler;
 		this.deadExecutionHandler = deadExecutionHandler;
+		this.serializer = serializer;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public TaskInstance instance(String id) {
-		return new TaskInstance(this, id);
+	public TaskInstance<T> instance(String id) {
+		return new TaskInstance<>(this, id);
 	}
 
-	public TaskInstance instance(String id, byte[] data) {
-		return new TaskInstance(this, id, data);
+	public TaskInstance<T> instance(String id, T data) {
+		return new TaskInstance<>(this, id, data);
 	}
 
-	public abstract void execute(TaskInstance taskInstance, ExecutionContext executionContext);
+	public abstract void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
 	public CompletionHandler getCompletionHandler() {
 		return completionHandler;
@@ -52,6 +62,32 @@ public abstract class Task implements ExecutionHandler {
 	public String toString() {
 		return "Task " +
 				"task=" + getName();
+	}
+
+	public interface Serializer<T> {
+		byte[] serialize(T data);
+		T deserialize(byte[] serializedData);
+
+		Serializer JAVA_SERIALIZER = new Serializer<Object>() {
+			public byte[] serialize(Object data) {
+				if(data == null) return null;
+				try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos)) {
+					out.writeObject(data);
+					return bos.toByteArray();
+				} catch(Exception e) {
+					throw new RuntimeException("Failed to serialize object", e);
+				}
+			}
+			public Object deserialize(byte[] serializedData) {
+				if(serializedData == null) return null;
+				try (ByteArrayInputStream bis = new ByteArrayInputStream(serializedData);
+					 ObjectInput in = new ObjectInputStream(bis)) {
+					return in.readObject();
+				} catch(Exception e) {
+					throw new RuntimeException("Failed to deserialize object", e);
+				}
+			}
+		};
 	}
 }
 
