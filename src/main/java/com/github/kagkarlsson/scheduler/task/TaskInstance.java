@@ -21,10 +21,16 @@ public final class TaskInstance implements TaskInstanceId {
 
 	private final Task task;
 	private final String id;
+	private final byte[] data;
 
 	public TaskInstance(Task task, String id) {
+		this(task, id, null);
+	}
+
+	public TaskInstance(Task task, String id, byte[] data) {
 		this.task = task;
 		this.id = id;
+		this.data = data;
 	}
 
 	public String getTaskAndInstance() {
@@ -42,6 +48,10 @@ public final class TaskInstance implements TaskInstanceId {
 	@Override
 	public String getId() {
 		return id;
+	}
+
+	public byte[] getData() {
+		return this.data;
 	}
 
 	@Override
