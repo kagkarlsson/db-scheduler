@@ -1,10 +1,13 @@
 
-next
+future development
 
 - improve documentation
   - clean up, remove unnecessary examples
   - example for one-time task with state
   - migration guide for updating to newer versions (new column)
+
+- optimize scheduler to look an interval forward in time, and trigger next cycle earlier if there are an immediate execution
+  - keep a list if executions due between now and next interval
 
 - automatic tests for oracle and mysql using docker containers? (how easy is that?)
 
@@ -15,7 +18,7 @@ next
 - only update heartbeats if execution older than one heartbeat interval/cycles
 
 
-future
+far future
 - support transactional taskRepositories
    - so far, jdbctaskrepository requires TransactionAwareDataSource for reliable scheduling of new tasks in transaction
 - cron schedule? (separate artifact if dependencies)

@@ -37,16 +37,48 @@ final Scheduler scheduler = Scheduler
 
 scheduler.start();
 ```
+## How it works
+
+A single database table is used to track future task-executions. When a task-execution is due, db-scheduler picks it and executes it. When the execution is done, the `Task` is consulted to see what should be done. For example, a `RecurringTask` is typically rescheduled in the future based on its `Schedule`.
+
+Optimistic locking is used to guarantee that a single scheduler instance gets to pick a task-execution.
+
+
+#### Recurring tasks
+
+The term _recurring task_ is used for tasks that should be run regularly, according to some schedule (see `RecurringTask`).
+
+When the execution of a recurring task has finished, a `Schedule` is consulted to determine what the next time for execution should be, and a future task-execution is created for that time (i.e. the task-instance is _rescheduled_). The time chosen will be the nearest in time according to the `Schedule`, but still in the future.
+
+To create the initial execution for a `RecurringTask`, the scheduler has a method  `startTasks(...)` that takes a list of tasks that should be "started" if they do not already have a future execution. Note: The first execution-time will not be according to the schedule, but simply `now()`.
+
+#### Ad-hoc tasks
+
+The other type of task has been named _ad-hoc task_, but is most typically something that should be run once at a certain time in the future, a `OneTimeTask`.
+
+In addition to encode some data into the `instanceId`of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time.
+
+#### Reliability - handling crashes
+
+To avoid missed task-executions, the scheduler also regularly checks for _dead_ executions. Should one be found, the `Task`is consulted to see what should be done. A dead `RecurringTask` is typically rescheduled to `now()`.
+
+#### Things to note / gotchas
+
+* There are no guarantees that all instants in a schedule for a `RecurringTask` will be executed. The `Schedule` is consulted after the previous task-execution finishes, and the closest time in the future will be selected for next execution-time. A new type of task may be added in the future to provide such functionality.
+
+* The methods on `SchedulerClient` (`scheduleForExecution` etc) will run using a new `Connection`from the `DataSource`provided. To have the action be a part of a transaction, something like Spring's `TransactionAwareDataSourceProxy` may be used.
 
 ## More examples
 
-### Simple task definition
+#### Simple task definition
 
 Less verbose task-definitions using `ComposableTask`.
 
 ```java
-final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
-                () -> System.out.println("Executed!"));
+final RecurringTask myHourlyTask = ComposableTask.recurringTask(
+    "my-hourly-task",
+    FixedDelay.of(ofHours(1)),
+    () -> System.out.println("Executed!"));
 
 final Scheduler scheduler = Scheduler
         .create(dataSource)
@@ -57,7 +89,7 @@ final Scheduler scheduler = Scheduler
 scheduler.start();
 ```
 
-### Recurring tasks
+#### Recurring tasks
 
 Start the recurring task on start-up. Upon completion, `hourlyTask` will be re-scheduled according to the defined schedule.
 
@@ -92,7 +124,7 @@ public static class MyHourlyTask extends RecurringTask {
 
 
 
-### Ad-hoc tasks
+#### Ad-hoc tasks
 
 Schedule the ad-hoc task for execution at a certain time in the future. The instance-id may be used to encode metadata (e.g. an id), since the instance-id will be available for the execution-handler.
 
@@ -127,7 +159,7 @@ public static class MyAdhocTask extends OneTimeTask {
 ```
 
 
-### Register shutdown-hook for graceful shutdown
+#### Register shutdown-hook for graceful shutdown
 
 ```java
 RecurringTask myRecurringTask = new MyHourlyTask();
