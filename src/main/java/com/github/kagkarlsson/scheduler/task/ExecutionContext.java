@@ -20,12 +20,18 @@ import com.github.kagkarlsson.scheduler.SchedulerState;
 public class ExecutionContext {
 
 	private SchedulerState schedulerState;
+	private final Execution execution;
 
-	public ExecutionContext(SchedulerState schedulerState) {
+	public ExecutionContext(SchedulerState schedulerState, Execution execution) {
 		this.schedulerState = schedulerState;
+		this.execution = execution;
 	}
 
 	public SchedulerState getSchedulerState() {
 		return schedulerState;
+	}
+
+	public Execution getExecution() {
+		return execution;
 	}
 }

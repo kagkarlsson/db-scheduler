@@ -2,12 +2,12 @@ package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -23,8 +23,8 @@ public class TasksMain {
 			final DataSource dataSource = hsqlRule.getDataSource();
 
 //			recurringTask(dataSource);
-//			adhocExecution(dataSource);
-			simplerTaskDefinition(dataSource);
+			adhocTask(dataSource);
+//			simplerTaskDefinition(dataSource);
 		} catch (Exception e) {
 			LOG.error("Error", e);
 		}
@@ -40,7 +40,7 @@ public class TasksMain {
 				.threads(5)
 				.build();
 
-		// hourlyTask is automatically scheduled on startup if not already started (i.e. in the db)
+		// hourlyTask is automatically scheduled on startup if not already started (i.e. exists in the db)
 		scheduler.start();
 	}
 
@@ -56,9 +56,9 @@ public class TasksMain {
 		}
 	}
 
-	private static void adhocExecution(DataSource dataSource) {
+	private static void adhocTask(DataSource dataSource) {
 
-		final MyAdhocTask myAdhocTask = new MyAdhocTask();
+		final MyTypedAdhocTask myAdhocTask = new MyTypedAdhocTask();
 
 		final Scheduler scheduler = Scheduler
 				.create(dataSource, myAdhocTask)
@@ -67,27 +67,36 @@ public class TasksMain {
 
 		scheduler.start();
 
-		// Schedule the task for execution a certain time in the future
-		scheduler.schedule(Instant.now().plusSeconds(5), myAdhocTask.instance("1045"));
+		// Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
+		scheduler.schedule(Instant.now().plusSeconds(5), myAdhocTask.instance("1045", new MyTaskData(1001L, "custom-data")));
 	}
 
-	public static class MyAdhocTask extends OneTimeTask {
+	public static class MyTaskData implements Serializable {
+		public final long id;
+		public final String secondaryId;
 
-		public MyAdhocTask() {
-			super("my-adhoc-task");
+		public MyTaskData(long id, String secondaryId) {
+			this.id = id;
+			this.secondaryId = secondaryId;
+		}
+	}
+
+	public static class MyTypedAdhocTask extends OneTimeTask<MyTaskData> {
+
+		public MyTypedAdhocTask() {
+			super("my-typed-adhoc-task");
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
-			System.out.println("Executed!");
+		public void execute(TaskInstance<MyTaskData> taskInstance, ExecutionContext executionContext) {
+			System.out.println(String.format("Executed! Custom data: [Id: %s], [secondary-id: %s]", taskInstance.getData().id, taskInstance.getData().secondaryId));
 		}
 	}
-
 
 	private static void simplerTaskDefinition(DataSource dataSource) {
 
 		final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
-						() -> System.out.println("Executed!"));
+				() -> System.out.println("Executed!"));
 
 
 		final Scheduler scheduler = Scheduler

@@ -1,8 +1,10 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.Task.Serializer;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,6 +12,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestTasks {
 
 	public static final ExecutionHandler DO_NOTHING = (taskInstance, executionContext) -> {};
+	public static final Serializer<String> STRING_SERIALIZER = new Serializer<String>() {
+		@Override
+		public byte[] serialize(String data) {
+			if(data == null) return null;
+			return data.getBytes(StandardCharsets.UTF_8);
+		}
+
+		@Override
+		public String deserialize(byte[] serializedData) {
+			if(serializedData == null) return null;
+			return new String(serializedData, StandardCharsets.UTF_8);
+		}
+	};
 
 	public static OneTimeTask oneTime(String name, ExecutionHandler handler) {
 		return new OneTimeTask(name) {
@@ -20,10 +35,19 @@ public class TestTasks {
 		};
 	}
 
-	public static RecurringTask recurring(String name, FixedDelay schedule, ExecutionHandler handler) {
+	public static <T> OneTimeTask<T> oneTimeWithType(String name, ExecutionHandler<T> handler, Serializer<T> serializer) {
+		return new OneTimeTask<T>(name, serializer) {
+			@Override
+			public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+				handler.execute(taskInstance, executionContext);
+			}
+		};
+	}
+
+	public static RecurringTask recurring(String name, FixedDelay schedule, ExecutionHandler<Void> handler) {
 		return new RecurringTask(name, schedule) {
 			@Override
-			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+			public void execute(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
 			}
 		};
