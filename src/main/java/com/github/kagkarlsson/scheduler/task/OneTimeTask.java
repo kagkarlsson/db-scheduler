@@ -15,10 +15,13 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-public abstract class OneTimeTask extends Task {
-
+public abstract class OneTimeTask<T> extends Task<T> {
 	public OneTimeTask(String name) {
 		super(name, new CompletionHandler.OnCompleteRemove(), new DeadExecutionHandler.RescheduleDeadExecution());
+	}
+
+	public OneTimeTask(String name, Serializer<T> serializer) {
+		super(name, new CompletionHandler.OnCompleteRemove(), new DeadExecutionHandler.RescheduleDeadExecution(), serializer);
 	}
 
 }

@@ -61,7 +61,7 @@ public class JdbcTaskRepository implements TaskRepository {
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTask().getName());
 						p.setString(2, execution.taskInstance.getId());
-						p.setObject(3, execution.taskInstance.getData());
+						p.setObject(3, execution.taskInstance.getSerializedData());
 						p.setTimestamp(4, Timestamp.from(execution.executionTime));
 						p.setBoolean(5, false);
 						p.setLong(6, 1L);

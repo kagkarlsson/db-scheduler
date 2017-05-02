@@ -11,7 +11,6 @@ import org.junit.rules.Timeout;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -19,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import static com.github.kagkarlsson.scheduler.TestTasks.STRING_SERIALIZER;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
@@ -29,7 +29,7 @@ public abstract class CompatibilityTest {
 	public Timeout timeout = new Timeout(20, TimeUnit.SECONDS);
 
 	private TestTasks.CountingHandler delayingHandler;
-	private OneTimeTask oneTime;
+	private OneTimeTask<String> oneTime;
 	private RecurringTask recurring;
 	private TestTasks.SimpleStatsRegistry statsRegistry;
 	private Scheduler scheduler;
@@ -39,7 +39,7 @@ public abstract class CompatibilityTest {
 	@Before
 	public void setUp() {
 		delayingHandler = new TestTasks.CountingHandler(Duration.ofMillis(200));
-		oneTime = TestTasks.oneTime("oneTime", delayingHandler);
+		oneTime = TestTasks.oneTimeWithType("oneTime", delayingHandler, STRING_SERIALIZER);
 		recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandler);
 
 		statsRegistry = new TestTasks.SimpleStatsRegistry();
@@ -80,10 +80,10 @@ public abstract class CompatibilityTest {
 
 	@Test
 	public void test_jdbc_repository_compatibility_with_data() {
-		doJDBCRepositoryCompatibilityTestUsingData("my data".getBytes(StandardCharsets.UTF_8));
+		doJDBCRepositoryCompatibilityTestUsingData("my data");
 	}
 
-	private void doJDBCRepositoryCompatibilityTestUsingData(byte[] data) {
+	private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
 		TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED, new ArrayList<>());
 		taskResolver.addTask(oneTime);
 
