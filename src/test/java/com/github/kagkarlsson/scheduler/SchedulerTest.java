@@ -36,7 +36,7 @@ public class SchedulerTest {
 		OneTimeTask oneTimeTask = TestTasks.oneTime("OneTime", handler);
 
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
-		scheduler.schedule(executionTime, oneTimeTask.instance("1"));
+		scheduler.schedule(oneTimeTask.instance("1"), executionTime);
 
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
@@ -54,7 +54,7 @@ public class SchedulerTest {
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
 		String instanceId = "1";
 		TaskInstance oneTimeTaskInstance = oneTimeTask.instance(instanceId);
-		scheduler.schedule(executionTime, oneTimeTaskInstance);
+		scheduler.schedule(oneTimeTaskInstance, executionTime);
 		Instant reScheduledExecutionTime = clock.now().plus(Duration.ofMinutes(2));
 		scheduler.reschedule(oneTimeTaskInstance, reScheduledExecutionTime);
 		scheduler.executeDue();
@@ -77,7 +77,7 @@ public class SchedulerTest {
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
 		String instanceId = "1";
 		TaskInstance oneTimeTaskInstance = oneTimeTask.instance(instanceId);
-		scheduler.schedule(executionTime, oneTimeTaskInstance);
+		scheduler.schedule(oneTimeTaskInstance, executionTime);
 		scheduler.cancel(oneTimeTaskInstance);
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
@@ -91,7 +91,7 @@ public class SchedulerTest {
 	public void scheduler_should_execute_recurring_task_and_reschedule() {
 		RecurringTask recurringTask = TestTasks.recurring("Recurring", FixedDelay.of(Duration.ofHours(1)), handler);
 
-		scheduler.schedule(clock.now(), recurringTask.instance("single"));
+		scheduler.schedule(recurringTask.instance("single"), clock.now());
 		scheduler.executeDue();
 
 		assertThat(handler.timesExecuted, is(1));
@@ -108,7 +108,7 @@ public class SchedulerTest {
 		scheduler.executorsSemaphore.acquire();
 		OneTimeTask oneTimeTask = TestTasks.oneTime("OneTime", handler);
 
-		scheduler.schedule(clock.now(), oneTimeTask.instance("1"));
+		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
 	}
@@ -118,7 +118,7 @@ public class SchedulerTest {
 		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), 1, Executors.newSingleThreadExecutor(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
 		OneTimeTask oneTimeTask = TestTasks.oneTime("OneTime", new TestTasks.WaitingHandler());
 
-		scheduler.schedule(clock.now(), oneTimeTask.instance("1"));
+		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
 		scheduler.executeDue();
 
 		assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));

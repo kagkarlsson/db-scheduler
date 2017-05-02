@@ -68,7 +68,7 @@ public class TasksMain {
 		scheduler.start();
 
 		// Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
-		scheduler.schedule(Instant.now().plusSeconds(5), myAdhocTask.instance("1045", new MyTaskData(1001L, "custom-data")));
+		scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L, "custom-data")), Instant.now().plusSeconds(5));
 	}
 
 	public static class MyTaskData implements Serializable {
@@ -110,7 +110,7 @@ public class TasksMain {
 		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
 				(taskInstance, context) -> System.out.println("One-time with id "+taskInstance.getId()+" executed!"));
 
-		scheduler.schedule(Instant.now().plus(Duration.ofDays(1)), oneTimeTask.instance("1001"));
+		scheduler.schedule(oneTimeTask.instance("1001"), Instant.now().plus(Duration.ofDays(1)));
 	}
 
 
@@ -127,7 +127,7 @@ public class TasksMain {
 		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task", mySpringWorker);
 
 		// schedule a future execution for the task with a custom id (currently the only form for context supported)
-		scheduler.schedule(Instant.now().plus(Duration.ofDays(1)), oneTimeTask.instance("1001"));
+		scheduler.schedule(oneTimeTask.instance("1001"), Instant.now().plus(Duration.ofDays(1)));
 	}
 
 

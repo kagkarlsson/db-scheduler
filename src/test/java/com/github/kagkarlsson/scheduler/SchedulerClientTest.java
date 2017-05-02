@@ -50,7 +50,7 @@ public class SchedulerClientTest {
 	@Test
 	public void client_should_be_able_to_schedule_executions() {
 		SchedulerClient client = SchedulerClient.Builder.create(DB.getDataSource()).build();
-		client.schedule(settableClock.now(), oneTimeTask.instance("1"));
+		client.schedule(oneTimeTask.instance("1"), settableClock.now());
 		
 		scheduler.executeDue();
 		assertThat(onetimeTaskHandler.timesExecuted, CoreMatchers.is(1));

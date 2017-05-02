@@ -126,12 +126,12 @@ public class Scheduler implements SchedulerClient {
 
 	@Override
 	public void scheduleForExecution(Instant executionTime, TaskInstance taskInstance) {
-		this.schedule(executionTime, taskInstance);
+		this.schedule(taskInstance, executionTime);
 	}
 
 	@Override
-	public void schedule(Instant executionTime, TaskInstance taskInstance) {
-		this.delegate.schedule(executionTime, taskInstance);
+	public void schedule(TaskInstance taskInstance, Instant executionTime) {
+		this.delegate.schedule(taskInstance, executionTime);
 	}
 
 	@Override

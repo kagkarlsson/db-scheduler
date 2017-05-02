@@ -31,12 +31,12 @@ public interface SchedulerClient {
 	/**
 	 * This method has been renamed and will be removed in a future version.
 	 *
-	 * @deprecated use {@link #schedule(Instant, TaskInstance)} instead.
+	 * @deprecated use {@link #schedule(TaskInstance, Instant)} instead.
 	 */
 	@Deprecated
 	void scheduleForExecution(Instant executionTime, TaskInstance taskInstance);
 
-	void schedule(Instant executionTime, TaskInstance taskInstance);
+	void schedule(TaskInstance taskInstance, Instant executionTime);
 
 	void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
@@ -73,11 +73,11 @@ public interface SchedulerClient {
         @Deprecated
 		public void scheduleForExecution(Instant executionTime,
 				TaskInstance taskInstance) {
-			schedule(executionTime, taskInstance);
+			schedule(taskInstance, executionTime);
 		}
 
 		@Override
-		public void schedule(Instant executionTime, TaskInstance taskInstance) {
+		public void schedule(TaskInstance taskInstance, Instant executionTime) {
 			taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
 		}
 
