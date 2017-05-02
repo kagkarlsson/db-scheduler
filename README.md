@@ -81,9 +81,7 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 Less verbose task-definitions using `ComposableTask`.
 
 ```java
-final RecurringTask myHourlyTask = ComposableTask.recurringTask(
-    "my-hourly-task",
-    FixedDelay.of(ofHours(1)),
+final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
     () -> System.out.println("Executed!"));
 
 final Scheduler scheduler = Scheduler
@@ -108,7 +106,7 @@ final Scheduler scheduler = Scheduler
         .threads(5)
         .build();
 
-// hourlyTask is automatically scheduled on startup if not already started (i.e. in the db)
+// hourlyTask is automatically scheduled on startup if not already started (i.e. exists in the db)
 scheduler.start();
 ```
 
@@ -148,20 +146,30 @@ scheduler.start();
 scheduler.scheduleForExecution(Instant.now().plusSeconds(5), myAdhocTask.instance("1045"));
 ```
 
-Custom task class for an ad-hoc task.
+Custom task classes for an ad-hoc task.
 
 ```java
-public static class MyAdhocTask extends OneTimeTask {
+  public static class MyTaskData implements Serializable {
+		public final long id;
+		public final String secondaryId;
 
-  public MyAdhocTask() {
-    super("my-adhoc-task");
-  }
+		public MyTaskData(long id, String secondaryId) {
+			this.id = id;
+			this.secondaryId = secondaryId;
+		}
+	}
 
-  @Override
-  public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
-    System.out.println("Executed!");
-  }
-}
+	public static class MyTypedAdhocTask extends OneTimeTask<MyTaskData> {
+
+		public MyTypedAdhocTask() {
+			super("my-typed-adhoc-task");
+		}
+
+		@Override
+		public void execute(TaskInstance<MyTaskData> taskInstance, ExecutionContext executionContext) {
+			System.out.println(String.format("Executed! Custom data: [Id: %s], [secondary-id: %s]", taskInstance.getData().id, taskInstance.getData().secondaryId));
+		}
+	}
 ```
 
 

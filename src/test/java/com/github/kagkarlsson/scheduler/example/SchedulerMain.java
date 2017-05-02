@@ -1,7 +1,6 @@
 package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.*;
-import com.github.kagkarlsson.scheduler.example.TasksMain.MyAdhocTask;
 import com.github.kagkarlsson.scheduler.example.TasksMain.MyHourlyTask;
 import com.github.kagkarlsson.scheduler.task.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -12,12 +11,11 @@ import javax.sql.DataSource;
 
 public class SchedulerMain {
 	private static final Logger LOG = LoggerFactory.getLogger(SchedulerMain.class);
-	public static final String SINGLE_INSTANCE = "single";
 
 	private static void example(DataSource dataSource) {
 
 		RecurringTask myRecurringTask = new MyHourlyTask();
-		Task myAdhocTask = new MyAdhocTask();
+		Task myAdhocTask = new TasksMain.MyTypedAdhocTask();
 
 		final Scheduler scheduler = Scheduler
 				.create(dataSource, myAdhocTask)
