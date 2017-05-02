@@ -36,6 +36,7 @@ public class Scheduler implements SchedulerClient {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 	public static final Duration SHUTDOWN_WAIT = Duration.ofMinutes(30);
+	private final SchedulerClient delegate;
 	private final Clock clock;
 	private final TaskRepository taskRepository;
 	private final ExecutorService executorService;
@@ -76,6 +77,7 @@ public class Scheduler implements SchedulerClient {
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-detect-dead-"));
 		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-update-heartbeat-"));
 		executorsSemaphore = new Semaphore(maxThreads);
+		delegate = new StandardSchedulerClient(taskRepository);
 	}
 
 	public void start() {
@@ -123,8 +125,23 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	@Override
-	public void scheduleForExecution(Instant exeecutionTime, TaskInstance taskInstance) {
-		taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
+	public void scheduleForExecution(Instant executionTime, TaskInstance taskInstance) {
+		this.schedule(taskInstance, executionTime);
+	}
+
+	@Override
+	public void schedule(TaskInstance taskInstance, Instant executionTime) {
+		this.delegate.schedule(taskInstance, executionTime);
+	}
+
+	@Override
+	public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+		this.delegate.reschedule(taskInstanceId, newExecutionTime);
+	}
+
+	@Override
+	public void cancel(TaskInstanceId taskInstanceId) {
+		this.delegate.cancel(taskInstanceId);
 	}
 
 	public List<CurrentlyExecuting> getCurrentlyExecuting() {

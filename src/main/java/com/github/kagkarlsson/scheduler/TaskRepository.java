@@ -37,4 +37,6 @@ public interface TaskRepository {
 	void updateHeartbeat(Execution execution, Instant heartbeatTime);
 
 	List<Execution> getExecutionsFailingLongerThan(Duration interval);
+
+	Optional<Execution> getExecution(String taskName, String taskInstanceId);
 }

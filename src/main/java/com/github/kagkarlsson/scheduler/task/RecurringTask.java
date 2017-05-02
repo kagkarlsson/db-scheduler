@@ -33,7 +33,7 @@ public abstract class RecurringTask extends Task<Void> implements OnStartup {
 
 	@Override
 	public void onStartup(Scheduler scheduler) {
-		scheduler.scheduleForExecution(Instant.now(), this.instance(INSTANCE));
+		scheduler.schedule(this.instance(INSTANCE), Instant.now());
 	}
 
 }

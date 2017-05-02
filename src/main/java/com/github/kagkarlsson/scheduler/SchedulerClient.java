@@ -17,19 +17,33 @@ package com.github.kagkarlsson.scheduler;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Optional;
 
 import javax.sql.DataSource;
 
 import com.github.kagkarlsson.scheduler.TaskResolver.OnCannotResolve;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 
 public interface SchedulerClient {
-	
-	void scheduleForExecution(Instant exeecutionTime, TaskInstance taskInstance);
-	
+
+	/**
+	 * This method has been renamed and will be removed in a future version.
+	 *
+	 * @deprecated use {@link #schedule(TaskInstance, Instant)} instead.
+	 */
+	@Deprecated
+	void scheduleForExecution(Instant executionTime, TaskInstance taskInstance);
+
+	void schedule(TaskInstance taskInstance, Instant executionTime);
+
+	void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
+
+	void cancel(TaskInstanceId taskInstanceId);
+
 	class Builder {
-		
+
 		private DataSource dataSource;
 
 		private Builder(DataSource dataSource) {
@@ -46,23 +60,61 @@ public interface SchedulerClient {
 			return new StandardSchedulerClient(taskRepository);
 		}
 	}
-	
+
 	class StandardSchedulerClient implements SchedulerClient {
 
-		private TaskRepository taskRepository;
+		protected TaskRepository taskRepository;
 		
 		StandardSchedulerClient(TaskRepository taskRepository) {
 			this.taskRepository = taskRepository;
 		}
 		
 		@Override
-		public void scheduleForExecution(Instant exeecutionTime,
+        @Deprecated
+		public void scheduleForExecution(Instant executionTime,
 				TaskInstance taskInstance) {
-			taskRepository.createIfNotExists(new Execution(exeecutionTime, taskInstance));
-		} 
+			schedule(taskInstance, executionTime);
+		}
+
+		@Override
+		public void schedule(TaskInstance taskInstance, Instant executionTime) {
+			taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
+		}
+
+		@Override
+		public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+			String taskName = taskInstanceId.getTaskName();
+			String instanceId = taskInstanceId.getId();
+			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
+			if(execution.isPresent()) {
+			    if(execution.get().isPicked()) {
+                    throw new RuntimeException(String.format("Could not reschedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
+                }
+
+				taskRepository.reschedule(execution.get(), newExecutionTime, null, null);
+			} else {
+				throw new RuntimeException(String.format("Could not reschedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
+			}
+		}
+
+		@Override
+		public void cancel(TaskInstanceId taskInstanceId) {
+			String taskName = taskInstanceId.getTaskName();
+			String instanceId = taskInstanceId.getId();
+			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
+			if(execution.isPresent()) {
+                if(execution.get().isPicked()) {
+                    throw new RuntimeException(String.format("Could not cancel schedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
+                }
+
+                taskRepository.remove(execution.get());
+			} else {
+				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
+			}
+		}
 	}
 	
-	static class SchedulerClientName implements SchedulerName {
+	class SchedulerClientName implements SchedulerName {
 		@Override
 		public String getName() {
 			return "SchedulerClient";

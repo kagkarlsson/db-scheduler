@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.task.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +36,7 @@ public class SchedulerTest {
 		OneTimeTask oneTimeTask = TestTasks.oneTime("OneTime", handler);
 
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
-		scheduler.scheduleForExecution(executionTime, oneTimeTask.instance("1"));
+		scheduler.schedule(oneTimeTask.instance("1"), executionTime);
 
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
@@ -46,10 +47,51 @@ public class SchedulerTest {
 	}
 
 	@Test
+	public void scheduler_should_execute_rescheduled_task_when_exactly_due() {
+		String taskName = "OneTime";
+		OneTimeTask oneTimeTask = TestTasks.oneTime(taskName, handler);
+
+		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
+		String instanceId = "1";
+		TaskInstance oneTimeTaskInstance = oneTimeTask.instance(instanceId);
+		scheduler.schedule(oneTimeTaskInstance, executionTime);
+		Instant reScheduledExecutionTime = clock.now().plus(Duration.ofMinutes(2));
+		scheduler.reschedule(oneTimeTaskInstance, reScheduledExecutionTime);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(0));
+
+		clock.set(executionTime);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(0));
+
+		clock.set(reScheduledExecutionTime);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(1));
+	}
+
+	@Test
+	public void scheduler_should_not_execute_canceled_tasks() {
+		String taskName = "OneTime";
+		OneTimeTask oneTimeTask = TestTasks.oneTime(taskName, handler);
+
+		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
+		String instanceId = "1";
+		TaskInstance oneTimeTaskInstance = oneTimeTask.instance(instanceId);
+		scheduler.schedule(oneTimeTaskInstance, executionTime);
+		scheduler.cancel(oneTimeTaskInstance);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(0));
+
+		clock.set(executionTime);
+		scheduler.executeDue();
+		assertThat(handler.timesExecuted, is(0));
+	}
+
+	@Test
 	public void scheduler_should_execute_recurring_task_and_reschedule() {
 		RecurringTask recurringTask = TestTasks.recurring("Recurring", FixedDelay.of(Duration.ofHours(1)), handler);
 
-		scheduler.scheduleForExecution(clock.now(), recurringTask.instance("single"));
+		scheduler.schedule(recurringTask.instance("single"), clock.now());
 		scheduler.executeDue();
 
 		assertThat(handler.timesExecuted, is(1));
@@ -66,7 +108,7 @@ public class SchedulerTest {
 		scheduler.executorsSemaphore.acquire();
 		OneTimeTask oneTimeTask = TestTasks.oneTime("OneTime", handler);
 
-		scheduler.scheduleForExecution(clock.now(), oneTimeTask.instance("1"));
+		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
 		scheduler.executeDue();
 		assertThat(handler.timesExecuted, is(0));
 	}
@@ -76,7 +118,7 @@ public class SchedulerTest {
 		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), 1, Executors.newSingleThreadExecutor(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
 		OneTimeTask oneTimeTask = TestTasks.oneTime("OneTime", new TestTasks.WaitingHandler());
 
-		scheduler.scheduleForExecution(clock.now(), oneTimeTask.instance("1"));
+		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
 		scheduler.executeDue();
 
 		assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));

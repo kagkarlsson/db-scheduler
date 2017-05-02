@@ -18,7 +18,7 @@ package com.github.kagkarlsson.scheduler.task;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public final class TaskInstance<T> {
+public final class TaskInstance<T> implements TaskInstanceId {
 
 	private final Task<T> task;
 	private final String id;
@@ -55,6 +55,7 @@ public final class TaskInstance<T> {
 		return task.getName();
 	}
 
+	@Override
 	public String getId() {
 		return id;
 	}

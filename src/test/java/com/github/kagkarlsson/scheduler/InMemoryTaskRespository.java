@@ -82,6 +82,11 @@ public class InMemoryTaskRespository implements TaskRepository {
 	}
 
 	@Override
+	public Optional<Execution> getExecution(String taskName, String taskInstanceId) {
+		return futureExecutions.stream().filter(e -> taskName.equals(e.taskInstance.getTaskName()) && taskInstanceId.equals(e.taskInstance.getId())).findFirst();
+	}
+
+	@Override
 	public synchronized List<Execution> getDue(Instant now) {
 		List<Execution> due = futureExecutions.stream()
 				.filter(e -> e.executionTime.isBefore(now) || e.executionTime.equals(now))
