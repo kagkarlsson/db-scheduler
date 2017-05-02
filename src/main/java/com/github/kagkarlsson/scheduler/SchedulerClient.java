@@ -24,22 +24,23 @@ import javax.sql.DataSource;
 import com.github.kagkarlsson.scheduler.TaskResolver.OnCannotResolve;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 
 public interface SchedulerClient {
 
 	/**
 	 * This method has been renamed and will be removed in a future version.
 	 *
-	 * @deprecated use {@link #schedule(Instant, TaskInstance)} instead.
+	 * @deprecated use {@link #schedule(TaskInstance, Instant)} instead.
 	 */
 	@Deprecated
 	void scheduleForExecution(Instant executionTime, TaskInstance taskInstance);
 
-	void schedule(Instant executionTime, TaskInstance taskInstance);
+	void schedule(TaskInstance taskInstance, Instant executionTime);
 
-	void reschedule(String taskName, String instanceId, Instant newExecutionTime);
+	void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
-	void cancel(String taskName, String instanceId);
+	void cancel(TaskInstanceId taskInstanceId);
 
 	class Builder {
 
@@ -72,16 +73,18 @@ public interface SchedulerClient {
         @Deprecated
 		public void scheduleForExecution(Instant executionTime,
 				TaskInstance taskInstance) {
-			schedule(executionTime, taskInstance);
+			schedule(taskInstance, executionTime);
 		}
 
 		@Override
-		public void schedule(Instant executionTime, TaskInstance taskInstance) {
+		public void schedule(TaskInstance taskInstance, Instant executionTime) {
 			taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
 		}
 
 		@Override
-		public void reschedule(String taskName, String instanceId, Instant newExecutionTime) {
+		public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+			String taskName = taskInstanceId.getTaskName();
+			String instanceId = taskInstanceId.getId();
 			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
 			if(execution.isPresent()) {
 			    if(execution.get().isPicked()) {
@@ -95,7 +98,9 @@ public interface SchedulerClient {
 		}
 
 		@Override
-		public void cancel(String taskName, String instanceId) {
+		public void cancel(TaskInstanceId taskInstanceId) {
+			String taskName = taskInstanceId.getTaskName();
+			String instanceId = taskInstanceId.getId();
 			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
 			if(execution.isPresent()) {
                 if(execution.get().isPicked()) {
@@ -109,7 +114,7 @@ public interface SchedulerClient {
 		}
 	}
 	
-	static class SchedulerClientName implements SchedulerName {
+	class SchedulerClientName implements SchedulerName {
 		@Override
 		public String getName() {
 			return "SchedulerClient";
