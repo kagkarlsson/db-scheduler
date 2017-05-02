@@ -93,7 +93,7 @@ public interface SchedulerClient {
 
 				taskRepository.reschedule(execution.get(), newExecutionTime, null, null);
 			} else {
-				throw new RuntimeException(String.format("Could not reschedule - no task with name '%' and id '%s' was found." , taskName, instanceId));
+				throw new RuntimeException(String.format("Could not reschedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}
 		}
 
@@ -109,7 +109,7 @@ public interface SchedulerClient {
 
                 taskRepository.remove(execution.get());
 			} else {
-				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%' and id '%s' was found." , taskName, instanceId));
+				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}
 		}
 	}

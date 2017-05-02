@@ -16,22 +16,32 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import java.util.Objects;
+import java.util.function.Supplier;
 
-public final class TaskInstance implements TaskInstanceId {
+public final class TaskInstance<T> implements TaskInstanceId {
 
-	private final Task task;
+	private final Task<T> task;
 	private final String id;
-	private final byte[] data;
+	private final Supplier<T> dataSupplier;
+	private final Supplier<byte[]> serializedDataSupplier;
 
-	public TaskInstance(Task task, String id) {
-		this(task, id, null);
+	public TaskInstance(Task<T> task, String id) {
+		this(task, id, (T) null);
 	}
 
-	public TaskInstance(Task task, String id, byte[] data) {
-		this.task = task;
-		this.id = id;
-		this.data = data;
-	}
+    public TaskInstance(Task<T> task, String id, T data) {
+        this.task = task;
+        this.id = id;
+        this.dataSupplier = () -> data;
+        this.serializedDataSupplier = memoize(() -> this.task.serializer.serialize(data));
+    }
+
+    public TaskInstance(Task<T> task, String id, byte[] serializedData) {
+        this.task = task;
+        this.id = id;
+        this.serializedDataSupplier = () -> serializedData;
+        this.dataSupplier = memoize(() -> this.task.serializer.deserialize(serializedData));
+    }
 
 	public String getTaskAndInstance() {
 		return task.getName() + "_" + id;
@@ -50,8 +60,12 @@ public final class TaskInstance implements TaskInstanceId {
 		return id;
 	}
 
-	public byte[] getData() {
-		return this.data;
+	public T getData() {
+		return dataSupplier.get();
+	}
+
+	public byte[] getSerializedData() {
+		return serializedDataSupplier.get();
 	}
 
 	@Override
@@ -74,4 +88,22 @@ public final class TaskInstance implements TaskInstanceId {
 				"task=" + task.getName() +
 				", id=" + id;
 	}
+
+    private static <T> Supplier<T> memoize(Supplier<T> original) {
+        return new Supplier<T>() {
+            Supplier<T> delegate = this::firstTime;
+            boolean initialized;
+            public T get() {
+                return delegate.get();
+            }
+            private synchronized T firstTime() {
+                if(!initialized) {
+                    T value = original.get();
+                    delegate = () -> value;
+                    initialized = true;
+                }
+                return delegate.get();
+            }
+        };
+    }
 }
