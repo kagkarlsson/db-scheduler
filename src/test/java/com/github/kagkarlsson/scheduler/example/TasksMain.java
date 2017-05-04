@@ -23,8 +23,8 @@ public class TasksMain {
 			final DataSource dataSource = hsqlRule.getDataSource();
 
 //			recurringTask(dataSource);
-			adhocTask(dataSource);
-//			simplerTaskDefinition(dataSource);
+//			adhocTask(dataSource);
+			simplerTaskDefinition(dataSource);
 		} catch (Exception e) {
 			LOG.error("Error", e);
 		}
@@ -98,19 +98,19 @@ public class TasksMain {
 		final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
 				() -> System.out.println("Executed!"));
 
+		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
+				(taskInstance, context) -> System.out.println("One-time task with id "+taskInstance.getId()+" executed!"));
 
 		final Scheduler scheduler = Scheduler
-				.create(dataSource)
+				.create(dataSource, oneTimeTask)
 				.startTasks(myHourlyTask)
 				.threads(5)
 				.build();
 
 		scheduler.start();
 
-		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
-				(taskInstance, context) -> System.out.println("One-time with id "+taskInstance.getId()+" executed!"));
 
-		scheduler.schedule(oneTimeTask.instance("1001"), Instant.now().plus(Duration.ofDays(1)));
+		scheduler.schedule(oneTimeTask.instance("1001"), Instant.now().plus(Duration.ofSeconds(5)));
 	}
 
 

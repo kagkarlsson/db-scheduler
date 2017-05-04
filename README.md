@@ -40,6 +40,16 @@ scheduler.start();
 
 See below for more examples.
 
+## Versions / upgrading
+
+#### Version 2.0
+* Possible to `cancel` and `reschedule` executions.
+* Optional data can be stored with the execution. Default using Java Serialization.
+* Exposing the `Execution`to the `ExecutionHandler`.
+
+** Upgrading 1.9 -> 2.0 **
+* Add column `task_data` to the database schema. See table definitions for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).
+
 ## How it works
 
 A single database table is used to track future task-executions. When a task-execution is due, db-scheduler picks it and executes it. When the execution is done, the `Task` is consulted to see what should be done. For example, a `RecurringTask` is typically rescheduled in the future based on its `Schedule`.
@@ -84,13 +94,19 @@ Less verbose task-definitions using `ComposableTask`.
 final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
     () -> System.out.println("Executed!"));
 
+final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
+    (taskInstance, context) -> System.out.println("One-time task with id "+taskInstance.getId()+" executed!"));
+
 final Scheduler scheduler = Scheduler
-        .create(dataSource)
-        .startTasks(myHourlyTask)
-        .threads(5)
-        .build();
+    .create(dataSource, oneTimeTask)
+    .startTasks(myHourlyTask)
+    .threads(5)
+    .build();
 
 scheduler.start();
+
+
+scheduler.schedule(oneTimeTask.instance("1001"), Instant.now().plus(Duration.ofSeconds(5)));
 ```
 
 #### Recurring tasks
