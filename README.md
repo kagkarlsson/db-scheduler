@@ -44,14 +44,14 @@ See below for more examples.
 
 A single database table is used to track future task-executions. When a task-execution is due, db-scheduler picks it and executes it. When the execution is done, the `Task` is consulted to see what should be done. For example, a `RecurringTask` is typically rescheduled in the future based on its `Schedule`.
 
-Optimistic locking is used to guarantee that a single scheduler instance gets to pick a task-execution.
+Optimistic locking is used to guarantee that a one and only one scheduler-instance gets to pick a task-execution.
 
 
 #### Recurring tasks
 
 The term _recurring task_ is used for tasks that should be run regularly, according to some schedule (see `RecurringTask`).
 
-When the execution of a recurring task has finished, a `Schedule` is consulted to determine what the next time for execution should be, and a future task-execution is created for that time (i.e. it is _rescheduled_). The time chosen will be the nearest in time according to the `Schedule`, but still in the future.
+When the execution of a recurring task has finished, a `Schedule` is consulted to determine what the next time for execution should be, and a future task-execution is created for that time (i.e. it is _rescheduled_). The time chosen will be the nearest time according to the `Schedule`, but still in the future.
 
 To create the initial execution for a `RecurringTask`, the scheduler has a method  `startTasks(...)` that takes a list of tasks that should be "started" if they do not already have a future execution. Note: The first execution-time will not be according to the schedule, but simply `now()`.
 
@@ -72,7 +72,7 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 * There are no guarantees that all instants in a schedule for a `RecurringTask` will be executed. The `Schedule` is consulted after the previous task-execution finishes, and the closest time in the future will be selected for next execution-time. A new type of task may be added in the future to provide such functionality.
 
-* The methods on `SchedulerClient` (`scheduleForExecution` etc) will run using a new `Connection`from the `DataSource`provided. To have the action be a part of a transaction, something like Spring's `TransactionAwareDataSourceProxy` may be used.
+* The methods on `SchedulerClient` (`schedule`, `cancel`, `reschedule`) and the `CompletionHandler` will run using a new `Connection`from the `DataSource`provided. To have the action be a part of a transaction, it must be taken care of by the `DataSource`provided, for example using something like Spring's `TransactionAwareDataSourceProxy`.
 
 ## More examples
 
@@ -133,17 +133,17 @@ public static class MyHourlyTask extends RecurringTask {
 Schedule the ad-hoc task for execution at a certain time in the future. The instance-id may be used to encode metadata (e.g. an id), since the instance-id will be available for the execution-handler.
 
 ```java
-final MyAdhocTask myAdhocTask = new MyAdhocTask();
+final MyTypedAdhocTask myAdhocTask = new MyTypedAdhocTask();
 
 final Scheduler scheduler = Scheduler
-        .create(dataSource, myAdhocTask)
-        .threads(5)
-        .build();
+    .create(dataSource, myAdhocTask)
+    .threads(5)
+    .build();
 
 scheduler.start();
 
-// Schedule the task for execution a certain time in the future
-scheduler.scheduleForExecution(Instant.now().plusSeconds(5), myAdhocTask.instance("1045"));
+// Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
+scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L, "custom-data")), Instant.now().plusSeconds(5));
 ```
 
 Custom task classes for an ad-hoc task.
