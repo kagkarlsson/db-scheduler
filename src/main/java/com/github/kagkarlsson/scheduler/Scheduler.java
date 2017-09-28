@@ -274,22 +274,22 @@ public class Scheduler implements SchedulerClient {
 				LOG.debug("Executing " + execution);
 				task.execute(execution.taskInstance, new ExecutionContext(schedulerState, execution));
 				LOG.debug("Execution done");
-				complete(execution, ExecutionComplete.Result.OK);
+				complete(execution, ExecutionComplete.Result.OK, null);
 
 			} catch (RuntimeException unhandledException) {
 				LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
-				complete(execution, ExecutionComplete.Result.FAILED);
+				complete(execution, ExecutionComplete.Result.FAILED, unhandledException);
 
 			} catch (Throwable unhandledError) {
 				LOG.error("Error during execution. Treating as failure.", unhandledError);
-				complete(execution, ExecutionComplete.Result.FAILED);
+				complete(execution, ExecutionComplete.Result.FAILED, unhandledError);
 			}
 		}
 
-		private void complete(Execution execution, ExecutionComplete.Result result) {
+		private void complete(Execution execution, ExecutionComplete.Result result, Throwable cause) {
 			try {
 				final Task task = execution.taskInstance.getTask();
-				task.getCompletionHandler().complete(new ExecutionComplete(execution, clock.now(), result), new ExecutionOperations(taskRepository, execution));
+				task.getCompletionHandler().complete(new ExecutionComplete(execution, clock.now(), result, cause), new ExecutionOperations(taskRepository, execution));
 			} catch (Throwable e) {
 				statsRegistry.registerUnexpectedError();
 				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +

@@ -1,15 +1,12 @@
 
 future development
 
-- improve documentation
-  - clean up, remove unnecessary examples
-  - example for one-time task with state
-  - migration guide for updating to newer versions (new column)
+- redesign api so that an ad-hoc task can be scheduled without having a reference to the Task-object
 
 - optimize scheduler to look an interval forward in time, and trigger next cycle earlier if there are an immediate execution
   - keep a list if executions due between now and next interval
 
-- automatic tests for oracle and mysql using docker containers? (how easy is that?)
+- automatic tests for oracle and mysql using docker containers?
 
 - customizable table-name
 

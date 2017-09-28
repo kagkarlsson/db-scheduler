@@ -30,7 +30,7 @@ public interface DeadExecutionHandler {
 		public void deadExecution(Execution execution, ExecutionOperations executionOperations) {
 			final Instant now = Instant.now();
 			LOG.warn("Rescheduling dead execution: " + execution + " to " + now);
-			executionOperations.reschedule(new ExecutionComplete(execution, now, ExecutionComplete.Result.FAILED), now);
+			executionOperations.reschedule(new ExecutionComplete(execution, now, ExecutionComplete.Result.FAILED, null), now);
 		}
 	}
 

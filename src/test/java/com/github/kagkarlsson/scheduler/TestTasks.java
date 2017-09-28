@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -51,6 +52,20 @@ public class TestTasks {
 				handler.execute(taskInstance, executionContext);
 			}
 		};
+	}
+
+	public static class ResultRegisteringCompletionHandler implements CompletionHandler {
+		CountDownLatch waitForNotify = new CountDownLatch(1);
+		ExecutionComplete.Result result;
+		Optional<Throwable> cause;
+
+		@Override
+		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+			this.result = executionComplete.getResult();
+			this.cause = executionComplete.getCause();
+			executionOperations.stop();
+			waitForNotify.countDown();
+		}
 	}
 
 	public static class CountingHandler implements ExecutionHandler {

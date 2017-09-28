@@ -1,9 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.FixedDelay;
-import com.github.kagkarlsson.scheduler.task.OneTimeTask;
-import com.github.kagkarlsson.scheduler.task.RecurringTask;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Before;
 import org.junit.Test;
@@ -127,5 +124,21 @@ public class SchedulerTest {
 		assertThat(scheduler.getCurrentlyExecuting().get(0).getDuration(), is(Duration.ofMinutes(1)));
 	}
 
+	@Test
+	public void should_expose_cause_of_failure_to_completion_handler() throws InterruptedException {
+		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), 1, Executors.newSingleThreadExecutor(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
+
+		TestTasks.ResultRegisteringCompletionHandler completionHandler = new TestTasks.ResultRegisteringCompletionHandler();
+		Task oneTimeTask = ComposableTask.customTask("cause-testing-task", completionHandler,
+				() -> { throw new RuntimeException("Failed!");});
+
+		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
+		scheduler.executeDue();
+		completionHandler.waitForNotify.await();
+
+		assertThat(completionHandler.result, is(ExecutionComplete.Result.FAILED));
+		assertThat(completionHandler.cause.get().getMessage(), is("Failed!"));
+
+	}
 
 }

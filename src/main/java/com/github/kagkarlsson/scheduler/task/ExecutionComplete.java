@@ -16,13 +16,19 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import java.time.Instant;
+import java.util.Optional;
 
 public class ExecutionComplete {
 	private final Execution execution;
 	private final Instant timeDone;
 	private final Result result;
+	private final Throwable cause;
 
-	public ExecutionComplete(Execution execution, Instant timeDone, Result result) {
+	public ExecutionComplete(Execution execution, Instant timeDone, Result result, Throwable cause) {
+		this.cause = cause;
+		if (result == Result.OK && cause != null) {
+			throw new IllegalArgumentException("Result 'OK' should never have a cause.");
+		}
 		this.execution = execution;
 		this.timeDone = timeDone;
 		this.result = result;
@@ -38,6 +44,10 @@ public class ExecutionComplete {
 
 	public Result getResult() {
 		return result;
+	}
+
+	public Optional<Throwable> getCause() {
+		return Optional.ofNullable(cause);
 	}
 
 	public enum Result {
