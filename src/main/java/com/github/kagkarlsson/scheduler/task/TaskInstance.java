@@ -20,39 +20,35 @@ import java.util.function.Supplier;
 
 public final class TaskInstance<T> implements TaskInstanceId {
 
-	private final Task<T> task;
+	private final TaskDescriptor<T> taskDescriptor;
 	private final String id;
 	private final Supplier<T> dataSupplier;
 	private final Supplier<byte[]> serializedDataSupplier;
 
-	public TaskInstance(Task<T> task, String id) {
-		this(task, id, (T) null);
+	public TaskInstance(TaskDescriptor<T> taskDescriptor, String id) {
+		this(taskDescriptor, id, (T) null);
 	}
 
-    public TaskInstance(Task<T> task, String id, T data) {
-        this.task = task;
+    public TaskInstance(TaskDescriptor<T> taskDescriptor, String id, T data) {
+        this.taskDescriptor = taskDescriptor;
         this.id = id;
         this.dataSupplier = () -> data;
-        this.serializedDataSupplier = memoize(() -> this.task.serializer.serialize(data));
+        this.serializedDataSupplier = memoize(() -> this.taskDescriptor.getSerializer().serialize(data));
     }
 
-    public TaskInstance(Task<T> task, String id, byte[] serializedData) {
-        this.task = task;
+    public TaskInstance(TaskDescriptor<T> taskDescriptor, String id, byte[] serializedData) {
+        this.taskDescriptor = taskDescriptor;
         this.id = id;
         this.serializedDataSupplier = () -> serializedData;
-        this.dataSupplier = memoize(() -> this.task.serializer.deserialize(serializedData));
+        this.dataSupplier = memoize(() -> this.taskDescriptor.getSerializer().deserialize(serializedData));
     }
 
 	public String getTaskAndInstance() {
-		return task.getName() + "_" + id;
-	}
-
-	public Task getTask() {
-		return task;
+		return taskDescriptor.getName() + "_" + id;
 	}
 
 	public String getTaskName() {
-		return task.getName();
+		return taskDescriptor.getName();
 	}
 
 	@Override
@@ -68,24 +64,28 @@ public final class TaskInstance<T> implements TaskInstanceId {
 		return serializedDataSupplier.get();
 	}
 
+	public TaskDescriptor<T> getTaskDescriptor() {
+		return taskDescriptor;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		TaskInstance that = (TaskInstance) o;
-		return Objects.equals(task.getName(), that.task.getName()) &&
+		return Objects.equals(taskDescriptor.getName(), that.taskDescriptor.getName()) &&
 				Objects.equals(id, that.id);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(task.getName(), id);
+		return Objects.hash(taskDescriptor.getName(), id);
 	}
 
 	@Override
 	public String toString() {
 		return "TaskInstance: " +
-				"task=" + task.getName() +
+				"task=" + taskDescriptor.getName() +
 				", id=" + id;
 	}
 

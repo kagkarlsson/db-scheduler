@@ -32,7 +32,14 @@ public class TasksMain {
 
 	private static void recurringTask(DataSource dataSource) {
 
-		final MyHourlyTask hourlyTask = new MyHourlyTask();
+		TaskDescriptor<Void> taskDescriptor = new TaskDescriptor<>("my-recurring-task");
+
+		final RecurringTask hourlyTask = new RecurringTask(taskDescriptor, FixedDelay.of(ofHours(1))) {
+			@Override
+			public void execute(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
+				System.out.println("Executed!");
+			}
+		};
 
 		final Scheduler scheduler = Scheduler
 				.create(dataSource)
@@ -44,21 +51,17 @@ public class TasksMain {
 		scheduler.start();
 	}
 
-	public static class MyHourlyTask extends RecurringTask {
-
-		public MyHourlyTask() {
-			super("my-hourly-task", FixedDelay.of(ofHours(1)));
-		}
-
-		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
-			System.out.println("Executed!");
-		}
-	}
-
 	private static void adhocTask(DataSource dataSource) {
 
-		final MyTypedAdhocTask myAdhocTask = new MyTypedAdhocTask();
+		TaskDescriptor<MyTaskData> TASK_DESCRIPTOR = new TaskDescriptor<>("my-adhoc-task", Task.Serializer.JAVA_SERIALIZER);
+
+		final OneTimeTask myAdhocTask = new OneTimeTask<MyTaskData>(TASK_DESCRIPTOR) {
+
+			@Override
+			public void execute(TaskInstance<MyTaskData> taskInstance, ExecutionContext executionContext) {
+				System.out.println(String.format("Executed! Custom data: [Id: %s], [secondary-id: %s]", taskInstance.getData().id, taskInstance.getData().secondaryId));
+			}
+		};
 
 		final Scheduler scheduler = Scheduler
 				.create(dataSource, myAdhocTask)
@@ -68,7 +71,7 @@ public class TasksMain {
 		scheduler.start();
 
 		// Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
-		scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L, "custom-data")), Instant.now().plusSeconds(5));
+		scheduler.schedule(TASK_DESCRIPTOR.instance("1045", new MyTaskData(1001L, "custom-data")), Instant.now().plusSeconds(5));
 	}
 
 	public static class MyTaskData implements Serializable {
@@ -81,24 +84,14 @@ public class TasksMain {
 		}
 	}
 
-	public static class MyTypedAdhocTask extends OneTimeTask<MyTaskData> {
-
-		public MyTypedAdhocTask() {
-			super("my-typed-adhoc-task");
-		}
-
-		@Override
-		public void execute(TaskInstance<MyTaskData> taskInstance, ExecutionContext executionContext) {
-			System.out.println(String.format("Executed! Custom data: [Id: %s], [secondary-id: %s]", taskInstance.getData().id, taskInstance.getData().secondaryId));
-		}
-	}
-
 	private static void simplerTaskDefinition(DataSource dataSource) {
 
 		final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
 				() -> System.out.println("Executed!"));
 
-		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
+		final TaskDescriptor MY_ONETIME_TASK = new TaskDescriptor<>("my-onetime-task", Task.Serializer.NO_SERIALIZER);
+
+		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask(MY_ONETIME_TASK,
 				(taskInstance, context) -> System.out.println("One-time task with id "+taskInstance.getId()+" executed!"));
 
 		final Scheduler scheduler = Scheduler
@@ -110,44 +103,7 @@ public class TasksMain {
 		scheduler.start();
 
 
-		scheduler.schedule(oneTimeTask.instance("1001"), Instant.now().plus(Duration.ofSeconds(5)));
+		scheduler.schedule(MY_ONETIME_TASK.instance("1001"), Instant.now().plus(Duration.ofSeconds(5)));
 	}
 
-
-	private static void springWorkerExample(DataSource dataSource, MySpringWorker mySpringWorker) {
-
-		// instantiate and start the scheduler somewhere in your application
-		final Scheduler scheduler = Scheduler
-				.create(dataSource)
-				.threads(2)
-				.build();
-		scheduler.start();
-
-		// define a task and a handler that named task, MySpringWorker implements the ExecutionHandler interface
-		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task", mySpringWorker);
-
-		// schedule a future execution for the task with a custom id (currently the only form for context supported)
-		scheduler.schedule(oneTimeTask.instance("1001"), Instant.now().plus(Duration.ofDays(1)));
-	}
-
-
-	public static class MySpringWorker implements ExecutionHandler {
-		public MySpringWorker() {
-			// could be instantiated by Spring
-		}
-
-		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
-			System.out.println("Executed task with id="+taskInstance.getId());
-		}
-	}
-
-
-	public static class MyExecutionHandler implements ExecutionHandler {
-
-		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
-			System.out.println("Executed!");
-		}
-	}
 }

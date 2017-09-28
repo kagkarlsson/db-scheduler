@@ -17,12 +17,12 @@ package com.github.kagkarlsson.scheduler.task;
 
 public class ComposableTask {
 
-	public static RecurringTask recurringTask(String name, Schedule schedule, Runnable executionHandler) {
-		return recurringTask(name, schedule, (instance, ctx) -> executionHandler.run());
+	public static RecurringTask recurringTask(String taskName, Schedule schedule, Runnable executionHandler) {
+		return recurringTask(taskName, schedule, (instance, ctx) -> executionHandler.run());
 	}
 
-	public static RecurringTask recurringTask(String name, Schedule schedule, ExecutionHandler executionHandler) {
-		return new RecurringTask(name, schedule) {
+	public static RecurringTask recurringTask(String taskName, Schedule schedule, ExecutionHandler executionHandler) {
+		return new RecurringTask(new TaskDescriptor<Void>(taskName), schedule) {
 			@Override
 			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 				executionHandler.execute(taskInstance, executionContext);
@@ -30,11 +30,11 @@ public class ComposableTask {
 		};
 	}
 
-	public static OneTimeTask onetimeTask(String name, Runnable executionHandler) {
-		return onetimeTask(name, (instance, ctx) -> executionHandler.run());
+	public static OneTimeTask onetimeTask(TaskDescriptor taskDescriptor, Runnable executionHandler) {
+		return onetimeTask(taskDescriptor, (instance, ctx) -> executionHandler.run());
 	}
-	public static OneTimeTask onetimeTask(String name, ExecutionHandler executionHandler) {
-		return new OneTimeTask(name) {
+	public static OneTimeTask onetimeTask(TaskDescriptor taskDescriptor, ExecutionHandler executionHandler) {
+		return new OneTimeTask(taskDescriptor) {
 			@Override
 			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 				executionHandler.execute(taskInstance, executionContext);
@@ -42,11 +42,11 @@ public class ComposableTask {
 		};
 	}
 
-	public static Task customTask(String name, CompletionHandler completionHandler, Runnable executionHandler) {
-		return customTask(name, completionHandler, (instance, ctx)->executionHandler.run());
+	public static Task customTask(TaskDescriptor taskDescriptor, CompletionHandler completionHandler, Runnable executionHandler) {
+		return customTask(taskDescriptor, completionHandler, (instance, ctx)->executionHandler.run());
 	}
-	public static Task customTask(String name, CompletionHandler completionHandler, ExecutionHandler executionHandler) {
-		return new Task(name, completionHandler, new DeadExecutionHandler.RescheduleDeadExecution()) {
+	public static Task customTask(TaskDescriptor taskDescriptor, CompletionHandler completionHandler, ExecutionHandler executionHandler) {
+		return new Task(taskDescriptor, completionHandler, new DeadExecutionHandler.RescheduleDeadExecution()) {
 			@Override
 			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
 				executionHandler.execute(taskInstance, executionContext);

@@ -77,7 +77,7 @@ public final class Execution {
 	@Override
 	public String toString() {
 		return "Execution: " +
-				"task=" + taskInstance.getTask().getName() +
+				"task=" + taskInstance.getTaskName() +
 				", id=" + taskInstance.getId() +
 				", executionTime=" + executionTime +
 				", picked=" + picked +

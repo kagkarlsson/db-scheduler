@@ -59,7 +59,7 @@ public class JdbcTaskRepository implements TaskRepository {
 			jdbcRunner.execute(
 					"insert into scheduled_tasks(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
 					(PreparedStatement p) -> {
-						p.setString(1, execution.taskInstance.getTask().getName());
+						p.setString(1, execution.taskInstance.getTaskDescriptor().getName());
 						p.setString(2, execution.taskInstance.getId());
 						p.setObject(3, execution.taskInstance.getSerializedData());
 						p.setTimestamp(4, Timestamp.from(execution.executionTime));

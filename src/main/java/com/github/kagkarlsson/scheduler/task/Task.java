@@ -17,38 +17,20 @@ package com.github.kagkarlsson.scheduler.task;
 
 import java.io.*;
 
-import static com.github.kagkarlsson.scheduler.task.Task.Serializer.JAVA_SERIALIZER;
-
 public abstract class Task<T> implements ExecutionHandler<T> {
-	protected final String name;
+	protected final TaskDescriptor<T> descriptor;
 	private final CompletionHandler completionHandler;
 	private final DeadExecutionHandler deadExecutionHandler;
-	protected final Serializer<T> serializer;
 
-	public Task(String name, CompletionHandler completionHandler, DeadExecutionHandler deadExecutionHandler) {
-		this(name, completionHandler, deadExecutionHandler, JAVA_SERIALIZER);
-	}
-
-	public Task(String name, CompletionHandler completionHandler, DeadExecutionHandler deadExecutionHandler, Serializer<T> serializer) {
-		this.name = name;
+	public Task(TaskDescriptor<T> descriptor, CompletionHandler completionHandler, DeadExecutionHandler deadExecutionHandler) {
+		this.descriptor = descriptor;
 		this.completionHandler = completionHandler;
 		this.deadExecutionHandler = deadExecutionHandler;
-		this.serializer = serializer;
 	}
 
 	public String getName() {
-		return name;
+		return descriptor.getName();
 	}
-
-	public TaskInstance<T> instance(String id) {
-		return new TaskInstance<>(this, id);
-	}
-
-	public TaskInstance<T> instance(String id, T data) {
-		return new TaskInstance<>(this, id, data);
-	}
-
-	public abstract void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
 	public CompletionHandler getCompletionHandler() {
 		return completionHandler;

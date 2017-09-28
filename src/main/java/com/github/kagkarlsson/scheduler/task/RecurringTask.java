@@ -27,13 +27,13 @@ public abstract class RecurringTask extends Task<Void> implements OnStartup {
 
 	public static final String INSTANCE = "recurring";
 
-	public RecurringTask(String name, Schedule schedule) {
-		super(name, new OnCompleteReschedule(schedule), new RescheduleDeadExecution(), NO_SERIALIZER);
+	public RecurringTask(TaskDescriptor<Void> taskDescriptor, Schedule schedule) {
+		super(taskDescriptor, new OnCompleteReschedule(schedule), new RescheduleDeadExecution());
 	}
 
 	@Override
 	public void onStartup(Scheduler scheduler) {
-		scheduler.schedule(this.instance(INSTANCE), Instant.now());
+		scheduler.schedule(this.descriptor.instance(INSTANCE), Instant.now());
 	}
 
 }
