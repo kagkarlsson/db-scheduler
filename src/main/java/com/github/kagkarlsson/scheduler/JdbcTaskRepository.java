@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
 import static java.util.Optional.ofNullable;
 
 public class JdbcTaskRepository implements TaskRepository {
@@ -153,7 +154,7 @@ public class JdbcTaskRepository implements TaskRepository {
 						"and version = ?",
 				ps -> {
 					ps.setBoolean(1, true);
-					ps.setString(2, schedulerSchedulerName.getName());
+					ps.setString(2, truncate(schedulerSchedulerName.getName(), 50));
 					ps.setTimestamp(3, Timestamp.from(timePicked));
 					ps.setBoolean(4, false);
 					ps.setString(5, e.taskInstance.getTaskName());
@@ -248,6 +249,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
+
 		@Override
 		public List<Execution> map(ResultSet rs) throws SQLException {
 
