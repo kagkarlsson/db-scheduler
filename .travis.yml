@@ -6,7 +6,3 @@ cache:
 language: java
 jdk:
   - oraclejdk8
-
-branches:
-  only:
-  - travis
