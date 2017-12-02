@@ -4,7 +4,7 @@ create table scheduled_tasks (
   task_data blob,
   execution_time timestamp(6) not null,
   picked BOOLEAN not null,
-  picked_by varchar(40),
+  picked_by varchar(50),
   last_success timestamp(6) null,
   last_failure timestamp(6) null,
   last_heartbeat timestamp(6) null,
