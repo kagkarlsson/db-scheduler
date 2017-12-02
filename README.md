@@ -1,3 +1,5 @@
+![build status](https://travis-ci.org/kagkarlsson/db-scheduler.svg?branch=master)
+
 # db-scheduler
 
 Persistent scheduler for future execution of tasks, recurring or ad-hoc.
