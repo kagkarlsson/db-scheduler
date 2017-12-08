@@ -49,7 +49,7 @@ See below for more examples.
 * Optional data can be stored with the execution. Default using Java Serialization.
 * Exposing the `Execution`to the `ExecutionHandler`.
 
-** Upgrading 1.9 -> 2.0 **
+**Upgrading 1.9 -> 2.0**
 * Add column `task_data` to the database schema. See table definitions for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).
 
 ## How it works
