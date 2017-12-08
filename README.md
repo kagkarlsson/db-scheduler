@@ -1,6 +1,8 @@
 # db-scheduler
 
 ![build status](https://travis-ci.org/kagkarlsson/db-scheduler.svg?branch=master)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler)
+[![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 Persistent scheduler for future execution of tasks, recurring or ad-hoc.
 
