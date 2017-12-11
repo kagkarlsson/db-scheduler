@@ -38,7 +38,7 @@ public interface CompletionHandler {
 		private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReschedule.class);
 		private final Schedule schedule;
 
-		OnCompleteReschedule(Schedule schedule) {
+		public OnCompleteReschedule(Schedule schedule) {
 			this.schedule = schedule;
 		}
 
