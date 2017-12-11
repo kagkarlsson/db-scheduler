@@ -279,9 +279,6 @@
 							</goals>
 						</execution>
 					</executions>
-					<configuration>
-						<executable>gpg2</executable>
-					</configuration>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -292,7 +289,6 @@
 						<useReleaseProfile>false</useReleaseProfile>
 						<releaseProfiles>release</releaseProfiles>
 						<goals>deploy</goals>
-						<pushChanges>false</pushChanges>
 						<tagNameFormat>@{project.version}</tagNameFormat>
 					</configuration>
 				</plugin>
