@@ -1,14 +1,23 @@
 
 future development
 
+- make the CompletionHandler the return-value from the ExecutionHandler, to support cases where the complete-action is depending on
+  some data from the execution
+
+- allow rescheduling tasks with new task-data
+
+- expose scheduler-client in ExecutionHandler interface, to enable scheduling new tasks from another task
+
+- customizable table-name
+
+- RecurringTask with task-data
+
 - redesign api so that an ad-hoc task can be scheduled without having a reference to the Task-object
 
 - optimize scheduler to look an interval forward in time, and trigger next cycle earlier if there are an immediate execution
   - keep a list if executions due between now and next interval
 
-- automatic tests for oracle and mysql using docker containers?
-
-- customizable table-name
+- automatic tests for oracle and mysql using docker containers
 
 - profile for varying target db (hsql/postgresql) for tests
 
