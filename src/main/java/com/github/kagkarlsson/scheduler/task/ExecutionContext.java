@@ -15,20 +15,30 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.SchedulerState;
 
 public class ExecutionContext {
 
 	private SchedulerState schedulerState;
 	private final Execution execution;
+	private SchedulerClient schedulerClient;
 
-	public ExecutionContext(SchedulerState schedulerState, Execution execution) {
+	public ExecutionContext(SchedulerState schedulerState, Execution execution, SchedulerClient schedulerClient) {
 		this.schedulerState = schedulerState;
 		this.execution = execution;
+		this.schedulerClient = schedulerClient;
 	}
 
 	public SchedulerState getSchedulerState() {
 		return schedulerState;
+	}
+
+    /**
+     * Primarily enables ExecutionHandlers to schedule new tasks. Can not be used to modify the "current" execution.
+     */
+	public SchedulerClient getSchedulerClient() {
+		return schedulerClient;
 	}
 
 	public Execution getExecution() {
