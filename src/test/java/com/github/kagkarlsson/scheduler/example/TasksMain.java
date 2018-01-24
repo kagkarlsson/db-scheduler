@@ -32,7 +32,10 @@ public class TasksMain {
 
 	private static void recurringTask(DataSource dataSource) {
 
-		final MyHourlyTask hourlyTask = new MyHourlyTask();
+		RecurringTask hourlyTask = ComposableTask.recurringTask(
+				"my-hourly-task",
+				FixedDelay.of(ofHours(1)),
+				() -> System.out.println("Executed!"));
 
 		final Scheduler scheduler = Scheduler
 				.create(dataSource)
