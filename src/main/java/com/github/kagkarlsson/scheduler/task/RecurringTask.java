@@ -26,9 +26,11 @@ import static com.github.kagkarlsson.scheduler.task.Task.Serializer.NO_SERIALIZE
 public abstract class RecurringTask extends Task<Void> implements OnStartup {
 
 	public static final String INSTANCE = "recurring";
+	private final OnCompleteReschedule onComplete;
 
 	public RecurringTask(String name, Schedule schedule) {
-		super(name, new OnCompleteReschedule(schedule), new RescheduleDeadExecution(), NO_SERIALIZER);
+		super(name, new FailureHandler.OnFailureReschedule(schedule), new RescheduleDeadExecution(), NO_SERIALIZER);
+		onComplete = new OnCompleteReschedule(schedule);
 	}
 
 	@Override
@@ -36,4 +38,11 @@ public abstract class RecurringTask extends Task<Void> implements OnStartup {
 		scheduler.schedule(this.instance(INSTANCE), Instant.now());
 	}
 
+	@Override
+	public CompletionHandler execute(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
+		executeRecurringly(taskInstance, executionContext);
+		return onComplete;
+	}
+
+	public abstract void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext);
 }

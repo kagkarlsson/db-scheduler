@@ -269,27 +269,36 @@ public class Scheduler implements SchedulerClient {
 
 		@Override
 		public void run() {
+			final Task task = execution.taskInstance.getTask();
 			try {
-				final Task task = execution.taskInstance.getTask();
 				LOG.debug("Executing " + execution);
-				task.execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, Scheduler.this));
+				CompletionHandler completion = task.execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, Scheduler.this));
 				LOG.debug("Execution done");
-				complete(execution, ExecutionComplete.Result.OK, null);
+				complete(completion, execution);
 
 			} catch (RuntimeException unhandledException) {
 				LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
-				complete(execution, ExecutionComplete.Result.FAILED, unhandledException);
+				failure(task.getFailureHandler(), execution, unhandledException);
 
 			} catch (Throwable unhandledError) {
 				LOG.error("Error during execution. Treating as failure.", unhandledError);
-				complete(execution, ExecutionComplete.Result.FAILED, unhandledError);
+				failure(task.getFailureHandler(), execution, unhandledError);
 			}
 		}
 
-		private void complete(Execution execution, ExecutionComplete.Result result, Throwable cause) {
+		private void complete(CompletionHandler completion, Execution execution) {
 			try {
-				final Task task = execution.taskInstance.getTask();
-				task.getCompletionHandler().complete(new ExecutionComplete(execution, clock.now(), result, cause), new ExecutionOperations(taskRepository, execution));
+				completion.complete(new ExecutionComplete(execution, clock.now()), new ExecutionOperations(taskRepository, execution));
+			} catch (Throwable e) {
+				statsRegistry.registerUnexpectedError();
+				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +
+						"The execution should be detected as dead in {}, and handled according to the tasks DeadExecutionHandler.", execution, getMaxAgeBeforeConsideredDead(), e);
+			}
+		}
+
+		private void failure(FailureHandler failureHandler, Execution execution, Throwable cause) {
+			try {
+				failureHandler.onFailure(new ExecutionFailed(execution, clock.now(), cause), new ExecutionOperations(taskRepository, execution));
 			} catch (Throwable e) {
 				statsRegistry.registerUnexpectedError();
 				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +

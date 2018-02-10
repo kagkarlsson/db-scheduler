@@ -21,17 +21,17 @@ import static com.github.kagkarlsson.scheduler.task.Task.Serializer.JAVA_SERIALI
 
 public abstract class Task<T> implements ExecutionHandler<T> {
 	protected final String name;
-	private final CompletionHandler completionHandler;
+	private final FailureHandler failureHandler;
 	private final DeadExecutionHandler deadExecutionHandler;
 	protected final Serializer<T> serializer;
 
-	public Task(String name, CompletionHandler completionHandler, DeadExecutionHandler deadExecutionHandler) {
-		this(name, completionHandler, deadExecutionHandler, JAVA_SERIALIZER);
+	public Task(String name, FailureHandler failureHandler, DeadExecutionHandler deadExecutionHandler) {
+		this(name, failureHandler, deadExecutionHandler, JAVA_SERIALIZER);
 	}
 
-	public Task(String name, CompletionHandler completionHandler, DeadExecutionHandler deadExecutionHandler, Serializer<T> serializer) {
+	public Task(String name, FailureHandler failureHandler, DeadExecutionHandler deadExecutionHandler, Serializer<T> serializer) {
 		this.name = name;
-		this.completionHandler = completionHandler;
+		this.failureHandler = failureHandler;
 		this.deadExecutionHandler = deadExecutionHandler;
 		this.serializer = serializer;
 	}
@@ -48,10 +48,10 @@ public abstract class Task<T> implements ExecutionHandler<T> {
 		return new TaskInstance<>(this, id, data);
 	}
 
-	public abstract void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+	public abstract CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
-	public CompletionHandler getCompletionHandler() {
-		return completionHandler;
+	public FailureHandler getFailureHandler() {
+		return failureHandler;
 	}
 
 	public DeadExecutionHandler getDeadExecutionHandler() {

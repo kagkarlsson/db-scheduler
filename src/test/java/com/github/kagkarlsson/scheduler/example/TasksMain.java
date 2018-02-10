@@ -54,7 +54,7 @@ public class TasksMain {
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+		public void executeRecurringly(TaskInstance taskInstance, ExecutionContext executionContext) {
 			System.out.println("Executed!");
 		}
 	}
@@ -91,7 +91,7 @@ public class TasksMain {
 		}
 
 		@Override
-		public void execute(TaskInstance<MyTaskData> taskInstance, ExecutionContext executionContext) {
+		public void executeOnce(TaskInstance<MyTaskData> taskInstance, ExecutionContext executionContext) {
 			System.out.println(String.format("Executed! Custom data: [Id: %s], [secondary-id: %s]", taskInstance.getData().id, taskInstance.getData().secondaryId));
 		}
 	}
@@ -99,10 +99,10 @@ public class TasksMain {
 	private static void simplerTaskDefinition(DataSource dataSource) {
 
 		final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
-				() -> System.out.println("Executed!"));
+				(inst, ctx) -> System.out.println("Executed!"));
 
 		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
-				(taskInstance, context) -> System.out.println("One-time task with id "+taskInstance.getId()+" executed!"));
+				(inst, ctx) -> System.out.println("One-time task with id "+inst.getId()+" executed!"));
 
 		final Scheduler scheduler = Scheduler
 				.create(dataSource, oneTimeTask)

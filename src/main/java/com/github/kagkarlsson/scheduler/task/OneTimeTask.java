@@ -15,13 +15,27 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import java.time.Duration;
+
 public abstract class OneTimeTask<T> extends Task<T> {
+
+	private static final CompletionHandler ON_COMPLETE_REMOVE = new CompletionHandler.OnCompleteRemove();
+	private static final FailureHandler.OnFailureRetryLater ON_FAILURE_RETRY = new FailureHandler.OnFailureRetryLater(Duration.ofMinutes(5));
+
 	public OneTimeTask(String name) {
-		super(name, new CompletionHandler.OnCompleteRemove(), new DeadExecutionHandler.RescheduleDeadExecution());
+		super(name, ON_FAILURE_RETRY, new DeadExecutionHandler.RescheduleDeadExecution());
 	}
 
 	public OneTimeTask(String name, Serializer<T> serializer) {
-		super(name, new CompletionHandler.OnCompleteRemove(), new DeadExecutionHandler.RescheduleDeadExecution(), serializer);
+		super(name, ON_FAILURE_RETRY, new DeadExecutionHandler.RescheduleDeadExecution(), serializer);
 	}
+
+	@Override
+	public CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+		executeOnce(taskInstance, executionContext);
+		return ON_COMPLETE_REMOVE;
+	}
+
+	public abstract void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
 }
