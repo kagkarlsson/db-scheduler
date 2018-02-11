@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.task.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.OneTimeTask;
@@ -23,17 +24,17 @@ public class SchedulerClientTest {
 
     private Scheduler scheduler;
     private SettableClock settableClock;
-    private OneTimeTask oneTimeTask;
+    private OneTimeTask<Void> oneTimeTask;
     private JdbcTaskRepository jdbcTaskRepository;
 
-    private TestTasks.CountingHandler onetimeTaskHandler;
-    private ScheduleAnotherTaskHandler scheduleAnother;
-    private OneTimeTask scheduleAnotherTask;
+    private TestTasks.CountingHandler<Void> onetimeTaskHandler;
+    private ScheduleAnotherTaskHandler<Void> scheduleAnother;
+    private OneTimeTask<Void> scheduleAnotherTask;
 
     @Before
     public void setUp() {
         settableClock = new SettableClock();
-        onetimeTaskHandler = new TestTasks.CountingHandler();
+        onetimeTaskHandler = new TestTasks.CountingHandler<Void>();
         oneTimeTask = TestTasks.oneTime("OneTime", onetimeTaskHandler);
 
         scheduleAnother = new ScheduleAnotherTaskHandler(oneTimeTask.instance("secondTask"), settableClock.now().plusSeconds(1));
@@ -76,18 +77,18 @@ public class SchedulerClientTest {
         assertThat(onetimeTaskHandler.timesExecuted, CoreMatchers.is(1));
     }
 
-    public static class ScheduleAnotherTaskHandler implements ExecutionHandler {
+    public static class ScheduleAnotherTaskHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
         public int timesExecuted = 0;
-        private TaskInstance secondTask;
+        private TaskInstance<Void> secondTask;
         private Instant instant;
 
-        public ScheduleAnotherTaskHandler(TaskInstance secondTask, Instant instant) {
+        public ScheduleAnotherTaskHandler(TaskInstance<Void> secondTask, Instant instant) {
             this.secondTask = secondTask;
             this.instant = instant;
         }
 
         @Override
-        public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             executionContext.getSchedulerClient().schedule(secondTask, instant);
             this.timesExecuted++;
         }

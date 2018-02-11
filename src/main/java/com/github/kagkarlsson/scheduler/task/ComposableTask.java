@@ -15,9 +15,11 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import java.time.Duration;
+
 public class ComposableTask {
 
-	public static RecurringTask recurringTask(String name, Schedule schedule, RecurringTaskExecutionHandler executionHandler) {
+	public static RecurringTask recurringTask(String name, Schedule schedule, ExecutionHandlerWithExternalCompletion<Void> executionHandler) {
 		return new RecurringTask(name, schedule) {
 			@Override
 			public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
@@ -26,25 +28,27 @@ public class ComposableTask {
 		};
 	}
 
-	public static OneTimeTask onetimeTask(String name, ExecutionHandler executionHandler) {
-		return new OneTimeTask(name) {
+	public static <T> OneTimeTask<T> onetimeTask(String name, ExecutionHandlerWithExternalCompletion<T> executionHandler) {
+		return new OneTimeTask<T>(name) {
 			@Override
-			public CompletionHandler execute(TaskInstance taskInstance, ExecutionContext executionContext) {
-				return executionHandler.execute(taskInstance, executionContext);
-			}
-		};
-	}
-
-	public static Task customTask(String name, CompletionHandler completionHandler, ExecutionHandler executionHandler) {
-		return new Task(name, completionHandler, new DeadExecutionHandler.RescheduleDeadExecution()) {
-			@Override
-			public CompletionHandler execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+			public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				executionHandler.execute(taskInstance, executionContext);
 			}
 		};
 	}
 
-	public static interface RecurringTaskExecutionHandler {
-		void execute(TaskInstance taskInstance, ExecutionContext executionContext);
+	public static <T> Task<T> customTask(String name, CompletionHandler completionHandler, ExecutionHandlerWithExternalCompletion<T> executionHandler) {
+		return new Task<T>(name, new FailureHandler.OnFailureRetryLater(Duration.ofMinutes(5)), new DeadExecutionHandler.RescheduleDeadExecution()) {
+			@Override
+			public CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+				executionHandler.execute(taskInstance, executionContext);
+				return completionHandler;
+			}
+		};
 	}
+
+	public static interface ExecutionHandlerWithExternalCompletion<T> {
+		void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+	}
+	
 }

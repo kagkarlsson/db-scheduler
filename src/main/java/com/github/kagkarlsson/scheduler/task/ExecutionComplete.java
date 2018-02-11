@@ -21,12 +21,27 @@ import java.util.Optional;
 public class ExecutionComplete {
 	private final Execution execution;
 	private final Instant timeDone;
+	private final Result result;
+	private final Throwable cause;
 
-	public ExecutionComplete(Execution execution, Instant timeDone) {
+	ExecutionComplete(Execution execution, Instant timeDone, Result result, Throwable cause) {
+		this.cause = cause;
+		if (result == Result.OK && cause != null) {
+			throw new IllegalArgumentException("Result 'OK' should never have a cause.");
+		}
 		this.execution = execution;
 		this.timeDone = timeDone;
+		this.result = result;
 	}
 
+	public static ExecutionComplete success(Execution execution, Instant timeDone) {
+		return new ExecutionComplete(execution, timeDone, Result.OK, null);
+	}
+	
+	public static ExecutionComplete failure(Execution execution, Instant timeDone, Throwable cause) {
+		return new ExecutionComplete(execution, timeDone, Result.FAILED, cause);
+	}
+	
 	public Execution getExecution() {
 		return execution;
 	}
@@ -35,4 +50,16 @@ public class ExecutionComplete {
 		return timeDone;
 	}
 
+	public Result getResult() {
+		return result;
+	}
+
+	public Optional<Throwable> getCause() {
+		return Optional.ofNullable(cause);
+	}
+
+	public enum Result {
+		OK,
+		FAILED
+	}
 }

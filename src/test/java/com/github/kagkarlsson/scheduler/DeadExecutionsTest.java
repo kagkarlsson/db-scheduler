@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -26,8 +27,8 @@ public class DeadExecutionsTest {
 	private SettableClock settableClock;
 	private OneTimeTask oneTimeTask;
 	private JdbcTaskRepository jdbcTaskRepository;
-	private NonCompletingTask nonCompleting;
-	private TestTasks.CountingHandler nonCompletingExecutionHandler;
+	private NonCompletingTask<Void> nonCompleting;
+	private TestTasks.CountingHandler<Void> nonCompletingExecutionHandler;
 	private RescheduleDead deadExecutionHandler;
 
 	@Before
@@ -105,16 +106,16 @@ public class DeadExecutionsTest {
 		assertThat(nonCompletingExecutionHandler.timesExecuted, is(2));
 	}
 
-	public static class NonCompletingTask extends Task {
-		private final ExecutionHandler handler;
+	public static class NonCompletingTask<T> extends OneTimeTask<T> {
+		private final ExecutionHandlerWithExternalCompletion<T> handler;
 
-		public NonCompletingTask(String name, ExecutionHandler handler, DeadExecutionHandler deadExecutionHandler) {
-			super(name, new DoNothingCompletionHandler(), deadExecutionHandler);
+		public NonCompletingTask(String name, ExecutionHandlerWithExternalCompletion<T> handler, DeadExecutionHandler deadExecutionHandler) {
+			super(name);
 			this.handler = handler;
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+		public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 			handler.execute(taskInstance, executionContext);
 		}
 	}

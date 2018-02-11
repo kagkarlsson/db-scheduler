@@ -288,7 +288,7 @@ public class Scheduler implements SchedulerClient {
 
 		private void complete(CompletionHandler completion, Execution execution) {
 			try {
-				completion.complete(new ExecutionComplete(execution, clock.now()), new ExecutionOperations(taskRepository, execution));
+				completion.complete(ExecutionComplete.success(execution, clock.now()), new ExecutionOperations(taskRepository, execution));
 			} catch (Throwable e) {
 				statsRegistry.registerUnexpectedError();
 				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +
@@ -298,7 +298,7 @@ public class Scheduler implements SchedulerClient {
 
 		private void failure(FailureHandler failureHandler, Execution execution, Throwable cause) {
 			try {
-				failureHandler.onFailure(new ExecutionFailed(execution, clock.now(), cause), new ExecutionOperations(taskRepository, execution));
+				failureHandler.onFailure(ExecutionComplete.failure(execution, clock.now(), cause), new ExecutionOperations(taskRepository, execution));
 			} catch (Throwable e) {
 				statsRegistry.registerUnexpectedError();
 				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +

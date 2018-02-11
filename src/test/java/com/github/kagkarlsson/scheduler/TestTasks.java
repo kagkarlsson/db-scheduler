@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.github.kagkarlsson.scheduler.task.Task.Serializer;
 import org.slf4j.LoggerFactory;
 
@@ -12,7 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestTasks {
 
-	public static final ExecutionHandler DO_NOTHING = (taskInstance, executionContext) -> {};
+	public static final CompletionHandler REMOVE_ON_COMPLETE = new CompletionHandler.OnCompleteRemove();
+	public static final ExecutionHandlerWithExternalCompletion<Void> DO_NOTHING = (taskInstance, executionContext) -> {};
+	
 	public static final Serializer<String> STRING_SERIALIZER = new Serializer<String>() {
 		@Override
 		public byte[] serialize(String data) {
@@ -27,34 +30,34 @@ public class TestTasks {
 		}
 	};
 
-	public static OneTimeTask oneTime(String name, ExecutionHandler handler) {
-		return new OneTimeTask(name) {
+	public static <T> OneTimeTask<T> oneTime(String name, ExecutionHandlerWithExternalCompletion<T> handler) {
+		return new OneTimeTask<T>(name) {
 			@Override
-			public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+			public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
 			}
 		};
 	}
 
-	public static <T> OneTimeTask<T> oneTimeWithType(String name, ExecutionHandler<T> handler, Serializer<T> serializer) {
+	public static <T> OneTimeTask<T> oneTimeWithType(String name, ExecutionHandlerWithExternalCompletion<T> handler, Serializer<T> serializer) {
 		return new OneTimeTask<T>(name, serializer) {
 			@Override
-			public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+			public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
 			}
 		};
 	}
 
-	public static RecurringTask recurring(String name, FixedDelay schedule, ExecutionHandler<Void> handler) {
+	public static RecurringTask recurring(String name, FixedDelay schedule, ExecutionHandlerWithExternalCompletion<Void> handler) {
 		return new RecurringTask(name, schedule) {
 			@Override
-			public void execute(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
+			public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
 			}
 		};
 	}
 
-	public static class ResultRegisteringCompletionHandler implements CompletionHandler {
+	public static class ResultRegisteringCompletionHandler<T> implements CompletionHandler {
 		CountDownLatch waitForNotify = new CountDownLatch(1);
 		ExecutionComplete.Result result;
 		Optional<Throwable> cause;
@@ -68,7 +71,7 @@ public class TestTasks {
 		}
 	}
 
-	public static class CountingHandler implements ExecutionHandler {
+	public static class CountingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
 		private final Duration wait;
 		public int timesExecuted = 0;
 
@@ -80,7 +83,7 @@ public class TestTasks {
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+		public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 			this.timesExecuted++;
 			try {
 				Thread.sleep(wait.toMillis());
@@ -90,7 +93,7 @@ public class TestTasks {
 		}
 	}
 
-	public static class WaitingHandler implements ExecutionHandler {
+	public static class WaitingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
 
 		private final CountDownLatch waitForNotify;
 
@@ -99,9 +102,27 @@ public class TestTasks {
 		}
 
 		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
+		public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 			try {
 				waitForNotify.await();
+			} catch (InterruptedException e) {
+				LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
+			}
+		}
+	}
+	
+	public static class SleepingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
+
+		private int millis;
+
+		public SleepingHandler(int seconds) {
+			this.millis = seconds;
+		}
+
+		@Override
+		public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+			try {
+				Thread.sleep(millis);
 			} catch (InterruptedException e) {
 				LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
 			}

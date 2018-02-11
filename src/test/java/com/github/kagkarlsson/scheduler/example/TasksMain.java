@@ -35,7 +35,7 @@ public class TasksMain {
 		RecurringTask hourlyTask = ComposableTask.recurringTask(
 				"my-hourly-task",
 				FixedDelay.of(ofHours(1)),
-				() -> System.out.println("Executed!"));
+				(inst, ctx) -> System.out.println("Executed!"));
 
 		final Scheduler scheduler = Scheduler
 				.create(dataSource)
@@ -101,7 +101,7 @@ public class TasksMain {
 		final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
 				(inst, ctx) -> System.out.println("Executed!"));
 
-		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
+		final OneTimeTask<Void> oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
 				(inst, ctx) -> System.out.println("One-time task with id "+inst.getId()+" executed!"));
 
 		final Scheduler scheduler = Scheduler
@@ -116,41 +116,4 @@ public class TasksMain {
 		scheduler.schedule(oneTimeTask.instance("1001"), Instant.now().plus(Duration.ofSeconds(5)));
 	}
 
-
-	private static void springWorkerExample(DataSource dataSource, MySpringWorker mySpringWorker) {
-
-		// instantiate and start the scheduler somewhere in your application
-		final Scheduler scheduler = Scheduler
-				.create(dataSource)
-				.threads(2)
-				.build();
-		scheduler.start();
-
-		// define a task and a handler that named task, MySpringWorker implements the ExecutionHandler interface
-		final OneTimeTask oneTimeTask = ComposableTask.onetimeTask("my-onetime-task", mySpringWorker);
-
-		// schedule a future execution for the task with a custom id (currently the only form for context supported)
-		scheduler.schedule(oneTimeTask.instance("1001"), Instant.now().plus(Duration.ofDays(1)));
-	}
-
-
-	public static class MySpringWorker implements ExecutionHandler {
-		public MySpringWorker() {
-			// could be instantiated by Spring
-		}
-
-		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
-			System.out.println("Executed task with id="+taskInstance.getId());
-		}
-	}
-
-
-	public static class MyExecutionHandler implements ExecutionHandler {
-
-		@Override
-		public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
-			System.out.println("Executed!");
-		}
-	}
 }
