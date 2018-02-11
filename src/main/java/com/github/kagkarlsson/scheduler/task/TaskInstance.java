@@ -20,27 +20,33 @@ import java.util.function.Supplier;
 
 public final class TaskInstance<T> implements TaskInstanceId {
 
-	private final Task<T> task;
+	private final String taskName;
 	private final String id;
 	private final Supplier<T> dataSupplier;
 	private final Supplier<byte[]> serializedDataSupplier;
 
-	public TaskInstance(Task<T> task, String id) {
-		this(task, id, (T) null);
+	public TaskInstance(String taskName, String id) {
+		this(taskName, id, (T) null);
 	}
 
-    public TaskInstance(Task<T> task, String id, T data) {
-        this.task = task;
+    public TaskInstance(String taskName, String id, T data) {
+        this.taskName = taskName;
         this.id = id;
         this.dataSupplier = () -> data;
         this.serializedDataSupplier = memoize(() -> this.task.serializer.serialize(data));
     }
 
-    public TaskInstance(Task<T> task, String id, byte[] serializedData) {
-        this.task = task;
+    public TaskInstance(String taskName, String id, byte[] serializedData) {
+        this.taskName = taskName;
         this.id = id;
         this.serializedDataSupplier = () -> serializedData;
         this.dataSupplier = memoize(() -> this.task.serializer.deserialize(serializedData));
+    }
+    
+    public TaskInstance(String taskName, String id, Supplier<T> dataSupplier) {
+        this.taskName = taskName;
+        this.id = id;
+        this.dataSupplier = dataSupplier;
     }
 
 	public String getTaskAndInstance() {

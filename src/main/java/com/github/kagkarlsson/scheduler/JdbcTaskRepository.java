@@ -20,7 +20,11 @@ import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.Task.Serializer;
+import com.github.kagkarlsson.scheduler.task.Task.Serializer2;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceDb;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,11 +35,14 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
 import static java.util.Optional.ofNullable;
 
 public class JdbcTaskRepository implements TaskRepository {
+	// TODO:
+	private static final Serializer2 SERIALIZER_TODO = Serializer2.JAVA_SERIALIZER;
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
 	private static final int MAX_DUE_RESULTS = 10_000;
 	private final TaskResolver taskResolver;
@@ -256,13 +263,14 @@ public class JdbcTaskRepository implements TaskRepository {
 			List<Execution> executions = new ArrayList<>();
 			while (rs.next()) {
 				String taskName = rs.getString("task_name");
-				Task task = taskResolver.resolve(taskName);
+				Task<?> task = taskResolver.resolve(taskName);
+				Class<?> clazz = task.getDataClass();
 
 				if (task == null) {
 					continue;
 				}
 
-				String taskInstance = rs.getString("task_instance");
+				String instanceId = rs.getString("task_instance");
 				byte[] data = rs.getBytes("task_data");
 
 				Instant executionTime = rs.getTimestamp("execution_time").toInstant();
@@ -276,9 +284,29 @@ public class JdbcTaskRepository implements TaskRepository {
 				Instant lastHeartbeat = ofNullable(rs.getTimestamp("last_heartbeat"))
 						.map(Timestamp::toInstant).orElse(null);
 				long version = rs.getLong("version");
-				executions.add(new Execution(executionTime, new TaskInstance(task, taskInstance, data), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
+				
+				SERIALIZER_TODO.deserialize(clazz, data);
+				executions.add(new Execution(executionTime, new TaskInstance(task.getName(), instanceId, () -> SERIALIZER_TODO.deserialize(clazz, data)), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
 			}
 			return executions;
 		}
 	}
+	
+	private static <T> Supplier<T> memoize(Supplier<T> original) {
+        return new Supplier<T>() {
+            Supplier<T> delegate = this::firstTime;
+            boolean initialized;
+            public T get() {
+                return delegate.get();
+            }
+            private synchronized T firstTime() {
+                if(!initialized) {
+                    T value = original.get();
+                    delegate = () -> value;
+                    initialized = true;
+                }
+                return delegate.get();
+            }
+        };
+    }
 }
