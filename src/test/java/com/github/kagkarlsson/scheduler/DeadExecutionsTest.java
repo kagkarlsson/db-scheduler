@@ -34,17 +34,18 @@ public class DeadExecutionsTest {
 	@Before
 	public void setUp() {
 		settableClock = new SettableClock();
-		oneTimeTask = TestTasks.oneTime("OneTime", TestTasks.DO_NOTHING);
+		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
 		nonCompletingExecutionHandler = new TestTasks.CountingHandler();
 		deadExecutionHandler = new RescheduleDead();
-		nonCompleting = new NonCompletingTask("NonCompleting", nonCompletingExecutionHandler, deadExecutionHandler);
+		nonCompleting = new NonCompletingTask("NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
 
-		TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED, oneTimeTask, nonCompleting);
+		TaskResolver taskResolver = new TaskResolver(oneTimeTask, nonCompleting);
 
 		jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
 
 		scheduler = new Scheduler(settableClock,
 				jdbcTaskRepository,
+				taskResolver,
 				1,
 				MoreExecutors.newDirectExecutorService(),
 				new SchedulerName.Fixed("test-scheduler"),
@@ -106,17 +107,22 @@ public class DeadExecutionsTest {
 		assertThat(nonCompletingExecutionHandler.timesExecuted, is(2));
 	}
 
-	public static class NonCompletingTask<T> extends OneTimeTask<T> {
+	public static class NonCompletingTask<T> extends Task<T> {
 		private final ExecutionHandlerWithExternalCompletion<T> handler;
 
-		public NonCompletingTask(String name, ExecutionHandlerWithExternalCompletion<T> handler, DeadExecutionHandler deadExecutionHandler) {
-			super(name);
+		public NonCompletingTask(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler, DeadExecutionHandler deadExecutionHandler) {
+			super(name, dataClass);
 			this.handler = handler;
 		}
 
 		@Override
 		public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 			handler.execute(taskInstance, executionContext);
+		}
+
+		@Override
+		public CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+			throw new R
 		}
 	}
 

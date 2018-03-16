@@ -87,7 +87,7 @@ public class TasksMain {
 	public static class MyTypedAdhocTask extends OneTimeTask<MyTaskData> {
 
 		public MyTypedAdhocTask() {
-			super("my-typed-adhoc-task");
+			super("my-typed-adhoc-task", MyTaskData.class);
 		}
 
 		@Override
@@ -101,7 +101,7 @@ public class TasksMain {
 		final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
 				(inst, ctx) -> System.out.println("Executed!"));
 
-		final OneTimeTask<Void> oneTimeTask = ComposableTask.onetimeTask("my-onetime-task",
+		final OneTimeTask<Void> oneTimeTask = ComposableTask.onetimeTask("my-onetime-task", Void.class,
 				(inst, ctx) -> System.out.println("One-time task with id "+inst.getId()+" executed!"));
 
 		final Scheduler scheduler = Scheduler

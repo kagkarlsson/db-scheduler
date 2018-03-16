@@ -39,7 +39,7 @@ public abstract class CompatibilityTest {
 	@Before
 	public void setUp() {
 		delayingHandler = new TestTasks.CountingHandler(Duration.ofMillis(200));
-		oneTime = TestTasks.oneTimeWithType("oneTime", delayingHandler, STRING_SERIALIZER);
+		oneTime = TestTasks.oneTimeWithType("oneTime", String.class, delayingHandler, STRING_SERIALIZER);
 		recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandler);
 
 		statsRegistry = new TestTasks.SimpleStatsRegistry();
@@ -84,7 +84,7 @@ public abstract class CompatibilityTest {
 	}
 
 	private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
-		TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED, new ArrayList<>());
+		TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
 		taskResolver.addTask(oneTime);
 
 		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));

@@ -21,7 +21,6 @@ import java.util.Optional;
 
 import javax.sql.DataSource;
 
-import com.github.kagkarlsson.scheduler.TaskResolver.OnCannotResolve;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
@@ -54,7 +53,7 @@ public interface SchedulerClient {
 		}
 		
 		public SchedulerClient build() {
-			TaskResolver taskResolver = new TaskResolver(OnCannotResolve.FAIL_ON_UNRESOLVED, new ArrayList<>());
+			TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
 			TaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, new SchedulerClientName());
 			
 			return new StandardSchedulerClient(taskRepository);

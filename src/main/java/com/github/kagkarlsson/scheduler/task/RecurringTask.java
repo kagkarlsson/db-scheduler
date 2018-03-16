@@ -29,7 +29,7 @@ public abstract class RecurringTask extends Task<Void> implements OnStartup {
 	private final OnCompleteReschedule onComplete;
 
 	public RecurringTask(String name, Schedule schedule) {
-		super(name, new FailureHandler.OnFailureReschedule(schedule), new RescheduleDeadExecution(), NO_SERIALIZER);
+		super(name, Void.class, new FailureHandler.OnFailureReschedule(schedule), new RescheduleDeadExecution(), NO_SERIALIZER);
 		onComplete = new OnCompleteReschedule(schedule);
 	}
 

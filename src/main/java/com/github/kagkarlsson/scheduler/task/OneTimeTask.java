@@ -22,12 +22,12 @@ public abstract class OneTimeTask<T> extends Task<T> {
 	private static final CompletionHandler ON_COMPLETE_REMOVE = new CompletionHandler.OnCompleteRemove();
 	private static final FailureHandler.OnFailureRetryLater ON_FAILURE_RETRY = new FailureHandler.OnFailureRetryLater(Duration.ofMinutes(5));
 
-	public OneTimeTask(String name) {
-		super(name, ON_FAILURE_RETRY, new DeadExecutionHandler.RescheduleDeadExecution());
+	public OneTimeTask(String name, Class<T> dataClass) {
+		super(name, dataClass, ON_FAILURE_RETRY, new DeadExecutionHandler.RescheduleDeadExecution());
 	}
 
-	public OneTimeTask(String name, Serializer<T> serializer) {
-		super(name, ON_FAILURE_RETRY, new DeadExecutionHandler.RescheduleDeadExecution(), serializer);
+	public OneTimeTask(String name, Class<T> dataClass, Serializer<T> serializer) {
+		super(name, dataClass, ON_FAILURE_RETRY, new DeadExecutionHandler.RescheduleDeadExecution(), serializer);
 	}
 
 	@Override

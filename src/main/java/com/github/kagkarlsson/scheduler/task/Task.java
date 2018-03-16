@@ -27,20 +27,18 @@ public abstract class Task<T> implements ExecutionHandler<T> {
 	protected final Serializer<T> serializer;
 	private Class<T> dataClass;
 
-	public Task(String name, FailureHandler failureHandler, DeadExecutionHandler deadExecutionHandler) {
-		this(name, failureHandler, deadExecutionHandler, JAVA_SERIALIZER);
+	public Task(String name, Class<T> dataClass, FailureHandler failureHandler, DeadExecutionHandler deadExecutionHandler) {
+		this(name, dataClass, failureHandler, deadExecutionHandler, JAVA_SERIALIZER);
 	}
 
 	@SuppressWarnings("unchecked")
-	public Task(String name, FailureHandler failureHandler, DeadExecutionHandler deadExecutionHandler,
-			Serializer<T> serializer) {
+	public Task(String name, Class<T> dataClass, FailureHandler failureHandler, DeadExecutionHandler deadExecutionHandler,
+			Serializer<T> serializer) { // TODO: remove serializer
 		this.name = name;
+		this.dataClass = dataClass;
 		this.failureHandler = failureHandler;
 		this.deadExecutionHandler = deadExecutionHandler;
 		this.serializer = serializer;
-		
-		this.dataClass = (Class<T>) ((ParameterizedType) getClass()
-                 .getGenericSuperclass()).getActualTypeArguments()[0];
 	}
 
 	public String getName() {

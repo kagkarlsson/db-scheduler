@@ -30,10 +30,10 @@ public class JdbcTaskRepositoryTest {
 
 	@Before
 	public void setUp() {
-		oneTimeTask = TestTasks.oneTime("OneTime", TestTasks.DO_NOTHING);
+		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
 		List<Task> knownTasks = new ArrayList<>();
 		knownTasks.add(oneTimeTask);
-		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED, knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
+		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
 	}
 
 	@Test

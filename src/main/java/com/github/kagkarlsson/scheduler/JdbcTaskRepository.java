@@ -67,9 +67,9 @@ public class JdbcTaskRepository implements TaskRepository {
 			jdbcRunner.execute(
 					"insert into scheduled_tasks(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
 					(PreparedStatement p) -> {
-						p.setString(1, execution.taskInstance.getTask().getName());
+						p.setString(1, execution.taskInstance.getTaskName());
 						p.setString(2, execution.taskInstance.getId());
-						p.setObject(3, execution.taskInstance.getSerializedData());
+						p.setObject(3, SERIALIZER_TODO.serialize(execution.taskInstance.getData()));
 						p.setTimestamp(4, Timestamp.from(execution.executionTime));
 						p.setBoolean(5, false);
 						p.setLong(6, 1L);
@@ -263,10 +263,10 @@ public class JdbcTaskRepository implements TaskRepository {
 			List<Execution> executions = new ArrayList<>();
 			while (rs.next()) {
 				String taskName = rs.getString("task_name");
-				Task<?> task = taskResolver.resolve(taskName);
-				Class<?> clazz = task.getDataClass();
+				Optional<Task> task = taskResolver.resolve(taskName);
 
-				if (task == null) {
+				if (!task.isPresent()) {
+					LOG.error("Failed to find implementation for task with name '{}'. Either delete the execution from the databaser, or add an implementation for it.", taskName);
 					continue;
 				}
 
@@ -284,9 +284,9 @@ public class JdbcTaskRepository implements TaskRepository {
 				Instant lastHeartbeat = ofNullable(rs.getTimestamp("last_heartbeat"))
 						.map(Timestamp::toInstant).orElse(null);
 				long version = rs.getLong("version");
-				
-				SERIALIZER_TODO.deserialize(clazz, data);
-				executions.add(new Execution(executionTime, new TaskInstance(task.getName(), instanceId, () -> SERIALIZER_TODO.deserialize(clazz, data)), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
+
+				Supplier dataSupplier = memoize(() -> SERIALIZER_TODO.deserialize(task.get().getDataClass(), data));
+				executions.add(new Execution(executionTime, new TaskInstance(taskName, instanceId, dataSupplier), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
 			}
 			return executions;
 		}

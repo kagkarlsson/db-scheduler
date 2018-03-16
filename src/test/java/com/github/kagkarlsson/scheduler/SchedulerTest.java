@@ -8,6 +8,8 @@ import org.junit.Test;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -16,21 +18,29 @@ import static org.junit.Assert.assertThat;
 
 public class SchedulerTest {
 
-	private Scheduler scheduler;
 	private TestTasks.CountingHandler<Void> handler;
 	private SettableClock clock;
 
 	@Before
 	public void setUp() {
 		clock = new SettableClock();
-		InMemoryTaskRespository taskRepository = new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1"));
-		scheduler = new Scheduler(clock, taskRepository, 1, MoreExecutors.newDirectExecutorService(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP, new ArrayList<>());
 		handler = new TestTasks.CountingHandler<Void>();
+	}
+
+	private Scheduler schedulerFor(Task ... tasks) {
+		return schedulerFor(MoreExecutors.newDirectExecutorService(), tasks);
+	}
+
+	private Scheduler schedulerFor(ExecutorService executor, Task ... tasks) {
+		// TODO user jdbcTaskRespository instead
+		InMemoryTaskRespository taskRepository = new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1"));
+		return new Scheduler(clock, taskRepository, new TaskResolver(tasks), 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP, new ArrayList<>());
 	}
 
 	@Test
 	public void scheduler_should_execute_task_when_exactly_due() {
-		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", handler);
+		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
+		Scheduler scheduler = schedulerFor(oneTimeTask);
 
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
 		scheduler.schedule(oneTimeTask.instance("1"), executionTime);
@@ -45,8 +55,8 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_execute_rescheduled_task_when_exactly_due() {
-		String taskName = "OneTime";
-		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime(taskName, handler);
+		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
+		Scheduler scheduler = schedulerFor(oneTimeTask);
 
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
 		String instanceId = "1";
@@ -68,8 +78,8 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_not_execute_canceled_tasks() {
-		String taskName = "OneTime";
-		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime(taskName, handler);
+		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
+		Scheduler scheduler = schedulerFor(oneTimeTask);
 
 		Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
 		String instanceId = "1";
@@ -87,6 +97,7 @@ public class SchedulerTest {
 	@Test
 	public void scheduler_should_execute_recurring_task_and_reschedule() {
 		RecurringTask recurringTask = TestTasks.recurring("Recurring", FixedDelay.of(Duration.ofHours(1)), handler);
+		Scheduler scheduler = schedulerFor(recurringTask);
 
 		scheduler.schedule(recurringTask.instance("single"), clock.now());
 		scheduler.executeDue();
@@ -101,9 +112,10 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_stop_execution_when_executor_service_rejects() throws InterruptedException {
-		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), 1, MoreExecutors.newDirectExecutorService(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
+//		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), taskResolver, 1, MoreExecutors.newDirectExecutorService(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
+		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
+		Scheduler scheduler = schedulerFor(oneTimeTask);
 		scheduler.executorsSemaphore.acquire();
-		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", handler);
 
 		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
 		scheduler.executeDue();
@@ -112,8 +124,9 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_track_duration() {
-		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), 1, Executors.newSingleThreadExecutor(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
-		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", new TestTasks.WaitingHandler<Void>());
+		TestTasks.WaitingHandler<Void> waitingHandler = new TestTasks.WaitingHandler<>();
+		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, waitingHandler);
+		Scheduler scheduler = schedulerFor(Executors.newSingleThreadExecutor(), oneTimeTask);
 
 		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
 		scheduler.executeDue();
@@ -122,22 +135,24 @@ public class SchedulerTest {
 		clock.set(clock.now.plus(Duration.ofMinutes(1)));
 
 		assertThat(scheduler.getCurrentlyExecuting().get(0).getDuration(), is(Duration.ofMinutes(1)));
+
+		waitingHandler.waitForNotify.countDown();
 	}
 
 	@Test
 	public void should_expose_cause_of_failure_to_completion_handler() throws InterruptedException {
-		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), 1, Executors.newSingleThreadExecutor(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
-
-		TestTasks.ResultRegisteringCompletionHandler<Void> completionHandler = new TestTasks.ResultRegisteringCompletionHandler<>();
-		Task<Void> oneTimeTask = ComposableTask.customTask("cause-testing-task", completionHandler,
+		TestTasks.ResultRegisteringFailureHandler<Void> failureHandler = new TestTasks.ResultRegisteringFailureHandler<>();
+		Task<Void> oneTimeTask = ComposableTask.customTask("cause-testing-task", Void.class, TestTasks.REMOVE_ON_COMPLETE, failureHandler,
 				(inst, ctx) -> { throw new RuntimeException("Failed!");});
+
+		Scheduler scheduler = schedulerFor(oneTimeTask);
 
 		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
 		scheduler.executeDue();
-		completionHandler.waitForNotify.await();
+//		failureHandler.waitForNotify.await();
 
-		assertThat(completionHandler.result, is(ExecutionComplete.Result.FAILED));
-		assertThat(completionHandler.cause.get().getMessage(), is("Failed!"));
+		assertThat(failureHandler.result, is(ExecutionComplete.Result.FAILED));
+		assertThat(failureHandler.cause.get().getMessage(), is("Failed!"));
 
 	}
 

@@ -35,17 +35,18 @@ public class SchedulerClientTest {
     public void setUp() {
         settableClock = new SettableClock();
         onetimeTaskHandler = new TestTasks.CountingHandler<Void>();
-        oneTimeTask = TestTasks.oneTime("OneTime", onetimeTaskHandler);
+        oneTimeTask = TestTasks.oneTime("OneTime", Void.class, onetimeTaskHandler);
 
         scheduleAnother = new ScheduleAnotherTaskHandler(oneTimeTask.instance("secondTask"), settableClock.now().plusSeconds(1));
-        scheduleAnotherTask = TestTasks.oneTime("ScheduleAnotherTask", scheduleAnother);
+        scheduleAnotherTask = TestTasks.oneTime("ScheduleAnotherTask", Void.class, scheduleAnother);
 
-        TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.FAIL_ON_UNRESOLVED, oneTimeTask, scheduleAnotherTask);
+        TaskResolver taskResolver = new TaskResolver(oneTimeTask, scheduleAnotherTask);
 
         jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
 
         scheduler = new Scheduler(settableClock,
                 jdbcTaskRepository,
+                taskResolver,
                 1,
                 MoreExecutors.newDirectExecutorService(),
                 new SchedulerName.Fixed("test-scheduler"),

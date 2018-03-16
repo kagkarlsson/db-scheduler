@@ -28,8 +28,8 @@ public class ComposableTask {
 		};
 	}
 
-	public static <T> OneTimeTask<T> onetimeTask(String name, ExecutionHandlerWithExternalCompletion<T> executionHandler) {
-		return new OneTimeTask<T>(name) {
+	public static <T> OneTimeTask<T> onetimeTask(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> executionHandler) {
+		return new OneTimeTask<T>(name, dataClass) {
 			@Override
 			public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				executionHandler.execute(taskInstance, executionContext);
@@ -37,8 +37,18 @@ public class ComposableTask {
 		};
 	}
 
-	public static <T> Task<T> customTask(String name, CompletionHandler completionHandler, ExecutionHandlerWithExternalCompletion<T> executionHandler) {
-		return new Task<T>(name, new FailureHandler.OnFailureRetryLater(Duration.ofMinutes(5)), new DeadExecutionHandler.RescheduleDeadExecution()) {
+	public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler completionHandler, ExecutionHandlerWithExternalCompletion<T> executionHandler) {
+		return new Task<T>(name, dataClass, new FailureHandler.OnFailureRetryLater(Duration.ofMinutes(5)), new DeadExecutionHandler.RescheduleDeadExecution()) {
+			@Override
+			public CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+				executionHandler.execute(taskInstance, executionContext);
+				return completionHandler;
+			}
+		};
+	}
+
+	public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler completionHandler, FailureHandler failureHandler, ExecutionHandlerWithExternalCompletion<T> executionHandler) {
+		return new Task<T>(name, dataClass, failureHandler, new DeadExecutionHandler.RescheduleDeadExecution()) {
 			@Override
 			public CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				executionHandler.execute(taskInstance, executionContext);

@@ -38,7 +38,7 @@ public class ClusterTest {
 		final CountDownLatch completeAllIds = new CountDownLatch(ids.size());
 		final RecordResultAndStopExecutionOnComplete completed = new RecordResultAndStopExecutionOnComplete(
 				(id) -> completeAllIds.countDown());
-		final Task<Void> task = ComposableTask.customTask("Custom", completed, new TestTasks.SleepingHandler<Void>(1));
+		final Task<Void> task = ComposableTask.customTask("Custom", Void.class, completed, new TestTasks.SleepingHandler<Void>(1));
 
 		final TestTasks.SimpleStatsRegistry stats = new TestTasks.SimpleStatsRegistry();
 		final Scheduler scheduler1 = createScheduler("scheduler1", task, stats);

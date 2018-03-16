@@ -1,12 +1,12 @@
 /**
  * Copyright (C) Gustav Karlsson
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,101 +15,68 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import java.util.Objects;
 import java.util.function.Supplier;
 
 public final class TaskInstance<T> implements TaskInstanceId {
 
-	private final String taskName;
-	private final String id;
-	private final Supplier<T> dataSupplier;
-	private final Supplier<byte[]> serializedDataSupplier;
+    private final String taskName;
+    private final String id;
+    private final Supplier<T> dataSupplier;
 
-	public TaskInstance(String taskName, String id) {
-		this(taskName, id, (T) null);
-	}
+    public TaskInstance(String taskName, String id) {
+        this(taskName, id, (T) null);
+    }
 
     public TaskInstance(String taskName, String id, T data) {
-        this.taskName = taskName;
-        this.id = id;
-        this.dataSupplier = () -> data;
-        this.serializedDataSupplier = memoize(() -> this.task.serializer.serialize(data));
+        this(taskName, id, () -> data);
     }
 
-    public TaskInstance(String taskName, String id, byte[] serializedData) {
-        this.taskName = taskName;
-        this.id = id;
-        this.serializedDataSupplier = () -> serializedData;
-        this.dataSupplier = memoize(() -> this.task.serializer.deserialize(serializedData));
-    }
-    
     public TaskInstance(String taskName, String id, Supplier<T> dataSupplier) {
         this.taskName = taskName;
         this.id = id;
         this.dataSupplier = dataSupplier;
     }
 
-	public String getTaskAndInstance() {
-		return task.getName() + "_" + id;
-	}
-
-	public Task getTask() {
-		return task;
-	}
-
-	public String getTaskName() {
-		return task.getName();
-	}
-
-	@Override
-	public String getId() {
-		return id;
-	}
-
-	public T getData() {
-		return dataSupplier.get();
-	}
-
-	public byte[] getSerializedData() {
-		return serializedDataSupplier.get();
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		TaskInstance that = (TaskInstance) o;
-		return Objects.equals(task.getName(), that.task.getName()) &&
-				Objects.equals(id, that.id);
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(task.getName(), id);
-	}
-
-	@Override
-	public String toString() {
-		return "TaskInstance: " +
-				"task=" + task.getName() +
-				", id=" + id;
-	}
-
-    private static <T> Supplier<T> memoize(Supplier<T> original) {
-        return new Supplier<T>() {
-            Supplier<T> delegate = this::firstTime;
-            boolean initialized;
-            public T get() {
-                return delegate.get();
-            }
-            private synchronized T firstTime() {
-                if(!initialized) {
-                    T value = original.get();
-                    delegate = () -> value;
-                    initialized = true;
-                }
-                return delegate.get();
-            }
-        };
+    public String getTaskAndInstance() {
+        return taskName + "_" + id;
     }
+
+    public String getTaskName() {
+        return taskName;
+    }
+
+    @Override
+    public String getId() {
+        return id;
+    }
+
+    public T getData() {
+        return dataSupplier.get();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TaskInstance<?> that = (TaskInstance<?>) o;
+
+        if (!taskName.equals(that.taskName)) return false;
+        return id.equals(that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = taskName.hashCode();
+        result = 31 * result + id.hashCode();
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "TaskInstance: " +
+                "task=" + taskName +
+                ", id=" + id;
+    }
+
 }

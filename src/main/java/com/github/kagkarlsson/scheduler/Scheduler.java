@@ -39,6 +39,7 @@ public class Scheduler implements SchedulerClient {
 	private final SchedulerClient delegate;
 	private final Clock clock;
 	private final TaskRepository taskRepository;
+	private TaskResolver taskResolver;
 	private final ExecutorService executorService;
 	private final Waiter waiter;
 	private final List<OnStartup> onStartup;
@@ -53,19 +54,20 @@ public class Scheduler implements SchedulerClient {
 	private final SettableSchedulerState schedulerState = new SettableSchedulerState();
 	final Semaphore executorsSemaphore;
 
-	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, SchedulerName schedulerName,
+	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
 			  Waiter waiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
-		this(clock, taskRepository, maxThreads, defaultExecutorService(maxThreads, schedulerName), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry, onStartup);
+		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads, schedulerName), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry, onStartup);
 	}
 
 	private static ExecutorService defaultExecutorService(int maxThreads, SchedulerName schedulerName) {
 		return Executors.newFixedThreadPool(maxThreads, defaultThreadFactoryWithPrefix(schedulerName.getName() + "-"));
 	}
 
-	Scheduler(Clock clock, TaskRepository taskRepository, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
+	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
 			  Waiter waiter, Duration heartbeatInterval, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
+		this.taskResolver = taskResolver;
 		this.executorService = executorService;
 		this.waiter = waiter;
 		this.onStartup = onStartup;
@@ -224,9 +226,17 @@ public class Scheduler implements SchedulerClient {
 
 		if (!oldExecutions.isEmpty()) {
 			oldExecutions.stream().forEach(execution -> {
+
 				LOG.info("Found dead execution. Delegating handling to task. Execution: " + execution);
 				try {
-					execution.taskInstance.getTask().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(taskRepository, execution));
+
+					Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
+					if (task.isPresent()) {
+						task.get().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(taskRepository, execution));
+					} else {
+						LOG.error("Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.", execution.taskInstance.getTaskName());
+					}
+
 				} catch (Throwable e) {
 					LOG.error("Failed while handling dead execution {}. Will be tried again later.", execution, e);
 					statsRegistry.registerUnexpectedError();
@@ -269,20 +279,26 @@ public class Scheduler implements SchedulerClient {
 
 		@Override
 		public void run() {
-			final Task task = execution.taskInstance.getTask();
+			// TODO: may fail
+			final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
+			if (!task.isPresent()) {
+				LOG.error("Failed to find implementation for task with name '{}'. If there are a high number of executions, this may block other executions and must be fixed.", execution.taskInstance.getTaskName());
+				return;
+			}
+
 			try {
 				LOG.debug("Executing " + execution);
-				CompletionHandler completion = task.execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, Scheduler.this));
+				CompletionHandler completion = task.get().execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, Scheduler.this));
 				LOG.debug("Execution done");
 				complete(completion, execution);
 
 			} catch (RuntimeException unhandledException) {
 				LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
-				failure(task.getFailureHandler(), execution, unhandledException);
+				failure(task.get().getFailureHandler(), execution, unhandledException);
 
 			} catch (Throwable unhandledError) {
 				LOG.error("Error during execution. Treating as failure.", unhandledError);
-				failure(task.getFailureHandler(), execution, unhandledError);
+				failure(task.get().getFailureHandler(), execution, unhandledError);
 			}
 		}
 
@@ -404,10 +420,10 @@ public class Scheduler implements SchedulerClient {
 		}
 
 		public Scheduler build() {
-			final TaskResolver taskResolver = new TaskResolver(TaskResolver.OnCannotResolve.WARN_ON_UNRESOLVED, knownTasks);
+			final TaskResolver taskResolver = new TaskResolver(knownTasks);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, schedulerName);
 
-			return new Scheduler(new SystemClock(), taskRepository, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
+			return new Scheduler(new SystemClock(), taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
 		}
 	}
 

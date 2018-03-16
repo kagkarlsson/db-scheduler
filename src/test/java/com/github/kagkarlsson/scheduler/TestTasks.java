@@ -30,8 +30,8 @@ public class TestTasks {
 		}
 	};
 
-	public static <T> OneTimeTask<T> oneTime(String name, ExecutionHandlerWithExternalCompletion<T> handler) {
-		return new OneTimeTask<T>(name) {
+	public static <T> OneTimeTask<T> oneTime(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler) {
+		return new OneTimeTask<T>(name, dataClass) {
 			@Override
 			public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
@@ -39,8 +39,8 @@ public class TestTasks {
 		};
 	}
 
-	public static <T> OneTimeTask<T> oneTimeWithType(String name, ExecutionHandlerWithExternalCompletion<T> handler, Serializer<T> serializer) {
-		return new OneTimeTask<T>(name, serializer) {
+	public static <T> OneTimeTask<T> oneTimeWithType(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler, Serializer<T> serializer) {
+		return new OneTimeTask<T>(name, dataClass, serializer) {
 			@Override
 			public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
@@ -64,6 +64,20 @@ public class TestTasks {
 
 		@Override
 		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+			this.result = executionComplete.getResult();
+			this.cause = executionComplete.getCause();
+			executionOperations.stop();
+			waitForNotify.countDown();
+		}
+	}
+
+	public static class ResultRegisteringFailureHandler<T> implements FailureHandler {
+		CountDownLatch waitForNotify = new CountDownLatch(1);
+		ExecutionComplete.Result result;
+		Optional<Throwable> cause;
+
+		@Override
+		public void onFailure(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
 			this.result = executionComplete.getResult();
 			this.cause = executionComplete.getCause();
 			executionOperations.stop();
@@ -95,7 +109,7 @@ public class TestTasks {
 
 	public static class WaitingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
 
-		private final CountDownLatch waitForNotify;
+		public final CountDownLatch waitForNotify;
 
 		public WaitingHandler() {
 			waitForNotify = new CountDownLatch(1);

@@ -14,4 +14,5 @@ public class HsqlCompatibilityTest extends CompatibilityTest {
 	public DataSource getDataSource() {
 		return hsql.getDataSource();
 	}
+
 }
