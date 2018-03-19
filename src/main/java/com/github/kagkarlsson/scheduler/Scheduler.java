@@ -279,7 +279,6 @@ public class Scheduler implements SchedulerClient {
 
 		@Override
 		public void run() {
-			// TODO: may fail
 			final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
 			if (!task.isPresent()) {
 				LOG.error("Failed to find implementation for task with name '{}'. If there are a high number of executions, this may block other executions and must be fixed.", execution.taskInstance.getTaskName());

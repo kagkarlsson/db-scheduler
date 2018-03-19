@@ -111,18 +111,14 @@ public class DeadExecutionsTest {
 		private final ExecutionHandlerWithExternalCompletion<T> handler;
 
 		public NonCompletingTask(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler, DeadExecutionHandler deadExecutionHandler) {
-			super(name, dataClass);
+			super(name, dataClass, (executionComplete, executionOperations) -> {}, deadExecutionHandler);
 			this.handler = handler;
 		}
 
 		@Override
-		public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-			handler.execute(taskInstance, executionContext);
-		}
-
-		@Override
 		public CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-			throw new R
+			handler.execute(taskInstance, executionContext);
+			throw new RuntimeException("simulated unexpected exception");
 		}
 	}
 
