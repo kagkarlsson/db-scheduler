@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -21,6 +22,9 @@ public class SchedulerTest {
 	private TestTasks.CountingHandler<Void> handler;
 	private SettableClock clock;
 
+	@Rule
+	public EmbeddedPostgresqlRule postgres = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
+
 	@Before
 	public void setUp() {
 		clock = new SettableClock();
@@ -32,9 +36,9 @@ public class SchedulerTest {
 	}
 
 	private Scheduler schedulerFor(ExecutorService executor, Task ... tasks) {
-		// TODO user jdbcTaskRespository instead
-		InMemoryTaskRespository taskRepository = new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1"));
-		return new Scheduler(clock, taskRepository, new TaskResolver(tasks), 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP, new ArrayList<>());
+		TaskResolver taskResolver = new TaskResolver(tasks);
+		JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
+		return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP, new ArrayList<>());
 	}
 
 	@Test
@@ -112,7 +116,6 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_stop_execution_when_executor_service_rejects() throws InterruptedException {
-//		scheduler = new Scheduler(clock, new InMemoryTaskRespository(new SchedulerName.Fixed("scheduler1")), taskResolver, 1, MoreExecutors.newDirectExecutorService(), new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofMinutes(1), StatsRegistry.NOOP, new ArrayList<>());
 		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
 		Scheduler scheduler = schedulerFor(oneTimeTask);
 		scheduler.executorsSemaphore.acquire();
