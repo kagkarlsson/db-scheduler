@@ -35,6 +35,7 @@ import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactor
 public class Scheduler implements SchedulerClient {
 
 	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
+	private static final String THREAD_PREFIX = "db-scheduler";
 	public static final Duration SHUTDOWN_WAIT = Duration.ofMinutes(30);
 	private final SchedulerClient delegate;
 	private final Clock clock;
@@ -56,11 +57,11 @@ public class Scheduler implements SchedulerClient {
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
 			  Waiter waiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
-		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads, schedulerName), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry, onStartup);
+		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry, onStartup);
 	}
 
-	private static ExecutorService defaultExecutorService(int maxThreads, SchedulerName schedulerName) {
-		return Executors.newFixedThreadPool(maxThreads, defaultThreadFactoryWithPrefix(schedulerName.getName() + "-"));
+	private static ExecutorService defaultExecutorService(int maxThreads) {
+		return Executors.newFixedThreadPool(maxThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
 	}
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
@@ -75,9 +76,9 @@ public class Scheduler implements SchedulerClient {
 		this.heartbeatInterval = heartbeatInterval;
 		this.heartbeatWaiter = new Waiter(heartbeatInterval);
 		this.statsRegistry = statsRegistry;
-		this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-execute-due-"));
-		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-detect-dead-"));
-		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(schedulerName.getName() + "-update-heartbeat-"));
+		this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
+		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
+		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
 		executorsSemaphore = new Semaphore(maxThreads);
 		delegate = new StandardSchedulerClient(taskRepository);
 	}
