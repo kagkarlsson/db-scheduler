@@ -2,9 +2,7 @@ package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.example.TasksMain.MyHourlyTask;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
-import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;

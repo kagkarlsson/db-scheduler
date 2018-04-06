@@ -2,9 +2,6 @@ package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.task.ExecutionContext;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.helper.ComposableTask;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -14,10 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.io.Serializable;
-import java.time.Duration;
 import java.time.Instant;
-
-import static java.time.Duration.ofHours;
 
 public class TasksMain {
 	private static final Logger LOG = LoggerFactory.getLogger(TasksMain.class);

@@ -20,8 +20,8 @@ Task-scheduler for Java that was inspired by the need for a clustered `java.util
 ```
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
-  	<artifactId>db-scheduler</artifactId>
-  	<version>2.3</version>
+    <artifactId>db-scheduler</artifactId>
+    <version>2.3</version>
 </dependency>
 ```
 
