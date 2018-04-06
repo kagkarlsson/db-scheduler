@@ -15,20 +15,21 @@
  */
 package com.github.kagkarlsson.scheduler.task.helper;
 
-import com.github.kagkarlsson.scheduler.task.CompletionHandler;
+import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteRemove;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
-import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.FailureHandler.OnFailureRetryLater;
-import com.github.kagkarlsson.scheduler.task.Task;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
 import java.time.Duration;
 
 public abstract class OneTimeTask<T> extends Task<T> {
 
     public OneTimeTask(String name, Class<T> dataClass) {
-        super(name, dataClass, new OnFailureRetryLater<>(Duration.ofMinutes(5)), new ReviveDeadExecution<>());
+        this(name, dataClass, new OnFailureRetryLater<>(Duration.ofMinutes(5)), new ReviveDeadExecution<>());
+    }
+
+    public OneTimeTask(String name, Class<T> dataClass, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
+        super(name, dataClass, failureHandler, deadExecutionHandler);
     }
 
     @Override

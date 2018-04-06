@@ -30,7 +30,11 @@ public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 	private final T initialData;
 
 	public RecurringTask(String name, Schedule schedule, Class<T> dataClass, T initialData) {
-		super(name, dataClass, new FailureHandler.OnFailureReschedule<>(schedule), new ReviveDeadExecution<>());
+		this(name, schedule, dataClass, initialData, new FailureHandler.OnFailureReschedule<T>(schedule), new ReviveDeadExecution<T>());
+	}
+
+	public RecurringTask(String name, Schedule schedule, Class<T> dataClass, T initialData, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
+		super(name, dataClass, failureHandler, deadExecutionHandler);
 		onComplete = new OnCompleteReschedule<>(schedule);
 		this.initialData = initialData;
 	}
