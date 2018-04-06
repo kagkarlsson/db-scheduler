@@ -35,8 +35,8 @@ public interface SchedulerClient {
 
 	class Builder {
 
-		private DataSource dataSource;
-		private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+		private final DataSource dataSource;
+		private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
 
 		private Builder(DataSource dataSource) {
 			this.dataSource = dataSource;
@@ -55,7 +55,7 @@ public interface SchedulerClient {
 
 	class StandardSchedulerClient implements SchedulerClient {
 
-		protected TaskRepository taskRepository;
+		protected final TaskRepository taskRepository;
 		
 		StandardSchedulerClient(TaskRepository taskRepository) {
 			this.taskRepository = taskRepository;

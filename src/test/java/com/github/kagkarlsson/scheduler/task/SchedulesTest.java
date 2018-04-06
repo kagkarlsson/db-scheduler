@@ -54,7 +54,6 @@ public class SchedulesTest {
 			fail("Should have thrown IllegalArgument for schedule '" + schedule + "'");
 		} catch (Schedules.UnrecognizableSchedule e) {
 			assertThat(e.getMessage(), CoreMatchers.containsString("Unrecognized schedule"));
-			return;
 		}
 	}
 }

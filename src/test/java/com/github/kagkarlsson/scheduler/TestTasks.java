@@ -54,7 +54,7 @@ public class TestTasks {
 	}
 
 	public static class ResultRegisteringCompletionHandler<T> implements CompletionHandler<T> {
-		CountDownLatch waitForNotify = new CountDownLatch(1);
+		final CountDownLatch waitForNotify = new CountDownLatch(1);
 		ExecutionComplete.Result result;
 		Optional<Throwable> cause;
 
@@ -68,7 +68,7 @@ public class TestTasks {
 	}
 
 	public static class ResultRegisteringFailureHandler<T> implements FailureHandler<T> {
-		CountDownLatch waitForNotify = new CountDownLatch(1);
+		final CountDownLatch waitForNotify = new CountDownLatch(1);
 		ExecutionComplete.Result result;
 		Optional<Throwable> cause;
 
@@ -123,7 +123,7 @@ public class TestTasks {
 	
 	public static class SleepingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
 
-		private int millis;
+		private final int millis;
 
 		public SleepingHandler(int seconds) {
 			this.millis = seconds;

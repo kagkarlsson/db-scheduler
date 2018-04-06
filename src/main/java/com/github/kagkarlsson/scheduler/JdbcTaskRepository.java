@@ -44,7 +44,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	private final TaskResolver taskResolver;
 	private final SchedulerName schedulerSchedulerName;
 	private final JdbcRunner jdbcRunner;
-	private Serializer serializer;
+	private final Serializer serializer;
 
 	public JdbcTaskRepository(DataSource dataSource, TaskResolver taskResolver, SchedulerName schedulerSchedulerName) {
 		this(dataSource, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER);
@@ -331,7 +331,7 @@ public class JdbcTaskRepository implements TaskRepository {
     }
 
     private static class NewData {
-		private Object data;
+		private final Object data;
 		NewData(Object data) {
 			this.data = data;
 		}

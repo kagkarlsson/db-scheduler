@@ -39,7 +39,7 @@ public class Scheduler implements SchedulerClient {
 	private final SchedulerClient delegate;
 	private final Clock clock;
 	private final TaskRepository taskRepository;
-	private TaskResolver taskResolver;
+	private final TaskResolver taskResolver;
 	private final ExecutorService executorService;
 	private final Waiter waiter;
 	private final List<OnStartup> onStartup;
@@ -369,12 +369,12 @@ public class Scheduler implements SchedulerClient {
 		private final DataSource dataSource;
 		private SchedulerName schedulerName = new SchedulerName.Hostname();
 		private int executorThreads = 10;
-		private List<Task<?>> knownTasks = new ArrayList<>();
-		private List<OnStartup> startTasks = new ArrayList<>();
+		private final List<Task<?>> knownTasks = new ArrayList<>();
+		private final List<OnStartup> startTasks = new ArrayList<>();
 		private Waiter waiter = new Waiter(Duration.ofSeconds(10));
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
-		private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+		private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;

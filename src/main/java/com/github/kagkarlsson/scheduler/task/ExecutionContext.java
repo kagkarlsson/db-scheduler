@@ -20,9 +20,9 @@ import com.github.kagkarlsson.scheduler.SchedulerState;
 
 public class ExecutionContext {
 
-	private SchedulerState schedulerState;
+	private final SchedulerState schedulerState;
 	private final Execution execution;
-	private SchedulerClient schedulerClient;
+	private final SchedulerClient schedulerClient;
 
 	public ExecutionContext(SchedulerState schedulerState, Execution execution, SchedulerClient schedulerClient) {
 		this.schedulerState = schedulerState;

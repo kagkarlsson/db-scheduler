@@ -22,12 +22,12 @@ import java.util.Objects;
 public final class Execution {
 	public final TaskInstance taskInstance;
 	public final Instant executionTime;
-	public boolean picked;
-	public String pickedBy;
-	public Instant lastHeartbeat;
-	public long version;
-	public Instant lastFailure;
-	public Instant lastSuccess;
+	public final boolean picked;
+	public final String pickedBy;
+	public final Instant lastHeartbeat;
+	public final long version;
+	public final Instant lastFailure;
+	public final Instant lastSuccess;
 
 	public Execution(Instant executionTime, TaskInstance taskInstance) {
 		this(executionTime, taskInstance, false, null, null, null, null, 1L);

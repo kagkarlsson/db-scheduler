@@ -79,8 +79,8 @@ public class SchedulerClientTest {
 
     public static class ScheduleAnotherTaskHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
         public int timesExecuted = 0;
-        private TaskInstance<Void> secondTask;
-        private Instant instant;
+        private final TaskInstance<Void> secondTask;
+        private final Instant instant;
 
         public ScheduleAnotherTaskHandler(TaskInstance<Void> secondTask, Instant instant) {
             this.secondTask = secondTask;

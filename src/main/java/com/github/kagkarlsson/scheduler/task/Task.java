@@ -19,7 +19,7 @@ public abstract class Task<T> implements ExecutionHandler<T> {
 	protected final String name;
 	private final FailureHandler<T> failureHandler;
 	private final DeadExecutionHandler<T> deadExecutionHandler;
-	private Class<T> dataClass;
+	private final Class<T> dataClass;
 
 	public Task(String name, Class<T> dataClass, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
 		this.name = name;

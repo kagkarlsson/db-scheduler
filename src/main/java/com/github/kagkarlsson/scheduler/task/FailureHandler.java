@@ -30,7 +30,7 @@ public interface FailureHandler<T> {
     class OnFailureRetryLater<T> implements FailureHandler<T> {
 
         private static final Logger LOG = LoggerFactory.getLogger(CompletionHandler.OnCompleteReschedule.class);
-        private Duration sleepDuration;
+        private final Duration sleepDuration;
 
         public OnFailureRetryLater(Duration sleepDuration) {
             this.sleepDuration = sleepDuration;
