@@ -19,15 +19,13 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 public class ClusterTest {
 
 	@Rule
-	public HsqlTestDatabaseRule DB = new HsqlTestDatabaseRule();
-	// public EmbeddedPostgresqlRule DB = new
-	// EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"),
-	// DbUtils::clearTables);
+	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
 
 	@Rule
 	public Timeout timeout = new Timeout(10, TimeUnit.SECONDS);
@@ -35,6 +33,7 @@ public class ClusterTest {
 	@Test
 	public void test_concurrency() throws InterruptedException {
 		final List<String> ids = IntStream.range(1, 1001).mapToObj(String::valueOf).collect(toList());
+
 		final CountDownLatch completeAllIds = new CountDownLatch(ids.size());
 		final RecordResultAndStopExecutionOnComplete<Void> completed = new RecordResultAndStopExecutionOnComplete<>(
 				(id) -> completeAllIds.countDown());
@@ -58,6 +57,8 @@ public class ClusterTest {
 			assertThat(completed.ok.size(), is(ids.size()));
 			assertThat("Should contain no duplicates", new HashSet<>(completed.ok).size(), is(ids.size()));
 			assertThat(stats.unexpectedErrors.get(), is(0));
+			assertThat(scheduler1.getCurrentlyExecuting(), hasSize(0));
+			assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
 
 		} finally {
 			scheduler1.stop();
