@@ -16,5 +16,5 @@
 package com.github.kagkarlsson.scheduler.task;
 
 public interface ExecutionHandler<T> {
-	CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+	CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 }

@@ -2,7 +2,6 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.ComposableTask.ExecutionHandlerWithExternalCompletion;
-import com.github.kagkarlsson.scheduler.task.Task.Serializer;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
@@ -13,23 +12,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestTasks {
 
-	public static final CompletionHandler REMOVE_ON_COMPLETE = new CompletionHandler.OnCompleteRemove();
+	public static final CompletionHandler<Void> REMOVE_ON_COMPLETE = new CompletionHandler.OnCompleteRemove<>();
 	public static final ExecutionHandlerWithExternalCompletion<Void> DO_NOTHING = (taskInstance, executionContext) -> {};
 	
-	public static final Serializer<String> STRING_SERIALIZER = new Serializer<String>() {
-		@Override
-		public byte[] serialize(String data) {
-			if(data == null) return null;
-			return data.getBytes(StandardCharsets.UTF_8);
-		}
-
-		@Override
-		public String deserialize(byte[] serializedData) {
-			if(serializedData == null) return null;
-			return new String(serializedData, StandardCharsets.UTF_8);
-		}
-	};
-
 	public static <T> OneTimeTask<T> oneTime(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler) {
 		return new OneTimeTask<T>(name, dataClass) {
 			@Override
@@ -39,8 +24,8 @@ public class TestTasks {
 		};
 	}
 
-	public static <T> OneTimeTask<T> oneTimeWithType(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler, Serializer<T> serializer) {
-		return new OneTimeTask<T>(name, dataClass, serializer) {
+	public static <T> OneTimeTask<T> oneTimeWithType(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler) {
+		return new OneTimeTask<T>(name, dataClass) {
 			@Override
 			public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
@@ -48,8 +33,8 @@ public class TestTasks {
 		};
 	}
 
-	public static RecurringTask recurring(String name, FixedDelay schedule, ExecutionHandlerWithExternalCompletion<Void> handler) {
-		return new RecurringTask(name, schedule) {
+	public static RecurringTask<Void> recurring(String name, FixedDelay schedule, ExecutionHandlerWithExternalCompletion<Void> handler) {
+		return new RecurringTask<Void>(name, schedule, Void.class) {
 			@Override
 			public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
@@ -57,13 +42,13 @@ public class TestTasks {
 		};
 	}
 
-	public static class ResultRegisteringCompletionHandler<T> implements CompletionHandler {
+	public static class ResultRegisteringCompletionHandler<T> implements CompletionHandler<T> {
 		CountDownLatch waitForNotify = new CountDownLatch(1);
 		ExecutionComplete.Result result;
 		Optional<Throwable> cause;
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+		public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
 			this.result = executionComplete.getResult();
 			this.cause = executionComplete.getCause();
 			executionOperations.stop();
@@ -71,13 +56,13 @@ public class TestTasks {
 		}
 	}
 
-	public static class ResultRegisteringFailureHandler<T> implements FailureHandler {
+	public static class ResultRegisteringFailureHandler<T> implements FailureHandler<T> {
 		CountDownLatch waitForNotify = new CountDownLatch(1);
 		ExecutionComplete.Result result;
 		Optional<Throwable> cause;
 
 		@Override
-		public void onFailure(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+		public void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
 			this.result = executionComplete.getResult();
 			this.cause = executionComplete.getCause();
 			executionOperations.stop();

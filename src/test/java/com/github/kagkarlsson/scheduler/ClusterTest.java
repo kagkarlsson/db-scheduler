@@ -36,9 +36,9 @@ public class ClusterTest {
 	public void test_concurrency() throws InterruptedException {
 		final List<String> ids = IntStream.range(1, 1001).mapToObj(String::valueOf).collect(toList());
 		final CountDownLatch completeAllIds = new CountDownLatch(ids.size());
-		final RecordResultAndStopExecutionOnComplete completed = new RecordResultAndStopExecutionOnComplete(
+		final RecordResultAndStopExecutionOnComplete<Void> completed = new RecordResultAndStopExecutionOnComplete<>(
 				(id) -> completeAllIds.countDown());
-		final Task<Void> task = ComposableTask.customTask("Custom", Void.class, completed, new TestTasks.SleepingHandler<Void>(1));
+		final Task<Void> task = ComposableTask.customTask("Custom", Void.class, completed, new TestTasks.SleepingHandler<>(1));
 
 		final TestTasks.SimpleStatsRegistry stats = new TestTasks.SimpleStatsRegistry();
 		final Scheduler scheduler1 = createScheduler("scheduler1", task, stats);
@@ -65,7 +65,7 @@ public class ClusterTest {
 		}
 	}
 
-	private Scheduler createScheduler(String name, Task task, TestTasks.SimpleStatsRegistry stats) {
+	private Scheduler createScheduler(String name, Task<?> task, TestTasks.SimpleStatsRegistry stats) {
 		return Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
 				.schedulerName(new SchedulerName.Fixed(name)).pollingInterval(Duration.ofMillis(0))
 				.heartbeatInterval(Duration.ofMillis(100)).statsRegistry(stats).build();
@@ -79,7 +79,7 @@ public class ClusterTest {
 		}
 	}
 
-	private static class RecordResultAndStopExecutionOnComplete implements CompletionHandler {
+	private static class RecordResultAndStopExecutionOnComplete<T> implements CompletionHandler<T> {
 
 		private final List<String> ok = Collections.synchronizedList(new ArrayList<>());
 		private final List<String> failed = Collections.synchronizedList(new ArrayList<>());
@@ -90,7 +90,7 @@ public class ClusterTest {
 		}
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+		public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
 			final String instanceId = executionComplete.getExecution().taskInstance.getId();
 			if (executionComplete.getResult() == ExecutionComplete.Result.OK) {
 				ok.add(instanceId);

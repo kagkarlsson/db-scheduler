@@ -22,7 +22,7 @@ public class DailyTest {
 	@Test
 	public void should_not_allow_empty_times() {
 		expectedException.expect(IllegalArgumentException.class);
-		new Daily(new LocalTime[]{});
+		new Daily();
 	}
 
 	@Test

@@ -45,7 +45,7 @@ public class Schedules {
 	 * @return
 	 */
 	public static Schedule parseSchedule(String scheduleString) {
-		if (scheduleString == null) throw new UnrecognizableSchedule(scheduleString);
+		if (scheduleString == null) throw new UnrecognizableSchedule("null");
 
 		Matcher dailyMatcher = DAILY_PATTERN.matcher(scheduleString);
 		if (dailyMatcher.matches()) {

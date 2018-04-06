@@ -28,14 +28,14 @@ public class SchedulerTest {
 	@Before
 	public void setUp() {
 		clock = new SettableClock();
-		handler = new TestTasks.CountingHandler<Void>();
+		handler = new TestTasks.CountingHandler<>();
 	}
 
-	private Scheduler schedulerFor(Task ... tasks) {
+	private Scheduler schedulerFor(Task<?> ... tasks) {
 		return schedulerFor(MoreExecutors.newDirectExecutorService(), tasks);
 	}
 
-	private Scheduler schedulerFor(ExecutorService executor, Task ... tasks) {
+	private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
 		TaskResolver taskResolver = new TaskResolver(tasks);
 		JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
 		return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP, new ArrayList<>());
@@ -100,7 +100,7 @@ public class SchedulerTest {
 
 	@Test
 	public void scheduler_should_execute_recurring_task_and_reschedule() {
-		RecurringTask recurringTask = TestTasks.recurring("Recurring", FixedDelay.of(Duration.ofHours(1)), handler);
+		RecurringTask<Void> recurringTask = TestTasks.recurring("Recurring", FixedDelay.of(Duration.ofHours(1)), handler);
 		Scheduler scheduler = schedulerFor(recurringTask);
 
 		scheduler.schedule(recurringTask.instance("single"), clock.now());

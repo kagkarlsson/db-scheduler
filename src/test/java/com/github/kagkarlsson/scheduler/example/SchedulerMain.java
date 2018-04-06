@@ -14,8 +14,8 @@ public class SchedulerMain {
 
 	private static void example(DataSource dataSource) {
 
-		RecurringTask myRecurringTask = new MyHourlyTask();
-		Task myAdhocTask = new TasksMain.MyTypedAdhocTask();
+		RecurringTask<Void> myRecurringTask = new MyHourlyTask();
+		Task<TasksMain.MyTaskData> myAdhocTask = new TasksMain.MyTypedAdhocTask();
 
 		final Scheduler scheduler = Scheduler
 				.create(dataSource, myAdhocTask)

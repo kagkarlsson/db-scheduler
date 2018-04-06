@@ -34,10 +34,10 @@ public class SchedulerClientTest {
     @Before
     public void setUp() {
         settableClock = new SettableClock();
-        onetimeTaskHandler = new TestTasks.CountingHandler<Void>();
+        onetimeTaskHandler = new TestTasks.CountingHandler<>();
         oneTimeTask = TestTasks.oneTime("OneTime", Void.class, onetimeTaskHandler);
 
-        scheduleAnother = new ScheduleAnotherTaskHandler(oneTimeTask.instance("secondTask"), settableClock.now().plusSeconds(1));
+        scheduleAnother = new ScheduleAnotherTaskHandler<>(oneTimeTask.instance("secondTask"), settableClock.now().plusSeconds(1));
         scheduleAnotherTask = TestTasks.oneTime("ScheduleAnotherTask", Void.class, scheduleAnother);
 
         TaskResolver taskResolver = new TaskResolver(oneTimeTask, scheduleAnotherTask);

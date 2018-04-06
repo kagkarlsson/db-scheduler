@@ -26,12 +26,12 @@ public class JdbcTaskRepositoryTest {
 	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
 
 	private JdbcTaskRepository taskRepository;
-	private OneTimeTask oneTimeTask;
+	private OneTimeTask<Void> oneTimeTask;
 
 	@Before
 	public void setUp() {
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
-		List<Task> knownTasks = new ArrayList<>();
+		List<Task<?>> knownTasks = new ArrayList<>();
 		knownTasks.add(oneTimeTask);
 		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
 	}
@@ -40,8 +40,8 @@ public class JdbcTaskRepositoryTest {
 	public void test_createIfNotExists() {
 		Instant now = Instant.now();
 
-		TaskInstance instance1 = oneTimeTask.instance("id1");
-		TaskInstance instance2 = oneTimeTask.instance("id2");
+		TaskInstance<Void> instance1 = oneTimeTask.instance("id1");
+		TaskInstance<Void> instance2 = oneTimeTask.instance("id2");
 
 		assertTrue(taskRepository.createIfNotExists(new Execution(now, instance1)));
 		assertFalse(taskRepository.createIfNotExists(new Execution(now, instance1)));
@@ -78,7 +78,7 @@ public class JdbcTaskRepositoryTest {
 		assertThat(due, hasSize(100));
 
 		List<Execution> sortedDue = new ArrayList<>(due);
-		Collections.sort(sortedDue, Comparator.comparing(Execution::getExecutionTime));
+		sortedDue.sort(Comparator.comparing(Execution::getExecutionTime));
 		assertThat(due, is(sortedDue));
 	}
 
@@ -96,7 +96,7 @@ public class JdbcTaskRepositoryTest {
 	@Test
 	public void picked_execution_should_have_information_about_which_scheduler_processes_it() {
 		Instant now = Instant.now();
-		final TaskInstance instance = oneTimeTask.instance("id1");
+		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 		List<Execution> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
@@ -113,7 +113,7 @@ public class JdbcTaskRepositoryTest {
 	@Test
 	public void should_not_be_able_to_pick_execution_that_has_been_rescheduled() {
 		Instant now = Instant.now();
-		final TaskInstance instance = oneTimeTask.instance("id1");
+		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 
 		List<Execution> due = taskRepository.getDue(now);
@@ -129,7 +129,7 @@ public class JdbcTaskRepositoryTest {
 	@Test
 	public void reschedule_should_move_execution_in_time() {
 		Instant now = Instant.now();
-		final TaskInstance instance = oneTimeTask.instance("id1");
+		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 		List<Execution> due = taskRepository.getDue(now);
 		assertThat(due, hasSize(1));
@@ -152,7 +152,7 @@ public class JdbcTaskRepositoryTest {
 	@Test
 	public void test_get_failing_executions() {
 		Instant now = Instant.now();
-		final TaskInstance instance = oneTimeTask.instance("id1");
+		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 
 		List<Execution> due = taskRepository.getDue(now);

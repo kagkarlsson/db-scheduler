@@ -20,20 +20,20 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
-public interface CompletionHandler {
+public interface CompletionHandler<T> {
 
-	void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations);
+	void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);
 
 
-	class OnCompleteRemove implements CompletionHandler {
+	class OnCompleteRemove<T> implements CompletionHandler<T> {
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+		public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
 			executionOperations.stop();
 		}
 	}
 
-	class OnCompleteReschedule implements CompletionHandler {
+	class OnCompleteReschedule<T> implements CompletionHandler<T> {
 
 		private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReschedule.class);
 		private final Schedule schedule;
@@ -43,7 +43,7 @@ public interface CompletionHandler {
 		}
 
 		@Override
-		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+		public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
 			Instant nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
 			LOG.debug("Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
 			executionOperations.reschedule(executionComplete, nextExecution);

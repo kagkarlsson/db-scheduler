@@ -21,16 +21,14 @@ import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDead
 
 import java.time.Instant;
 
-import static com.github.kagkarlsson.scheduler.task.Task.Serializer.NO_SERIALIZER;
-
-public abstract class RecurringTask extends Task<Void> implements OnStartup {
+public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 
 	public static final String INSTANCE = "recurring";
-	private final OnCompleteReschedule onComplete;
+	private final OnCompleteReschedule<T> onComplete;
 
-	public RecurringTask(String name, Schedule schedule) {
-		super(name, Void.class, new FailureHandler.OnFailureReschedule(schedule), new RescheduleDeadExecution(), NO_SERIALIZER);
-		onComplete = new OnCompleteReschedule(schedule);
+	public RecurringTask(String name, Schedule schedule, Class<T> dataClass) {
+		super(name, dataClass, new FailureHandler.OnFailureReschedule<>(schedule), new RescheduleDeadExecution<>());
+		onComplete = new OnCompleteReschedule<>(schedule);
 	}
 
 	@Override
@@ -39,10 +37,10 @@ public abstract class RecurringTask extends Task<Void> implements OnStartup {
 	}
 
 	@Override
-	public CompletionHandler execute(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
+	public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 		executeRecurringly(taskInstance, executionContext);
 		return onComplete;
 	}
 
-	public abstract void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext);
+	public abstract void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 }

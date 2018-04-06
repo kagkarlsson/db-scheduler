@@ -25,19 +25,19 @@ public class DeadExecutionsTest {
 
 	private Scheduler scheduler;
 	private SettableClock settableClock;
-	private OneTimeTask oneTimeTask;
+	private OneTimeTask<Void> oneTimeTask;
 	private JdbcTaskRepository jdbcTaskRepository;
 	private NonCompletingTask<Void> nonCompleting;
 	private TestTasks.CountingHandler<Void> nonCompletingExecutionHandler;
-	private RescheduleDead deadExecutionHandler;
+	private RescheduleDead<Void> deadExecutionHandler;
 
 	@Before
 	public void setUp() {
 		settableClock = new SettableClock();
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
-		nonCompletingExecutionHandler = new TestTasks.CountingHandler();
-		deadExecutionHandler = new RescheduleDead();
-		nonCompleting = new NonCompletingTask("NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
+		nonCompletingExecutionHandler = new TestTasks.CountingHandler<>();
+		deadExecutionHandler = new RescheduleDead<>();
+		nonCompleting = new NonCompletingTask<>("NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
 
 		TaskResolver taskResolver = new TaskResolver(oneTimeTask, nonCompleting);
 
@@ -60,7 +60,7 @@ public class DeadExecutionsTest {
 	public void scheduler_should_handle_dead_executions() {
 		final Instant now = settableClock.now();
 
-		final TaskInstance taskInstance = oneTimeTask.instance("id1");
+		final TaskInstance<Void> taskInstance = oneTimeTask.instance("id1");
 		final Execution execution1 = new Execution(now.minus(Duration.ofDays(1)), taskInstance);
 		jdbcTaskRepository.createIfNotExists(execution1);
 
@@ -86,7 +86,7 @@ public class DeadExecutionsTest {
 		settableClock.set(now.minus(Duration.ofHours(1)));
 		final Instant oneHourAgo = settableClock.now();
 
-		final TaskInstance taskInstance = nonCompleting.instance("id1");
+		final TaskInstance<Void> taskInstance = nonCompleting.instance("id1");
 		final Execution execution1 = new Execution(oneHourAgo, taskInstance);
 		jdbcTaskRepository.createIfNotExists(execution1);
 
@@ -110,31 +110,26 @@ public class DeadExecutionsTest {
 	public static class NonCompletingTask<T> extends Task<T> {
 		private final ExecutionHandlerWithExternalCompletion<T> handler;
 
-		public NonCompletingTask(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler, DeadExecutionHandler deadExecutionHandler) {
+		public NonCompletingTask(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler, DeadExecutionHandler<T> deadExecutionHandler) {
 			super(name, dataClass, (executionComplete, executionOperations) -> {}, deadExecutionHandler);
 			this.handler = handler;
 		}
 
 		@Override
-		public CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+		public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 			handler.execute(taskInstance, executionContext);
 			throw new RuntimeException("simulated unexpected exception");
 		}
 	}
 
-	public static class RescheduleDead extends DeadExecutionHandler.RescheduleDeadExecution {
+	public static class RescheduleDead<T> extends DeadExecutionHandler.RescheduleDeadExecution<T> {
 		public int timesCalled = 0;
 
 		@Override
-		public void deadExecution(Execution execution, ExecutionOperations executionOperations) {
+		public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {
 			timesCalled++;
 			super.deadExecution(execution, executionOperations);
 		}
 	}
 
-	public static class DoNothingCompletionHandler implements CompletionHandler {
-		@Override
-		public void complete(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
-		}
-	}
 }

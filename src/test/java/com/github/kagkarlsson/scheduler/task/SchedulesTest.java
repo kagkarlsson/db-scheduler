@@ -37,6 +37,7 @@ public class SchedulesTest {
 		assertThat(fixedDelaySchedule.getNextExecutionTime(NOON_TODAY), is(NOON_TODAY.plusSeconds(10)));
 	}
 
+	@SuppressWarnings("rawtypes")
 	private Schedule assertParsable(String schedule, Class clazz) {
 		Schedule parsed = Schedules.parseSchedule(schedule);
 		assertThat(parsed, instanceOf(clazz));

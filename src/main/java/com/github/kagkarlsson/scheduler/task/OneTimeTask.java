@@ -1,12 +1,12 @@
 /**
  * Copyright (C) Gustav Karlsson
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,27 +15,24 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteRemove;
+import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDeadExecution;
+import com.github.kagkarlsson.scheduler.task.FailureHandler.OnFailureRetryLater;
+
 import java.time.Duration;
 
 public abstract class OneTimeTask<T> extends Task<T> {
 
-	private static final CompletionHandler ON_COMPLETE_REMOVE = new CompletionHandler.OnCompleteRemove();
-	private static final FailureHandler.OnFailureRetryLater ON_FAILURE_RETRY = new FailureHandler.OnFailureRetryLater(Duration.ofMinutes(5));
+    public OneTimeTask(String name, Class<T> dataClass) {
+        super(name, dataClass, new OnFailureRetryLater<T>(Duration.ofMinutes(5)), new RescheduleDeadExecution<T>());
+    }
 
-	public OneTimeTask(String name, Class<T> dataClass) {
-		super(name, dataClass, ON_FAILURE_RETRY, new DeadExecutionHandler.RescheduleDeadExecution());
-	}
+    @Override
+    public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+        executeOnce(taskInstance, executionContext);
+        return new OnCompleteRemove<>();
+    }
 
-	public OneTimeTask(String name, Class<T> dataClass, Serializer<T> serializer) {
-		super(name, dataClass, ON_FAILURE_RETRY, new DeadExecutionHandler.RescheduleDeadExecution(), serializer);
-	}
-
-	@Override
-	public CompletionHandler execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-		executeOnce(taskInstance, executionContext);
-		return ON_COMPLETE_REMOVE;
-	}
-
-	public abstract void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+    public abstract void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
 }

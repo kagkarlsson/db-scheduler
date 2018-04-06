@@ -30,6 +30,7 @@
 		<jdk.version>1.8</jdk.version>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<maven.compiler.target>1.8</maven.compiler.target>
+		<compilerArgument/>
 		<skipChecks>false</skipChecks>
 		<failOnMissingHeader>true</failOnMissingHeader>
 		<slf4j.version>1.7.7</slf4j.version>
@@ -119,6 +120,13 @@
 	<build>
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<compilerArgument>${compilerArgument}</compilerArgument>
+					</configuration>
+				</plugin>
+
 				<plugin>
 					<groupId>org.jasig.maven</groupId>
 					<artifactId>maven-notice-plugin</artifactId>

@@ -20,16 +20,15 @@ import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
-import com.github.kagkarlsson.scheduler.task.Task.Serializer;
-import com.github.kagkarlsson.scheduler.task.Task.Serializer2;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.TaskInstanceDb;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -41,8 +40,9 @@ import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
 import static java.util.Optional.ofNullable;
 
 public class JdbcTaskRepository implements TaskRepository {
-	// TODO:
-	private static final Serializer2 SERIALIZER_TODO = Serializer2.JAVA_SERIALIZER;
+
+	// TODO: send in serializer i construction, felt i Scheduler
+	private static final Serializer SERIALIZER = Serializer.JAVA_SERIALIZER;
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
 	private static final int MAX_DUE_RESULTS = 10_000;
 	private final TaskResolver taskResolver;
@@ -56,6 +56,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
+	@SuppressWarnings({"unchecked"})
 	public boolean createIfNotExists(Execution execution) {
 		try {
 			Optional<Execution> existingExecution = getExecution(execution.taskInstance);
@@ -69,7 +70,7 @@ public class JdbcTaskRepository implements TaskRepository {
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTaskName());
 						p.setString(2, execution.taskInstance.getId());
-						p.setObject(3, SERIALIZER_TODO.serialize(execution.taskInstance.getData()));
+						p.setObject(3, SERIALIZER.serialize(execution.taskInstance.getData()));
 						p.setTimestamp(4, Timestamp.from(execution.executionTime));
 						p.setBoolean(5, false);
 						p.setLong(6, 1L);
@@ -151,7 +152,12 @@ public class JdbcTaskRepository implements TaskRepository {
 		}
 	}
 
+	public <T> void reschedule(Execution execution, Instant nextExecutionTime, T newData, Instant lastSuccess, Instant lastFailure) {
+        // TODO
+	}
+
 	@Override
+	@SuppressWarnings({"unchecked"})
 	public Optional<Execution> pick(Execution e, Instant timePicked) {
 		final int updated = jdbcRunner.execute(
 				"update scheduled_tasks set picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
@@ -235,7 +241,7 @@ public class JdbcTaskRepository implements TaskRepository {
 		);
 	}
 
-	public Optional<Execution> getExecution(TaskInstance taskInstance) {
+	public <T> Optional<Execution> getExecution(TaskInstance<T> taskInstance) {
 		return getExecution(taskInstance.getTaskName(), taskInstance.getId());
 	}
 
@@ -255,6 +261,7 @@ public class JdbcTaskRepository implements TaskRepository {
 		return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.empty();
 	}
 
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
 
 		@Override
@@ -285,13 +292,13 @@ public class JdbcTaskRepository implements TaskRepository {
 						.map(Timestamp::toInstant).orElse(null);
 				long version = rs.getLong("version");
 
-				Supplier dataSupplier = memoize(() -> SERIALIZER_TODO.deserialize(task.get().getDataClass(), data));
+				Supplier dataSupplier = memoize(() -> SERIALIZER.deserialize(task.get().getDataClass(), data));
 				executions.add(new Execution(executionTime, new TaskInstance(taskName, instanceId, dataSupplier), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
 			}
 			return executions;
 		}
 	}
-	
+
 	private static <T> Supplier<T> memoize(Supplier<T> original) {
         return new Supplier<T>() {
             Supplier<T> delegate = this::firstTime;
@@ -309,4 +316,5 @@ public class JdbcTaskRepository implements TaskRepository {
             }
         };
     }
+
 }

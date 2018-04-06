@@ -21,12 +21,12 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 
-public interface FailureHandler {
+public interface FailureHandler<T> {
 
-    void onFailure(ExecutionComplete executionComplete, ExecutionOperations executionOperations);
+    void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);
 
     // TODO: failure handler with backoff
-    class OnFailureRetryLater implements FailureHandler {
+    class OnFailureRetryLater<T> implements FailureHandler<T> {
 
         private static final Logger LOG = LoggerFactory.getLogger(CompletionHandler.OnCompleteReschedule.class);
         private Duration sleepDuration;
@@ -36,14 +36,14 @@ public interface FailureHandler {
         }
 
         @Override
-        public void onFailure(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+        public void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
             Instant nextTry = Instant.now().plus(sleepDuration);
             LOG.debug("Execution failed. Retrying task {} at {}", executionComplete.getExecution().taskInstance, nextTry);
             executionOperations.reschedule(executionComplete, nextTry);
         }
     }
 
-    class OnFailureReschedule implements FailureHandler {
+    class OnFailureReschedule<T> implements FailureHandler<T> {
 
         private static final Logger LOG = LoggerFactory.getLogger(CompletionHandler.OnCompleteReschedule.class);
         private final Schedule schedule;
@@ -53,7 +53,7 @@ public interface FailureHandler {
         }
 
         @Override
-        public void onFailure(ExecutionComplete executionComplete, ExecutionOperations executionOperations) {
+        public void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
             Instant nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
             LOG.debug("Execution failed. Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
             executionOperations.reschedule(executionComplete, nextExecution);

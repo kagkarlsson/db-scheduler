@@ -127,12 +127,7 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	@Override
-	public void scheduleForExecution(Instant executionTime, TaskInstance taskInstance) {
-		this.schedule(taskInstance, executionTime);
-	}
-
-	@Override
-	public void schedule(TaskInstance taskInstance, Instant executionTime) {
+	public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
 		this.delegate.schedule(taskInstance, executionTime);
 	}
 
@@ -218,6 +213,7 @@ public class Scheduler implements SchedulerClient {
 		}
 	}
 
+	@SuppressWarnings({"rawtypes","unchecked"})
 	void detectDeadExecutions() {
 		LOG.debug("Checking for dead executions.");
 		Instant now = clock.now();
@@ -225,7 +221,7 @@ public class Scheduler implements SchedulerClient {
 		List<Execution> oldExecutions = taskRepository.getOldExecutions(oldAgeLimit);
 
 		if (!oldExecutions.isEmpty()) {
-			oldExecutions.stream().forEach(execution -> {
+			oldExecutions.forEach(execution -> {
 
 				LOG.info("Found dead execution. Delegating handling to task. Execution: " + execution);
 				try {
@@ -255,7 +251,7 @@ public class Scheduler implements SchedulerClient {
 
 		LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
 		Instant now = clock.now();
-		new ArrayList<>(currentlyProcessing.keySet()).stream().forEach(execution -> {
+		new ArrayList<>(currentlyProcessing.keySet()).forEach(execution -> {
 			LOG.trace("Updating heartbeat for execution: " + execution);
 			try {
 				taskRepository.updateHeartbeat(execution, now);
@@ -270,6 +266,7 @@ public class Scheduler implements SchedulerClient {
 		return heartbeatInterval.multipliedBy(4);
 	}
 
+	@SuppressWarnings({"unchecked", "rawtypes"})
 	private class ExecuteTask implements Runnable {
 		private final Execution execution;
 
@@ -359,11 +356,11 @@ public class Scheduler implements SchedulerClient {
 		}
 	}
 
-	public static Builder create(DataSource dataSource, Task ... knownTasks) {
+	public static Builder create(DataSource dataSource, Task<?> ... knownTasks) {
 		return create(dataSource, Arrays.asList(knownTasks));
 	}
 
-	public static Builder create(DataSource dataSource, List<Task> knownTasks) {
+	public static Builder create(DataSource dataSource, List<Task<?>> knownTasks) {
 		return new Builder(dataSource, knownTasks);
 	}
 
@@ -372,22 +369,23 @@ public class Scheduler implements SchedulerClient {
 		private final DataSource dataSource;
 		private SchedulerName schedulerName = new SchedulerName.Hostname();
 		private int executorThreads = 10;
-		private List<Task> knownTasks = new ArrayList<>();
+		private List<Task<?>> knownTasks = new ArrayList<>();
 		private List<OnStartup> startTasks = new ArrayList<>();
 		private Waiter waiter = new Waiter(Duration.ofSeconds(10));
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 
-		public Builder(DataSource dataSource, List<Task> knownTasks) {
+		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
 			this.knownTasks.addAll(knownTasks);
 		}
 
-		public <T extends Task & OnStartup> Builder startTasks(T ... startTasks) {
+		@SafeVarargs
+		public final <T extends Task<?> & OnStartup> Builder startTasks(T... startTasks) {
 			return startTasks(Arrays.asList(startTasks));
 		}
 
-		public <T extends Task & OnStartup> Builder startTasks(List<T> startTasks) {
+		public <T extends Task<?> & OnStartup> Builder startTasks(List<T> startTasks) {
 			knownTasks.addAll(startTasks);
 			this.startTasks.addAll(startTasks);
 			return this;

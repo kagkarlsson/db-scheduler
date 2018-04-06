@@ -20,25 +20,25 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
-public interface DeadExecutionHandler {
-	void deadExecution(Execution execution, ExecutionOperations executionOperations);
+public interface DeadExecutionHandler<T> {
+	void deadExecution(Execution execution, ExecutionOperations<T> executionOperations);
 
-	class RescheduleDeadExecution implements DeadExecutionHandler {
+	class RescheduleDeadExecution<T> implements DeadExecutionHandler<T> {
 		private static final Logger LOG = LoggerFactory.getLogger(RescheduleDeadExecution.class);
 
 		@Override
-		public void deadExecution(Execution execution, ExecutionOperations executionOperations) {
+		public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {
 			final Instant now = Instant.now();
 			LOG.warn("Rescheduling dead execution: " + execution + " to " + now);
 			executionOperations.reschedule(new ExecutionComplete(execution, now, ExecutionComplete.Result.FAILED, null), now);
 		}
 	}
 
-	class CancelDeadExecution implements DeadExecutionHandler {
+	class CancelDeadExecution<T> implements DeadExecutionHandler<T> {
 		private static final Logger LOG = LoggerFactory.getLogger(RescheduleDeadExecution.class);
 
 		@Override
-		public void deadExecution(Execution execution, ExecutionOperations executionOperations) {
+		public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {
 			LOG.error("Cancelling dead execution: " + execution);
 			executionOperations.stop();
 		}

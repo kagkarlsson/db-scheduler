@@ -32,7 +32,7 @@ public class TasksMain {
 
 	private static void recurringTask(DataSource dataSource) {
 
-		RecurringTask hourlyTask = ComposableTask.recurringTask(
+		RecurringTask<Void> hourlyTask = ComposableTask.recurringTask(
 				"my-hourly-task",
 				FixedDelay.of(ofHours(1)),
 				(inst, ctx) -> System.out.println("Executed!"));
@@ -47,14 +47,14 @@ public class TasksMain {
 		scheduler.start();
 	}
 
-	public static class MyHourlyTask extends RecurringTask {
+	public static class MyHourlyTask extends RecurringTask<Void> {
 
 		public MyHourlyTask() {
-			super("my-hourly-task", FixedDelay.of(ofHours(1)));
+			super("my-hourly-task", FixedDelay.of(ofHours(1)), Void.class);
 		}
 
 		@Override
-		public void executeRecurringly(TaskInstance taskInstance, ExecutionContext executionContext) {
+		public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
 			System.out.println("Executed!");
 		}
 	}
@@ -98,7 +98,7 @@ public class TasksMain {
 
 	private static void simplerTaskDefinition(DataSource dataSource) {
 
-		final RecurringTask myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
+		final RecurringTask<Void> myHourlyTask = ComposableTask.recurringTask("my-hourly-task", FixedDelay.of(ofHours(1)),
 				(inst, ctx) -> System.out.println("Executed!"));
 
 		final OneTimeTask<Void> oneTimeTask = ComposableTask.onetimeTask("my-onetime-task", Void.class,

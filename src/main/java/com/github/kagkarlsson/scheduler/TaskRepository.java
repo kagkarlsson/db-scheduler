@@ -29,6 +29,7 @@ public interface TaskRepository {
 
 	void remove(Execution execution);
 	void reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure);
+	<T> void reschedule(Execution execution, Instant nextExecutionTime, T newData, Instant lastSuccess, Instant lastFailure);
 
 	Optional<Execution> pick(Execution e, Instant timePicked);
 

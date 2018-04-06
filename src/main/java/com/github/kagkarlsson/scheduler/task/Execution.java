@@ -18,6 +18,8 @@ package com.github.kagkarlsson.scheduler.task;
 import java.time.Instant;
 import java.util.Objects;
 
+// TODO: possibly make Execution generic
+@SuppressWarnings("rawtypes")
 public final class Execution {
 	public final TaskInstance taskInstance;
 	public final Instant executionTime;

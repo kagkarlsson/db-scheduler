@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.kagkarlsson.scheduler.TestTasks.STRING_SERIALIZER;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
@@ -28,9 +27,10 @@ public abstract class CompatibilityTest {
 	@Rule
 	public Timeout timeout = new Timeout(20, TimeUnit.SECONDS);
 
-	private TestTasks.CountingHandler delayingHandler;
+	private TestTasks.CountingHandler<String> delayingHandlerOneTime;
+	private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
 	private OneTimeTask<String> oneTime;
-	private RecurringTask recurring;
+	private RecurringTask<Void> recurring;
 	private TestTasks.SimpleStatsRegistry statsRegistry;
 	private Scheduler scheduler;
 
@@ -38,9 +38,11 @@ public abstract class CompatibilityTest {
 
 	@Before
 	public void setUp() {
-		delayingHandler = new TestTasks.CountingHandler(Duration.ofMillis(200));
-		oneTime = TestTasks.oneTimeWithType("oneTime", String.class, delayingHandler, STRING_SERIALIZER);
-		recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandler);
+		delayingHandlerOneTime = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
+		delayingHandlerRecurring = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
+
+		oneTime = TestTasks.oneTimeWithType("oneTime", String.class, delayingHandlerOneTime);
+		recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandlerRecurring);
 
 		statsRegistry = new TestTasks.SimpleStatsRegistry();
 		scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
@@ -70,7 +72,8 @@ public abstract class CompatibilityTest {
 
 		scheduler.stop();
 		assertThat(statsRegistry.unexpectedErrors.get(), is(0));
-		assertThat(delayingHandler.timesExecuted, greaterThan(10));
+		assertThat(delayingHandlerRecurring.timesExecuted, greaterThan(10));
+		assertThat(delayingHandlerOneTime.timesExecuted, is(1));
 	}
 
 	@Test
@@ -91,10 +94,10 @@ public abstract class CompatibilityTest {
 
 		final Instant now = Instant.now();
 
-		final TaskInstance taskInstance = oneTime.instance("id1", data);
+		final TaskInstance<String> taskInstance = oneTime.instance("id1", data);
 		final Execution newExecution = new Execution(now, taskInstance);
 		jdbcTaskRepository.createIfNotExists(newExecution);
-		assertThat(jdbcTaskRepository.getExecution(taskInstance).get().getExecutionTime(), is(now));
+		assertThat((jdbcTaskRepository.getExecution(taskInstance)).get().getExecutionTime(), is(now));
 
 		final List<Execution> due = jdbcTaskRepository.getDue(now);
 		assertThat(due, hasSize(1));

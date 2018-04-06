@@ -21,6 +21,7 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.time.Duration;
 import java.time.Instant;
 
+@SuppressWarnings("rawtypes")
 public class CurrentlyExecuting {
 
 	private final Execution execution;

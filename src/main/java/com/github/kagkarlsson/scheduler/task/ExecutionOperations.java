@@ -19,7 +19,7 @@ import com.github.kagkarlsson.scheduler.TaskRepository;
 
 import java.time.Instant;
 
-public class ExecutionOperations {
+public class ExecutionOperations<T> {
 
 	private final TaskRepository taskRepository;
 	private final Execution execution;
@@ -33,6 +33,7 @@ public class ExecutionOperations {
 		taskRepository.remove(execution);
 	}
 
+	// TODO: can this fail any more? possibly skip else...  (evt. rescheduleAfterFailure..
 	public void reschedule(ExecutionComplete completed, Instant nextExecutionTime) {
 		if (completed.getResult() == ExecutionComplete.Result.OK) {
 			taskRepository.reschedule(execution, nextExecutionTime, completed.getTimeDone(), execution.lastFailure);
@@ -40,6 +41,14 @@ public class ExecutionOperations {
 			taskRepository.reschedule(execution, nextExecutionTime, execution.lastSuccess, completed.getTimeDone());
 		}
 
+	}
+
+	public void reschedule(ExecutionComplete completed, Instant nextExecutionTime, T newData) {
+		if (completed.getResult() == ExecutionComplete.Result.OK) {
+			taskRepository.reschedule(execution, nextExecutionTime, newData, completed.getTimeDone(), execution.lastFailure);
+		} else {
+			taskRepository.reschedule(execution, nextExecutionTime, newData, execution.lastSuccess, completed.getTimeDone());
+		}
 	}
 
 }

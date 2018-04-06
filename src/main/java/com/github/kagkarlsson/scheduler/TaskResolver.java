@@ -27,15 +27,16 @@ import java.util.stream.Collectors;
 
 import static java.util.function.Function.identity;
 
+@SuppressWarnings("rawtypes")
 public class TaskResolver {
     private static final Logger LOG = LoggerFactory.getLogger(TaskResolver.class);
     private final Map<String, Task> taskMap;
 
-    public TaskResolver(Task... knownTasks) {
+    public TaskResolver(Task<?>... knownTasks) {
         this(Arrays.asList(knownTasks));
     }
 
-    public TaskResolver(List<Task> knownTasks) {
+    public TaskResolver(List<Task<?>> knownTasks) {
         this.taskMap = knownTasks.stream().collect(Collectors.toMap(Task::getName, identity()));
     }
 
