@@ -25,10 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -41,18 +38,22 @@ import static java.util.Optional.ofNullable;
 
 public class JdbcTaskRepository implements TaskRepository {
 
-	// TODO: send in serializer i construction, felt i Scheduler
-	private static final Serializer SERIALIZER = Serializer.JAVA_SERIALIZER;
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
 	private static final int MAX_DUE_RESULTS = 10_000;
 	private final TaskResolver taskResolver;
 	private final SchedulerName schedulerSchedulerName;
 	private final JdbcRunner jdbcRunner;
+	private Serializer serializer;
 
 	public JdbcTaskRepository(DataSource dataSource, TaskResolver taskResolver, SchedulerName schedulerSchedulerName) {
+		this(dataSource, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER);
+	}
+
+	public JdbcTaskRepository(DataSource dataSource, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer) {
 		this.taskResolver = taskResolver;
 		this.schedulerSchedulerName = schedulerSchedulerName;
 		this.jdbcRunner = new JdbcRunner(dataSource);
+		this.serializer = serializer;
 	}
 
 	@Override
@@ -70,7 +71,7 @@ public class JdbcTaskRepository implements TaskRepository {
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTaskName());
 						p.setString(2, execution.taskInstance.getId());
-						p.setObject(3, SERIALIZER.serialize(execution.taskInstance.getData()));
+						p.setObject(3, serializer.serialize(execution.taskInstance.getData()));
 						p.setTimestamp(4, Timestamp.from(execution.executionTime));
 						p.setBoolean(5, false);
 						p.setLong(6, 1L);
@@ -123,6 +124,15 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public void reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure) {
+		rescheduleInternal(execution, nextExecutionTime, null, lastSuccess, lastFailure);
+	}
+
+	@Override
+	public void reschedule(Execution execution, Instant nextExecutionTime, Object newData, Instant lastSuccess, Instant lastFailure) {
+		rescheduleInternal(execution, nextExecutionTime, new NewData(newData), lastSuccess, lastFailure);
+	}
+
+	private void rescheduleInternal(Execution execution, Instant nextExecutionTime, NewData newData, Instant lastSuccess, Instant lastFailure) {
 		final int updated = jdbcRunner.execute(
 				"update scheduled_tasks set " +
 						"picked = ?, " +
@@ -131,29 +141,31 @@ public class JdbcTaskRepository implements TaskRepository {
 						"last_success = ?, " +
 						"last_failure = ?, " +
 						"execution_time = ?, " +
+						(newData != null ? "task_data = ?, " : "") +
 						"version = version + 1 " +
 						"where task_name = ? " +
 						"and task_instance = ? " +
 						"and version = ?",
 				ps -> {
-					ps.setBoolean(1, false);
-					ps.setString(2, null);
-					ps.setTimestamp(3, null);
-					ps.setTimestamp(4, ofNullable(lastSuccess).map(Timestamp::from).orElse(null));
-					ps.setTimestamp(5, ofNullable(lastFailure).map(Timestamp::from).orElse(null));
-					ps.setTimestamp(6, Timestamp.from(nextExecutionTime));
-					ps.setString(7, execution.taskInstance.getTaskName());
-					ps.setString(8, execution.taskInstance.getId());
-					ps.setLong(9, execution.version);
+					int index = 1;
+					ps.setBoolean(index++, false);
+					ps.setString(index++, null);
+					ps.setTimestamp(index++, null);
+					ps.setTimestamp(index++, ofNullable(lastSuccess).map(Timestamp::from).orElse(null));
+					ps.setTimestamp(index++, ofNullable(lastFailure).map(Timestamp::from).orElse(null));
+					ps.setTimestamp(index++, Timestamp.from(nextExecutionTime));
+					if (newData != null) {
+						// may cause datbase-specific problems, might have to use setNull instead
+						ps.setObject(index++, serializer.serialize(newData.data));
+					}
+					ps.setString(index++, execution.taskInstance.getTaskName());
+					ps.setString(index++, execution.taskInstance.getId());
+					ps.setLong(index++, execution.version);
 				});
 
 		if (updated != 1) {
 			throw new RuntimeException("Expected one execution to be updated, but updated " + updated + ". Indicates a bug.");
 		}
-	}
-
-	public <T> void reschedule(Execution execution, Instant nextExecutionTime, T newData, Instant lastSuccess, Instant lastFailure) {
-        // TODO
 	}
 
 	@Override
@@ -292,7 +304,7 @@ public class JdbcTaskRepository implements TaskRepository {
 						.map(Timestamp::toInstant).orElse(null);
 				long version = rs.getLong("version");
 
-				Supplier dataSupplier = memoize(() -> SERIALIZER.deserialize(task.get().getDataClass(), data));
+				Supplier dataSupplier = memoize(() -> serializer.deserialize(task.get().getDataClass(), data));
 				executions.add(new Execution(executionTime, new TaskInstance(taskName, instanceId, dataSupplier), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
 			}
 			return executions;
@@ -316,5 +328,12 @@ public class JdbcTaskRepository implements TaskRepository {
             }
         };
     }
+
+    private static class NewData {
+		private Object data;
+		NewData(Object data) {
+			this.data = data;
+		}
+	}
 
 }

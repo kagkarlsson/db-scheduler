@@ -21,7 +21,6 @@ public abstract class Task<T> implements ExecutionHandler<T> {
 	private final DeadExecutionHandler<T> deadExecutionHandler;
 	private Class<T> dataClass;
 
-	@SuppressWarnings("unchecked")
 	public Task(String name, Class<T> dataClass, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
 		this.name = name;
 		this.dataClass = dataClass;

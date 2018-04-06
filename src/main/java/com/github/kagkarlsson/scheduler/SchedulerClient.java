@@ -36,6 +36,7 @@ public interface SchedulerClient {
 	class Builder {
 
 		private DataSource dataSource;
+		private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
 
 		private Builder(DataSource dataSource) {
 			this.dataSource = dataSource;
@@ -46,7 +47,7 @@ public interface SchedulerClient {
 		
 		public SchedulerClient build() {
 			TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
-			TaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, new SchedulerClientName());
+			TaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, new SchedulerClientName(), serializer);
 			
 			return new StandardSchedulerClient(taskRepository);
 		}

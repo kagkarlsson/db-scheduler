@@ -18,7 +18,6 @@ package com.github.kagkarlsson.scheduler.task;
 import java.time.Instant;
 import java.util.Objects;
 
-// TODO: possibly make Execution generic
 @SuppressWarnings("rawtypes")
 public final class Execution {
 	public final TaskInstance taskInstance;
@@ -44,12 +43,6 @@ public final class Execution {
 		this.lastSuccess = lastSuccess;
 		this.lastHeartbeat = lastHeartbeat;
 		this.version = version;
-	}
-
-	public void setPicked(String pickedBy, Instant timePicked) {
-		this.pickedBy = pickedBy;
-		this.picked = true;
-		this.lastHeartbeat = timePicked;
 	}
 
 	public Instant getExecutionTime() {

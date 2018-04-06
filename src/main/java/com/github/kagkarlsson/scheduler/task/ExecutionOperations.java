@@ -33,7 +33,6 @@ public class ExecutionOperations<T> {
 		taskRepository.remove(execution);
 	}
 
-	// TODO: can this fail any more? possibly skip else...  (evt. rescheduleAfterFailure..
 	public void reschedule(ExecutionComplete completed, Instant nextExecutionTime) {
 		if (completed.getResult() == ExecutionComplete.Result.OK) {
 			taskRepository.reschedule(execution, nextExecutionTime, completed.getTimeDone(), execution.lastFailure);
