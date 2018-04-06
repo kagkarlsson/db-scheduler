@@ -2,7 +2,7 @@ package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.*;
 import com.github.kagkarlsson.scheduler.example.TasksMain.MyHourlyTask;
-import com.github.kagkarlsson.scheduler.task.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

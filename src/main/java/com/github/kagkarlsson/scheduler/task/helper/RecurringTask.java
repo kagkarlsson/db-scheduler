@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteReschedule;
-import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDeadExecution;
+import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Instant;
 
@@ -28,7 +30,7 @@ public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 	private final T initialData;
 
 	public RecurringTask(String name, Schedule schedule, Class<T> dataClass, T initialData) {
-		super(name, dataClass, new FailureHandler.OnFailureReschedule<>(schedule), new RescheduleDeadExecution<>());
+		super(name, dataClass, new FailureHandler.OnFailureReschedule<>(schedule), new ReviveDeadExecution<>());
 		onComplete = new OnCompleteReschedule<>(schedule);
 		this.initialData = initialData;
 	}

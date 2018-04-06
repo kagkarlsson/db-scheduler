@@ -1,5 +1,9 @@
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.task.schedule.Daily;
+import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 

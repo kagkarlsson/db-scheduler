@@ -1,7 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.*;
-import com.github.kagkarlsson.scheduler.task.ComposableTask.ExecutionHandlerWithExternalCompletion;
+import com.github.kagkarlsson.scheduler.task.helper.ComposableTask.ExecutionHandlerWithExternalCompletion;
+import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -29,14 +30,14 @@ public class DeadExecutionsTest {
 	private JdbcTaskRepository jdbcTaskRepository;
 	private NonCompletingTask<Void> nonCompleting;
 	private TestTasks.CountingHandler<Void> nonCompletingExecutionHandler;
-	private RescheduleDead<Void> deadExecutionHandler;
+	private ReviveDead<Void> deadExecutionHandler;
 
 	@Before
 	public void setUp() {
 		settableClock = new SettableClock();
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
 		nonCompletingExecutionHandler = new TestTasks.CountingHandler<>();
-		deadExecutionHandler = new RescheduleDead<>();
+		deadExecutionHandler = new ReviveDead<>();
 		nonCompleting = new NonCompletingTask<>("NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
 
 		TaskResolver taskResolver = new TaskResolver(oneTimeTask, nonCompleting);
@@ -122,7 +123,7 @@ public class DeadExecutionsTest {
 		}
 	}
 
-	public static class RescheduleDead<T> extends DeadExecutionHandler.RescheduleDeadExecution<T> {
+	public static class ReviveDead<T> extends DeadExecutionHandler.ReviveDeadExecution<T> {
 		public int timesCalled = 0;
 
 		@Override

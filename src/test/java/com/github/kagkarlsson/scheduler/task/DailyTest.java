@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.task.schedule.Daily;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

@@ -13,7 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler.task.helper;
+
+import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Duration;
 
@@ -38,7 +41,7 @@ public class ComposableTask {
 	}
 
 	public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler<T> completionHandler, ExecutionHandlerWithExternalCompletion<T> executionHandler) {
-		return new Task<T>(name, dataClass, new FailureHandler.OnFailureRetryLater<>(Duration.ofMinutes(5)), new DeadExecutionHandler.RescheduleDeadExecution<>()) {
+		return new Task<T>(name, dataClass, new FailureHandler.OnFailureRetryLater<>(Duration.ofMinutes(5)), new DeadExecutionHandler.ReviveDeadExecution<>()) {
 			@Override
 			public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				executionHandler.execute(taskInstance, executionContext);
@@ -48,7 +51,7 @@ public class ComposableTask {
 	}
 
 	public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler<T> completionHandler, FailureHandler<T> failureHandler, ExecutionHandlerWithExternalCompletion<T> executionHandler) {
-		return new Task<T>(name, dataClass, failureHandler, new DeadExecutionHandler.RescheduleDeadExecution<>()) {
+		return new Task<T>(name, dataClass, failureHandler, new DeadExecutionHandler.ReviveDeadExecution<>()) {
 			@Override
 			public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				executionHandler.execute(taskInstance, executionContext);

@@ -23,19 +23,19 @@ import java.time.Instant;
 public interface DeadExecutionHandler<T> {
 	void deadExecution(Execution execution, ExecutionOperations<T> executionOperations);
 
-	class RescheduleDeadExecution<T> implements DeadExecutionHandler<T> {
-		private static final Logger LOG = LoggerFactory.getLogger(RescheduleDeadExecution.class);
+	class ReviveDeadExecution<T> implements DeadExecutionHandler<T> {
+		private static final Logger LOG = LoggerFactory.getLogger(ReviveDeadExecution.class);
 
 		@Override
 		public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {
 			final Instant now = Instant.now();
-			LOG.warn("Rescheduling dead execution: " + execution + " to " + now);
+			LOG.warn("Reviving dead execution: " + execution + " to " + now);
 			executionOperations.reschedule(new ExecutionComplete(execution, now, ExecutionComplete.Result.FAILED, null), now);
 		}
 	}
 
 	class CancelDeadExecution<T> implements DeadExecutionHandler<T> {
-		private static final Logger LOG = LoggerFactory.getLogger(RescheduleDeadExecution.class);
+		private static final Logger LOG = LoggerFactory.getLogger(ReviveDeadExecution.class);
 
 		@Override
 		public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {

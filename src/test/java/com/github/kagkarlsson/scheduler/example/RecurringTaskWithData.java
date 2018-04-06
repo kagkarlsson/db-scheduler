@@ -17,7 +17,8 @@ package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.*;
-import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDeadExecution;
+import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Instant;
 
@@ -26,7 +27,7 @@ public abstract class RecurringTaskWithData extends Task<RecurringTaskWithData.T
     public static final String INSTANCE = "recurring";
 
     public RecurringTaskWithData(String name, Schedule schedule) {
-        super(name, TaskData.class, new FailureHandler.OnFailureReschedule<>(schedule), new RescheduleDeadExecution<>());
+        super(name, TaskData.class, new FailureHandler.OnFailureReschedule<>(schedule), new ReviveDeadExecution<>());
     }
 
     @Override

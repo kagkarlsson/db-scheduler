@@ -1,9 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.ComposableTask.ExecutionHandlerWithExternalCompletion;
+import com.github.kagkarlsson.scheduler.task.helper.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
-import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
-import com.github.kagkarlsson.scheduler.task.OneTimeTask;
+import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.hamcrest.CoreMatchers;

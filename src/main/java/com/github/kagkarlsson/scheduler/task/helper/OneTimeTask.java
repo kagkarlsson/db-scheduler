@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler.task.helper;
 
+import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteRemove;
-import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.RescheduleDeadExecution;
+import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.FailureHandler.OnFailureRetryLater;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
 import java.time.Duration;
 
 public abstract class OneTimeTask<T> extends Task<T> {
 
     public OneTimeTask(String name, Class<T> dataClass) {
-        super(name, dataClass, new OnFailureRetryLater<T>(Duration.ofMinutes(5)), new RescheduleDeadExecution<T>());
+        super(name, dataClass, new OnFailureRetryLater<>(Duration.ofMinutes(5)), new ReviveDeadExecution<>());
     }
 
     @Override
