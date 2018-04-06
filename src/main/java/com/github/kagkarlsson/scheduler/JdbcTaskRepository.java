@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
 import static java.util.Optional.ofNullable;
 
+@SuppressWarnings("rawtypes")
 public class JdbcTaskRepository implements TaskRepository {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
@@ -253,7 +254,7 @@ public class JdbcTaskRepository implements TaskRepository {
 		);
 	}
 
-	public <T> Optional<Execution> getExecution(TaskInstance<T> taskInstance) {
+	public Optional<Execution> getExecution(TaskInstance taskInstance) {
 		return getExecution(taskInstance.getTaskName(), taskInstance.getId());
 	}
 

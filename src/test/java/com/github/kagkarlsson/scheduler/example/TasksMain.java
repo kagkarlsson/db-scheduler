@@ -50,7 +50,7 @@ public class TasksMain {
 	public static class MyHourlyTask extends RecurringTask<Void> {
 
 		public MyHourlyTask() {
-			super("my-hourly-task", FixedDelay.of(ofHours(1)), Void.class);
+			super("my-hourly-task", FixedDelay.of(ofHours(1)), Void.class, null);
 		}
 
 		@Override

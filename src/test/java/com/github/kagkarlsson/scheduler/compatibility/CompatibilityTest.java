@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
 import com.github.kagkarlsson.scheduler.*;
+import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.google.common.collect.Lists;
 import org.junit.After;
@@ -19,9 +20,12 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 
+@SuppressWarnings("ConstantConditions")
 public abstract class CompatibilityTest {
 
 	@Rule
@@ -31,6 +35,7 @@ public abstract class CompatibilityTest {
 	private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
 	private OneTimeTask<String> oneTime;
 	private RecurringTask<Void> recurring;
+	private RecurringTask<Integer> recurringWithData;
 	private TestTasks.SimpleStatsRegistry statsRegistry;
 	private Scheduler scheduler;
 
@@ -43,6 +48,7 @@ public abstract class CompatibilityTest {
 
 		oneTime = TestTasks.oneTimeWithType("oneTime", String.class, delayingHandlerOneTime);
 		recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandlerRecurring);
+		recurringWithData = TestTasks.recurringWithData("recurringWithData", Integer.class, 0, FixedDelay.of(Duration.ofMillis(10)), new DoNothingHandler<>());
 
 		statsRegistry = new TestTasks.SimpleStatsRegistry();
 		scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
@@ -121,6 +127,33 @@ public abstract class CompatibilityTest {
 		assertThat(rescheduled.get().taskInstance.getData(), is(data));
 		jdbcTaskRepository.remove(rescheduled.get());
 	}
+
+	@Test
+	public void test_jdbc_repository_compatibility_set_data() {
+		TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
+		taskResolver.addTask(recurringWithData);
+
+		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
+
+		final Instant now = Instant.now();
+
+		final TaskInstance<Integer> taskInstance = recurringWithData.instance("id1", 1);
+		final Execution newExecution = new Execution(now, taskInstance);
+
+		jdbcTaskRepository.createIfNotExists(newExecution);
+
+		Execution round1 = jdbcTaskRepository.getExecution(taskInstance).get();
+		assertEquals(round1.taskInstance.getData(), 1);
+		jdbcTaskRepository.reschedule(round1, now.plusSeconds(1), 2, now.minusSeconds(1), now.minusSeconds(1));
+
+		Execution round2 = jdbcTaskRepository.getExecution(taskInstance).get();
+		assertEquals(round2.taskInstance.getData(), 2);
+
+		jdbcTaskRepository.reschedule(round2, now.plusSeconds(2), null, now.minusSeconds(2), now.minusSeconds(2));
+		Execution round3 = jdbcTaskRepository.getExecution(taskInstance).get();
+		assertNull(round3.taskInstance.getData());
+	}
+
 
 	private void sleep(Duration duration) {
 		try {

@@ -25,15 +25,17 @@ public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 
 	public static final String INSTANCE = "recurring";
 	private final OnCompleteReschedule<T> onComplete;
+	private final T initialData;
 
-	public RecurringTask(String name, Schedule schedule, Class<T> dataClass) {
+	public RecurringTask(String name, Schedule schedule, Class<T> dataClass, T initialData) {
 		super(name, dataClass, new FailureHandler.OnFailureReschedule<>(schedule), new RescheduleDeadExecution<>());
 		onComplete = new OnCompleteReschedule<>(schedule);
+		this.initialData = initialData;
 	}
 
 	@Override
 	public void onStartup(Scheduler scheduler) {
-		scheduler.schedule(this.instance(INSTANCE), Instant.now());
+		scheduler.schedule(this.instance(INSTANCE, initialData), Instant.now());
 	}
 
 	@Override

@@ -27,12 +27,15 @@ public class JdbcTaskRepositoryTest {
 
 	private JdbcTaskRepository taskRepository;
 	private OneTimeTask<Void> oneTimeTask;
+	private OneTimeTask<Integer> oneTimeTaskWithData;
 
 	@Before
 	public void setUp() {
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
+		oneTimeTaskWithData = TestTasks.oneTime("OneTimeWithData", Integer.class, new TestTasks.DoNothingHandler<>());
 		List<Task<?>> knownTasks = new ArrayList<>();
 		knownTasks.add(oneTimeTask);
+		knownTasks.add(oneTimeTaskWithData);
 		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
 	}
 
@@ -147,6 +150,22 @@ public class JdbcTaskRepositoryTest {
 		assertThat(nextExecution.get().picked, is(false));
 		assertThat(nextExecution.get().pickedBy, nullValue());
 		assertThat(nextExecution.get().executionTime, is(nextExecutionTime));
+	}
+
+	@Test
+	public void reschedule_should_update_data_if_specified() {
+		Instant now = Instant.now();
+		final TaskInstance<Integer> instance = oneTimeTaskWithData.instance("id1", 1);
+		taskRepository.createIfNotExists(new Execution(now, instance));
+
+		Execution created = taskRepository.getExecution(instance).get();
+		assertEquals(created.taskInstance.getData(), 1);
+
+		final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
+		taskRepository.reschedule(created, nextExecutionTime, 2, now, null);
+
+		final Execution rescheduled = taskRepository.getExecution(instance).get();
+		assertEquals(rescheduled.taskInstance.getData(), 2);
 	}
 
 	@Test

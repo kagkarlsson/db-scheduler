@@ -34,9 +34,18 @@ public class TestTasks {
 	}
 
 	public static RecurringTask<Void> recurring(String name, FixedDelay schedule, ExecutionHandlerWithExternalCompletion<Void> handler) {
-		return new RecurringTask<Void>(name, schedule, Void.class) {
+		return new RecurringTask<Void>(name, schedule, Void.class, null) {
 			@Override
 			public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
+				handler.execute(taskInstance, executionContext);
+			}
+		};
+	}
+
+	public static <T> RecurringTask<T> recurringWithData(String name, Class<T> dataClass, T initialData, FixedDelay schedule, ExecutionHandlerWithExternalCompletion<T> handler) {
+		return new RecurringTask<T>(name, schedule, dataClass, initialData) {
+			@Override
+			public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
 				handler.execute(taskInstance, executionContext);
 			}
 		};
@@ -127,6 +136,14 @@ public class TestTasks {
 			}
 		}
 	}
+
+	public static class DoNothingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
+
+		@Override
+		public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+		}
+	}
+
 
 	public static class SimpleStatsRegistry implements StatsRegistry {
 		public final AtomicInteger unexpectedErrors = new AtomicInteger(0);

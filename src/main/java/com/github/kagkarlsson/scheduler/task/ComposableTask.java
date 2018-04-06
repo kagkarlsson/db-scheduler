@@ -20,7 +20,7 @@ import java.time.Duration;
 public class ComposableTask {
 
 	public static RecurringTask<Void> recurringTask(String name, Schedule schedule, ExecutionHandlerWithExternalCompletion<Void> executionHandler) {
-		return new RecurringTask<Void>(name, schedule, Void.class) {
+		return new RecurringTask<Void>(name, schedule, Void.class, null) {
 			@Override
 			public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
 				executionHandler.execute(taskInstance, executionContext);
