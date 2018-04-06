@@ -104,6 +104,11 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	public void stop() {
+		if (schedulerState.isShuttingDown()) {
+			LOG.warn("Multiple calls to 'stop()'. Scheduler is already stopping.");
+			return;
+		}
+
 		schedulerState.setIsShuttingDown();
 
 		LOG.info("Shutting down Scheduler.");

@@ -33,6 +33,8 @@ public abstract class CompatibilityTest {
 
 	@Rule
 	public Timeout timeout = new Timeout(20, TimeUnit.SECONDS);
+	@Rule
+	public StopSchedulerRule stopScheduler = new StopSchedulerRule();
 
 	private TestTasks.CountingHandler<String> delayingHandlerOneTime;
 	private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
@@ -59,6 +61,7 @@ public abstract class CompatibilityTest {
 				.heartbeatInterval(Duration.ofMillis(100))
 				.statsRegistry(statsRegistry)
 				.build();
+		stopScheduler.register(scheduler);
 	}
 
 	@After

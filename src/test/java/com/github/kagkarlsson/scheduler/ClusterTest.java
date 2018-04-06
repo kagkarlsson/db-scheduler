@@ -27,9 +27,10 @@ public class ClusterTest {
 
 	@Rule
 	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
-
 	@Rule
 	public Timeout timeout = new Timeout(10, TimeUnit.SECONDS);
+	@Rule
+	public StopSchedulerRule stopScheduler = new StopSchedulerRule();
 
 	@Test
 	public void test_concurrency() throws InterruptedException {
@@ -44,41 +45,29 @@ public class ClusterTest {
 		final Scheduler scheduler1 = createScheduler("scheduler1", task, stats);
 		final Scheduler scheduler2 = createScheduler("scheduler2", task, stats);
 
-		try {
-			scheduler1.start();
-			scheduler2.start();
+		stopScheduler.register(scheduler1, scheduler2);
+		scheduler1.start();
+		scheduler2.start();
 
-			ids.forEach(id -> {
-				scheduler1.schedule(task.instance(id), Instant.now());
-			});
+		ids.forEach(id -> {
+			scheduler1.schedule(task.instance(id), Instant.now());
+		});
 
-			completeAllIds.await();
+		completeAllIds.await();
 
-			assertThat(completed.failed.size(), is(0));
-			assertThat(completed.ok.size(), is(ids.size()));
-			assertThat("Should contain no duplicates", new HashSet<>(completed.ok).size(), is(ids.size()));
-			assertThat(stats.unexpectedErrors.get(), is(0));
-			assertThat(scheduler1.getCurrentlyExecuting(), hasSize(0));
-			assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
+		assertThat(completed.failed.size(), is(0));
+		assertThat(completed.ok.size(), is(ids.size()));
+		assertThat("Should contain no duplicates", new HashSet<>(completed.ok).size(), is(ids.size()));
+		assertThat(stats.unexpectedErrors.get(), is(0));
+		assertThat(scheduler1.getCurrentlyExecuting(), hasSize(0));
+		assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
 
-		} finally {
-			scheduler1.stop();
-			scheduler2.stop();
-		}
 	}
 
 	private Scheduler createScheduler(String name, Task<?> task, TestTasks.SimpleStatsRegistry stats) {
 		return Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
 				.schedulerName(new SchedulerName.Fixed(name)).pollingInterval(Duration.ofMillis(0))
 				.heartbeatInterval(Duration.ofMillis(100)).statsRegistry(stats).build();
-	}
-
-	private void sleep(int millis) {
-		try {
-			Thread.sleep(millis);
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	private static class RecordResultAndStopExecutionOnComplete<T> implements CompletionHandler<T> {
