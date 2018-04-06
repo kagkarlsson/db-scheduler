@@ -55,7 +55,7 @@ public interface FailureHandler<T> {
 
         @Override
         public void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-            Instant nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
+            Instant nextExecution = schedule.getNextExecutionTime(executionComplete);
             LOG.debug("Execution failed. Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
             executionOperations.reschedule(executionComplete, nextExecution);
         }

@@ -15,8 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler.task.schedule;
 
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+
 import java.time.Instant;
 
 public interface Schedule {
-	Instant getNextExecutionTime(Instant timeDone);
+	Instant getNextExecutionTime(ExecutionComplete executionComplete);
 }

@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler.task.schedule;
 
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+
 import java.time.Duration;
 import java.time.Instant;
 
@@ -31,7 +33,7 @@ public class FixedDelay implements Schedule {
 	}
 
 	@Override
-	public Instant getNextExecutionTime(Instant from) {
-		return from.plus(duration);
+	public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
+		return executionComplete.getTimeDone().plus(duration);
 	}
 }

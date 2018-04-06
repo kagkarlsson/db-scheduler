@@ -45,7 +45,7 @@ public interface CompletionHandler<T> {
 
 		@Override
 		public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-			Instant nextExecution = schedule.getNextExecutionTime(executionComplete.getTimeDone());
+			Instant nextExecution = schedule.getNextExecutionTime(executionComplete);
 			LOG.debug("Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
 			executionOperations.reschedule(executionComplete, nextExecution);
 		}

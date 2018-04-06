@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler.task.schedule;
 
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+
 import java.time.*;
 import java.util.Arrays;
 import java.util.List;
@@ -36,8 +38,9 @@ public class Daily implements Schedule {
 	}
 
 	@Override
-	public Instant getNextExecutionTime(Instant timeDone) {
+	public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
 		ZoneId zone = ZoneId.systemDefault();
+		Instant timeDone = executionComplete.getTimeDone();
 		LocalDate doneDate = timeDone.atZone(zone).toLocalDate();
 
 		for (LocalTime time : times) {

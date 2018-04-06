@@ -31,18 +31,21 @@ public class DailyTest {
 		LocalDate currentDate = Instant.now().atZone(ZONE).toLocalDate();
 		LocalDate nextDay = currentDate.plusDays(1);
 
-		assertThat(new Daily(HOUR_8).getNextExecutionTime(instant(currentDate, HOUR_0)), is(instant(currentDate, HOUR_8)));
-		assertThat(new Daily(HOUR_8).getNextExecutionTime(instant(currentDate, HOUR_8)), is(instant(nextDay, HOUR_8)));
+		assertThat(new Daily(HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0))), is(instant(currentDate, HOUR_8)));
+		assertThat(new Daily(HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_8))), is(instant(nextDay, HOUR_8)));
 
-		assertThat(new Daily(HOUR_8, HOUR_12).getNextExecutionTime(instant(currentDate, HOUR_0)), is(instant(currentDate, HOUR_8)));
-		assertThat(new Daily(HOUR_8, HOUR_12).getNextExecutionTime(instant(currentDate, HOUR_8)), is(instant(currentDate, HOUR_12)));
-		assertThat(new Daily(HOUR_8, HOUR_12).getNextExecutionTime(instant(currentDate, HOUR_12)), is(instant(nextDay, HOUR_8)));
+		assertThat(new Daily(HOUR_8, HOUR_12).getNextExecutionTime(complete(instant(currentDate, HOUR_0))), is(instant(currentDate, HOUR_8)));
+		assertThat(new Daily(HOUR_8, HOUR_12).getNextExecutionTime(complete(instant(currentDate, HOUR_8))), is(instant(currentDate, HOUR_12)));
+		assertThat(new Daily(HOUR_8, HOUR_12).getNextExecutionTime(complete(instant(currentDate, HOUR_12))), is(instant(nextDay, HOUR_8)));
 		//order should be irrelevant
-		assertThat(new Daily(HOUR_12, HOUR_8).getNextExecutionTime(instant(currentDate, HOUR_0)), is(instant(currentDate, HOUR_8)));
+		assertThat(new Daily(HOUR_12, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0))), is(instant(currentDate, HOUR_8)));
 	}
 
 	private Instant instant(LocalDate date, LocalTime time) {
 		return ZonedDateTime.of(date, time, ZONE).toInstant();
 	}
 
+	private ExecutionComplete complete(Instant timeDone) {
+		return ExecutionComplete.success(null, timeDone);
+	}
 }

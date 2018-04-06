@@ -32,13 +32,17 @@ public class SchedulesTest {
 
 		assertParsable("DAILY|12:00", Daily.class);
 		Schedule dailySchedule = assertParsable("DAILY|12:00,13:00", Daily.class);
-		assertThat(dailySchedule.getNextExecutionTime(NOON_TODAY), is(NOON_TODAY.plus(Duration.ofHours(1))));
+		assertThat(dailySchedule.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plus(Duration.ofHours(1))));
 
 		assertIllegalArgument("FIXED_DELAY|");
 		assertIllegalArgument("FIXED_DELAY|123");
 
 		Schedule fixedDelaySchedule = assertParsable("FIXED_DELAY|10s", FixedDelay.class);
-		assertThat(fixedDelaySchedule.getNextExecutionTime(NOON_TODAY), is(NOON_TODAY.plusSeconds(10)));
+		assertThat(fixedDelaySchedule.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plusSeconds(10)));
+	}
+
+	private ExecutionComplete complete(Instant timeDone) {
+		return ExecutionComplete.success(null, timeDone);
 	}
 
 	@SuppressWarnings("rawtypes")
