@@ -32,6 +32,27 @@ public class FixedDelay implements Schedule {
 		return new FixedDelay(duration);
 	}
 
+	public static FixedDelay ofSeconds(int seconds) {
+		validateDuration(seconds);
+		return new FixedDelay(Duration.ofSeconds(seconds));
+	}
+
+	public static FixedDelay ofMinutes(int minutes) {
+		validateDuration(minutes);
+		return new FixedDelay(Duration.ofMinutes(minutes));
+	}
+
+	public static FixedDelay ofHours(int hours) {
+		validateDuration(hours);
+		return new FixedDelay(Duration.ofHours(hours));
+	}
+
+	private static void validateDuration(int seconds) {
+		if (seconds <= 0) {
+			throw new IllegalArgumentException("argument must be greater than 0");
+		}
+	}
+
 	@Override
 	public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
 		return executionComplete.getTimeDone().plus(duration);

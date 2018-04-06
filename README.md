@@ -30,10 +30,10 @@ Task-scheduler for Java that was inspired by the need for a clustered `java.util
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
 ```java
-RecurringTask hourlyTask = ComposableTask.recurringTask(
-        "my-hourly-task",
-        FixedDelay.of(ofHours(1)),
-        () -> System.out.println("Executed!"));
+RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.ofHours(1))
+        .execute((inst, ctx) -> {
+            System.out.println("Executed!");
+        });
 
 final Scheduler scheduler = Scheduler
         .create(dataSource)
@@ -51,26 +51,13 @@ For more examples, continue reading. For details on the inner workings, see [How
 
 ### Recurring task
 
-Create a custom task class for the recurring task.
+Define a _recurring_ task and schedule the task's first execution on start-up using the `startTasks` builder-method. Upon completion, the task will be re-scheduled according to the defined schedule.
 
 ```java
-public static class MyHourlyTask extends RecurringTask {
-
-  public MyHourlyTask() {
-    super("my-hourly-task", FixedDelay.of(Duration.ofHours(1)));
-  }
-
-  @Override
-  public void execute(TaskInstance taskInstance, ExecutionContext executionContext) {
-    System.out.println("Executed!");
-  }
-}
-```
-
-Schedule the task's first execution on start-up using the `startTasks` builder-method. Upon completion, the task will be re-scheduled according to the defined schedule.
-
-```java
-final MyHourlyTask hourlyTask = new MyHourlyTask();
+RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.ofHours(1))
+        .execute((inst, ctx) -> {
+            System.out.println("Executed!");
+        });
 
 final Scheduler scheduler = Scheduler
         .create(dataSource)
@@ -87,46 +74,28 @@ scheduler.start();
 
 An instance of an _ad-hoc_ task has a single execution-time some time in the future (i.e. non-recurring). The instance-id must be unique within this task, and may be used to encode some metadata (e.g. an id). For more complex state, custom serializable java objects are supported (as used in the example).
 
-First, lets create the task- and data-classes.
-
+Define a _onetime_ task and start the scheduler:
+ 
 ```java
-public static class MyTaskData implements Serializable {
-    public final long id;
-    public final String secondaryId;
-
-    public MyTaskData(long id, String secondaryId) {
-        this.id = id;
-        this.secondaryId = secondaryId;
-    }
-}
-
-public static class MyTypedAdhocTask extends OneTimeTask<MyTaskData> {
-
-    public MyTypedAdhocTask() {
-        super("my-typed-adhoc-task");
-    }
-
-    @Override
-    public void execute(TaskInstance<MyTaskData> taskInstance, ExecutionContext executionContext) {
-        System.out.println(String.format("Executed! Custom data: [Id: %s], [secondary-id: %s]", taskInstance.getData().id, taskInstance.getData().secondaryId));
-    }
-}
-```
-
-... and then start the scheduler and schedule the execution using the `SchedulerClient`.
-
-```java
-final MyTypedAdhocTask myAdhocTask = new MyTypedAdhocTask();
+OneTimeTask<MyTaskData> myAdhocTask = Tasks.oneTime("my-typed-adhoc-task", MyTaskData.class)
+        .execute((inst, ctx) -> {
+            System.out.println("Executed! Custom data, Id: " + inst.getData().id);
+        });
 
 final Scheduler scheduler = Scheduler
-    .create(dataSource, myAdhocTask)
-    .threads(5)
-    .build();
+        .create(dataSource, myAdhocTask)
+        .threads(5)
+        .build();
 
 scheduler.start();
 
+```
+
+... and then at some point (at runtime), an execution is scheduled using the `SchedulerClient`:
+
+```java
 // Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
-scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L, "custom-data")), Instant.now().plusSeconds(5));
+scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.now().plusSeconds(5));
 ```
 
 
@@ -135,12 +104,9 @@ scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L, "custom-da
 To avoid unnecessary [dead exexutions](#dead-executions), it is important to shutdown the scheduler properly, i.e. calling the `shutdown` method.
 
 ```java
-RecurringTask myRecurringTask = new MyHourlyTask();
-Task myAdhocTask = new MyAdhocTask();
 
 final Scheduler scheduler = Scheduler
         .create(dataSource, myAdhocTask)
-        .startTasks(myRecurringTask)
         .build();
 
 Runtime.getRuntime().addShutdownHook(new Thread() {
