@@ -159,6 +159,15 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 ## Versions / upgrading
 
+### Version 3.0
+* New builders for task-creation, making it clearer what the config-options are. (See `Tasks` class and examples)
+* Better default for failure handling for one-time tasks 
+* Enables recurring tasks to have data
+
+**Upgrading to 3.x**
+* No schema changes
+* Task creation are preferrably done through builders in `Tasks` class 
+
 ### Version 2.0
 * Possible to `cancel` and `reschedule` executions.
 * Optional data can be stored with the execution. Default using Java Serialization.
