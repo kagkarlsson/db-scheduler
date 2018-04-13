@@ -16,18 +16,35 @@
 package com.github.kagkarlsson.scheduler;
 
 import java.time.Duration;
+import java.time.Instant;
 
 public class Waiter {
+	private Object lock = new Object();
 	private final Duration duration;
+	private Clock clock;
 
 	public Waiter(Duration duration) {
+		this(duration, new SystemClock());
+	}
+
+	public Waiter(Duration duration, Clock clock) {
 		this.duration = duration;
+		this.clock = clock;
 	}
 
 	public void doWait() throws InterruptedException {
 		final long millis = duration.toMillis();
 		if (millis > 0) {
-			Thread.sleep(millis);
+			Instant waitUntil = clock.now().plusMillis(millis);
+
+			while (Instant.now().isBefore(waitUntil)) {
+				lock.wait(millis);
+			}
 		}
 	}
+
+	public void wake() {
+		lock.notify();
+	}
+
 }

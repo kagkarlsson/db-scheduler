@@ -163,6 +163,7 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * New builders for task-creation, making it clearer what the config-options are. (See `Tasks` class and examples)
 * Better default for failure handling for one-time tasks 
 * Enables recurring tasks to have data
+* `Schedule.getNextExecutionTime` can now use all data from `ExecutionComplete`
 
 **Upgrading to 3.x**
 * No schema changes

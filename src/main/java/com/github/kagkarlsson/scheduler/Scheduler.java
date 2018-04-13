@@ -42,7 +42,7 @@ public class Scheduler implements SchedulerClient {
 	private final TaskRepository taskRepository;
 	private final TaskResolver taskResolver;
 	private final ExecutorService executorService;
-	private final Waiter waiter;
+	private final Waiter executeDueWaiter;
 	private final List<OnStartup> onStartup;
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
@@ -56,8 +56,8 @@ public class Scheduler implements SchedulerClient {
 	final Semaphore executorsSemaphore;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
-			  Waiter waiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
-		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry, onStartup);
+			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, statsRegistry, onStartup);
 	}
 
 	private static ExecutorService defaultExecutorService(int maxThreads) {
@@ -65,22 +65,22 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
-			  Waiter waiter, Duration heartbeatInterval, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+			  Waiter executeDueWaiter, Duration heartbeatInterval, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.taskResolver = taskResolver;
 		this.executorService = executorService;
-		this.waiter = waiter;
+		this.executeDueWaiter = executeDueWaiter;
 		this.onStartup = onStartup;
-		this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2));
+		this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
 		this.heartbeatInterval = heartbeatInterval;
-		this.heartbeatWaiter = new Waiter(heartbeatInterval);
+		this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
 		this.statsRegistry = statsRegistry;
 		this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
 		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
 		executorsSemaphore = new Semaphore(maxThreads);
-		delegate = new StandardSchedulerClient(taskRepository);
+		delegate = new StandardSchedulerClient(taskRepository, new TriggerCheckForDueExecutions(clock, executeDueWaiter));
 	}
 
 	public void start() {
@@ -88,7 +88,7 @@ public class Scheduler implements SchedulerClient {
 
 		executeOnStartup(onStartup);
 
-		dueExecutor.submit(new RunUntilShutdown(this::executeDue, waiter, schedulerState, statsRegistry));
+		dueExecutor.submit(new RunUntilShutdown(this::executeDue, executeDueWaiter, schedulerState, statsRegistry));
 		detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter, schedulerState, statsRegistry));
 		updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter, schedulerState, statsRegistry));
 	}
@@ -372,12 +372,14 @@ public class Scheduler implements SchedulerClient {
 
 	public static class Builder {
 
+		private Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
+
 		private final DataSource dataSource;
 		private SchedulerName schedulerName = new SchedulerName.Hostname();
 		private int executorThreads = 10;
 		private final List<Task<?>> knownTasks = new ArrayList<>();
 		private final List<OnStartup> startTasks = new ArrayList<>();
-		private Waiter waiter = new Waiter(Duration.ofSeconds(10));
+		private Waiter waiter = new Waiter(Duration.ofSeconds(10), clock);
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 		private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
@@ -399,7 +401,7 @@ public class Scheduler implements SchedulerClient {
 		}
 
 		public Builder pollingInterval(Duration pollingInterval) {
-			waiter = new Waiter(pollingInterval);
+			waiter = new Waiter(pollingInterval, clock);
 			return this;
 		}
 
@@ -427,11 +429,39 @@ public class Scheduler implements SchedulerClient {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, schedulerName, serializer);
 
-			return new Scheduler(new SystemClock(), taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
+			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
 		}
 	}
 
 
 	public static class NoAvailableExecutors extends RuntimeException {
+	}
+
+	private static class TriggerCheckForDueExecutions implements SchedulingEventListener {
+		private static final Logger LOG = LoggerFactory.getLogger(TriggerCheckForDueExecutions.class);
+		private Clock clock;
+		private Waiter executeDueWaiter;
+
+		public TriggerCheckForDueExecutions(Clock clock, Waiter executeDueWaiter) {
+			this.clock = clock;
+
+			this.executeDueWaiter = executeDueWaiter;
+		}
+
+		@Override
+		public void newEvent(SchedulingEvent event) {
+			SchedulingEvent.SchedulingEventContext ctx = event.getContext();
+			SchedulingEvent.EventType eventType = ctx.getEventType();
+
+			if (eventType == SchedulingEvent.EventType.SCHEDULE || eventType == SchedulingEvent.EventType.RESCHEDULE) {
+
+				Instant scheduledToExecutionTime = ctx.getExecutionTime();
+				if (scheduledToExecutionTime.toEpochMilli() <= clock.now().toEpochMilli()) {
+					LOG.info("Task-instance scheduled to run directly, triggering check for due exections (unless it is already running). Task: {}, instance: {}",
+							ctx.getTaskInstanceId().getTaskName(), ctx.getTaskInstanceId().getId());
+					executeDueWaiter.wake();
+				}
+			}
+		}
 	}
 }

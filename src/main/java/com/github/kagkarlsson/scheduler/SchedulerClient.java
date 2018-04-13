@@ -24,6 +24,8 @@ import javax.sql.DataSource;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface SchedulerClient {
 
@@ -55,15 +57,25 @@ public interface SchedulerClient {
 
 	class StandardSchedulerClient implements SchedulerClient {
 
+		private static final Logger LOG = LoggerFactory.getLogger(StandardSchedulerClient.class);
 		protected final TaskRepository taskRepository;
-		
+		private SchedulingEventListener schedulingEventListener;
+
 		StandardSchedulerClient(TaskRepository taskRepository) {
-			this.taskRepository = taskRepository;
+			this(taskRepository, SchedulingEventListener.NOOP);
 		}
-		
+
+		StandardSchedulerClient(TaskRepository taskRepository, SchedulingEventListener schedulingEventListener) {
+			this.taskRepository = taskRepository;
+			this.schedulingEventListener = schedulingEventListener;
+		}
+
 		@Override
 		public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
-			taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
+			boolean success = taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
+			if (success) {
+				notifyListeners(SchedulingEvent.EventType.SCHEDULE, taskInstance, executionTime);
+			}
 		}
 
 		@Override
@@ -77,6 +89,7 @@ public interface SchedulerClient {
                 }
 
 				taskRepository.reschedule(execution.get(), newExecutionTime, null, null);
+				notifyListeners(SchedulingEvent.EventType.RESCHEDULE, taskInstanceId, newExecutionTime);
 			} else {
 				throw new RuntimeException(String.format("Could not reschedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}
@@ -93,8 +106,17 @@ public interface SchedulerClient {
                 }
 
                 taskRepository.remove(execution.get());
+				notifyListeners(SchedulingEvent.EventType.CANCEL, taskInstanceId, execution.get().executionTime);
 			} else {
 				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
+			}
+		}
+
+		private void notifyListeners(SchedulingEvent.EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {
+			try {
+				schedulingEventListener.newEvent(new SchedulingEvent(new SchedulingEvent.SchedulingEventContext(eventType, taskInstanceId, executionTime)));
+			} catch (Exception e) {
+				LOG.error("Error when notifying SchedulingEventListener.", e);
 			}
 		}
 	}
