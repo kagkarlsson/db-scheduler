@@ -223,6 +223,8 @@
 									<include>com.opentable.components:otj-tinyhttp</include>
 									<include>postgresql:postgresql</include>
 									<include>org.apache.commons:commons-lang3</include>
+									<include>org.apache.commons:commons-compress</include>
+									<include>org.tukaani:xz</include>
 								</includes>
 								<searchTransitive>true</searchTransitive>
 								<message>
