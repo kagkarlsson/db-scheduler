@@ -17,6 +17,7 @@ package com.github.kagkarlsson.scheduler;
 
 
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
 public class ScheduledExecution {
 
@@ -26,8 +27,8 @@ public class ScheduledExecution {
         this.execution = execution;
     }
 
-    public Execution getExecution() {
-        return execution;
+    public TaskInstance getTaskInstance() {
+        return execution.taskInstance;
     }
 
 }
