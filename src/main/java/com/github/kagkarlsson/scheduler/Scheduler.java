@@ -147,6 +147,11 @@ public class Scheduler implements SchedulerClient {
 		this.delegate.cancel(taskInstanceId);
 	}
 
+	public List<ScheduledExecution> getScheduled() {
+		return taskRepository.getScheduled().stream().map(ScheduledExecution::new).collect(Collectors.toList());
+	}
+
+
 	public List<CurrentlyExecuting> getCurrentlyExecuting() {
 		return new ArrayList<>(currentlyProcessing.values());
 	}

@@ -40,7 +40,7 @@ import static java.util.Optional.ofNullable;
 public class JdbcTaskRepository implements TaskRepository {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
-	private static final int MAX_DUE_RESULTS = 10_000;
+	private static final int MAX_RESULTS = 10_000;
 	private final TaskResolver taskResolver;
 	private final SchedulerName schedulerSchedulerName;
 	private final JdbcRunner jdbcRunner;
@@ -92,7 +92,12 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public List<Execution> getDue(Instant now) {
-		return getDue(now, MAX_DUE_RESULTS);
+		return getDue(now, MAX_RESULTS);
+	}
+
+	@Override
+	public List<Execution> getScheduled() {
+		return getScheduled(MAX_RESULTS);
 	}
 
 	public List<Execution> getDue(Instant now, int limit) {
@@ -101,6 +106,17 @@ public class JdbcTaskRepository implements TaskRepository {
 				(PreparedStatement p) -> {
 					p.setBoolean(1, false);
 					p.setTimestamp(2, Timestamp.from(now));
+					p.setMaxRows(limit);
+				},
+				new ExecutionResultSetMapper()
+		);
+	}
+
+	public List<Execution> getScheduled(int limit) {
+		return jdbcRunner.query(
+				"select * from scheduled_tasks where picked = ? order by execution_time asc",
+				(PreparedStatement p) -> {
+					p.setBoolean(1, false);
 					p.setMaxRows(limit);
 				},
 				new ExecutionResultSetMapper()
