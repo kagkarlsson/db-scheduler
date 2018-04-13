@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.IntStream;
 
@@ -191,6 +192,30 @@ public class JdbcTaskRepositoryTest {
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofSeconds(1)), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofHours(1)), hasSize(0));
+	}
+
+	@Test
+	public void get_scheduled_executions() {
+		Instant now = Instant.now();
+		IntStream.range(0, 100).forEach(i ->
+				taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + i)))
+		);
+		List<Execution> beforePick = taskRepository.getScheduled();
+		assertThat(beforePick, hasSize(100));
+
+		taskRepository.pick(beforePick.get(0), Instant.now());
+		List<Execution> afterPick = taskRepository.getScheduled();
+		assertThat(afterPick, hasSize(99));
+	}
+
+	@Test
+	public void get_scheduled_with_50_as_limit() {
+		Instant now = Instant.now();
+		IntStream.range(0, 100).forEach(i ->
+				taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + i)))
+		);
+		List<Execution> beforePick = taskRepository.getScheduled(50);
+		assertThat(beforePick, hasSize(50));
 	}
 
 	private Execution getSingleExecution() {
