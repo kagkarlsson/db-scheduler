@@ -4,6 +4,7 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -14,9 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.IntStream;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.*;
 
@@ -28,15 +27,18 @@ public class JdbcTaskRepositoryTest {
 
 	private JdbcTaskRepository taskRepository;
 	private OneTimeTask<Void> oneTimeTask;
+	private OneTimeTask<Void> alternativeOneTimeTask;
 	private OneTimeTask<Integer> oneTimeTaskWithData;
 
 	@Before
 	public void setUp() {
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
+		alternativeOneTimeTask = TestTasks.oneTime("AlternativeOneTime", Void.class, TestTasks.DO_NOTHING);
 		oneTimeTaskWithData = TestTasks.oneTime("OneTimeWithData", Integer.class, new TestTasks.DoNothingHandler<>());
 		List<Task<?>> knownTasks = new ArrayList<>();
 		knownTasks.add(oneTimeTask);
 		knownTasks.add(oneTimeTaskWithData);
+		knownTasks.add(alternativeOneTimeTask);
 		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
 	}
 
@@ -216,6 +218,23 @@ public class JdbcTaskRepositoryTest {
 		);
 		List<Execution> beforePick = taskRepository.getScheduled(50);
 		assertThat(beforePick, hasSize(50));
+	}
+
+	@Test
+	public void get_scheduled_by_task_name() {
+		Instant now = Instant.now();
+		taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + 1)));
+		taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + 2)));
+		taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), alternativeOneTimeTask.instance("id" + 3)));
+
+		List<Execution> scheduledByTaskName = taskRepository.getScheduledByTaskName(oneTimeTask.getName());
+		assertThat(scheduledByTaskName, hasSize(2));
+
+		List<Execution> alternativeTasks = taskRepository.getScheduledByTaskName(alternativeOneTimeTask.getName());
+		assertThat(alternativeTasks, hasSize(1));
+
+		List<Execution> empty = taskRepository.getScheduledByTaskName("non-existing");
+		assertThat(empty, empty());
 	}
 
 	private Execution getSingleExecution() {

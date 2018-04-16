@@ -100,6 +100,11 @@ public class JdbcTaskRepository implements TaskRepository {
 		return getScheduled(MAX_RESULTS);
 	}
 
+	@Override
+	public List<Execution> getScheduledByTaskName(String taskName) {
+		return getScheduledByTaskName(taskName, MAX_RESULTS);
+	}
+
 	public List<Execution> getDue(Instant now, int limit) {
 		return jdbcRunner.query(
 				"select * from scheduled_tasks where picked = ? and execution_time <= ? order by execution_time asc",
@@ -117,6 +122,18 @@ public class JdbcTaskRepository implements TaskRepository {
 				"select * from scheduled_tasks where picked = ? order by execution_time asc",
 				(PreparedStatement p) -> {
 					p.setBoolean(1, false);
+					p.setMaxRows(limit);
+				},
+				new ExecutionResultSetMapper()
+		);
+	}
+
+	public List<Execution> getScheduledByTaskName(String taskName, int limit){
+		return jdbcRunner.query(
+				"select * from scheduled_tasks where picked = ? and task_name = ? order by execution_time asc",
+				(PreparedStatement p) -> {
+					p.setBoolean(1, false);
+					p.setString(2, taskName);
 					p.setMaxRows(limit);
 				},
 				new ExecutionResultSetMapper()
