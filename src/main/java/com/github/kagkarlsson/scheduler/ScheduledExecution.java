@@ -19,7 +19,7 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
-public class ScheduledExecution {
+public class ScheduledExecution<DATA_TYPE> {
 
     private final Execution execution;
 
@@ -31,4 +31,7 @@ public class ScheduledExecution {
         return execution.taskInstance;
     }
 
+    public DATA_TYPE getData() {
+        return (DATA_TYPE) this.execution.taskInstance.getData();
+    }
 }

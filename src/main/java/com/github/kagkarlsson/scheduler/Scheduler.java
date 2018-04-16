@@ -28,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
@@ -147,10 +148,15 @@ public class Scheduler implements SchedulerClient {
 		this.delegate.cancel(taskInstanceId);
 	}
 
-	public List<ScheduledExecution> getScheduled() {
-		return taskRepository.getScheduled().stream().map(ScheduledExecution::new).collect(Collectors.toList());
+	@Override
+	public <T> void getScheduled(Consumer<ScheduledExecution<T>> consumer) {
+		this.delegate.getScheduled(consumer);
 	}
 
+	@Override
+	public <T> void getScheduled(String taskName, Consumer<ScheduledExecution<T>> consumer) {
+		this.delegate.getScheduled(taskName, consumer);
+	}
 
 	public List<CurrentlyExecuting> getCurrentlyExecuting() {
 		return new ArrayList<>(currentlyProcessing.values());

@@ -18,6 +18,7 @@ package com.github.kagkarlsson.scheduler;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import javax.sql.DataSource;
 
@@ -32,6 +33,10 @@ public interface SchedulerClient {
 	void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
 	void cancel(TaskInstanceId taskInstanceId);
+
+	<T> void getScheduled(Consumer<ScheduledExecution<T>> consumer);
+
+	<T> void getScheduled(String taskName, Consumer<ScheduledExecution<T>> consumer);
 
 	class Builder {
 
@@ -96,6 +101,16 @@ public interface SchedulerClient {
 			} else {
 				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}
+		}
+
+		@Override
+		public <T> void getScheduled(Consumer<ScheduledExecution<T>> consumer) {
+			taskRepository.getScheduledExecutions().forEach(execution -> new ScheduledExecution<T>(execution));
+		}
+
+		@Override
+		public <T> void getScheduled(String taskName, Consumer<ScheduledExecution<T>> consumer) {
+			taskRepository.getScheduledExecutions(taskName).forEach(execution -> new ScheduledExecution<T>(execution));
 		}
 	}
 	
