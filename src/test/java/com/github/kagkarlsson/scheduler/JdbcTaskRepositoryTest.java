@@ -4,7 +4,6 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -202,11 +201,11 @@ public class JdbcTaskRepositoryTest {
 		IntStream.range(0, 100).forEach(i ->
 				taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + i)))
 		);
-		List<Execution> beforePick = taskRepository.getScheduled();
+		List<Execution> beforePick = taskRepository.getScheduledExecutions();
 		assertThat(beforePick, hasSize(100));
 
 		taskRepository.pick(beforePick.get(0), Instant.now());
-		List<Execution> afterPick = taskRepository.getScheduled();
+		List<Execution> afterPick = taskRepository.getScheduledExecutions();
 		assertThat(afterPick, hasSize(99));
 	}
 
@@ -227,13 +226,13 @@ public class JdbcTaskRepositoryTest {
 		taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + 2)));
 		taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), alternativeOneTimeTask.instance("id" + 3)));
 
-		List<Execution> scheduledByTaskName = taskRepository.getScheduledByTaskName(oneTimeTask.getName());
+		List<Execution> scheduledByTaskName = taskRepository.getScheduledExecutions(oneTimeTask.getName());
 		assertThat(scheduledByTaskName, hasSize(2));
 
-		List<Execution> alternativeTasks = taskRepository.getScheduledByTaskName(alternativeOneTimeTask.getName());
+		List<Execution> alternativeTasks = taskRepository.getScheduledExecutions(alternativeOneTimeTask.getName());
 		assertThat(alternativeTasks, hasSize(1));
 
-		List<Execution> empty = taskRepository.getScheduledByTaskName("non-existing");
+		List<Execution> empty = taskRepository.getScheduledExecutions("non-existing");
 		assertThat(empty, empty());
 	}
 

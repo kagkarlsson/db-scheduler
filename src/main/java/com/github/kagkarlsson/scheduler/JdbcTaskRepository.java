@@ -96,12 +96,12 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getScheduled() {
+	public List<Execution> getScheduledExecutions() {
 		return getScheduled(MAX_RESULTS);
 	}
 
 	@Override
-	public List<Execution> getScheduledByTaskName(String taskName) {
+	public List<Execution> getScheduledExecutions(String taskName) {
 		return getScheduledByTaskName(taskName, MAX_RESULTS);
 	}
 
