@@ -15,23 +15,40 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+
+import java.time.Instant;
 
 public class ScheduledExecution<DATA_TYPE> {
 
+    private final Class<DATA_TYPE> dataClass;
+
     private final Execution execution;
 
-    public ScheduledExecution(Execution execution) {
+    public ScheduledExecution(Class<DATA_TYPE> dataClass, Execution execution) {
+        this.dataClass = dataClass;
         this.execution = execution;
     }
 
-    public TaskInstance getTaskInstance() {
+    public TaskInstanceId getTaskInstance() {
         return execution.taskInstance;
     }
 
+    public Instant getExecutionTime() {
+        return execution.getExecutionTime();
+    }
+
     public DATA_TYPE getData() {
-        return (DATA_TYPE) this.execution.taskInstance.getData();
+        if (dataClass.isInstance(this.execution.taskInstance.getData())) {
+            return (DATA_TYPE) this.execution.taskInstance.getData();
+        }
+
+        throw new DataClassMismatchException();
+    }
+
+    public static class DataClassMismatchException extends RuntimeException {
+
     }
 }

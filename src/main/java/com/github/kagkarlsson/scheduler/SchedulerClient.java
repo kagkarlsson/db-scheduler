@@ -34,9 +34,9 @@ public interface SchedulerClient {
 
 	void cancel(TaskInstanceId taskInstanceId);
 
-	<T> void getScheduledExecutions(Consumer<ScheduledExecution<T>> consumer);
+	void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
 
-	<T> void getScheduledExecutions(String taskName, Consumer<ScheduledExecution<T>> consumer);
+	<T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
 
 	class Builder {
 
@@ -104,13 +104,13 @@ public interface SchedulerClient {
 		}
 
 		@Override
-		public <T> void getScheduledExecutions(Consumer<ScheduledExecution<T>> consumer) {
-			taskRepository.getScheduledExecutions(execution -> consumer.accept(new ScheduledExecution<T>(execution)));
+		public void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
+			taskRepository.getScheduledExecutions(execution -> consumer.accept(new ScheduledExecution<>(Object.class, execution)));
 		}
 
 		@Override
-		public <T> void getScheduledExecutions(String taskName, Consumer<ScheduledExecution<T>> consumer) {
-			taskRepository.getScheduledExecutions(execution -> new ScheduledExecution<T>(execution));
+		public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
+			taskRepository.getScheduledExecutions(execution -> new ScheduledExecution<>(dataClass, execution));
 		}
 	}
 	
