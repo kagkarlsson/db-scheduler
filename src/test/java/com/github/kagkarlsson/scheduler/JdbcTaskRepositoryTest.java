@@ -201,22 +201,14 @@ public class JdbcTaskRepositoryTest {
 		IntStream.range(0, 100).forEach(i ->
 				taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + i)))
 		);
-		List<Execution> beforePick = taskRepository.getScheduledExecutions();
+		List<Execution> beforePick = new ArrayList();
+		taskRepository.getScheduledExecutions(beforePick::add);
 		assertThat(beforePick, hasSize(100));
 
 		taskRepository.pick(beforePick.get(0), Instant.now());
-		List<Execution> afterPick = taskRepository.getScheduledExecutions();
+		List<Execution> afterPick = new ArrayList<>();
+		taskRepository.getScheduledExecutions(afterPick::add);
 		assertThat(afterPick, hasSize(99));
-	}
-
-	@Test
-	public void get_scheduled_with_50_as_limit() {
-		Instant now = Instant.now();
-		IntStream.range(0, 100).forEach(i ->
-				taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + i)))
-		);
-		List<Execution> beforePick = taskRepository.getScheduled(50);
-		assertThat(beforePick, hasSize(50));
 	}
 
 	@Test
@@ -226,13 +218,16 @@ public class JdbcTaskRepositoryTest {
 		taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + 2)));
 		taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), alternativeOneTimeTask.instance("id" + 3)));
 
-		List<Execution> scheduledByTaskName = taskRepository.getScheduledExecutions(oneTimeTask.getName());
+		List<Execution> scheduledByTaskName = new ArrayList<>();
+		taskRepository.getScheduledExecutions(oneTimeTask.getName(), scheduledByTaskName::add);
 		assertThat(scheduledByTaskName, hasSize(2));
 
-		List<Execution> alternativeTasks = taskRepository.getScheduledExecutions(alternativeOneTimeTask.getName());
+		List<Execution> alternativeTasks = new ArrayList<>();
+		taskRepository.getScheduledExecutions(alternativeOneTimeTask.getName(), alternativeTasks::add);
 		assertThat(alternativeTasks, hasSize(1));
 
-		List<Execution> empty = taskRepository.getScheduledExecutions("non-existing");
+		List<Execution> empty = new ArrayList();
+		taskRepository.getScheduledExecutions("non-existing", empty::add);
 		assertThat(empty, empty());
 	}
 
