@@ -77,7 +77,7 @@ public class SchedulerMain {
 				.build();
 
 		scheduler.schedule(onetime1.instance("onetime1"), Instant.now());
-		scheduler.schedule(onetime2.instance("onetime2", 100), Instant.now());
+		scheduler.schedule(onetime2.instance("onetime2", 100), Instant.now().plusSeconds(3));
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
@@ -88,6 +88,8 @@ public class SchedulerMain {
 		});
 
 		scheduler.start();
+
+		scheduler.schedule(onetime2.instance("onetime3", 100), Instant.now());
 	}
 
 	public static void main(String[] args) throws Throwable {
