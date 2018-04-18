@@ -25,12 +25,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
-import java.sql.*;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
@@ -40,7 +44,7 @@ import static java.util.Optional.ofNullable;
 public class JdbcTaskRepository implements TaskRepository {
 
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
-	private static final int MAX_DUE_RESULTS = 10_000;
+	private static final int MAX_RESULTS = 10_000;
 	private final TaskResolver taskResolver;
 	private final SchedulerName schedulerSchedulerName;
 	private final JdbcRunner jdbcRunner;
@@ -92,7 +96,30 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public List<Execution> getDue(Instant now) {
-		return getDue(now, MAX_DUE_RESULTS);
+		return getDue(now, MAX_RESULTS);
+	}
+
+	@Override
+	public void getScheduledExecutions(Consumer<Execution> consumer) {
+		jdbcRunner.query(
+				"select * from scheduled_tasks where picked = ? order by execution_time asc",
+				(PreparedStatement p) -> {
+					p.setBoolean(1, false);
+				},
+				new ExecutionResultSetConsumer(consumer)
+		);
+	}
+
+	@Override
+	public void getScheduledExecutions(String taskName, Consumer<Execution> consumer) {
+		jdbcRunner.query(
+				"select * from scheduled_tasks where picked = ? and task_name = ? order by execution_time asc",
+				(PreparedStatement p) -> {
+					p.setBoolean(1, false);
+					p.setString(2, taskName);
+				},
+				new ExecutionResultSetConsumer(consumer)
+		);
 	}
 
 	public List<Execution> getDue(Instant now, int limit) {
@@ -274,19 +301,42 @@ public class JdbcTaskRepository implements TaskRepository {
 		return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.empty();
 	}
 
-	@SuppressWarnings({"rawtypes", "unchecked"})
 	private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
 
-		@Override
-		public List<Execution> map(ResultSet rs) throws SQLException {
+		private final ArrayList<Execution> executions;
 
-			List<Execution> executions = new ArrayList<>();
+		private final ExecutionResultSetConsumer delegate;
+
+		private ExecutionResultSetMapper() {
+			this.executions = new ArrayList<>();
+			this.delegate = new ExecutionResultSetConsumer(executions::add);
+		}
+
+		@Override
+		public List<Execution> map(ResultSet resultSet) throws SQLException {
+			this.delegate.map(resultSet);
+			return this.executions;
+		}
+	}
+
+	@SuppressWarnings({"rawtypes", "unchecked"})
+	private class ExecutionResultSetConsumer implements ResultSetMapper<Void> {
+
+		private final Consumer<Execution> consumer;
+
+		private ExecutionResultSetConsumer(Consumer<Execution> consumer) {
+			this.consumer = consumer;
+		}
+
+		@Override
+		public Void map(ResultSet rs) throws SQLException {
+
 			while (rs.next()) {
 				String taskName = rs.getString("task_name");
 				Optional<Task> task = taskResolver.resolve(taskName);
 
 				if (!task.isPresent()) {
-					LOG.error("Failed to find implementation for task with name '{}'. Either delete the execution from the databaser, or add an implementation for it.", taskName);
+					LOG.error("Failed to find implementation for task with name '{}'. Either delete the execution from the database, or add an implementation for it.", taskName);
 					continue;
 				}
 
@@ -306,9 +356,10 @@ public class JdbcTaskRepository implements TaskRepository {
 				long version = rs.getLong("version");
 
 				Supplier dataSupplier = memoize(() -> serializer.deserialize(task.get().getDataClass(), data));
-				executions.add(new Execution(executionTime, new TaskInstance(taskName, instanceId, dataSupplier), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
+				this.consumer.accept(new Execution(executionTime, new TaskInstance(taskName, instanceId, dataSupplier), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
 			}
-			return executions;
+
+			return null;
 		}
 	}
 

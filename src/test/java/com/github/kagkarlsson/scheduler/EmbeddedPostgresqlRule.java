@@ -2,7 +2,7 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.Mappers;
-import com.opentable.db.postgres.embedded.EmbeddedPostgreSQL;
+import com.opentable.db.postgres.embedded.EmbeddedPostgres;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.rules.ExternalResource;
@@ -15,7 +15,7 @@ import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
 
 public class EmbeddedPostgresqlRule extends ExternalResource {
 
-	private static EmbeddedPostgreSQL embeddedPostgresql;
+	private static EmbeddedPostgres embeddedPostgresql;
 	private static DataSource dataSource;
 	private final Consumer<DataSource> initializeSchema;
 	private final Consumer<DataSource> cleanupAfter;
@@ -43,8 +43,8 @@ public class EmbeddedPostgresqlRule extends ExternalResource {
 		return dataSource;
 	}
 
-	private EmbeddedPostgreSQL initPostgres() throws IOException {
-		final EmbeddedPostgreSQL newEmbeddedPostgresql = EmbeddedPostgreSQL.builder().start();
+	private EmbeddedPostgres initPostgres() throws IOException {
+		final EmbeddedPostgres newEmbeddedPostgresql = EmbeddedPostgres.builder().start();
 
 		final JdbcRunner postgresJdbc = new JdbcRunner(newEmbeddedPostgresql.getPostgresDatabase());
 

@@ -8,32 +8,23 @@ Licensed under Apache 2 - http://www.apache.org/licenses/LICENSE-2.0.html
 
 This software includes third party software subject to the following licenses:
 
-  AntLR Parser Generator under BSD License
-  ANTLR StringTemplate under BSD licence
   Apache Commons Codec under Apache License, Version 2.0
-  Apache Commons Configuration under The Apache Software License, Version 2.0
+  Apache Commons Compress under Apache License, Version 2.0
+  Apache Commons IO under Apache License, Version 2.0
   Apache Commons Lang under Apache License, Version 2.0
-  Commons IO under The Apache Software License, Version 2.0
-  Commons Lang under The Apache Software License, Version 2.0
-  config-magic under Apache License 2.0
   Db-scheduler under The Apache Software License, Version 2.0
-  FindBugs-Annotations under GNU Lesser Public License
   Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
   Hamcrest Core under New BSD License
   Hamcrest library under New BSD License
   HikariCP under The Apache Software License, Version 2.0
   HyperSQL Database under HSQLDB License, a BSD open source license
-  JCL 1.1.1 implemented over SLF4J under MIT License
-  jDBI under Apache License 2.0
-  JGraphT under GNU Lesser General Public License Version 2.1, February 1999
+  JCL 1.2 implemented over SLF4J under MIT License
   JUnit under Eclipse Public License 1.0
   Micro JDBC under The Apache Software License, Version 2.0
-  migratory-core under Apache 2
-  otj-config under Apache License, Version 2.0
   otj-pg-embedded under Apache License, Version 2.0
-  PostgreSQL JDBC Driver under BSD License
   PostgreSQL JDBC Driver - JDBC 4.2 under The PostgreSQL License
   SLF4J API Module under MIT License
   SLF4J Simple Binding under MIT License
+  XZ for Java under Public Domain
 
 
