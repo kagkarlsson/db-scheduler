@@ -4,7 +4,7 @@
 
 	<groupId>com.github.kagkarlsson</groupId>
 	<artifactId>db-scheduler</artifactId>
-	<version>3.1-SNAPSHOT</version>
+	<version>3.1</version>
 	<packaging>jar</packaging>
 
 	<name>Db-scheduler</name>
@@ -372,7 +372,7 @@
 		<connection>scm:git:git@github.com:kagkarlsson/db-scheduler.git</connection>
 		<developerConnection>scm:git:git@github.com:kagkarlsson/db-scheduler.git</developerConnection>
 		<url>https://github.com/kagkarlsson/db-scheduler/</url>
-		<tag>HEAD</tag>
+		<tag>3.1</tag>
 	</scm>
 
 	<distributionManagement>
