@@ -120,6 +120,31 @@ Runtime.getRuntime().addShutdownHook(new Thread() {
 scheduler.start();
 ```
 
+## Configuration
+
+### Scheduler configuration
+
+The scheduler is created using the `Scheduler.create(...)` builder. The builder have sensible defaults, but the following options are configurable. 
+
+| Option  | Default | Description |
+| ------------- | ---- | ------------- |
+| `.threads(int)`  | 10  | Number of threads |
+| `.pollingInterval(Duration)`  |  30s  | How often the scheduler checks the database for due executions  |
+| `.heartbeatInterval(Duration)`  | 5m | How often to update the heartbeat timestamp for running executions  |
+| `.schedulerName(SchedulerName)`  | hostname  | Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. |
+
+
+### Task configuration
+
+Tasks are created using one of the builder-classes in `Tasks`. The builders have sensible defaults, but the following options can be overridden. 
+
+| Option  | Default | Description |
+| ------------- | ---- | ------------- |
+| `.onFailure(FailureHandler)`  | see desc.  | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule` _one-time tasks_ are retried again in 5m. |
+| `.onDeadExecution(DeadExecutionHandler)`  | `ReviveDeadExecution`  | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`. |
+| `.initialData(T initialData)`  | `null`  | The data to use the first time a _recurring task_ is scheduled. |
+
+
 
 ## How it works
 
@@ -158,6 +183,9 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * Currently, the precision of db-scheduler is depending on the `pollingInterval` (default 10s) which specifies how often to look in the table for due executions.
 
 ## Versions / upgrading
+
+### Version 3.1
+* Future executions can now be fetched using the `scheduler.getScheduledExecutions(..)`
 
 ### Version 3.0
 * New builders for task-creation, making it clearer what the config-options are. (See `Tasks` class and examples)
