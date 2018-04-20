@@ -21,7 +21,7 @@ Task-scheduler for Java that was inspired by the need for a clustered `java.util
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>3.0</version>
+    <version>3.1</version>
 </dependency>
 ```
 
