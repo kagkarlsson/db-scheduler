@@ -23,8 +23,8 @@ public class MssqlTestDatabaseRule extends ExternalResource {
 	public void before() throws Throwable {
 		HikariConfig config = new HikariConfig();
 		config.setJdbcUrl("jdbc:sqlserver://SERVER;databaseName=DATABASE");
-		config.setUsername("USER");
-		config.setPassword("PASSWORD");
+		config.setUsername("sa");
+		config.setPassword("");
 
 		dataSource = new HikariDataSource(config);
 
