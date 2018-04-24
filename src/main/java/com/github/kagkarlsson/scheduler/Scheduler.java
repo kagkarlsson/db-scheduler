@@ -80,7 +80,7 @@ public class Scheduler implements SchedulerClient {
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
 		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
 		executorsSemaphore = new Semaphore(maxThreads);
-		delegate = new StandardSchedulerClient(taskRepository, new TriggerCheckForDueExecutions(clock, executeDueWaiter));
+		delegate = new StandardSchedulerClient(taskRepository, new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter));
 	}
 
 	public void start() {
@@ -91,6 +91,8 @@ public class Scheduler implements SchedulerClient {
 		dueExecutor.submit(new RunUntilShutdown(this::executeDue, executeDueWaiter, schedulerState, statsRegistry));
 		detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter, schedulerState, statsRegistry));
 		updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter, schedulerState, statsRegistry));
+
+		schedulerState.setStarted();
 	}
 
 	private void executeOnStartup(List<OnStartup> onStartup) {
@@ -439,12 +441,13 @@ public class Scheduler implements SchedulerClient {
 
 	private static class TriggerCheckForDueExecutions implements SchedulingEventListener {
 		private static final Logger LOG = LoggerFactory.getLogger(TriggerCheckForDueExecutions.class);
+		private SchedulerState schedulerState;
 		private Clock clock;
 		private Waiter executeDueWaiter;
 
-		public TriggerCheckForDueExecutions(Clock clock, Waiter executeDueWaiter) {
+		public TriggerCheckForDueExecutions(SchedulerState schedulerState, Clock clock, Waiter executeDueWaiter) {
+			this.schedulerState = schedulerState;
 			this.clock = clock;
-
 			this.executeDueWaiter = executeDueWaiter;
 		}
 
@@ -452,6 +455,12 @@ public class Scheduler implements SchedulerClient {
 		public void newEvent(SchedulingEvent event) {
 			SchedulingEvent.SchedulingEventContext ctx = event.getContext();
 			SchedulingEvent.EventType eventType = ctx.getEventType();
+
+			if (!schedulerState.isStarted() || schedulerState.isShuttingDown()) {
+				LOG.debug("Will not act on scheduling event for execution (task: '{}', id: '{}') as scheduler is starting or shutting down.",
+						ctx.getTaskInstanceId().getTaskName(), ctx.getTaskInstanceId().getId());
+				return;
+			}
 
 			if (eventType == SchedulingEvent.EventType.SCHEDULE || eventType == SchedulingEvent.EventType.RESCHEDULE) {
 

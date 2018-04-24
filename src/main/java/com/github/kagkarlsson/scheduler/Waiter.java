@@ -15,11 +15,17 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Duration;
 import java.time.Instant;
 
 public class Waiter {
-	private Object lock = new Object();
+	private static final Logger LOG = LoggerFactory.getLogger(Waiter.class);
+
+	private Object lock;
+	private boolean woken = false;
 	private final Duration duration;
 	private Clock clock;
 
@@ -28,8 +34,13 @@ public class Waiter {
 	}
 
 	public Waiter(Duration duration, Clock clock) {
+		this(duration, clock, new Object());
+	}
+
+	Waiter(Duration duration, Clock clock, Object lock) {
 		this.duration = duration;
 		this.clock = clock;
+		this.lock = lock;
 	}
 
 	public void doWait() throws InterruptedException {
@@ -37,14 +48,25 @@ public class Waiter {
 		if (millis > 0) {
 			Instant waitUntil = clock.now().plusMillis(millis);
 
-			while (Instant.now().isBefore(waitUntil)) {
-				lock.wait(millis);
+			while (clock.now().isBefore(waitUntil)) {
+				synchronized (lock) {
+					woken = false;
+					LOG.debug("Waiter start wait.");
+					lock.wait(millis);
+					if (woken) {
+						LOG.debug("Waiter woken, it had {}ms left to wait.", (waitUntil.toEpochMilli() - clock.now().toEpochMilli()));
+						break;
+					}
+				}
 			}
 		}
 	}
 
 	public void wake() {
-		lock.notify();
+		synchronized (lock) {
+			woken = true;
+			lock.notify();
+		}
 	}
 
 }
