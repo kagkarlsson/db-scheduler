@@ -21,6 +21,7 @@ This software includes third party software subject to the following licenses:
   JCL 1.2 implemented over SLF4J under MIT License
   JUnit under Eclipse Public License 1.0
   Micro JDBC under The Apache Software License, Version 2.0
+  Microsoft JDBC Driver for SQL Server under MIT License
   otj-pg-embedded under Apache License, Version 2.0
   PostgreSQL JDBC Driver - JDBC 4.2 under The PostgreSQL License
   SLF4J API Module under MIT License
