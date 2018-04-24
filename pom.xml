@@ -220,6 +220,7 @@
 									<include>antlr:antlr</include>
 									<include>org.antlr:stringtemplate</include>
 									<include>org.postgresql:postgresql</include>
+                                                                        <include>com.microsoft.sqlserver</include>
 									<include>org.apache.httpcomponents:httpcore</include>
 									<include>com.nesscomputing.migratory:migratory-core</include>
 									<include>javax.inject:javax.inject</include>
