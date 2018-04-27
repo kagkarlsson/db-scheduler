@@ -70,11 +70,11 @@ scheduler.start();
 ```
 
 
-### Ad-hoc tasks / One-time tasks
+###  One-time tasks
 
-An instance of an _ad-hoc_ task has a single execution-time some time in the future (i.e. non-recurring). The instance-id must be unique within this task, and may be used to encode some metadata (e.g. an id). For more complex state, custom serializable java objects are supported (as used in the example).
+An instance of a _one-time_ task has a single execution-time some time in the future (i.e. non-recurring). The instance-id must be unique within this task, and may be used to encode some metadata (e.g. an id). For more complex state, custom serializable java objects are supported (as used in the example).
 
-Define a _onetime_ task and start the scheduler:
+Define a _one-time_ task and start the scheduler:
  
 ```java
 OneTimeTask<MyTaskData> myAdhocTask = Tasks.oneTime("my-typed-adhoc-task", MyTaskData.class)
@@ -155,17 +155,26 @@ Optimistic locking is used to guarantee that a one and only one scheduler-instan
 
 ### Recurring tasks
 
-The term _recurring task_ is used for tasks that should be run regularly, according to some schedule (see `RecurringTask`).
+The term _recurring task_ is used for tasks that should be run regularly, according to some schedule (see ``Tasks.recurring(..)``).
 
 When the execution of a recurring task has finished, a `Schedule` is consulted to determine what the next time for execution should be, and a future task-execution is created for that time (i.e. it is _rescheduled_). The time chosen will be the nearest time according to the `Schedule`, but still in the future.
 
 To create the initial execution for a `RecurringTask`, the scheduler has a method  `startTasks(...)` that takes a list of tasks that should be "started" if they do not already have a future execution. Note: The first execution-time will not be according to the schedule, but simply `now()`.
 
-### Ad-hoc tasks
+### One-time tasks
 
-The other type of task has been named _ad-hoc task_, but is most typically something that should be run once at a certain time in the future, a `OneTimeTask`.
+The term _one-time task_ is used for tasks that have a single execution-time (see `Tasks.oneTime(..)`). 
+In addition to encode data into the `instanceId`of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time. By default, Java serialization is used to marshal/unmarshal the data.
 
-In addition to encode some data into the `instanceId`of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time.
+### Custom tasks
+
+For tasks not fitting the above categories, it is possible to fully customize the behavior of the tasks using `Tasks.custom(..)`. 
+
+Use-cases might be:
+
+* Recurring tasks that needs to update its data
+* Tasks that should be either rescheduled or removed based on output from the actual execution
+  
 
 ### Dead executions
 
@@ -206,4 +215,20 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 ## FAQ
 
-Coming
+#### Why `db-scheduler` when there is `Quartz`?
+
+The goal of `db-scheduler` is to be non-invasive and simple to use, but still solve the persistence problem, and the cluster-coordination problem.
+ It was originally targeted at applications with modest database schemas, to which adding 11 tables would feel a bit overkill..   
+ 
+#### Why use a RDBMS for persistence and coordination?
+
+KISS. It's the most common type of shared state applications have.
+
+#### I am missing feature X?
+
+Please create an issue with the feature request and we can discuss it there. 
+If you are impatient (or feel like contributing), pull requests are most welcome :)
+
+#### Is anybody using it?
+
+Yes. It is used in production at a number of companies, and have so far run smoothly.
