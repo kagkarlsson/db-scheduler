@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -40,7 +41,7 @@ public class SchedulerTest {
 
 	private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
 		TaskResolver taskResolver = new TaskResolver(tasks);
-		JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
+		JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 		return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP, new ArrayList<>());
 	}
 

@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 
+import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.junit.Assert.assertThat;
 
 public class SchedulerClientTest {
@@ -41,7 +42,7 @@ public class SchedulerClientTest {
 
         TaskResolver taskResolver = new TaskResolver(oneTimeTask, scheduleAnotherTask);
 
-        jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
+        jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
         scheduler = new Scheduler(settableClock,
                 jdbcTaskRepository,
