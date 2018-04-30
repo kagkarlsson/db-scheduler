@@ -43,18 +43,22 @@ import static java.util.Optional.ofNullable;
 @SuppressWarnings("rawtypes")
 public class JdbcTaskRepository implements TaskRepository {
 
+	public static final String DEFAULT_TABLE_NAME = "scheduled_tasks";
+
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
 	private static final int MAX_RESULTS = 10_000;
 	private final TaskResolver taskResolver;
 	private final SchedulerName schedulerSchedulerName;
 	private final JdbcRunner jdbcRunner;
 	private final Serializer serializer;
+	private final String tableName;
 
-	public JdbcTaskRepository(DataSource dataSource, TaskResolver taskResolver, SchedulerName schedulerSchedulerName) {
-		this(dataSource, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER);
+	public JdbcTaskRepository(DataSource dataSource, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName) {
+		this(dataSource, tableName, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER);
 	}
 
-	public JdbcTaskRepository(DataSource dataSource, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer) {
+	public JdbcTaskRepository(DataSource dataSource, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer) {
+		this.tableName = tableName;
 		this.taskResolver = taskResolver;
 		this.schedulerSchedulerName = schedulerSchedulerName;
 		this.jdbcRunner = new JdbcRunner(dataSource);
@@ -72,7 +76,7 @@ public class JdbcTaskRepository implements TaskRepository {
 			}
 
 			jdbcRunner.execute(
-					"insert into scheduled_tasks(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
+					"insert into " + tableName + "(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
 					(PreparedStatement p) -> {
 						p.setString(1, execution.taskInstance.getTaskName());
 						p.setString(2, execution.taskInstance.getId());
@@ -102,7 +106,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public void getScheduledExecutions(Consumer<Execution> consumer) {
 		jdbcRunner.query(
-				"select * from scheduled_tasks where picked = ? order by execution_time asc",
+				"select * from " + tableName + " where picked = ? order by execution_time asc",
 				(PreparedStatement p) -> {
 					p.setBoolean(1, false);
 				},
@@ -113,7 +117,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public void getScheduledExecutions(String taskName, Consumer<Execution> consumer) {
 		jdbcRunner.query(
-				"select * from scheduled_tasks where picked = ? and task_name = ? order by execution_time asc",
+				"select * from " + tableName + " where picked = ? and task_name = ? order by execution_time asc",
 				(PreparedStatement p) -> {
 					p.setBoolean(1, false);
 					p.setString(2, taskName);
@@ -124,7 +128,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	public List<Execution> getDue(Instant now, int limit) {
 		return jdbcRunner.query(
-				"select * from scheduled_tasks where picked = ? and execution_time <= ? order by execution_time asc",
+				"select * from " + tableName + " where picked = ? and execution_time <= ? order by execution_time asc",
 				(PreparedStatement p) -> {
 					p.setBoolean(1, false);
 					p.setTimestamp(2, Timestamp.from(now));
@@ -137,7 +141,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public void remove(Execution execution) {
 
-		final int removed = jdbcRunner.execute("delete from scheduled_tasks where task_name = ? and task_instance = ? and version = ?",
+		final int removed = jdbcRunner.execute("delete from " + tableName + " where task_name = ? and task_instance = ? and version = ?",
 				ps -> {
 					ps.setString(1, execution.taskInstance.getTaskName());
 					ps.setString(2, execution.taskInstance.getId());
@@ -162,7 +166,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	private void rescheduleInternal(Execution execution, Instant nextExecutionTime, NewData newData, Instant lastSuccess, Instant lastFailure) {
 		final int updated = jdbcRunner.execute(
-				"update scheduled_tasks set " +
+				"update " + tableName + " set " +
 						"picked = ?, " +
 						"picked_by = ?, " +
 						"last_heartbeat = ?, " +
@@ -200,7 +204,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	@SuppressWarnings({"unchecked"})
 	public Optional<Execution> pick(Execution e, Instant timePicked) {
 		final int updated = jdbcRunner.execute(
-				"update scheduled_tasks set picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
+				"update " + tableName + " set picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
 						"where picked = ? " +
 						"and task_name = ? " +
 						"and task_instance = ? " +
@@ -234,7 +238,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public List<Execution> getOldExecutions(Instant olderThan) {
 		return jdbcRunner.query(
-				"select * from scheduled_tasks where picked = ? and last_heartbeat <= ? order by last_heartbeat asc",
+				"select * from " + tableName + " where picked = ? and last_heartbeat <= ? order by last_heartbeat asc",
 				(PreparedStatement p) -> {
 					p.setBoolean(1, true);
 					p.setTimestamp(2, Timestamp.from(olderThan));
@@ -247,7 +251,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	public void updateHeartbeat(Execution e, Instant newHeartbeat) {
 
 		final int updated = jdbcRunner.execute(
-				"update scheduled_tasks set last_heartbeat = ? " +
+				"update " + tableName + " set last_heartbeat = ? " +
 						"where task_name = ? " +
 						"and task_instance = ? " +
 						"and version = ?",
@@ -271,7 +275,7 @@ public class JdbcTaskRepository implements TaskRepository {
 	@Override
 	public List<Execution> getExecutionsFailingLongerThan(Duration interval) {
 		return jdbcRunner.query(
-				"select * from scheduled_tasks where " +
+				"select * from " + tableName + " where " +
 						"	(last_success is null and last_failure is not null)" +
 						"	or (last_failure is not null and last_success < ?)",
 				(PreparedStatement p) -> {
@@ -287,7 +291,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	public Optional<Execution> getExecution(String taskName, String taskInstanceId) {
 		final List<Execution> executions = jdbcRunner.query(
-				"select * from scheduled_tasks where task_name = ? and task_instance = ?",
+				"select * from " + tableName + " where task_name = ? and task_instance = ?",
 				(PreparedStatement p) -> {
 					p.setString(1, taskName);
 					p.setString(2, taskInstanceId);

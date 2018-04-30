@@ -15,16 +15,15 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+
+import javax.sql.DataSource;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Consumer;
-
-import javax.sql.DataSource;
-
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 
 public interface SchedulerClient {
 
@@ -42,6 +41,7 @@ public interface SchedulerClient {
 
 		private final DataSource dataSource;
 		private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+		private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 
 		private Builder(DataSource dataSource) {
 			this.dataSource = dataSource;
@@ -49,10 +49,15 @@ public interface SchedulerClient {
 		public static Builder create(DataSource dataSource) {
 			return new Builder(dataSource);
 		}
-		
+
+		public Builder tableName(String tableName) {
+			this.tableName = tableName;
+			return this;
+		}
+
 		public SchedulerClient build() {
 			TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
-			TaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, new SchedulerClientName(), serializer);
+			TaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, new SchedulerClientName(), serializer);
 			
 			return new StandardSchedulerClient(taskRepository);
 		}

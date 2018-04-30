@@ -392,6 +392,7 @@ public class Scheduler implements SchedulerClient {
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 		private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+		private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
@@ -434,9 +435,14 @@ public class Scheduler implements SchedulerClient {
 			return this;
 		}
 
+		public Builder tableName(String tableName) {
+			this.tableName = tableName;
+			return this;
+		}
+
 		public Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks);
-			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, schedulerName, serializer);
+			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
 			return new Scheduler(new SystemClock(), taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
 		}

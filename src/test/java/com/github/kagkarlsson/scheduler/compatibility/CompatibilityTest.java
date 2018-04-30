@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -102,7 +103,7 @@ public abstract class CompatibilityTest {
 		TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
 		taskResolver.addTask(oneTime);
 
-		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
+		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
 		final Instant now = Instant.now();
 
@@ -139,7 +140,7 @@ public abstract class CompatibilityTest {
 		TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
 		taskResolver.addTask(recurringWithData);
 
-		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), taskResolver, new SchedulerName.Fixed("scheduler1"));
+		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
 		final Instant now = Instant.now();
 

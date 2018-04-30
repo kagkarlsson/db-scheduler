@@ -25,7 +25,9 @@ Task-scheduler for Java that was inspired by the need for a clustered `java.util
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).
+2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).  
+
+    Note: `scheduled_tasks` is the default table name, but it is [customizable](#scheduler-configuration).
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
@@ -132,6 +134,7 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 | `.pollingInterval(Duration)`  |  30s  | How often the scheduler checks the database for due executions  |
 | `.heartbeatInterval(Duration)`  | 5m | How often to update the heartbeat timestamp for running executions  |
 | `.schedulerName(SchedulerName)`  | hostname  | Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. |
+| `.tableName(String)`  | `scheduled_tasks` | Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. |
 
 
 ### Task configuration

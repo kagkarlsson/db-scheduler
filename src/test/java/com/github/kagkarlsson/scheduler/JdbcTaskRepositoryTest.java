@@ -14,6 +14,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.IntStream;
 
+import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.*;
@@ -38,7 +39,7 @@ public class JdbcTaskRepositoryTest {
 		knownTasks.add(oneTimeTask);
 		knownTasks.add(oneTimeTaskWithData);
 		knownTasks.add(alternativeOneTimeTask);
-		taskRepository = new JdbcTaskRepository(DB.getDataSource(), new TaskResolver(knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
+		taskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, new TaskResolver(knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
 	}
 
 	@Test
