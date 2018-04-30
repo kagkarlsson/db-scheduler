@@ -21,7 +21,7 @@ Task-scheduler for Java that was inspired by the need for a clustered `java.util
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>3.1</version>
+    <version>3.2</version>
 </dependency>
 ```
 
@@ -195,6 +195,9 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * Currently, the precision of db-scheduler is depending on the `pollingInterval` (default 10s) which specifies how often to look in the table for due executions.
 
 ## Versions / upgrading
+
+### Version 3.2
+* Customizable table-name for persistence 
 
 ### Version 3.1
 * Future executions can now be fetched using the `scheduler.getScheduledExecutions(..)`
