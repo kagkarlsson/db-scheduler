@@ -92,6 +92,13 @@
 			<version>9.4.1207</version>
 			<scope>test</scope>
 		</dependency>
+                 <!-- https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc -->
+        <dependency>
+            <groupId>com.microsoft.sqlserver</groupId>
+            <artifactId>mssql-jdbc</artifactId>
+            <version>6.3.6.jre8-preview</version>
+            <scope>test</scope>
+        </dependency>
 		<dependency>
 			<groupId>com.opentable.components</groupId>
 			<artifactId>otj-pg-embedded</artifactId>
@@ -213,6 +220,7 @@
 									<include>antlr:antlr</include>
 									<include>org.antlr:stringtemplate</include>
 									<include>org.postgresql:postgresql</include>
+                                                                        <include>com.microsoft.sqlserver</include>
 									<include>org.apache.httpcomponents:httpcore</include>
 									<include>com.nesscomputing.migratory:migratory-core</include>
 									<include>javax.inject:javax.inject</include>
