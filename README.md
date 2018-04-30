@@ -25,7 +25,7 @@ Task-scheduler for Java that was inspired by the need for a clustered `java.util
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).  
+2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql), [mssql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mssql_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).  
 
     Note: `scheduled_tasks` is the default table name, but it is [customizable](#scheduler-configuration).
 
