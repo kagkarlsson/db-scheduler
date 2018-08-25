@@ -391,7 +391,7 @@ public class Scheduler implements SchedulerClient {
 		private Waiter waiter = new Waiter(Duration.ofSeconds(10));
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
-		private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+		private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
 		private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
@@ -432,6 +432,11 @@ public class Scheduler implements SchedulerClient {
 
 		public Builder schedulerName(SchedulerName schedulerName) {
 			this.schedulerName = schedulerName;
+			return this;
+		}
+
+		public Builder serializer(Serializer serializer) {
+			this.serializer = serializer;
 			return this;
 		}
 
