@@ -21,7 +21,7 @@ Task-scheduler for Java that was inspired by the need for a clustered `java.util
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>3.2</version>
+    <version>3.3</version>
 </dependency>
 ```
 
@@ -135,6 +135,7 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 | `.heartbeatInterval(Duration)`  | 5m | How often to update the heartbeat timestamp for running executions  |
 | `.schedulerName(SchedulerName)`  | hostname  | Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. |
 | `.tableName(String)`  | `scheduled_tasks` | Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. |
+| `.serializer(Serializer)`  | standard Java | Serializer implementation to use when serializing task data. |
 
 
 ### Task configuration
@@ -195,6 +196,9 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * Currently, the precision of db-scheduler is depending on the `pollingInterval` (default 10s) which specifies how often to look in the table for due executions.
 
 ## Versions / upgrading
+
+### Version 3.3
+* Customizable serlizer (PR https://github.com/kagkarlsson/db-scheduler/pull/32)
 
 ### Version 3.2
 * Customizable table-name for persistence 
