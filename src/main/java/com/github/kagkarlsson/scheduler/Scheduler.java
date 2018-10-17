@@ -392,7 +392,6 @@ public class Scheduler implements SchedulerClient {
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 		private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
-        private Clock clock = new SystemClock();
 		private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
@@ -441,21 +440,38 @@ public class Scheduler implements SchedulerClient {
 			return this;
 		}
 
-        public Builder clock(Clock clock) {
-		    this.clock = clock;
-		    return this;
-        }
-
 		public Builder tableName(String tableName) {
 			this.tableName = tableName;
 			return this;
+		}
+
+		protected Clock resolveClock() {
+			return new SystemClock();
 		}
 
 		public Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
-			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
+			return new Scheduler(resolveClock(), taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
+		}
+	}
+
+	public static class OverridableClockBuilder extends Builder {
+		private Clock clock = new SystemClock();
+
+		public OverridableClockBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
+			super(dataSource, knownTasks);
+		}
+
+		public OverridableClockBuilder clock(Clock clock) {
+			this.clock = clock;
+			return this;
+		}
+
+		@Override
+		protected Clock resolveClock() {
+			return clock;
 		}
 	}
 
