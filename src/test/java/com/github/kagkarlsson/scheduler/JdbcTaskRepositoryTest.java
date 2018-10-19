@@ -127,7 +127,7 @@ public class JdbcTaskRepositoryTest {
 		final Execution execution = due.get(0);
 		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
 		assertThat(pickedExecution.isPresent(), is(true));
-		taskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now, null);
+		taskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now, null, 0);
 
 		assertThat(taskRepository.pick(pickedExecution.get(), now).isPresent(), is(false));
 	}
@@ -143,7 +143,7 @@ public class JdbcTaskRepositoryTest {
 		Execution execution = due.get(0);
 		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
 		final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
-		taskRepository.reschedule(pickedExecution.get(), nextExecutionTime, now, null);
+		taskRepository.reschedule(pickedExecution.get(), nextExecutionTime, now, null, 0);
 
 		assertThat(taskRepository.getDue(now), hasSize(0));
 		assertThat(taskRepository.getDue(nextExecutionTime), hasSize(1));
@@ -156,6 +156,24 @@ public class JdbcTaskRepositoryTest {
 	}
 
 	@Test
+	public void reschedule_should_persist_consecutive_failures() {
+		Instant now = Instant.now();
+		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
+		taskRepository.createIfNotExists(new Execution(now, instance));
+		List<Execution> due = taskRepository.getDue(now);
+		assertThat(due, hasSize(1));
+
+		Execution execution = due.get(0);
+		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
+		final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
+		taskRepository.reschedule(pickedExecution.get(), nextExecutionTime, now.minusSeconds(1), now, 1);
+
+		final Optional<Execution> nextExecution = taskRepository.getExecution(instance);
+		assertTrue(nextExecution.isPresent());
+		assertThat(nextExecution.get().consecutiveFailures, is(1));
+	}
+
+	@Test
 	public void reschedule_should_update_data_if_specified() {
 		Instant now = Instant.now();
 		final TaskInstance<Integer> instance = oneTimeTaskWithData.instance("id1", 1);
@@ -165,7 +183,7 @@ public class JdbcTaskRepositoryTest {
 		assertEquals(created.taskInstance.getData(), 1);
 
 		final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
-		taskRepository.reschedule(created, nextExecutionTime, 2, now, null);
+		taskRepository.reschedule(created, nextExecutionTime, 2, now, null, 0);
 
 		final Execution rescheduled = taskRepository.getExecution(instance).get();
 		assertEquals(rescheduled.taskInstance.getData(), 2);
@@ -182,15 +200,15 @@ public class JdbcTaskRepositoryTest {
 
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
 
-		taskRepository.reschedule(getSingleExecution(), now, now, null);
+		taskRepository.reschedule(getSingleExecution(), now, now, null, 0);
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
 
-		taskRepository.reschedule(getSingleExecution(), now, null, now);
+		taskRepository.reschedule(getSingleExecution(), now, null, now, 1);
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofMinutes(1)), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofDays(1)), hasSize(1));
 
-		taskRepository.reschedule(getSingleExecution(), now, now.minus(Duration.ofMinutes(1)), now);
+		taskRepository.reschedule(getSingleExecution(), now, now.minus(Duration.ofMinutes(1)), now, 1);
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofSeconds(1)), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofHours(1)), hasSize(0));
