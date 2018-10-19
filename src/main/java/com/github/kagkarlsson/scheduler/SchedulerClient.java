@@ -15,17 +15,17 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Optional;
-
-import javax.sql.DataSource;
-
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public interface SchedulerClient {
 
@@ -35,10 +35,15 @@ public interface SchedulerClient {
 
 	void cancel(TaskInstanceId taskInstanceId);
 
+	void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
+
+	<T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
+
 	class Builder {
 
 		private final DataSource dataSource;
 		private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+		private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 
 		private Builder(DataSource dataSource) {
 			this.dataSource = dataSource;
@@ -46,10 +51,15 @@ public interface SchedulerClient {
 		public static Builder create(DataSource dataSource) {
 			return new Builder(dataSource);
 		}
-		
+
+		public Builder tableName(String tableName) {
+			this.tableName = tableName;
+			return this;
+		}
+
 		public SchedulerClient build() {
 			TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
-			TaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, new SchedulerClientName(), serializer);
+			TaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, new SchedulerClientName(), serializer);
 			
 			return new StandardSchedulerClient(taskRepository);
 		}
@@ -112,6 +122,16 @@ public interface SchedulerClient {
 			}
 		}
 
+		@Override
+		public void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
+			taskRepository.getScheduledExecutions(execution -> consumer.accept(new ScheduledExecution<>(Object.class, execution)));
+		}
+
+		@Override
+		public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
+			taskRepository.getScheduledExecutions(execution -> new ScheduledExecution<>(dataClass, execution));
+		}
+
 		private void notifyListeners(SchedulingEvent.EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {
 			try {
 				schedulingEventListener.newEvent(new SchedulingEvent(new SchedulingEvent.SchedulingEventContext(eventType, taskInstanceId, executionTime)));
@@ -120,6 +140,7 @@ public interface SchedulerClient {
 			}
 		}
 	}
+
 	
 	class SchedulerClientName implements SchedulerName {
 		@Override

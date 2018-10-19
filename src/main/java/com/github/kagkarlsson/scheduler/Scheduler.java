@@ -28,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
@@ -147,6 +148,16 @@ public class Scheduler implements SchedulerClient {
 	@Override
 	public void cancel(TaskInstanceId taskInstanceId) {
 		this.delegate.cancel(taskInstanceId);
+	}
+
+	@Override
+	public void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
+		this.delegate.getScheduledExecutions(consumer);
+	}
+
+	@Override
+	public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
+		this.delegate.getScheduledExecutionsForTask(taskName, dataClass, consumer);
 	}
 
 	public List<CurrentlyExecuting> getCurrentlyExecuting() {
@@ -384,7 +395,8 @@ public class Scheduler implements SchedulerClient {
 		private Waiter waiter = new Waiter(Duration.ofSeconds(10), clock);
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
-		private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+		private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+		private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
@@ -427,9 +439,19 @@ public class Scheduler implements SchedulerClient {
 			return this;
 		}
 
+		public Builder serializer(Serializer serializer) {
+			this.serializer = serializer;
+			return this;
+		}
+
+		public Builder tableName(String tableName) {
+			this.tableName = tableName;
+			return this;
+		}
+
 		public Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks);
-			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, taskResolver, schedulerName, serializer);
+			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
 			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
 		}

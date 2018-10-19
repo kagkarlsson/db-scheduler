@@ -4,7 +4,7 @@
 
 	<groupId>com.github.kagkarlsson</groupId>
 	<artifactId>db-scheduler</artifactId>
-	<version>3.1-SNAPSHOT</version>
+	<version>3.4-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>Db-scheduler</name>
@@ -92,29 +92,39 @@
 			<version>9.4.1207</version>
 			<scope>test</scope>
 		</dependency>
+                 <!-- https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc -->
 		<dependency>
 			<groupId>com.opentable.components</groupId>
 			<artifactId>otj-pg-embedded</artifactId>
-			<version>0.4.4</version>
+			<version>0.11.4</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.zaxxer</groupId>
 			<artifactId>HikariCP</artifactId>
-			<version>2.4.3</version>
+			<version>3.1.0</version>
 			<scope>test</scope>
 		</dependency>
-		<!--<dependency>
+		<!--
+		<dependency>
 			<groupId>com.oracle</groupId>
 			<artifactId>ojdbc6</artifactId>
 			<version>11.2.0.2.0</version>
 			<scope>test</scope>
-		</dependency>-->
-		<!--<dependency>
+		</dependency>
+		<dependency>
 		    <groupId>mysql</groupId>
 		    <artifactId>mysql-connector-java</artifactId>
 		    <version>6.0.3</version>
-		</dependency> -->
+		</dependency>
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+			<version>6.3.6.jre8-preview</version>
+			<scope>test</scope>
+		</dependency>
+		-->
+
 	</dependencies>
 
 	<build>
@@ -213,6 +223,7 @@
 									<include>antlr:antlr</include>
 									<include>org.antlr:stringtemplate</include>
 									<include>org.postgresql:postgresql</include>
+                                                                        <include>com.microsoft.sqlserver</include>
 									<include>org.apache.httpcomponents:httpcore</include>
 									<include>com.nesscomputing.migratory:migratory-core</include>
 									<include>javax.inject:javax.inject</include>
@@ -223,6 +234,8 @@
 									<include>com.opentable.components:otj-tinyhttp</include>
 									<include>postgresql:postgresql</include>
 									<include>org.apache.commons:commons-lang3</include>
+									<include>org.apache.commons:commons-compress</include>
+									<include>org.tukaani:xz</include>
 								</includes>
 								<searchTransitive>true</searchTransitive>
 								<message>

@@ -21,11 +21,13 @@ Task-scheduler for Java that was inspired by the need for a clustered `java.util
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>3.0</version>
+    <version>3.3</version>
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).
+2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql), [mssql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mssql_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).  
+
+    Note: `scheduled_tasks` is the default table name, but it is [customizable](#scheduler-configuration).
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
@@ -70,11 +72,11 @@ scheduler.start();
 ```
 
 
-### Ad-hoc tasks / One-time tasks
+###  One-time tasks
 
-An instance of an _ad-hoc_ task has a single execution-time some time in the future (i.e. non-recurring). The instance-id must be unique within this task, and may be used to encode some metadata (e.g. an id). For more complex state, custom serializable java objects are supported (as used in the example).
+An instance of a _one-time_ task has a single execution-time some time in the future (i.e. non-recurring). The instance-id must be unique within this task, and may be used to encode some metadata (e.g. an id). For more complex state, custom serializable java objects are supported (as used in the example).
 
-Define a _onetime_ task and start the scheduler:
+Define a _one-time_ task and start the scheduler:
  
 ```java
 OneTimeTask<MyTaskData> myAdhocTask = Tasks.oneTime("my-typed-adhoc-task", MyTaskData.class)
@@ -120,6 +122,33 @@ Runtime.getRuntime().addShutdownHook(new Thread() {
 scheduler.start();
 ```
 
+## Configuration
+
+### Scheduler configuration
+
+The scheduler is created using the `Scheduler.create(...)` builder. The builder have sensible defaults, but the following options are configurable. 
+
+| Option  | Default | Description |
+| ------------- | ---- | ------------- |
+| `.threads(int)`  | 10  | Number of threads |
+| `.pollingInterval(Duration)`  |  30s  | How often the scheduler checks the database for due executions  |
+| `.heartbeatInterval(Duration)`  | 5m | How often to update the heartbeat timestamp for running executions  |
+| `.schedulerName(SchedulerName)`  | hostname  | Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. |
+| `.tableName(String)`  | `scheduled_tasks` | Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. |
+| `.serializer(Serializer)`  | standard Java | Serializer implementation to use when serializing task data. |
+
+
+### Task configuration
+
+Tasks are created using one of the builder-classes in `Tasks`. The builders have sensible defaults, but the following options can be overridden. 
+
+| Option  | Default | Description |
+| ------------- | ---- | ------------- |
+| `.onFailure(FailureHandler)`  | see desc.  | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule` _one-time tasks_ are retried again in 5m. |
+| `.onDeadExecution(DeadExecutionHandler)`  | `ReviveDeadExecution`  | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`. |
+| `.initialData(T initialData)`  | `null`  | The data to use the first time a _recurring task_ is scheduled. |
+
+
 
 ## How it works
 
@@ -130,17 +159,26 @@ Optimistic locking is used to guarantee that a one and only one scheduler-instan
 
 ### Recurring tasks
 
-The term _recurring task_ is used for tasks that should be run regularly, according to some schedule (see `RecurringTask`).
+The term _recurring task_ is used for tasks that should be run regularly, according to some schedule (see ``Tasks.recurring(..)``).
 
 When the execution of a recurring task has finished, a `Schedule` is consulted to determine what the next time for execution should be, and a future task-execution is created for that time (i.e. it is _rescheduled_). The time chosen will be the nearest time according to the `Schedule`, but still in the future.
 
 To create the initial execution for a `RecurringTask`, the scheduler has a method  `startTasks(...)` that takes a list of tasks that should be "started" if they do not already have a future execution. Note: The first execution-time will not be according to the schedule, but simply `now()`.
 
-### Ad-hoc tasks
+### One-time tasks
 
-The other type of task has been named _ad-hoc task_, but is most typically something that should be run once at a certain time in the future, a `OneTimeTask`.
+The term _one-time task_ is used for tasks that have a single execution-time (see `Tasks.oneTime(..)`). 
+In addition to encode data into the `instanceId`of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time. By default, Java serialization is used to marshal/unmarshal the data.
 
-In addition to encode some data into the `instanceId`of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time.
+### Custom tasks
+
+For tasks not fitting the above categories, it is possible to fully customize the behavior of the tasks using `Tasks.custom(..)`. 
+
+Use-cases might be:
+
+* Recurring tasks that needs to update its data
+* Tasks that should be either rescheduled or removed based on output from the actual execution
+  
 
 ### Dead executions
 
@@ -158,6 +196,15 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * Currently, the precision of db-scheduler is depending on the `pollingInterval` (default 10s) which specifies how often to look in the table for due executions.
 
 ## Versions / upgrading
+
+### Version 3.3
+* Customizable serlizer (PR https://github.com/kagkarlsson/db-scheduler/pull/32)
+
+### Version 3.2
+* Customizable table-name for persistence 
+
+### Version 3.1
+* Future executions can now be fetched using the `scheduler.getScheduledExecutions(..)`
 
 ### Version 3.0
 * New builders for task-creation, making it clearer what the config-options are. (See `Tasks` class and examples)
@@ -179,4 +226,20 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 ## FAQ
 
-Coming
+#### Why `db-scheduler` when there is `Quartz`?
+
+The goal of `db-scheduler` is to be non-invasive and simple to use, but still solve the persistence problem, and the cluster-coordination problem.
+ It was originally targeted at applications with modest database schemas, to which adding 11 tables would feel a bit overkill..   
+ 
+#### Why use a RDBMS for persistence and coordination?
+
+KISS. It's the most common type of shared state applications have.
+
+#### I am missing feature X?
+
+Please create an issue with the feature request and we can discuss it there. 
+If you are impatient (or feel like contributing), pull requests are most welcome :)
+
+#### Is anybody using it?
+
+Yes. It is used in production at a number of companies, and have so far run smoothly.
