@@ -21,7 +21,7 @@ Task-scheduler for Java that was inspired by the need for a clustered `java.util
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>3.3</version>
+    <version>4.0</version>
 </dependency>
 ```
 
@@ -196,6 +196,12 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * Currently, the precision of db-scheduler is depending on the `pollingInterval` (default 10s) which specifies how often to look in the table for due executions.
 
 ## Versions / upgrading
+
+### Version 4.0
+* Track number of consecutive failures of a task. For use in `FailureHandler` to avoid retrying forever, or retry with back-off. 
+
+**Upgrading to 4.x**
+* Add column `consecutive_failures` to the database schema. See table definitions for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql). `null` is handled as 0, so no need to update existing records.
 
 ### Version 3.3
 * Customizable serlizer (PR https://github.com/kagkarlsson/db-scheduler/pull/32)
