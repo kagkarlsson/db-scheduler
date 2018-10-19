@@ -24,23 +24,25 @@ public final class Execution {
 	public final Instant executionTime;
 	public final boolean picked;
 	public final String pickedBy;
+	public int consecutiveFailures;
 	public final Instant lastHeartbeat;
 	public final long version;
 	public final Instant lastFailure;
 	public final Instant lastSuccess;
 
 	public Execution(Instant executionTime, TaskInstance taskInstance) {
-		this(executionTime, taskInstance, false, null, null, null, null, 1L);
+		this(executionTime, taskInstance, false, null, null, null, 0, null, 1L);
 	}
 
 	public Execution(Instant executionTime, TaskInstance taskInstance, boolean picked, String pickedBy,
-					 Instant lastSuccess, Instant lastFailure, Instant lastHeartbeat, long version) {
+					 Instant lastSuccess, Instant lastFailure, int consecutiveFailures, Instant lastHeartbeat, long version) {
 		this.executionTime = executionTime;
 		this.taskInstance = taskInstance;
 		this.picked = picked;
 		this.pickedBy = pickedBy;
 		this.lastFailure = lastFailure;
 		this.lastSuccess = lastSuccess;
+		this.consecutiveFailures = consecutiveFailures;
 		this.lastHeartbeat = lastHeartbeat;
 		this.version = version;
 	}

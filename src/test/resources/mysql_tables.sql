@@ -7,6 +7,7 @@ create table scheduled_tasks (
   picked_by varchar(50),
   last_success timestamp(6) null,
   last_failure timestamp(6) null,
+  consecutive_failures INT,
   last_heartbeat timestamp(6) null,
   version BIGINT not null,
   PRIMARY KEY (task_name, task_instance)

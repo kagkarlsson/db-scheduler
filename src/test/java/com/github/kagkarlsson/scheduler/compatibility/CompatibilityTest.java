@@ -122,7 +122,7 @@ public abstract class CompatibilityTest {
 		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
 		assertThat(jdbcTaskRepository.getOldExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
 
-		jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1));
+		jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1), 0);
 		assertThat(jdbcTaskRepository.getDue(now), hasSize(0));
 		assertThat(jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1))), hasSize(1));
 
@@ -151,12 +151,12 @@ public abstract class CompatibilityTest {
 
 		Execution round1 = jdbcTaskRepository.getExecution(taskInstance).get();
 		assertEquals(round1.taskInstance.getData(), 1);
-		jdbcTaskRepository.reschedule(round1, now.plusSeconds(1), 2, now.minusSeconds(1), now.minusSeconds(1));
+		jdbcTaskRepository.reschedule(round1, now.plusSeconds(1), 2, now.minusSeconds(1), now.minusSeconds(1), 0);
 
 		Execution round2 = jdbcTaskRepository.getExecution(taskInstance).get();
 		assertEquals(round2.taskInstance.getData(), 2);
 
-		jdbcTaskRepository.reschedule(round2, now.plusSeconds(2), null, now.minusSeconds(2), now.minusSeconds(2));
+		jdbcTaskRepository.reschedule(round2, now.plusSeconds(2), null, now.minusSeconds(2), now.minusSeconds(2), 0);
 		Execution round3 = jdbcTaskRepository.getExecution(taskInstance).get();
 		assertNull(round3.taskInstance.getData());
 	}

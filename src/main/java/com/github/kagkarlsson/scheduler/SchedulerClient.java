@@ -86,7 +86,7 @@ public interface SchedulerClient {
                     throw new RuntimeException(String.format("Could not reschedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
                 }
 
-				taskRepository.reschedule(execution.get(), newExecutionTime, null, null);
+				taskRepository.reschedule(execution.get(), newExecutionTime, null, null, 0);
 			} else {
 				throw new RuntimeException(String.format("Could not reschedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}

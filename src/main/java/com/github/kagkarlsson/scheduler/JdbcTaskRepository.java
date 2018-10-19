@@ -155,16 +155,16 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public void reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure) {
-		rescheduleInternal(execution, nextExecutionTime, null, lastSuccess, lastFailure);
+	public void reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
+		rescheduleInternal(execution, nextExecutionTime, null, lastSuccess, lastFailure, consecutiveFailures);
 	}
 
 	@Override
-	public void reschedule(Execution execution, Instant nextExecutionTime, Object newData, Instant lastSuccess, Instant lastFailure) {
-		rescheduleInternal(execution, nextExecutionTime, new NewData(newData), lastSuccess, lastFailure);
+	public void reschedule(Execution execution, Instant nextExecutionTime, Object newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
+		rescheduleInternal(execution, nextExecutionTime, new NewData(newData), lastSuccess, lastFailure, consecutiveFailures);
 	}
 
-	private void rescheduleInternal(Execution execution, Instant nextExecutionTime, NewData newData, Instant lastSuccess, Instant lastFailure) {
+	private void rescheduleInternal(Execution execution, Instant nextExecutionTime, NewData newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
 		final int updated = jdbcRunner.execute(
 				"update " + tableName + " set " +
 						"picked = ?, " +
@@ -172,6 +172,7 @@ public class JdbcTaskRepository implements TaskRepository {
 						"last_heartbeat = ?, " +
 						"last_success = ?, " +
 						"last_failure = ?, " +
+						"consecutive_failures = ?, " +
 						"execution_time = ?, " +
 						(newData != null ? "task_data = ?, " : "") +
 						"version = version + 1 " +
@@ -185,6 +186,7 @@ public class JdbcTaskRepository implements TaskRepository {
 					ps.setTimestamp(index++, null);
 					ps.setTimestamp(index++, ofNullable(lastSuccess).map(Timestamp::from).orElse(null));
 					ps.setTimestamp(index++, ofNullable(lastFailure).map(Timestamp::from).orElse(null));
+					ps.setInt(index++, consecutiveFailures);
 					ps.setTimestamp(index++, Timestamp.from(nextExecutionTime));
 					if (newData != null) {
 						// may cause datbase-specific problems, might have to use setNull instead
@@ -355,12 +357,13 @@ public class JdbcTaskRepository implements TaskRepository {
 						.map(Timestamp::toInstant).orElse(null);
 				Instant lastFailure = ofNullable(rs.getTimestamp("last_failure"))
 						.map(Timestamp::toInstant).orElse(null);
+				int consecutiveFailures = rs.getInt("consecutive_failures"); // null-value is returned as 0 which is the preferred default
 				Instant lastHeartbeat = ofNullable(rs.getTimestamp("last_heartbeat"))
 						.map(Timestamp::toInstant).orElse(null);
 				long version = rs.getLong("version");
 
 				Supplier dataSupplier = memoize(() -> serializer.deserialize(task.get().getDataClass(), data));
-				this.consumer.accept(new Execution(executionTime, new TaskInstance(taskName, instanceId, dataSupplier), picked, pickedBy, lastSuccess, lastFailure, lastHeartbeat, version));
+				this.consumer.accept(new Execution(executionTime, new TaskInstance(taskName, instanceId, dataSupplier), picked, pickedBy, lastSuccess, lastFailure, consecutiveFailures, lastHeartbeat, version));
 			}
 
 			return null;

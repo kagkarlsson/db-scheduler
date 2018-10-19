@@ -7,6 +7,7 @@ create table scheduled_tasks (
 	picked_by varchar(50),
 	last_success TIMESTAMP WITH TIME ZONE,
 	last_failure TIMESTAMP WITH TIME ZONE,
+	consecutive_failures INT,
 	last_heartbeat TIMESTAMP WITH TIME ZONE,
 	version BIGINT,
 	PRIMARY KEY (task_name, task_instance)
