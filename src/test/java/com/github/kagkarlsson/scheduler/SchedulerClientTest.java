@@ -1,20 +1,19 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.helper.InlinedScheduler;
+import com.github.kagkarlsson.scheduler.helper.TestHelper;
 import com.github.kagkarlsson.scheduler.task.helper.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.hamcrest.CoreMatchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 
-import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static java.time.Duration.ofSeconds;
 import static org.junit.Assert.assertThat;
 
 public class SchedulerClientTest {
@@ -22,10 +21,9 @@ public class SchedulerClientTest {
     @Rule
     public HsqlTestDatabaseRule DB = new HsqlTestDatabaseRule();
 
-    private Scheduler scheduler;
+    private InlinedScheduler scheduler;
     private SettableClock settableClock;
     private OneTimeTask<Void> oneTimeTask;
-    private JdbcTaskRepository jdbcTaskRepository;
 
     private TestTasks.CountingHandler<Void> onetimeTaskHandler;
     private ScheduleAnotherTaskHandler<Void> scheduleAnother;
@@ -40,22 +38,7 @@ public class SchedulerClientTest {
         scheduleAnother = new ScheduleAnotherTaskHandler<>(oneTimeTask.instance("secondTask"), settableClock.now().plusSeconds(1));
         scheduleAnotherTask = TestTasks.oneTime("ScheduleAnotherTask", Void.class, scheduleAnother);
 
-        TaskResolver taskResolver = new TaskResolver(oneTimeTask, scheduleAnotherTask);
-
-        jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
-
-        scheduler = new Scheduler(settableClock,
-                jdbcTaskRepository,
-                taskResolver,
-                1,
-                MoreExecutors.newDirectExecutorService(),
-                new SchedulerName.Fixed("test-scheduler"),
-                new Waiter(Duration.ZERO),
-                Duration.ofMinutes(1),
-                false,
-                StatsRegistry.NOOP,
-                new ArrayList<>());
-
+        scheduler = TestHelper.createInlinedScheduler(DB.getDataSource(), oneTimeTask, scheduleAnotherTask).clock(settableClock).start();
     }
 
     @Test
@@ -63,19 +46,19 @@ public class SchedulerClientTest {
         SchedulerClient client = SchedulerClient.Builder.create(DB.getDataSource()).build();
         client.schedule(oneTimeTask.instance("1"), settableClock.now());
 
-        scheduler.executeDue();
+        scheduler.runAnyDueExecutions();
         assertThat(onetimeTaskHandler.timesExecuted, CoreMatchers.is(1));
     }
 
     @Test
     public void should_be_able_to_schedule_other_executions_from_an_executionhandler() {
         scheduler.schedule(scheduleAnotherTask.instance("1"), settableClock.now());
-        scheduler.executeDue();
+        scheduler.runAnyDueExecutions();
         assertThat(scheduleAnother.timesExecuted, CoreMatchers.is(1));
         assertThat(onetimeTaskHandler.timesExecuted, CoreMatchers.is(0));
 
-        settableClock.set(settableClock.now().plusSeconds(1));
-        scheduler.executeDue();
+        scheduler.tick(ofSeconds(1));
+        scheduler.runAnyDueExecutions();
         assertThat(onetimeTaskHandler.timesExecuted, CoreMatchers.is(1));
     }
 
