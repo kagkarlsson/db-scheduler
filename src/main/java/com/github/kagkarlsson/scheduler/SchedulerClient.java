@@ -69,22 +69,22 @@ public interface SchedulerClient {
 
 		private static final Logger LOG = LoggerFactory.getLogger(StandardSchedulerClient.class);
 		protected final TaskRepository taskRepository;
-		private SchedulingEventListener schedulingEventListener;
+		private SchedulerClientEventListener schedulerClientEventListener;
 
 		StandardSchedulerClient(TaskRepository taskRepository) {
-			this(taskRepository, SchedulingEventListener.NOOP);
+			this(taskRepository, SchedulerClientEventListener.NOOP);
 		}
 
-		StandardSchedulerClient(TaskRepository taskRepository, SchedulingEventListener schedulingEventListener) {
+		StandardSchedulerClient(TaskRepository taskRepository, SchedulerClientEventListener schedulerClientEventListener) {
 			this.taskRepository = taskRepository;
-			this.schedulingEventListener = schedulingEventListener;
+			this.schedulerClientEventListener = schedulerClientEventListener;
 		}
 
 		@Override
 		public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
 			boolean success = taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
 			if (success) {
-				notifyListeners(SchedulingEvent.EventType.SCHEDULE, taskInstance, executionTime);
+				notifyListeners(ClientEvent.EventType.SCHEDULE, taskInstance, executionTime);
 			}
 		}
 
@@ -98,8 +98,10 @@ public interface SchedulerClient {
                     throw new RuntimeException(String.format("Could not reschedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
                 }
 
-				taskRepository.reschedule(execution.get(), newExecutionTime, null, null, 0);
-				notifyListeners(SchedulingEvent.EventType.RESCHEDULE, taskInstanceId, newExecutionTime);
+				boolean success = taskRepository.reschedule(execution.get(), newExecutionTime, null, null, 0);
+				if (success) {
+					notifyListeners(ClientEvent.EventType.RESCHEDULE, taskInstanceId, newExecutionTime);
+				}
 			} else {
 				throw new RuntimeException(String.format("Could not reschedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}
@@ -116,7 +118,7 @@ public interface SchedulerClient {
                 }
 
                 taskRepository.remove(execution.get());
-				notifyListeners(SchedulingEvent.EventType.CANCEL, taskInstanceId, execution.get().executionTime);
+				notifyListeners(ClientEvent.EventType.CANCEL, taskInstanceId, execution.get().executionTime);
 			} else {
 				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}
@@ -132,11 +134,11 @@ public interface SchedulerClient {
 			taskRepository.getScheduledExecutions(execution -> new ScheduledExecution<>(dataClass, execution));
 		}
 
-		private void notifyListeners(SchedulingEvent.EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {
+		private void notifyListeners(ClientEvent.EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {
 			try {
-				schedulingEventListener.newEvent(new SchedulingEvent(new SchedulingEvent.SchedulingEventContext(eventType, taskInstanceId, executionTime)));
+				schedulerClientEventListener.newEvent(new ClientEvent(new ClientEvent.ClientEventContext(eventType, taskInstanceId, executionTime)));
 			} catch (Exception e) {
-				LOG.error("Error when notifying SchedulingEventListener.", e);
+				LOG.error("Error when notifying SchedulerClientEventListener.", e);
 			}
 		}
 	}

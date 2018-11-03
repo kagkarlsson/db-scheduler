@@ -171,6 +171,7 @@
 							<exclude>LICENSE*</exclude>
 							<exclude>NOTICE</exclude>
 							<exclude>todo.txt</exclude>
+							<exclude>.java-version</exclude>
 							<exclude>src/main/notice/NOTICE.template</exclude>
 							<exclude>src/main/notice/license-mappings.xml</exclude>
 							<exclude>src/test/**</exclude>

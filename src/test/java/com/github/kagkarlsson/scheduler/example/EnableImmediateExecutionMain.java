@@ -40,7 +40,7 @@ public class EnableImmediateExecutionMain {
         scheduler.start();
 
         sleep(2);
-        System.out.println("Scheduling task to executed immetiately.");
+        System.out.println("Scheduling task to executed immediately.");
         scheduler.schedule(onetimeTask.instance("1"), Instant.now());
 //        scheduler.triggerCheckForDueExecutions();  // another option for triggering execution directly
     }

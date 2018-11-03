@@ -19,7 +19,7 @@ import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 
 import java.time.Instant;
 
-public class SchedulingEvent {
+public class ClientEvent {
 
     enum EventType {
         SCHEDULE,
@@ -27,22 +27,22 @@ public class SchedulingEvent {
         CANCEL
     }
 
-    private SchedulingEventContext ctx;
+    private ClientEventContext ctx;
 
-    public SchedulingEvent(SchedulingEventContext ctx) {
+    public ClientEvent(ClientEventContext ctx) {
         this.ctx = ctx;
     }
 
-    public SchedulingEventContext getContext() {
+    public ClientEventContext getContext() {
         return ctx;
     }
 
-    public static class SchedulingEventContext {
+    public static class ClientEventContext {
         private final EventType eventType;
         private final TaskInstanceId taskInstanceId;
         private final Instant executionTime;
 
-        public SchedulingEventContext(EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {
+        public ClientEventContext(EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {
             this.eventType = eventType;
             this.taskInstanceId = taskInstanceId;
             this.executionTime = executionTime;

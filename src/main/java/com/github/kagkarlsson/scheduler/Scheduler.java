@@ -83,7 +83,7 @@ public class Scheduler implements SchedulerClient {
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
 		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
 		executorsSemaphore = new Semaphore(maxThreads);
-		SchedulingEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulingEventListener.NOOP);
+		SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
 		delegate = new StandardSchedulerClient(taskRepository, earlyExecutionListener);
 	}
 
@@ -474,7 +474,7 @@ public class Scheduler implements SchedulerClient {
 	public static class NoAvailableExecutors extends RuntimeException {
 	}
 
-	private static class TriggerCheckForDueExecutions implements SchedulingEventListener {
+	private static class TriggerCheckForDueExecutions implements SchedulerClientEventListener {
 		private static final Logger LOG = LoggerFactory.getLogger(TriggerCheckForDueExecutions.class);
 		private SchedulerState schedulerState;
 		private Clock clock;
@@ -487,9 +487,9 @@ public class Scheduler implements SchedulerClient {
 		}
 
 		@Override
-		public void newEvent(SchedulingEvent event) {
-			SchedulingEvent.SchedulingEventContext ctx = event.getContext();
-			SchedulingEvent.EventType eventType = ctx.getEventType();
+		public void newEvent(ClientEvent event) {
+			ClientEvent.ClientEventContext ctx = event.getContext();
+			ClientEvent.EventType eventType = ctx.getEventType();
 
 			if (!schedulerState.isStarted() || schedulerState.isShuttingDown()) {
 				LOG.debug("Will not act on scheduling event for execution (task: '{}', id: '{}') as scheduler is starting or shutting down.",
@@ -497,7 +497,7 @@ public class Scheduler implements SchedulerClient {
 				return;
 			}
 
-			if (eventType == SchedulingEvent.EventType.SCHEDULE || eventType == SchedulingEvent.EventType.RESCHEDULE) {
+			if (eventType == ClientEvent.EventType.SCHEDULE || eventType == ClientEvent.EventType.RESCHEDULE) {
 
 				Instant scheduledToExecutionTime = ctx.getExecutionTime();
 				if (scheduledToExecutionTime.toEpochMilli() <= clock.now().toEpochMilli()) {
