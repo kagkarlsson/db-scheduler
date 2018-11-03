@@ -53,6 +53,7 @@ public class DeadExecutionsTest {
 				new SchedulerName.Fixed("test-scheduler"),
 				new Waiter(Duration.ZERO),
 				Duration.ofMinutes(1),
+				false,
 				StatsRegistry.NOOP,
 				new ArrayList<>());
 

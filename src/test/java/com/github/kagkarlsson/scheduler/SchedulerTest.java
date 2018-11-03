@@ -42,7 +42,7 @@ public class SchedulerTest {
 	private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
 		TaskResolver taskResolver = new TaskResolver(tasks);
 		JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
-		return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), StatsRegistry.NOOP, new ArrayList<>());
+		return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, StatsRegistry.NOOP, new ArrayList<>());
 	}
 
 	@Test
