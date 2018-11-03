@@ -15,15 +15,15 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-public interface SchedulingEventListener {
+public interface SchedulerClientEventListener {
 
-    void newEvent(SchedulingEvent event);
+    void newEvent(ClientEvent event);
 
 
-    SchedulingEventListener NOOP = new SchedulingEventListener() {
+    SchedulerClientEventListener NOOP = new SchedulerClientEventListener() {
 
         @Override
-        public void newEvent(SchedulingEvent event) {
+        public void newEvent(ClientEvent event) {
         }
     };
 }
