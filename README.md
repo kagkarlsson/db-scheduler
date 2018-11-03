@@ -136,6 +136,8 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 | `.schedulerName(SchedulerName)`  | hostname  | Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. |
 | `.tableName(String)`  | `scheduled_tasks` | Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. |
 | `.serializer(Serializer)`  | standard Java | Serializer implementation to use when serializing task data. |
+| `.enableImmediateExecution()`  | false | If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled to `now()`, or a time in the past. For this to work, the call to `schedule(..)` must not occur from within a transaction, because the record will not yet be visible to the scheduler (if this is a requirement, see the method `scheduler.triggerCheckForDueExecutions()`) |
+
 
 
 ### Task configuration
@@ -216,6 +218,7 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * New builders for task-creation, making it clearer what the config-options are. (See `Tasks` class and examples)
 * Better default for failure handling for one-time tasks 
 * Enables recurring tasks to have data
+* `Schedule.getNextExecutionTime` can now use all data from `ExecutionComplete`
 
 **Upgrading to 3.x**
 * No schema changes

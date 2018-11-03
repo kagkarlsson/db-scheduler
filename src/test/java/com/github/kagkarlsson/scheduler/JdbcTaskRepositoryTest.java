@@ -19,6 +19,7 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.Assert.*;
 
+@SuppressWarnings("unchecked")
 public class JdbcTaskRepositoryTest {
 
 	public static final String SCHEDULER_NAME = "scheduler1";

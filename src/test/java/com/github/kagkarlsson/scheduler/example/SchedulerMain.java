@@ -27,6 +27,7 @@ public class SchedulerMain {
 				.onFailureReschedule()   // default
 				.onDeadExecutionRevive() // default
 				.execute((taskInstance, executionContext) -> {
+					sleep(100);
 					System.out.println("Executing " + taskInstance.getTaskAndInstance());
 				});
 
@@ -36,6 +37,7 @@ public class SchedulerMain {
 				.onFailureReschedule()   // default
 				.onDeadExecutionRevive() // default
 				.execute((taskInstance, executionContext) -> {
+					sleep(100);
 					System.out.println("Executing " + taskInstance.getTaskAndInstance() + " , data: " + taskInstance.getData());
 				});
 
@@ -49,6 +51,7 @@ public class SchedulerMain {
 
 					System.out.println("Executing " + taskInstance.getTaskAndInstance() + " , data: " + taskInstance.getData());
 					return (executionComplete, executionOperations) -> {
+						sleep(100);
 						Instant nextExecutionTime = custom1Schedule.getNextExecutionTime(executionComplete);
 						int newData = taskInstance.getData() + 1;
 						executionOperations.reschedule(executionComplete, nextExecutionTime, newData);
@@ -60,6 +63,7 @@ public class SchedulerMain {
 				.onDeadExecutionRevive()  // default
 				.onFailureRetryLater()    // default
 				.execute((TaskInstance<Void> taskInstance, ExecutionContext executionContext) -> {
+					sleep(100);
 					System.out.println("Executing " + taskInstance.getTaskAndInstance());
 				});
 
@@ -67,6 +71,7 @@ public class SchedulerMain {
 		OneTimeTask<Integer> onetime2 = Tasks.oneTime("onetime_withdata", Integer.class)
 				.onFailureRetryLater()    // default
 				.execute((TaskInstance<Integer> taskInstance, ExecutionContext executionContext) -> {
+					sleep(100);
 					System.out.println("Executing " + taskInstance.getTaskAndInstance() + " , data: " + taskInstance.getData());
 				});
 
@@ -76,8 +81,6 @@ public class SchedulerMain {
 				.startTasks(recurring1, recurring2, custom1)
 				.build();
 
-		scheduler.schedule(onetime1.instance("onetime1"), Instant.now());
-		scheduler.schedule(onetime2.instance("onetime2", 100), Instant.now());
 
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
@@ -88,6 +91,20 @@ public class SchedulerMain {
 		});
 
 		scheduler.start();
+
+		sleep(3000);
+
+		scheduler.schedule(onetime1.instance("onetime1_directly"), Instant.now());
+		scheduler.schedule(onetime2.instance("onetime2", 100), Instant.now().plusSeconds(3));
+
+		scheduler.schedule(onetime2.instance("onetime3", 100), Instant.now());
+	}
+
+	private static void sleep(int ms) {
+		try {
+			Thread.sleep(ms);
+		} catch (InterruptedException e) {
+		}
 	}
 
 	public static void main(String[] args) throws Throwable {

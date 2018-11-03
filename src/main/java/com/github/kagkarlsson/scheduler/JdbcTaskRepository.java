@@ -155,16 +155,16 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public void reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
-		rescheduleInternal(execution, nextExecutionTime, null, lastSuccess, lastFailure, consecutiveFailures);
+	public boolean reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
+		return rescheduleInternal(execution, nextExecutionTime, null, lastSuccess, lastFailure, consecutiveFailures);
 	}
 
 	@Override
-	public void reschedule(Execution execution, Instant nextExecutionTime, Object newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
-		rescheduleInternal(execution, nextExecutionTime, new NewData(newData), lastSuccess, lastFailure, consecutiveFailures);
+	public boolean reschedule(Execution execution, Instant nextExecutionTime, Object newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
+		return rescheduleInternal(execution, nextExecutionTime, new NewData(newData), lastSuccess, lastFailure, consecutiveFailures);
 	}
 
-	private void rescheduleInternal(Execution execution, Instant nextExecutionTime, NewData newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
+	private boolean rescheduleInternal(Execution execution, Instant nextExecutionTime, NewData newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures) {
 		final int updated = jdbcRunner.execute(
 				"update " + tableName + " set " +
 						"picked = ?, " +
@@ -200,6 +200,7 @@ public class JdbcTaskRepository implements TaskRepository {
 		if (updated != 1) {
 			throw new RuntimeException("Expected one execution to be updated, but updated " + updated + ". Indicates a bug.");
 		}
+		return updated > 0;
 	}
 
 	@Override

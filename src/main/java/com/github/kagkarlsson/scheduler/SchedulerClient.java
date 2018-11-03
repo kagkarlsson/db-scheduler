@@ -18,6 +18,8 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Instant;
@@ -65,15 +67,25 @@ public interface SchedulerClient {
 
 	class StandardSchedulerClient implements SchedulerClient {
 
+		private static final Logger LOG = LoggerFactory.getLogger(StandardSchedulerClient.class);
 		protected final TaskRepository taskRepository;
-		
+		private SchedulerClientEventListener schedulerClientEventListener;
+
 		StandardSchedulerClient(TaskRepository taskRepository) {
-			this.taskRepository = taskRepository;
+			this(taskRepository, SchedulerClientEventListener.NOOP);
 		}
-		
+
+		StandardSchedulerClient(TaskRepository taskRepository, SchedulerClientEventListener schedulerClientEventListener) {
+			this.taskRepository = taskRepository;
+			this.schedulerClientEventListener = schedulerClientEventListener;
+		}
+
 		@Override
 		public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
-			taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
+			boolean success = taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
+			if (success) {
+				notifyListeners(ClientEvent.EventType.SCHEDULE, taskInstance, executionTime);
+			}
 		}
 
 		@Override
@@ -86,7 +98,10 @@ public interface SchedulerClient {
                     throw new RuntimeException(String.format("Could not reschedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
                 }
 
-				taskRepository.reschedule(execution.get(), newExecutionTime, null, null, 0);
+				boolean success = taskRepository.reschedule(execution.get(), newExecutionTime, null, null, 0);
+				if (success) {
+					notifyListeners(ClientEvent.EventType.RESCHEDULE, taskInstanceId, newExecutionTime);
+				}
 			} else {
 				throw new RuntimeException(String.format("Could not reschedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}
@@ -103,6 +118,7 @@ public interface SchedulerClient {
                 }
 
                 taskRepository.remove(execution.get());
+				notifyListeners(ClientEvent.EventType.CANCEL, taskInstanceId, execution.get().executionTime);
 			} else {
 				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}
@@ -117,7 +133,16 @@ public interface SchedulerClient {
 		public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
 			taskRepository.getScheduledExecutions(execution -> new ScheduledExecution<>(dataClass, execution));
 		}
+
+		private void notifyListeners(ClientEvent.EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {
+			try {
+				schedulerClientEventListener.newEvent(new ClientEvent(new ClientEvent.ClientEventContext(eventType, taskInstanceId, executionTime)));
+			} catch (Exception e) {
+				LOG.error("Error when notifying SchedulerClientEventListener.", e);
+			}
+		}
 	}
+
 	
 	class SchedulerClientName implements SchedulerName {
 		@Override

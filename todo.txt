@@ -1,10 +1,12 @@
 
 future development
 
+- proper async test for when you enableImmediateExecution
+
+- move getFailingExecutions(Duration failingAtLeastFor) into client
+
 - optimize scheduler to look an interval forward in time, and trigger next cycle earlier if there are an immediate execution
   - keep a list if executions due between now and next interval
-
-- customizable table-name
 
 - redesign api so that an ad-hoc task can be scheduled without having a reference to the Task-object
 
@@ -14,10 +16,5 @@ future development
 
 - only update heartbeats if execution older than one heartbeat interval/cycles
 
-
-far future
-- support transactional taskRepositories
-   - so far, jdbctaskrepository requires TransactionAwareDataSource for reliable scheduling of new tasks in transaction
 - cron schedule? (separate artifact if dependencies)
    - https://github.com/jmrozanec/cron-utils
-

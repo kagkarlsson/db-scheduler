@@ -15,34 +15,15 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-public interface SchedulerState {
+public interface SchedulerClientEventListener {
 
-	boolean isShuttingDown();
+    void newEvent(ClientEvent event);
 
-	boolean isStarted();
 
-	class SettableSchedulerState implements SchedulerState {
+    SchedulerClientEventListener NOOP = new SchedulerClientEventListener() {
 
-		private boolean isShuttingDown;
-		private boolean isStarted;
-
-		@Override
-		public boolean isShuttingDown() {
-			return isShuttingDown;
-		}
-
-		@Override
-		public boolean isStarted() {
-			return isStarted;
-		}
-
-		public void setIsShuttingDown() {
-			this.isShuttingDown = true;
-		}
-
-		public void setStarted() {
-			this.isStarted = true;
-		}
-	}
-
+        @Override
+        public void newEvent(ClientEvent event) {
+        }
+    };
 }

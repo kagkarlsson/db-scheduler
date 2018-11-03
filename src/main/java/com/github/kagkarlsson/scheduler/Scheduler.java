@@ -43,7 +43,8 @@ public class Scheduler implements SchedulerClient {
 	private final TaskRepository taskRepository;
 	private final TaskResolver taskResolver;
 	private final ExecutorService executorService;
-	private final Waiter waiter;
+	private final Waiter executeDueWaiter;
+	private boolean enableImmediateExecution;
 	private final List<OnStartup> onStartup;
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
@@ -57,8 +58,8 @@ public class Scheduler implements SchedulerClient {
 	final Semaphore executorsSemaphore;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
-			  Waiter waiter, Duration updateHeartbeatWaiter, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
-		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, waiter, updateHeartbeatWaiter, statsRegistry, onStartup);
+			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, statsRegistry, onStartup);
 	}
 
 	private static ExecutorService defaultExecutorService(int maxThreads) {
@@ -66,22 +67,24 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
-			  Waiter waiter, Duration heartbeatInterval, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.taskResolver = taskResolver;
 		this.executorService = executorService;
-		this.waiter = waiter;
+		this.executeDueWaiter = executeDueWaiter;
+		this.enableImmediateExecution = enableImmediateExecution;
 		this.onStartup = onStartup;
-		this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2));
+		this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
 		this.heartbeatInterval = heartbeatInterval;
-		this.heartbeatWaiter = new Waiter(heartbeatInterval);
+		this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
 		this.statsRegistry = statsRegistry;
 		this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
 		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
 		executorsSemaphore = new Semaphore(maxThreads);
-		delegate = new StandardSchedulerClient(taskRepository);
+		SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
+		delegate = new StandardSchedulerClient(taskRepository, earlyExecutionListener);
 	}
 
 	public void start() {
@@ -89,9 +92,11 @@ public class Scheduler implements SchedulerClient {
 
 		executeOnStartup(onStartup);
 
-		dueExecutor.submit(new RunUntilShutdown(this::executeDue, waiter, schedulerState, statsRegistry));
+		dueExecutor.submit(new RunUntilShutdown(this::executeDue, executeDueWaiter, schedulerState, statsRegistry));
 		detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter, schedulerState, statsRegistry));
 		updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter, schedulerState, statsRegistry));
+
+		schedulerState.setStarted();
 	}
 
 	private void executeOnStartup(List<OnStartup> onStartup) {
@@ -158,12 +163,16 @@ public class Scheduler implements SchedulerClient {
 		this.delegate.getScheduledExecutionsForTask(taskName, dataClass, consumer);
 	}
 
-	public List<CurrentlyExecuting> getCurrentlyExecuting() {
-		return new ArrayList<>(currentlyProcessing.values());
-	}
-
 	public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {
 		return taskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
+	}
+
+	public void triggerCheckForDueExecutions() {
+		executeDueWaiter.wake();
+	}
+
+	public List<CurrentlyExecuting> getCurrentlyExecuting() {
+		return new ArrayList<>(currentlyProcessing.values());
 	}
 
 	void executeDue() {
@@ -383,16 +392,19 @@ public class Scheduler implements SchedulerClient {
 
 	public static class Builder {
 
+		private Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
+
 		private final DataSource dataSource;
 		private SchedulerName schedulerName = new SchedulerName.Hostname();
 		private int executorThreads = 10;
 		private final List<Task<?>> knownTasks = new ArrayList<>();
 		private final List<OnStartup> startTasks = new ArrayList<>();
-		private Waiter waiter = new Waiter(Duration.ofSeconds(10));
+		private Waiter waiter = new Waiter(Duration.ofSeconds(10), clock);
 		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		private Duration heartbeatInterval = Duration.ofMinutes(5);
 		private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
 		private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
+		private boolean enableImmediateExecution = false;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
@@ -411,7 +423,7 @@ public class Scheduler implements SchedulerClient {
 		}
 
 		public Builder pollingInterval(Duration pollingInterval) {
-			waiter = new Waiter(pollingInterval);
+			waiter = new Waiter(pollingInterval, clock);
 			return this;
 		}
 
@@ -445,15 +457,55 @@ public class Scheduler implements SchedulerClient {
 			return this;
 		}
 
+		public Builder enableImmediateExecution() {
+			this.enableImmediateExecution = true;
+			return this;
+		}
+
 		public Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
-			return new Scheduler(new SystemClock(), taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, statsRegistry, startTasks);
+			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, startTasks);
 		}
 	}
 
 
 	public static class NoAvailableExecutors extends RuntimeException {
+	}
+
+	private static class TriggerCheckForDueExecutions implements SchedulerClientEventListener {
+		private static final Logger LOG = LoggerFactory.getLogger(TriggerCheckForDueExecutions.class);
+		private SchedulerState schedulerState;
+		private Clock clock;
+		private Waiter executeDueWaiter;
+
+		public TriggerCheckForDueExecutions(SchedulerState schedulerState, Clock clock, Waiter executeDueWaiter) {
+			this.schedulerState = schedulerState;
+			this.clock = clock;
+			this.executeDueWaiter = executeDueWaiter;
+		}
+
+		@Override
+		public void newEvent(ClientEvent event) {
+			ClientEvent.ClientEventContext ctx = event.getContext();
+			ClientEvent.EventType eventType = ctx.getEventType();
+
+			if (!schedulerState.isStarted() || schedulerState.isShuttingDown()) {
+				LOG.debug("Will not act on scheduling event for execution (task: '{}', id: '{}') as scheduler is starting or shutting down.",
+						ctx.getTaskInstanceId().getTaskName(), ctx.getTaskInstanceId().getId());
+				return;
+			}
+
+			if (eventType == ClientEvent.EventType.SCHEDULE || eventType == ClientEvent.EventType.RESCHEDULE) {
+
+				Instant scheduledToExecutionTime = ctx.getExecutionTime();
+				if (scheduledToExecutionTime.toEpochMilli() <= clock.now().toEpochMilli()) {
+					LOG.info("Task-instance scheduled to run directly, triggering check for due exections (unless it is already running). Task: {}, instance: {}",
+							ctx.getTaskInstanceId().getTaskName(), ctx.getTaskInstanceId().getId());
+					executeDueWaiter.wake();
+				}
+			}
+		}
 	}
 }

@@ -31,8 +31,8 @@ public interface TaskRepository {
 	void getScheduledExecutions(String taskName, Consumer<Execution> consumer);
 
 	void remove(Execution execution);
-	void reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure, int consecutiveFailures);
-	void reschedule(Execution execution, Instant nextExecutionTime, Object newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures);
+	boolean reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure, int consecutiveFailures);
+	boolean reschedule(Execution execution, Instant nextExecutionTime, Object newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures);
 
 	Optional<Execution> pick(Execution e, Instant timePicked);
 
