@@ -40,6 +40,7 @@ public class ScheduledExecution<DATA_TYPE> {
         return execution.getExecutionTime();
     }
 
+    @SuppressWarnings("unchecked")
     public DATA_TYPE getData() {
         if (dataClass.isInstance(this.execution.taskInstance.getData())) {
             return (DATA_TYPE) this.execution.taskInstance.getData();

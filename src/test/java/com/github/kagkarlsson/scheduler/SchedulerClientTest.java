@@ -1,7 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.helper.InlinedScheduler;
-import com.github.kagkarlsson.scheduler.helper.TestHelper;
+import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
+import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
+import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import com.github.kagkarlsson.scheduler.task.helper.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -21,7 +22,7 @@ public class SchedulerClientTest {
     @Rule
     public HsqlTestDatabaseRule DB = new HsqlTestDatabaseRule();
 
-    private InlinedScheduler scheduler;
+    private ManualScheduler scheduler;
     private SettableClock settableClock;
     private OneTimeTask<Void> oneTimeTask;
 
@@ -38,7 +39,7 @@ public class SchedulerClientTest {
         scheduleAnother = new ScheduleAnotherTaskHandler<>(oneTimeTask.instance("secondTask"), settableClock.now().plusSeconds(1));
         scheduleAnotherTask = TestTasks.oneTime("ScheduleAnotherTask", Void.class, scheduleAnother);
 
-        scheduler = TestHelper.createInlinedScheduler(DB.getDataSource(), oneTimeTask, scheduleAnotherTask).clock(settableClock).start();
+        scheduler = TestHelper.createManualScheduler(DB.getDataSource(), oneTimeTask, scheduleAnotherTask).clock(settableClock).start();
     }
 
     @Test
