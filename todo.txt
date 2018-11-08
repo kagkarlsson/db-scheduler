@@ -1,6 +1,8 @@
 
 Todo?
 ---------------
+- implement a Optional<ScheduledExecution> SchedulerClient.get(taskInstance) method for getting a single executions
+
 - double check DeadExecutionsTest is working properly
 
 - proper async test for when you enableImmediateExecution
