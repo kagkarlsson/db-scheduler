@@ -45,7 +45,7 @@ public class Scheduler implements SchedulerClient {
 	private final ExecutorService executorService;
 	private final Waiter executeDueWaiter;
 	private boolean enableImmediateExecution;
-	private final List<OnStartup> onStartup;
+	protected final List<OnStartup> onStartup;
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
 	private final StatsRegistry statsRegistry;
@@ -66,7 +66,7 @@ public class Scheduler implements SchedulerClient {
 		return Executors.newFixedThreadPool(maxThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
 	}
 
-	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
+	protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
 			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
@@ -90,7 +90,7 @@ public class Scheduler implements SchedulerClient {
 	public void start() {
 		LOG.info("Starting scheduler");
 
-		executeOnStartup(onStartup);
+		executeOnStartup();
 
 		dueExecutor.submit(new RunUntilShutdown(this::executeDue, executeDueWaiter, schedulerState, statsRegistry));
 		detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter, schedulerState, statsRegistry));
@@ -99,7 +99,7 @@ public class Scheduler implements SchedulerClient {
 		schedulerState.setStarted();
 	}
 
-	private void executeOnStartup(List<OnStartup> onStartup) {
+	protected void executeOnStartup() {
 		onStartup.forEach(os -> {
 			try {
 				os.onStartup(this);
@@ -175,7 +175,7 @@ public class Scheduler implements SchedulerClient {
 		return new ArrayList<>(currentlyProcessing.values());
 	}
 
-	void executeDue() {
+	protected void executeDue() {
 		if (executorsSemaphore.availablePermits() <= 0) {
 			return;
 		}
@@ -240,7 +240,7 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	@SuppressWarnings({"rawtypes","unchecked"})
-	void detectDeadExecutions() {
+	protected void detectDeadExecutions() {
 		LOG.debug("Checking for dead executions.");
 		Instant now = clock.now();
 		final Instant oldAgeLimit = now.minus(getMaxAgeBeforeConsideredDead());
@@ -391,20 +391,19 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	public static class Builder {
+		protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
 
-		private Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
-
-		private final DataSource dataSource;
-		private SchedulerName schedulerName = new SchedulerName.Hostname();
-		private int executorThreads = 10;
-		private final List<Task<?>> knownTasks = new ArrayList<>();
-		private final List<OnStartup> startTasks = new ArrayList<>();
-		private Waiter waiter = new Waiter(Duration.ofSeconds(10), clock);
-		private StatsRegistry statsRegistry = StatsRegistry.NOOP;
-		private Duration heartbeatInterval = Duration.ofMinutes(5);
-		private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
-		private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
-		private boolean enableImmediateExecution = false;
+		protected final DataSource dataSource;
+		protected SchedulerName schedulerName = new SchedulerName.Hostname();
+		protected int executorThreads = 10;
+		protected final List<Task<?>> knownTasks = new ArrayList<>();
+		protected final List<OnStartup> startTasks = new ArrayList<>();
+		protected Waiter waiter = new Waiter(Duration.ofSeconds(10), clock);
+		protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
+		protected Duration heartbeatInterval = Duration.ofMinutes(5);
+		protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+		protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
+		protected boolean enableImmediateExecution = false;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
