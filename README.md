@@ -195,9 +195,16 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 * The methods on `SchedulerClient` (`schedule`, `cancel`, `reschedule`) and the `CompletionHandler` will run using a new `Connection`from the `DataSource`provided. To have the action be a part of a transaction, it must be taken care of by the `DataSource`provided, for example using something like Spring's `TransactionAwareDataSourceProxy`.
 
-* Currently, the precision of db-scheduler is depending on the `pollingInterval` (default 10s) which specifies how often to look in the table for due executions.
+* Currently, the precision of db-scheduler is depending on the `pollingInterval` (default 10s) which specifies how often to look in the table for due executions. If you know what you are doing, the scheduler may be instructed at runtime to "look early" via `scheduler.triggerCheckForDueExecutions()`. (See also `enableImmediateExecution()` on the `Builder`)
+
 
 ## Versions / upgrading
+
+### Version 4.1
+* Helper for using a version of the scheduler in unit/integration tests is now available in the artifact, through the class `TestHelper.createManualScheduler(...)`. For usage example see `SchedulerClientTest`.
+* It is now possible to manually trigger a check for due executions in the database. Of course, if this is done too frequently there will be an increased overhead.
+* The scheduler can be instructed to do a best-effort attempt at executing executions it sees is being scheduled to run `now()` or earlier through the builder-method `enableImmediateExecution()`.
+* Bugfix: `scheduler.getScheduledExecutionsForTask(...)` was not working properly
 
 ### Version 4.0
 * Track number of consecutive failures of a task. For use in `FailureHandler` to avoid retrying forever, or retry with back-off. 
