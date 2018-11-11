@@ -7,8 +7,23 @@ import org.junit.Test;
 import java.time.Instant;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class ScheduledExecutionTest {
+
+    @Test
+    public void test_equals() {
+        Instant now = Instant.now();
+        assertEquals(createExecution("task", "1", now), createExecution("task", "1", now));
+        assertNotEquals(createExecution("task", "1", now), createExecution("task2", "1", now));
+        assertNotEquals(createExecution("task", "1", now), createExecution("task", "2", now));
+        assertNotEquals(createExecution("task", "1", now), createExecution("task", "1", now.plusSeconds(1)));
+    }
+
+    private ScheduledExecution<Void> createExecution(String taskname, String id, Instant executionTime) {
+        OneTimeTask<Integer> task = TestTasks.oneTime(taskname, Integer.class, (instance, executionContext) -> {});
+        return new ScheduledExecution<Void>(Void.class, new Execution(executionTime, task.instance(id)));
+    }
 
     @Test
     public void test_data_class_type_equals() {
