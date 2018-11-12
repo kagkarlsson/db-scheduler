@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -41,6 +40,8 @@ public interface SchedulerClient {
 	void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
 
 	<T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
+
+	<T> Optional<ScheduledExecution<T>> getScheduledExecution(TaskInstanceId taskInstance, Class<T> dataClass);
 
 	class Builder {
 
@@ -132,6 +133,12 @@ public interface SchedulerClient {
 			} else {
 				throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
 			}
+		}
+
+		@Override
+		public <T> Optional<ScheduledExecution<T>> getScheduledExecution(TaskInstanceId taskInstance, Class<T> dataClass) {
+			Optional<Execution> execution = taskRepository.getExecution(taskInstance);
+			return execution.map(e -> new ScheduledExecution<T>(dataClass, e));
 		}
 
 		@Override

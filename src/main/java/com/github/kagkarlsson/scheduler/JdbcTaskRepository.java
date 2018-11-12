@@ -21,6 +21,7 @@ import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,7 +289,8 @@ public class JdbcTaskRepository implements TaskRepository {
 		);
 	}
 
-	public Optional<Execution> getExecution(TaskInstance taskInstance) {
+	@Override
+	public Optional<Execution> getExecution(TaskInstanceId taskInstance) {
 		return getExecution(taskInstance.getTaskName(), taskInstance.getId());
 	}
 

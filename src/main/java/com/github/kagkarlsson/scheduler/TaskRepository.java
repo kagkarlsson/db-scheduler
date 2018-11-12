@@ -16,6 +16,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -42,5 +43,7 @@ public interface TaskRepository {
 
 	List<Execution> getExecutionsFailingLongerThan(Duration interval);
 
+	Optional<Execution> getExecution(TaskInstanceId taskInstance);
 	Optional<Execution> getExecution(String taskName, String taskInstanceId);
+
 }

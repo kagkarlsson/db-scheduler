@@ -154,6 +154,11 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	@Override
+	public <T> Optional<ScheduledExecution<T>> getScheduledExecution(TaskInstanceId taskInstance, Class<T> dataClass) {
+		return delegate.getScheduledExecution(taskInstance, dataClass);
+	}
+
+	@Override
 	public void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
 		this.delegate.getScheduledExecutions(consumer);
 	}
