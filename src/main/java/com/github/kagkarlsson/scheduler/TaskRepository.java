@@ -44,6 +44,5 @@ public interface TaskRepository {
 	List<Execution> getExecutionsFailingLongerThan(Duration interval);
 
 	Optional<Execution> getExecution(TaskInstanceId taskInstance);
-	Optional<Execution> getExecution(String taskName, String taskInstanceId);
 
 }

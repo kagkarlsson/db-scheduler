@@ -103,7 +103,7 @@ public interface SchedulerClient {
 		public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
 			String taskName = taskInstanceId.getTaskName();
 			String instanceId = taskInstanceId.getId();
-			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
+			Optional<Execution> execution = taskRepository.getExecution(taskInstanceId);
 			if(execution.isPresent()) {
 			    if(execution.get().isPicked()) {
                     throw new RuntimeException(String.format("Could not reschedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
@@ -122,7 +122,7 @@ public interface SchedulerClient {
 		public void cancel(TaskInstanceId taskInstanceId) {
 			String taskName = taskInstanceId.getTaskName();
 			String instanceId = taskInstanceId.getId();
-			Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
+			Optional<Execution> execution = taskRepository.getExecution(taskInstanceId);
 			if(execution.isPresent()) {
                 if(execution.get().isPicked()) {
                     throw new RuntimeException(String.format("Could not cancel schedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));

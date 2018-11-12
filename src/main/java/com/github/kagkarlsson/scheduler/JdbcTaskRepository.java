@@ -291,20 +291,16 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public Optional<Execution> getExecution(TaskInstanceId taskInstance) {
-		return getExecution(taskInstance.getTaskName(), taskInstance.getId());
-	}
-
-	public Optional<Execution> getExecution(String taskName, String taskInstanceId) {
 		final List<Execution> executions = jdbcRunner.query(
 				"select * from " + tableName + " where task_name = ? and task_instance = ?",
 				(PreparedStatement p) -> {
-					p.setString(1, taskName);
-					p.setString(2, taskInstanceId);
+					p.setString(1, taskInstance.getTaskName());
+					p.setString(2, taskInstance.getId());
 				},
 				new ExecutionResultSetMapper()
 		);
 		if (executions.size() > 1) {
-			throw new RuntimeException(String.format("Found more than one matching execution for task name/id combination: '%s'/'%s'", taskName, taskInstanceId));
+			throw new RuntimeException(String.format("Found more than one matching execution for task name/id combination: '%s'/'%s'", taskInstance.getTaskName(), taskInstance.getId()));
 		}
 
 		return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.empty();
