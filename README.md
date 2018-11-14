@@ -6,6 +6,8 @@
 
 Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
 
+See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
+
 ## Features
 
 * **Cluster-friendly**. Guarantees execution by single scheduler instance.
