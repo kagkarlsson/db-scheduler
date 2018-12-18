@@ -45,6 +45,7 @@ public class Scheduler implements SchedulerClient {
 	private final ExecutorService executorService;
 	private final Waiter executeDueWaiter;
 	private boolean enableImmediateExecution;
+	private final boolean pollAfterCompletion;
 	protected final List<OnStartup> onStartup;
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
@@ -58,8 +59,8 @@ public class Scheduler implements SchedulerClient {
 	final Semaphore executorsSemaphore;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
-			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
-		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, statsRegistry, onStartup);
+			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, boolean pollAfterCompletion, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, pollAfterCompletion, statsRegistry, onStartup);
 	}
 
 	private static ExecutorService defaultExecutorService(int maxThreads) {
@@ -67,13 +68,14 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
-			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, boolean pollAfterCompletion, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.taskResolver = taskResolver;
 		this.executorService = executorService;
 		this.executeDueWaiter = executeDueWaiter;
 		this.enableImmediateExecution = enableImmediateExecution;
+		this.pollAfterCompletion = pollAfterCompletion;
 		this.onStartup = onStartup;
 		this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
 		this.heartbeatInterval = heartbeatInterval;
@@ -236,6 +238,10 @@ public class Scheduler implements SchedulerClient {
 		if (currentlyProcessing.remove(execution) == null) {
 			LOG.error("Released execution was not found in collection of executions currently being processed. Should never happen.");
 			statsRegistry.registerUnexpectedError();
+		}
+
+		if(pollAfterCompletion && currentlyProcessing.isEmpty()) {
+			triggerCheckForDueExecutions();
 		}
 	}
 
@@ -404,6 +410,7 @@ public class Scheduler implements SchedulerClient {
 		protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
 		protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 		protected boolean enableImmediateExecution = false;
+		protected boolean pollAfterCompletion = false;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
@@ -461,11 +468,16 @@ public class Scheduler implements SchedulerClient {
 			return this;
 		}
 
+		public Builder pollAfterCompletion(boolean pollAfterCompletion) {
+			this.pollAfterCompletion = pollAfterCompletion;
+			return this;
+		}
+
 		public Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
-			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, startTasks);
+			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, enableImmediateExecution, pollAfterCompletion, statsRegistry, startTasks);
 		}
 	}
 
