@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 
 public class DeadExecutionsTest {
 
+	private static final int POLLING_LIMIT = 10_000;
+
 	@Rule
 	public HsqlTestDatabaseRule DB = new HsqlTestDatabaseRule();
 
@@ -56,6 +58,7 @@ public class DeadExecutionsTest {
 				Duration.ofMinutes(1),
 				false,
 				StatsRegistry.NOOP,
+				POLLING_LIMIT,
 				new ArrayList<>());
 
 	}
@@ -68,7 +71,7 @@ public class DeadExecutionsTest {
 		final Execution execution1 = new Execution(now.minus(Duration.ofDays(1)), taskInstance);
 		jdbcTaskRepository.createIfNotExists(execution1);
 
-		final List<Execution> due = jdbcTaskRepository.getDue(now);
+		final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
 		assertThat(due, Matchers.hasSize(1));
 		final Execution execution = due.get(0);
 		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(execution, now);
@@ -81,7 +84,7 @@ public class DeadExecutionsTest {
 		assertThat(rescheduled.get().picked, is(false));
 		assertThat(rescheduled.get().pickedBy, nullValue());
 
-		assertThat(jdbcTaskRepository.getDue(Instant.now()), hasSize(1));
+		assertThat(jdbcTaskRepository.getDue(Instant.now(), POLLING_LIMIT), hasSize(1));
 	}
 
 	@Test
