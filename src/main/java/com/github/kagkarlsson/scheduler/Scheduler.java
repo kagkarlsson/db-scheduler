@@ -393,6 +393,8 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	public static class Builder {
+		private static final int POLLING_CONCURRENCY_MULTIPLIER = 3;
+
 		protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
 
 		protected final DataSource dataSource;
@@ -401,7 +403,8 @@ public class Scheduler implements SchedulerClient {
 		protected final List<Task<?>> knownTasks = new ArrayList<>();
 		protected final List<OnStartup> startTasks = new ArrayList<>();
 		protected Waiter waiter = new Waiter(Duration.ofSeconds(10), clock);
-		protected int pollingLimit = 10_000;
+		protected int pollingLimit;
+		protected boolean useDefaultPollingLimit;
 		protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		protected Duration heartbeatInterval = Duration.ofMinutes(5);
 		protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
@@ -411,6 +414,7 @@ public class Scheduler implements SchedulerClient {
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
 			this.knownTasks.addAll(knownTasks);
+			defaultPollingLimit();
 		}
 
 		@SafeVarargs
@@ -434,7 +438,18 @@ public class Scheduler implements SchedulerClient {
 				throw new IllegalArgumentException("pollingLimit must be a positive integer");
 			}
 			this.pollingLimit = pollingLimit;
+			this.useDefaultPollingLimit = false;
 			return this;
+		}
+
+		public Builder defaultPollingLimit() {
+			this.pollingLimit = calculatePollingLimit();
+			this.useDefaultPollingLimit = true;
+			return this;
+		}
+
+		private int calculatePollingLimit() {
+			return executorThreads * POLLING_CONCURRENCY_MULTIPLIER;
 		}
 
 		public Builder heartbeatInterval(Duration duration) {
@@ -444,6 +459,9 @@ public class Scheduler implements SchedulerClient {
 
 		public Builder threads(int numberOfThreads) {
 			this.executorThreads = numberOfThreads;
+			if(useDefaultPollingLimit) {
+				this.pollingLimit = calculatePollingLimit();
+			}
 			return this;
 		}
 
