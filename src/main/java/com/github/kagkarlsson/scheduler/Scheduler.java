@@ -414,7 +414,8 @@ public class Scheduler implements SchedulerClient {
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
 			this.knownTasks.addAll(knownTasks);
-			defaultPollingLimit();
+			this.pollingLimit = calculatePollingLimit();
+			this.useDefaultPollingLimit = true;
 		}
 
 		@SafeVarargs
@@ -439,12 +440,6 @@ public class Scheduler implements SchedulerClient {
 			}
 			this.pollingLimit = pollingLimit;
 			this.useDefaultPollingLimit = false;
-			return this;
-		}
-
-		public Builder defaultPollingLimit() {
-			this.pollingLimit = calculatePollingLimit();
-			this.useDefaultPollingLimit = true;
 			return this;
 		}
 
