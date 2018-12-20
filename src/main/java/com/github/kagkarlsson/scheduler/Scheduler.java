@@ -410,7 +410,7 @@ public class Scheduler implements SchedulerClient {
 		protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
 		protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 		protected boolean enableImmediateExecution = false;
-		protected boolean pollAfterCompletion = false;
+		protected boolean pollAfterCompletion = true;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
