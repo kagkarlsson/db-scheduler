@@ -240,7 +240,7 @@ public class Scheduler implements SchedulerClient {
 			statsRegistry.registerUnexpectedError();
 		}
 
-		if(pollAfterCompletion && currentlyProcessing.isEmpty()) {
+		if(pollAfterCompletion) {
 			triggerCheckForDueExecutions();
 		}
 	}
