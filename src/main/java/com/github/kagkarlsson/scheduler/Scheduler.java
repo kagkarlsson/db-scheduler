@@ -46,6 +46,7 @@ public class Scheduler implements SchedulerClient {
 	private final Waiter executeDueWaiter;
 	private boolean enableImmediateExecution;
 	private final boolean pollAfterCompletion;
+	private boolean lastPollAcquiredAllExecutors;
 	protected final List<OnStartup> onStartup;
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
@@ -185,11 +186,13 @@ public class Scheduler implements SchedulerClient {
 		Instant now = clock.now();
 		List<Execution> dueExecutions = taskRepository.getDue(now);
 
-		int count = 0;
+		int pickedExecutionCount = 0;
+		int availableExecutorCount = executorsSemaphore.availablePermits();
+		lastPollAcquiredAllExecutors = false;
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 		for (Execution e : dueExecutions) {
 			if (schedulerState.isShuttingDown()) {
-				LOG.info("Scheduler has been shutdown. Skipping {} due executions.", dueExecutions.size() - count);
+				LOG.info("Scheduler has been shutdown. Skipping {} due executions.", dueExecutions.size() - pickedExecutionCount);
 				return;
 			}
 
@@ -197,7 +200,8 @@ public class Scheduler implements SchedulerClient {
 			try {
 				pickedExecution = aquireExecutorAndPickExecution(e);
 			} catch (NoAvailableExecutors ex) {
-				LOG.debug("No available executors. Skipping {} due executions.", dueExecutions.size() - count);
+				LOG.debug("No available executors. Skipping {} due executions.", dueExecutions.size() - pickedExecutionCount);
+				lastPollAcquiredAllExecutors = true;
 				return;
 			}
 
@@ -208,8 +212,10 @@ public class Scheduler implements SchedulerClient {
 			} else {
 				LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
 			}
-			count++;
+			pickedExecutionCount++;
 		}
+
+		lastPollAcquiredAllExecutors = pickedExecutionCount >= availableExecutorCount;
 	}
 
 	private Optional<Execution> aquireExecutorAndPickExecution(Execution execution) {
@@ -240,7 +246,7 @@ public class Scheduler implements SchedulerClient {
 			statsRegistry.registerUnexpectedError();
 		}
 
-		if(pollAfterCompletion) {
+		if(pollAfterCompletion && lastPollAcquiredAllExecutors) {
 			triggerCheckForDueExecutions();
 		}
 	}
