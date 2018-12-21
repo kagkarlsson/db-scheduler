@@ -46,7 +46,7 @@ public class Scheduler implements SchedulerClient {
 	private final Waiter executeDueWaiter;
 	private boolean enableImmediateExecution;
 	private final boolean pollAfterCompletion;
-	private boolean lastPollAcquiredAllExecutors;
+	private boolean lastPollAcquiredAllAvailableExecutors;
 	protected final List<OnStartup> onStartup;
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
@@ -188,7 +188,7 @@ public class Scheduler implements SchedulerClient {
 
 		int pickedExecutionCount = 0;
 		int availableExecutorCount = executorsSemaphore.availablePermits();
-		lastPollAcquiredAllExecutors = false;
+		lastPollAcquiredAllAvailableExecutors = false;
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 		for (Execution e : dueExecutions) {
 			if (schedulerState.isShuttingDown()) {
@@ -201,7 +201,7 @@ public class Scheduler implements SchedulerClient {
 				pickedExecution = aquireExecutorAndPickExecution(e);
 			} catch (NoAvailableExecutors ex) {
 				LOG.debug("No available executors. Skipping {} due executions.", dueExecutions.size() - pickedExecutionCount);
-				lastPollAcquiredAllExecutors = true;
+				lastPollAcquiredAllAvailableExecutors = true;
 				return;
 			}
 
@@ -215,7 +215,7 @@ public class Scheduler implements SchedulerClient {
 			pickedExecutionCount++;
 		}
 
-		lastPollAcquiredAllExecutors = pickedExecutionCount >= availableExecutorCount;
+		lastPollAcquiredAllAvailableExecutors = pickedExecutionCount >= availableExecutorCount;
 	}
 
 	private Optional<Execution> aquireExecutorAndPickExecution(Execution execution) {
@@ -246,7 +246,7 @@ public class Scheduler implements SchedulerClient {
 			statsRegistry.registerUnexpectedError();
 		}
 
-		if (pollAfterCompletion && lastPollAcquiredAllExecutors) {
+		if (pollAfterCompletion && lastPollAcquiredAllAvailableExecutors) {
 			triggerCheckForDueExecutions();
 		}
 	}
