@@ -246,7 +246,7 @@ public class Scheduler implements SchedulerClient {
 			statsRegistry.registerUnexpectedError();
 		}
 
-		if(pollAfterCompletion && lastPollAcquiredAllExecutors) {
+		if (pollAfterCompletion && lastPollAcquiredAllExecutors) {
 			triggerCheckForDueExecutions();
 		}
 	}
