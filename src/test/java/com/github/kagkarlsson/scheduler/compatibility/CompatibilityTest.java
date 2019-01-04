@@ -32,6 +32,8 @@ import static org.junit.Assert.assertThat;
 @SuppressWarnings("ConstantConditions")
 public abstract class CompatibilityTest {
 
+	private static final int POLLING_LIMIT = 10_000;
+
 	@Rule
 	public Timeout timeout = new Timeout(20, TimeUnit.SECONDS);
 	@Rule
@@ -112,19 +114,19 @@ public abstract class CompatibilityTest {
 		jdbcTaskRepository.createIfNotExists(newExecution);
 		assertThat((jdbcTaskRepository.getExecution(taskInstance)).get().getExecutionTime(), is(now));
 
-		final List<Execution> due = jdbcTaskRepository.getDue(now);
+		final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
 		assertThat(due, hasSize(1));
 		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), Instant.now());
 		assertThat(pickedExecution.isPresent(), is(true));
 
-		assertThat(jdbcTaskRepository.getDue(now), hasSize(0));
+		assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
 
 		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
 		assertThat(jdbcTaskRepository.getOldExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
 
 		jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1), 0);
-		assertThat(jdbcTaskRepository.getDue(now), hasSize(0));
-		assertThat(jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1))), hasSize(1));
+		assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+		assertThat(jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1)), POLLING_LIMIT), hasSize(1));
 
 		final Optional<Execution> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
 		assertThat(rescheduled.isPresent(), is(true));

@@ -49,6 +49,7 @@ public class Scheduler implements SchedulerClient {
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
 	private final StatsRegistry statsRegistry;
+	private final int pollingLimit;
 	private final ExecutorService dueExecutor;
 	private final ExecutorService detectDeadExecutor;
 	private final ExecutorService updateHeartbeatExecutor;
@@ -58,8 +59,8 @@ public class Scheduler implements SchedulerClient {
 	final Semaphore executorsSemaphore;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
-			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
-		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, statsRegistry, onStartup);
+			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
+		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, statsRegistry, pollingLimit, onStartup);
 	}
 
 	private static ExecutorService defaultExecutorService(int maxThreads) {
@@ -67,7 +68,7 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
-			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
+			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.taskResolver = taskResolver;
@@ -79,6 +80,7 @@ public class Scheduler implements SchedulerClient {
 		this.heartbeatInterval = heartbeatInterval;
 		this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
 		this.statsRegistry = statsRegistry;
+		this.pollingLimit = pollingLimit;
 		this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
 		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
@@ -181,7 +183,7 @@ public class Scheduler implements SchedulerClient {
 		}
 
 		Instant now = clock.now();
-		List<Execution> dueExecutions = taskRepository.getDue(now);
+		List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
 
 		int count = 0;
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
@@ -391,6 +393,8 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	public static class Builder {
+		private static final int POLLING_CONCURRENCY_MULTIPLIER = 3;
+
 		protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
 
 		protected final DataSource dataSource;
@@ -399,6 +403,8 @@ public class Scheduler implements SchedulerClient {
 		protected final List<Task<?>> knownTasks = new ArrayList<>();
 		protected final List<OnStartup> startTasks = new ArrayList<>();
 		protected Waiter waiter = new Waiter(Duration.ofSeconds(10), clock);
+		protected int pollingLimit;
+		protected boolean useDefaultPollingLimit;
 		protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
 		protected Duration heartbeatInterval = Duration.ofMinutes(5);
 		protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
@@ -408,6 +414,8 @@ public class Scheduler implements SchedulerClient {
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
 			this.knownTasks.addAll(knownTasks);
+			this.pollingLimit = calculatePollingLimit();
+			this.useDefaultPollingLimit = true;
 		}
 
 		@SafeVarargs
@@ -426,6 +434,19 @@ public class Scheduler implements SchedulerClient {
 			return this;
 		}
 
+		public Builder pollingLimit(int pollingLimit) {
+			if(pollingLimit <= 0) {
+				throw new IllegalArgumentException("pollingLimit must be a positive integer");
+			}
+			this.pollingLimit = pollingLimit;
+			this.useDefaultPollingLimit = false;
+			return this;
+		}
+
+		private int calculatePollingLimit() {
+			return executorThreads * POLLING_CONCURRENCY_MULTIPLIER;
+		}
+
 		public Builder heartbeatInterval(Duration duration) {
 			this.heartbeatInterval = duration;
 			return this;
@@ -433,6 +454,9 @@ public class Scheduler implements SchedulerClient {
 
 		public Builder threads(int numberOfThreads) {
 			this.executorThreads = numberOfThreads;
+			if(useDefaultPollingLimit) {
+				this.pollingLimit = calculatePollingLimit();
+			}
 			return this;
 		}
 
@@ -465,7 +489,7 @@ public class Scheduler implements SchedulerClient {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
-			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, startTasks);
+			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, startTasks);
 		}
 	}
 
