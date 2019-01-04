@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 public interface TaskRepository {
 
 	boolean createIfNotExists(Execution execution);
-	List<Execution> getDue(Instant now);
+	List<Execution> getDue(Instant now, int limit);
 	void getScheduledExecutions(Consumer<Execution> consumer);
 	void getScheduledExecutions(String taskName, Consumer<Execution> consumer);
 

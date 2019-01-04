@@ -46,7 +46,6 @@ public class JdbcTaskRepository implements TaskRepository {
 	public static final String DEFAULT_TABLE_NAME = "scheduled_tasks";
 
 	private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
-	private static final int MAX_RESULTS = 10_000;
 	private final TaskResolver taskResolver;
 	private final SchedulerName schedulerSchedulerName;
 	private final JdbcRunner jdbcRunner;
@@ -99,11 +98,6 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getDue(Instant now) {
-		return getDue(now, MAX_RESULTS);
-	}
-
-	@Override
 	public void getScheduledExecutions(Consumer<Execution> consumer) {
 		jdbcRunner.query(
 				"select * from " + tableName + " where picked = ? order by execution_time asc",
@@ -126,6 +120,7 @@ public class JdbcTaskRepository implements TaskRepository {
 		);
 	}
 
+	@Override
 	public List<Execution> getDue(Instant now, int limit) {
 		return jdbcRunner.query(
 				"select * from " + tableName + " where picked = ? and execution_time <= ? order by execution_time asc",

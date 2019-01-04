@@ -23,6 +23,7 @@ import static org.junit.Assert.*;
 public class JdbcTaskRepositoryTest {
 
 	public static final String SCHEDULER_NAME = "scheduler1";
+	private static final int POLLING_LIMIT = 10_000;
 	@Rule
 	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
 
@@ -61,8 +62,8 @@ public class JdbcTaskRepositoryTest {
 		Instant now = Instant.now();
 
 		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
-		assertThat(taskRepository.getDue(now), hasSize(1));
-		assertThat(taskRepository.getDue(now.minusSeconds(1)), hasSize(0));
+		assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(1));
+		assertThat(taskRepository.getDue(now.minusSeconds(1), POLLING_LIMIT), hasSize(0));
 	}
 
 	@Test
@@ -81,7 +82,7 @@ public class JdbcTaskRepositoryTest {
 		IntStream.range(0, 100).forEach(i ->
 						taskRepository.createIfNotExists(new Execution(now.minusSeconds(new Random().nextInt(10000)), oneTimeTask.instance("id" + i)))
 		);
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
 		assertThat(due, hasSize(100));
 
 		List<Execution> sortedDue = new ArrayList<>(due);
@@ -93,11 +94,11 @@ public class JdbcTaskRepositoryTest {
 	public void picked_executions_should_not_be_returned_as_due() {
 		Instant now = Instant.now();
 		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
 		assertThat(due, hasSize(1));
 
 		taskRepository.pick(due.get(0), now);
-		assertThat(taskRepository.getDue(now), hasSize(0));
+		assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
 	}
 
 	@Test
@@ -105,7 +106,7 @@ public class JdbcTaskRepositoryTest {
 		Instant now = Instant.now();
 		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
 		assertThat(due, hasSize(1));
 		taskRepository.pick(due.get(0), now);
 
@@ -114,7 +115,7 @@ public class JdbcTaskRepositoryTest {
 		assertThat(pickedExecution.get().picked, is(true));
 		assertThat(pickedExecution.get().pickedBy, is(SCHEDULER_NAME));
 		assertThat(pickedExecution.get().lastHeartbeat, notNullValue());
-		assertThat(taskRepository.getDue(now), hasSize(0));
+		assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
 	}
 
 	@Test
@@ -123,7 +124,7 @@ public class JdbcTaskRepositoryTest {
 		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
 		assertThat(due, hasSize(1));
 		final Execution execution = due.get(0);
 		final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
@@ -138,7 +139,7 @@ public class JdbcTaskRepositoryTest {
 		Instant now = Instant.now();
 		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
 		assertThat(due, hasSize(1));
 
 		Execution execution = due.get(0);
@@ -146,8 +147,8 @@ public class JdbcTaskRepositoryTest {
 		final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
 		taskRepository.reschedule(pickedExecution.get(), nextExecutionTime, now, null, 0);
 
-		assertThat(taskRepository.getDue(now), hasSize(0));
-		assertThat(taskRepository.getDue(nextExecutionTime), hasSize(1));
+		assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+		assertThat(taskRepository.getDue(nextExecutionTime, POLLING_LIMIT), hasSize(1));
 
 		final Optional<Execution> nextExecution = taskRepository.getExecution(instance);
 		assertTrue(nextExecution.isPresent());
@@ -161,7 +162,7 @@ public class JdbcTaskRepositoryTest {
 		Instant now = Instant.now();
 		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
 		assertThat(due, hasSize(1));
 
 		Execution execution = due.get(0);
@@ -196,7 +197,7 @@ public class JdbcTaskRepositoryTest {
 		final TaskInstance<Void> instance = oneTimeTask.instance("id1");
 		taskRepository.createIfNotExists(new Execution(now, instance));
 
-		List<Execution> due = taskRepository.getDue(now);
+		List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
 		assertThat(due, hasSize(1));
 
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
@@ -252,7 +253,7 @@ public class JdbcTaskRepositoryTest {
 	}
 
 	private Execution getSingleExecution() {
-		List<Execution> due = taskRepository.getDue(Instant.now());
+		List<Execution> due = taskRepository.getDue(Instant.now(), POLLING_LIMIT);
 		return due.get(0);
 	}
 

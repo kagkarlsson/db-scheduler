@@ -29,8 +29,8 @@ public class ManualScheduler extends Scheduler {
     private static final Logger LOG = LoggerFactory.getLogger(ManualScheduler.class);
     private final SettableClock clock;
 
-    ManualScheduler(SettableClock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName, Waiter waiter, Duration heartbeatInterval, boolean executeImmediately, boolean pollAfterCompletion, StatsRegistry statsRegistry, List<OnStartup> onStartup) {
-        super(clock, taskRepository, taskResolver, maxThreads, executorService, schedulerName, waiter, heartbeatInterval, executeImmediately, pollAfterCompletion, statsRegistry, onStartup);
+    ManualScheduler(SettableClock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName, Waiter waiter, Duration heartbeatInterval, boolean executeImmediately, boolean pollAfterCompletion, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
+        super(clock, taskRepository, taskResolver, maxThreads, executorService, schedulerName, waiter, heartbeatInterval, executeImmediately, pollAfterCompletion, statsRegistry, pollingLimit, onStartup);
         this.clock = clock;
     }
 
