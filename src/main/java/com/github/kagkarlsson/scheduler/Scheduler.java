@@ -189,7 +189,6 @@ public class Scheduler implements SchedulerClient {
 		List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
 
 		int pickedExecutionCount = 0;
-		int availableExecutorCount = executorsSemaphore.availablePermits();
 		lastPollAcquiredAllAvailableExecutors = false;
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 		for (Execution e : dueExecutions) {
@@ -216,8 +215,6 @@ public class Scheduler implements SchedulerClient {
 			}
 			pickedExecutionCount++;
 		}
-
-		lastPollAcquiredAllAvailableExecutors = pickedExecutionCount >= availableExecutorCount;
 	}
 
 	private Optional<Execution> aquireExecutorAndPickExecution(Execution execution) {
