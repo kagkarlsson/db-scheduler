@@ -23,7 +23,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>4.0</version>
+    <version>5.0</version>
 </dependency>
 ```
 
@@ -201,6 +201,10 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 
 ## Versions / upgrading
+
+### Version 5.0
+* PR #47 allows for setting max number of executions fetched by the scheduler (contributed by [bgooren](https://github.com/bgooren))
+* PR #48 fixes a bug for medium-sized volumes where the scheduler would not continue to poll for executions until there were none left (contributed by [bgooren](https://github.com/bgooren))
 
 ### Version 4.1
 * Helper for using a version of the scheduler in unit/integration tests is now available in the artifact, through the class `TestHelper.createManualScheduler(...)`. For usage example see `SchedulerClientTest`.
