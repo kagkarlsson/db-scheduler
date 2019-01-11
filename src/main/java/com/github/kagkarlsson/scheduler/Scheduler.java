@@ -45,6 +45,8 @@ public class Scheduler implements SchedulerClient {
 	private final ExecutorService executorService;
 	private final Waiter executeDueWaiter;
 	private boolean enableImmediateExecution;
+	private final boolean pollAfterCompletion;
+	private boolean lastPollAcquiredAllAvailableExecutors;
 	protected final List<OnStartup> onStartup;
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
@@ -59,8 +61,8 @@ public class Scheduler implements SchedulerClient {
 	final Semaphore executorsSemaphore;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
-			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
-		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, statsRegistry, pollingLimit, onStartup);
+			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, boolean pollAfterCompletion, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
+		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, pollAfterCompletion, statsRegistry, pollingLimit, onStartup);
 	}
 
 	private static ExecutorService defaultExecutorService(int maxThreads) {
@@ -68,13 +70,14 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
-			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
+			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, boolean pollAfterCompletion, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.taskResolver = taskResolver;
 		this.executorService = executorService;
 		this.executeDueWaiter = executeDueWaiter;
 		this.enableImmediateExecution = enableImmediateExecution;
+		this.pollAfterCompletion = pollAfterCompletion;
 		this.onStartup = onStartup;
 		this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
 		this.heartbeatInterval = heartbeatInterval;
@@ -185,11 +188,12 @@ public class Scheduler implements SchedulerClient {
 		Instant now = clock.now();
 		List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
 
-		int count = 0;
+		int pickedExecutionCount = 0;
+		lastPollAcquiredAllAvailableExecutors = false;
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 		for (Execution e : dueExecutions) {
 			if (schedulerState.isShuttingDown()) {
-				LOG.info("Scheduler has been shutdown. Skipping {} due executions.", dueExecutions.size() - count);
+				LOG.info("Scheduler has been shutdown. Skipping {} due executions.", dueExecutions.size() - pickedExecutionCount);
 				return;
 			}
 
@@ -197,7 +201,8 @@ public class Scheduler implements SchedulerClient {
 			try {
 				pickedExecution = aquireExecutorAndPickExecution(e);
 			} catch (NoAvailableExecutors ex) {
-				LOG.debug("No available executors. Skipping {} due executions.", dueExecutions.size() - count);
+				LOG.debug("No available executors. Skipping {} due executions.", dueExecutions.size() - pickedExecutionCount);
+				lastPollAcquiredAllAvailableExecutors = true;
 				return;
 			}
 
@@ -208,7 +213,7 @@ public class Scheduler implements SchedulerClient {
 			} else {
 				LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
 			}
-			count++;
+			pickedExecutionCount++;
 		}
 	}
 
@@ -238,6 +243,10 @@ public class Scheduler implements SchedulerClient {
 		if (currentlyProcessing.remove(execution) == null) {
 			LOG.error("Released execution was not found in collection of executions currently being processed. Should never happen.");
 			statsRegistry.registerUnexpectedError();
+		}
+
+		if (pollAfterCompletion && lastPollAcquiredAllAvailableExecutors) {
+			triggerCheckForDueExecutions();
 		}
 	}
 
@@ -410,6 +419,7 @@ public class Scheduler implements SchedulerClient {
 		protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
 		protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 		protected boolean enableImmediateExecution = false;
+		protected boolean pollAfterCompletion = true;
 
 		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
 			this.dataSource = dataSource;
@@ -485,11 +495,16 @@ public class Scheduler implements SchedulerClient {
 			return this;
 		}
 
+		public Builder pollAfterCompletion(boolean pollAfterCompletion) {
+			this.pollAfterCompletion = pollAfterCompletion;
+			return this;
+		}
+
 		public Scheduler build() {
 			final TaskResolver taskResolver = new TaskResolver(knownTasks);
 			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
-			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, startTasks);
+			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, enableImmediateExecution, pollAfterCompletion, statsRegistry, pollingLimit, startTasks);
 		}
 	}
 

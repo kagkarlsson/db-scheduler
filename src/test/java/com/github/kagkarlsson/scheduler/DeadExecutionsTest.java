@@ -57,6 +57,7 @@ public class DeadExecutionsTest {
 				new Waiter(Duration.ZERO),
 				Duration.ofMinutes(1),
 				false,
+				false,
 				StatsRegistry.NOOP,
 				POLLING_LIMIT,
 				new ArrayList<>());
