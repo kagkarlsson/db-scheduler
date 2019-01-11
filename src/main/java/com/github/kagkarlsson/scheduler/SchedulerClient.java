@@ -136,7 +136,7 @@ public interface SchedulerClient {
 		}
 
 		@Override
-		public <T> Optional<ScheduledExecution<T>> getScheduledExecution(TaskInstanceId taskInstance, Class<T> dataClass) {
+		public <T> Optional<ScheduledExecution<T>> getScheduledExecution(TaskInstanceId taskInstance, Class<T> dataClass, boolean includeCurrentlyExecuting) {
 			Optional<Execution> execution = taskRepository.getExecution(taskInstance);
 			return execution.map(e -> new ScheduledExecution<T>(dataClass, e));
 		}

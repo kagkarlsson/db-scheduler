@@ -22,6 +22,7 @@ public class SchedulerMain {
 
 	private static void example(DataSource dataSource) {
 
+		Tasks.custom()
 		// recurring with no data
 		RecurringTask<Void> recurring1 = Tasks.recurring("recurring_no_data", FixedDelay.of(Duration.ofSeconds(5)))
 				.onFailureReschedule()   // default

@@ -306,6 +306,8 @@ public class JdbcTaskRepository implements TaskRepository {
 		return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.empty();
 	}
 
+
+
 	private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
 
 		private final ArrayList<Execution> executions;
