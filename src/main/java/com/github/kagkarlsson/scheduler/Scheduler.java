@@ -16,6 +16,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,10 +25,8 @@ import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -35,6 +34,7 @@ import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactor
 
 public class Scheduler implements SchedulerClient {
 
+	public static final double TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO = 0.5;
 	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 	private static final String THREAD_PREFIX = "db-scheduler";
 	public static final Duration SHUTDOWN_WAIT = Duration.ofMinutes(30);
@@ -42,11 +42,9 @@ public class Scheduler implements SchedulerClient {
 	private final Clock clock;
 	private final TaskRepository taskRepository;
 	private final TaskResolver taskResolver;
-	private final ExecutorService executorService;
+    private int threadpoolSize;
+    private final ExecutorService executorService;
 	private final Waiter executeDueWaiter;
-	private boolean enableImmediateExecution;
-	private final boolean pollAfterCompletion;
-	private boolean lastPollAcquiredAllAvailableExecutors;
 	protected final List<OnStartup> onStartup;
 	private final Waiter detectDeadWaiter;
 	private final Duration heartbeatInterval;
@@ -58,26 +56,26 @@ public class Scheduler implements SchedulerClient {
 	private final Map<Execution, CurrentlyExecuting> currentlyProcessing = Collections.synchronizedMap(new HashMap<>());
 	private final Waiter heartbeatWaiter;
 	private final SettableSchedulerState schedulerState = new SettableSchedulerState();
+	private final AtomicInteger currentGenerationNumber = new AtomicInteger(1);
 	final Semaphore executorsSemaphore;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
-			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, boolean pollAfterCompletion, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
-		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, pollAfterCompletion, statsRegistry, pollingLimit, onStartup);
+			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
+		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, statsRegistry, pollingLimit, onStartup);
 	}
 
 	private static ExecutorService defaultExecutorService(int maxThreads) {
 		return Executors.newFixedThreadPool(maxThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
 	}
 
-	protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
-			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, boolean pollAfterCompletion, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
+	protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
+			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
 		this.clock = clock;
 		this.taskRepository = taskRepository;
 		this.taskResolver = taskResolver;
-		this.executorService = executorService;
+        this.threadpoolSize = threadpoolSize;
+        this.executorService = executorService;
 		this.executeDueWaiter = executeDueWaiter;
-		this.enableImmediateExecution = enableImmediateExecution;
-		this.pollAfterCompletion = pollAfterCompletion;
 		this.onStartup = onStartup;
 		this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
 		this.heartbeatInterval = heartbeatInterval;
@@ -87,7 +85,7 @@ public class Scheduler implements SchedulerClient {
 		this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
 		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
-		executorsSemaphore = new Semaphore(maxThreads);
+		executorsSemaphore = new Semaphore(threadpoolSize);
 		SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
 		delegate = new StandardSchedulerClient(taskRepository, earlyExecutionListener);
 	}
@@ -110,7 +108,7 @@ public class Scheduler implements SchedulerClient {
 				os.onStartup(this);
 			} catch (Exception e) {
 				LOG.error("Unexpected error while executing OnStartup tasks. Continuing.", e);
-				statsRegistry.registerUnexpectedError();
+				statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
 			}
 		});
 	}
@@ -181,72 +179,15 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	protected void executeDue() {
-		if (executorsSemaphore.availablePermits() <= 0) {
-			return;
-		}
-
 		Instant now = clock.now();
 		List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
-
-		int pickedExecutionCount = 0;
-		lastPollAcquiredAllAvailableExecutors = false;
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
+
+		int thisGenerationNumber = this.currentGenerationNumber.incrementAndGet();
+		DueExecutionsBatch newDueBatch = new DueExecutionsBatch(Scheduler.this.threadpoolSize, thisGenerationNumber, dueExecutions.size(), pollingLimit == dueExecutions.size());
+
 		for (Execution e : dueExecutions) {
-			if (schedulerState.isShuttingDown()) {
-				LOG.info("Scheduler has been shutdown. Skipping {} due executions.", dueExecutions.size() - pickedExecutionCount);
-				return;
-			}
-
-			final Optional<Execution> pickedExecution;
-			try {
-				pickedExecution = aquireExecutorAndPickExecution(e);
-			} catch (NoAvailableExecutors ex) {
-				LOG.debug("No available executors. Skipping {} due executions.", dueExecutions.size() - pickedExecutionCount);
-				lastPollAcquiredAllAvailableExecutors = true;
-				return;
-			}
-
-			if (pickedExecution.isPresent()) {
-				CompletableFuture
-						.runAsync(new ExecuteTask(pickedExecution.get()), executorService)
-						.thenRun(() -> releaseExecutor(pickedExecution.get()));
-			} else {
-				LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
-			}
-			pickedExecutionCount++;
-		}
-	}
-
-	private Optional<Execution> aquireExecutorAndPickExecution(Execution execution) {
-		if (executorsSemaphore.tryAcquire()) {
-			try {
-				final Optional<Execution> pickedExecution = taskRepository.pick(execution, clock.now());
-
-				if (!pickedExecution.isPresent()) {
-					executorsSemaphore.release();
-				} else {
-					currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
-				}
-				return pickedExecution;
-
-			} catch (Throwable t) {
-				executorsSemaphore.release();
-				throw t;
-			}
-		} else {
-			throw new NoAvailableExecutors();
-		}
-	}
-
-	private void releaseExecutor(Execution execution) {
-		executorsSemaphore.release();
-		if (currentlyProcessing.remove(execution) == null) {
-			LOG.error("Released execution was not found in collection of executions currently being processed. Should never happen.");
-			statsRegistry.registerUnexpectedError();
-		}
-
-		if (pollAfterCompletion && lastPollAcquiredAllAvailableExecutors) {
-			triggerCheckForDueExecutions();
+			executorService.execute(new PickAndExecute(e, newDueBatch));
 		}
 	}
 
@@ -265,6 +206,7 @@ public class Scheduler implements SchedulerClient {
 
 					Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
 					if (task.isPresent()) {
+						statsRegistry.register(StatsRegistry.SchedulerStatsEvent.DEAD_EXECUTION);
 						task.get().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(taskRepository, execution));
 					} else {
 						LOG.error("Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.", execution.taskInstance.getTaskName());
@@ -272,7 +214,7 @@ public class Scheduler implements SchedulerClient {
 
 				} catch (Throwable e) {
 					LOG.error("Failed while handling dead execution {}. Will be tried again later.", execution, e);
-					statsRegistry.registerUnexpectedError();
+					statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
 				}
 			});
 		} else {
@@ -294,7 +236,7 @@ public class Scheduler implements SchedulerClient {
 				taskRepository.updateHeartbeat(execution, now);
 			} catch (Throwable e) {
 				LOG.error("Failed while updating heartbeat for execution {}. Will try again later.", execution, e);
-				statsRegistry.registerUnexpectedError();
+				statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
 			}
 		});
 	}
@@ -303,247 +245,119 @@ public class Scheduler implements SchedulerClient {
 		return heartbeatInterval.multipliedBy(4);
 	}
 
-	@SuppressWarnings({"unchecked", "rawtypes"})
-	private class ExecuteTask implements Runnable {
-		private final Execution execution;
+	private class PickAndExecute implements Runnable {
+		private Execution candidate;
+		private DueExecutionsBatch addedDueExecutionsBatch;
 
-		private ExecuteTask(Execution execution) {
-			this.execution = execution;
+		public PickAndExecute(Execution candidate, DueExecutionsBatch dueExecutionsBatch) {
+			this.candidate = candidate;
+			this.addedDueExecutionsBatch = dueExecutionsBatch;
 		}
 
 		@Override
 		public void run() {
+			try {
+
+				if (schedulerState.isShuttingDown()) {
+					LOG.info("Scheduler has been shutdown. Skipping fetched due execution: " + candidate.taskInstance.getTaskAndInstance());
+					return;
+				}
+
+				if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber.get())) {
+					// skipping execution due to it being stale
+					addedDueExecutionsBatch.markBatchAsStale();
+					statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
+					LOG.trace("Skipping queued execution (current currentGenerationNumber: {}, added currentGenerationNumber: {})", currentGenerationNumber.get(), addedDueExecutionsBatch);
+					return;
+				}
+
+				final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
+
+				if (!pickedExecution.isPresent()) {
+					// someone else picked id
+					LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
+					statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
+					return;
+				}
+
+				currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
+				try {
+					statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
+					executePickedExecution(pickedExecution.get());
+				} finally {
+					if (currentlyProcessing.remove(pickedExecution.get()) == null) {
+						LOG.error("Released execution was not found in collection of executions currently being processed. Should never happen.");
+						statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+					}
+				}
+
+			} finally {
+				addedDueExecutionsBatch.oneExecutionDone(() -> triggerCheckForDueExecutions());
+			}
+		}
+
+		private void executePickedExecution(Execution execution) {
 			final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
 			if (!task.isPresent()) {
 				LOG.error("Failed to find implementation for task with name '{}'. If there are a high number of executions, this may block other executions and must be fixed.", execution.taskInstance.getTaskName());
 				return;
 			}
 
+			Instant executionStarted = clock.now();
 			try {
 				LOG.debug("Executing " + execution);
 				CompletionHandler completion = task.get().execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, Scheduler.this));
 				LOG.debug("Execution done");
-				complete(completion, execution);
+				statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
+
+				complete(completion, execution, executionStarted);
 
 			} catch (RuntimeException unhandledException) {
-				LOG.warn("Unhandled exception during execution. Treating as failure.", unhandledException);
-				failure(task.get().getFailureHandler(), execution, unhandledException);
+				LOG.error("Unhandled exception during execution. Treating as failure.", unhandledException);
+				statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
+				failure(task.get().getFailureHandler(), execution, unhandledException, executionStarted);
 
 			} catch (Throwable unhandledError) {
 				LOG.error("Error during execution. Treating as failure.", unhandledError);
-				failure(task.get().getFailureHandler(), execution, unhandledError);
+				statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
+				failure(task.get().getFailureHandler(), execution, unhandledError, executionStarted);
 			}
 		}
 
-		private void complete(CompletionHandler completion, Execution execution) {
+		private void complete(CompletionHandler completion, Execution execution, Instant executionStarted) {
+			ExecutionComplete completeEvent = ExecutionComplete.success(execution, executionStarted, clock.now());
 			try {
-				completion.complete(ExecutionComplete.success(execution, clock.now()), new ExecutionOperations(taskRepository, execution));
+				completion.complete(completeEvent, new ExecutionOperations(taskRepository, execution));
+				statsRegistry.registerSingleCompletedExecution(completeEvent);
 			} catch (Throwable e) {
-				statsRegistry.registerUnexpectedError();
+				statsRegistry.register(StatsRegistry.SchedulerStatsEvent.COMPLETIONHANDLER_ERROR);
+				statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
 				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +
 						"The execution should be detected as dead in {}, and handled according to the tasks DeadExecutionHandler.", execution, getMaxAgeBeforeConsideredDead(), e);
 			}
 		}
 
-		private void failure(FailureHandler failureHandler, Execution execution, Throwable cause) {
+		private void failure(FailureHandler failureHandler, Execution execution, Throwable cause, Instant executionStarted) {
+			ExecutionComplete completeEvent = ExecutionComplete.failure(execution, executionStarted, clock.now(), cause);
 			try {
-				failureHandler.onFailure(ExecutionComplete.failure(execution, clock.now(), cause), new ExecutionOperations(taskRepository, execution));
+				failureHandler.onFailure(completeEvent, new ExecutionOperations(taskRepository, execution));
+				statsRegistry.registerSingleCompletedExecution(completeEvent);
 			} catch (Throwable e) {
-				statsRegistry.registerUnexpectedError();
+				statsRegistry.register(StatsRegistry.SchedulerStatsEvent.FAILUREHANDLER_ERROR);
+				statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
 				LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +
 						"The execution should be detected as dead in {}, and handled according to the tasks DeadExecutionHandler.", execution, getMaxAgeBeforeConsideredDead(), e);
 			}
 		}
+
 	}
 
-	static class RunUntilShutdown implements Runnable {
-		private final Runnable toRun;
-		private final Waiter waitBetweenRuns;
-		private final SchedulerState schedulerState;
-		private final StatsRegistry statsRegistry;
-
-		public RunUntilShutdown(Runnable toRun, Waiter waitBetweenRuns, SchedulerState schedulerState, StatsRegistry statsRegistry) {
-			this.toRun = toRun;
-			this.waitBetweenRuns = waitBetweenRuns;
-			this.schedulerState = schedulerState;
-			this.statsRegistry = statsRegistry;
-		}
-
-		@Override
-		public void run() {
-			while (!schedulerState.isShuttingDown()) {
-				try {
-					toRun.run();
-				} catch (Throwable e) {
-					LOG.error("Unhandled exception. Will keep running.", e);
-					statsRegistry.registerUnexpectedError();
-				}
-
-				try {
-					waitBetweenRuns.doWait();
-				} catch (InterruptedException interruptedException) {
-					if (schedulerState.isShuttingDown()) {
-						LOG.debug("Thread '{}' interrupted due to shutdown.", Thread.currentThread().getName());
-					} else {
-						LOG.error("Unexpected interruption of thread. Will keep running.", interruptedException);
-						statsRegistry.registerUnexpectedError();
-					}
-				}
-			}
-		}
-	}
-
-	public static Builder create(DataSource dataSource, Task<?> ... knownTasks) {
+	public static SchedulerBuilder create(DataSource dataSource, Task<?> ... knownTasks) {
 		return create(dataSource, Arrays.asList(knownTasks));
 	}
 
-	public static Builder create(DataSource dataSource, List<Task<?>> knownTasks) {
-		return new Builder(dataSource, knownTasks);
+	public static SchedulerBuilder create(DataSource dataSource, List<Task<?>> knownTasks) {
+		return new SchedulerBuilder(dataSource, knownTasks);
 	}
 
-	public static class Builder {
-		private static final int POLLING_CONCURRENCY_MULTIPLIER = 3;
-
-		protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
-
-		protected final DataSource dataSource;
-		protected SchedulerName schedulerName = new SchedulerName.Hostname();
-		protected int executorThreads = 10;
-		protected final List<Task<?>> knownTasks = new ArrayList<>();
-		protected final List<OnStartup> startTasks = new ArrayList<>();
-		protected Waiter waiter = new Waiter(Duration.ofSeconds(10), clock);
-		protected int pollingLimit;
-		protected boolean useDefaultPollingLimit;
-		protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
-		protected Duration heartbeatInterval = Duration.ofMinutes(5);
-		protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
-		protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
-		protected boolean enableImmediateExecution = false;
-		protected boolean pollAfterCompletion = true;
-
-		public Builder(DataSource dataSource, List<Task<?>> knownTasks) {
-			this.dataSource = dataSource;
-			this.knownTasks.addAll(knownTasks);
-			this.pollingLimit = calculatePollingLimit();
-			this.useDefaultPollingLimit = true;
-		}
-
-		@SafeVarargs
-		public final <T extends Task<?> & OnStartup> Builder startTasks(T... startTasks) {
-			return startTasks(Arrays.asList(startTasks));
-		}
-
-		public <T extends Task<?> & OnStartup> Builder startTasks(List<T> startTasks) {
-			knownTasks.addAll(startTasks);
-			this.startTasks.addAll(startTasks);
-			return this;
-		}
-
-		public Builder pollingInterval(Duration pollingInterval) {
-			waiter = new Waiter(pollingInterval, clock);
-			return this;
-		}
-
-		public Builder pollingLimit(int pollingLimit) {
-			if(pollingLimit <= 0) {
-				throw new IllegalArgumentException("pollingLimit must be a positive integer");
-			}
-			this.pollingLimit = pollingLimit;
-			this.useDefaultPollingLimit = false;
-			return this;
-		}
-
-		private int calculatePollingLimit() {
-			return executorThreads * POLLING_CONCURRENCY_MULTIPLIER;
-		}
-
-		public Builder heartbeatInterval(Duration duration) {
-			this.heartbeatInterval = duration;
-			return this;
-		}
-
-		public Builder threads(int numberOfThreads) {
-			this.executorThreads = numberOfThreads;
-			if(useDefaultPollingLimit) {
-				this.pollingLimit = calculatePollingLimit();
-			}
-			return this;
-		}
-
-		public Builder statsRegistry(StatsRegistry statsRegistry) {
-			this.statsRegistry = statsRegistry;
-			return this;
-		}
-
-		public Builder schedulerName(SchedulerName schedulerName) {
-			this.schedulerName = schedulerName;
-			return this;
-		}
-
-		public Builder serializer(Serializer serializer) {
-			this.serializer = serializer;
-			return this;
-		}
-
-		public Builder tableName(String tableName) {
-			this.tableName = tableName;
-			return this;
-		}
-
-		public Builder enableImmediateExecution() {
-			this.enableImmediateExecution = true;
-			return this;
-		}
-
-		public Builder pollAfterCompletion(boolean pollAfterCompletion) {
-			this.pollAfterCompletion = pollAfterCompletion;
-			return this;
-		}
-
-		public Scheduler build() {
-			final TaskResolver taskResolver = new TaskResolver(knownTasks);
-			final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
-
-			return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, enableImmediateExecution, pollAfterCompletion, statsRegistry, pollingLimit, startTasks);
-		}
-	}
-
-
-	public static class NoAvailableExecutors extends RuntimeException {
-	}
-
-	private static class TriggerCheckForDueExecutions implements SchedulerClientEventListener {
-		private static final Logger LOG = LoggerFactory.getLogger(TriggerCheckForDueExecutions.class);
-		private SchedulerState schedulerState;
-		private Clock clock;
-		private Waiter executeDueWaiter;
-
-		public TriggerCheckForDueExecutions(SchedulerState schedulerState, Clock clock, Waiter executeDueWaiter) {
-			this.schedulerState = schedulerState;
-			this.clock = clock;
-			this.executeDueWaiter = executeDueWaiter;
-		}
-
-		@Override
-		public void newEvent(ClientEvent event) {
-			ClientEvent.ClientEventContext ctx = event.getContext();
-			ClientEvent.EventType eventType = ctx.getEventType();
-
-			if (!schedulerState.isStarted() || schedulerState.isShuttingDown()) {
-				LOG.debug("Will not act on scheduling event for execution (task: '{}', id: '{}') as scheduler is starting or shutting down.",
-						ctx.getTaskInstanceId().getTaskName(), ctx.getTaskInstanceId().getId());
-				return;
-			}
-
-			if (eventType == ClientEvent.EventType.SCHEDULE || eventType == ClientEvent.EventType.RESCHEDULE) {
-
-				Instant scheduledToExecutionTime = ctx.getExecutionTime();
-				if (scheduledToExecutionTime.toEpochMilli() <= clock.now().toEpochMilli()) {
-					LOG.info("Task-instance scheduled to run directly, triggering check for due exections (unless it is already running). Task: {}, instance: {}",
-							ctx.getTaskInstanceId().getTaskName(), ctx.getTaskInstanceId().getId());
-					executeDueWaiter.wake();
-				}
-			}
-		}
-	}
 }

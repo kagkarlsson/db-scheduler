@@ -15,16 +15,19 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
 public class ExecutionComplete {
 	private final Execution execution;
+	private final Instant timeStarted;
 	private final Instant timeDone;
 	private final Result result;
 	private final Throwable cause;
 
-	ExecutionComplete(Execution execution, Instant timeDone, Result result, Throwable cause) {
+	ExecutionComplete(Execution execution, Instant timeStarted, Instant timeDone, Result result, Throwable cause) {
+		this.timeStarted = timeStarted;
 		this.cause = cause;
 		if (result == Result.OK && cause != null) {
 			throw new IllegalArgumentException("Result 'OK' should never have a cause.");
@@ -34,12 +37,12 @@ public class ExecutionComplete {
 		this.result = result;
 	}
 
-	public static ExecutionComplete success(Execution execution, Instant timeDone) {
-		return new ExecutionComplete(execution, timeDone, Result.OK, null);
+	public static ExecutionComplete success(Execution execution, Instant timeStarted, Instant timeDone) {
+		return new ExecutionComplete(execution, timeStarted, timeDone, Result.OK, null);
 	}
 	
-	public static ExecutionComplete failure(Execution execution, Instant timeDone, Throwable cause) {
-		return new ExecutionComplete(execution, timeDone, Result.FAILED, cause);
+	public static ExecutionComplete failure(Execution execution, Instant timeStarted, Instant timeDone, Throwable cause) {
+		return new ExecutionComplete(execution, timeStarted, timeDone, Result.FAILED, cause);
 	}
 	
 	public Execution getExecution() {
@@ -48,6 +51,10 @@ public class ExecutionComplete {
 
 	public Instant getTimeDone() {
 		return timeDone;
+	}
+
+	public Duration getDuration() {
+		return Duration.between(timeStarted, timeDone);
 	}
 
 	public Result getResult() {

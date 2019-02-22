@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -56,7 +57,6 @@ public class DeadExecutionsTest {
 				new SchedulerName.Fixed("test-scheduler"),
 				new Waiter(Duration.ZERO),
 				Duration.ofMinutes(1),
-				false,
 				false,
 				StatsRegistry.NOOP,
 				POLLING_LIMIT,

@@ -42,7 +42,7 @@ public class SchedulesTest {
 	}
 
 	private ExecutionComplete complete(Instant timeDone) {
-		return ExecutionComplete.success(null, timeDone);
+		return ExecutionComplete.success(null, timeDone, timeDone);
 	}
 
 	@SuppressWarnings("rawtypes")
