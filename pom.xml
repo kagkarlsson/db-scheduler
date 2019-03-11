@@ -75,6 +75,12 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>co.unruly</groupId>
+			<artifactId>java-8-matchers</artifactId>
+			<version>1.6</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>19.0</version>
@@ -224,7 +230,7 @@
 									<include>antlr:antlr</include>
 									<include>org.antlr:stringtemplate</include>
 									<include>org.postgresql:postgresql</include>
-                                                                        <include>com.microsoft.sqlserver</include>
+									<include>com.microsoft.sqlserver</include>
 									<include>org.apache.httpcomponents:httpcore</include>
 									<include>com.nesscomputing.migratory:migratory-core</include>
 									<include>javax.inject:javax.inject</include>
@@ -237,6 +243,7 @@
 									<include>org.apache.commons:commons-lang3</include>
 									<include>org.apache.commons:commons-compress</include>
 									<include>org.tukaani:xz</include>
+									<include>co.unruly:java-8-matchers</include>
 								</includes>
 								<searchTransitive>true</searchTransitive>
 								<message>

@@ -189,6 +189,7 @@ public class Scheduler implements SchedulerClient {
 		for (Execution e : dueExecutions) {
 			executorService.execute(new PickAndExecute(e, newDueBatch));
 		}
+		statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
 	}
 
 	@SuppressWarnings({"rawtypes","unchecked"})
@@ -220,6 +221,7 @@ public class Scheduler implements SchedulerClient {
 		} else {
 			LOG.trace("No dead executions found.");
 		}
+		statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_DETECT_DEAD);
 	}
 
 	void updateHeartbeats() {
@@ -239,6 +241,7 @@ public class Scheduler implements SchedulerClient {
 				statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
 			}
 		});
+		statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_UPDATE_HEARTBEATS);
 	}
 
 	private Duration getMaxAgeBeforeConsideredDead() {
@@ -308,19 +311,19 @@ public class Scheduler implements SchedulerClient {
 				LOG.debug("Executing " + execution);
 				CompletionHandler completion = task.get().execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, Scheduler.this));
 				LOG.debug("Execution done");
-				statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
 
 				complete(completion, execution, executionStarted);
+				statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
 
 			} catch (RuntimeException unhandledException) {
 				LOG.error("Unhandled exception during execution. Treating as failure.", unhandledException);
-				statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
 				failure(task.get().getFailureHandler(), execution, unhandledException, executionStarted);
+				statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
 
 			} catch (Throwable unhandledError) {
 				LOG.error("Error during execution. Treating as failure.", unhandledError);
-				statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
 				failure(task.get().getFailureHandler(), execution, unhandledError, executionStarted);
+				statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
 			}
 		}
 
