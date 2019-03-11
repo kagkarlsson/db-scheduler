@@ -21,7 +21,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-public class SchedulerBuilderTest {
+public class ExecutorPoolTest {
 
 	private SettableClock clock;
 
@@ -40,59 +40,42 @@ public class SchedulerBuilderTest {
 	}
 
 	@Test
-	public void test_execute_until_none_left() {
+	public void test_execute_until_none_left_happy() {
+		testExecuteUntilNoneLeft(2, 2, 20);
+	}
+
+	@Test
+	public void test_execute_until_none_left_low_polling_limit() {
+		testExecuteUntilNoneLeft(2, 10, 20);
+	}
+
+	@Test
+	public void test_execute_until_none_left_high_volume() {
+		testExecuteUntilNoneLeft(12, 4, 200);
+	}
+
+
+	private void testExecuteUntilNoneLeft(int pollingLimit, int threads, int executionsToRun) {
 		Instant now = Instant.now();
 		OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
-		TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(10);
-		TestableRegistry registry = TestableRegistry.create().logEvents().waitConditions(condition).build();
+		TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(executionsToRun);
+		TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
 
 		Scheduler scheduler = Scheduler.create(postgres.getDataSource(), task)
-				.pollingLimit(2)
-				.threads(10)
+				.pollingLimit(pollingLimit)
+				.threads(threads)
 				.pollingInterval(Duration.ofMinutes(1))
 				.statsRegistry(registry)
 				.build();
 		stopScheduler.register(scheduler);
 
-		IntStream.range(0, 10).forEach(i -> scheduler.schedule(task.instance(String.valueOf(i)), clock.now()));
+		IntStream.range(0, executionsToRun).forEach(i -> scheduler.schedule(task.instance(String.valueOf(i)), clock.now()));
 
 		scheduler.start();
 		condition.waitFor();
 
 		List<ExecutionComplete> completed = registry.getCompleted();
-		assertThat(completed, hasSize(10));
-		completed.stream().forEach(e -> {
-			assertThat(e.getResult(), is(ExecutionComplete.Result.OK));
-			Duration durationUntilExecuted = Duration.between(now, e.getTimeDone());
-			assertThat(durationUntilExecuted, TimeMatchers.shorterThan(Duration.ofSeconds(1)));
-		});
-		registry.assertNoFailures();
-	}
-
-	@Test
-	public void test_immediate_execution() {
-		Instant now = Instant.now();
-		OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
-		TestableRegistry.Condition completedCondition = TestableRegistry.Conditions.completed(1);
-		TestableRegistry.Condition executeDueCondition = TestableRegistry.Conditions.ranExecuteDue(1);
-
-		TestableRegistry registry = TestableRegistry.create().waitConditions(executeDueCondition, completedCondition).build();
-
-		Scheduler scheduler = Scheduler.create(postgres.getDataSource(), task)
-				.pollingInterval(Duration.ofMinutes(1))
-				.enableImmediateExecution()
-				.statsRegistry(registry)
-				.build();
-		stopScheduler.register(scheduler);
-
-		scheduler.start();
-		executeDueCondition.waitFor();
-
-		scheduler.schedule(task.instance("1"), clock.now());
-		completedCondition.waitFor();
-
-		List<ExecutionComplete> completed = registry.getCompleted();
-		assertThat(completed, hasSize(1));
+		assertThat(completed, hasSize(executionsToRun));
 		completed.stream().forEach(e -> {
 			assertThat(e.getResult(), is(ExecutionComplete.Result.OK));
 			Duration durationUntilExecuted = Duration.between(now, e.getTimeDone());
