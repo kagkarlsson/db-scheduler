@@ -56,7 +56,7 @@ public class Scheduler implements SchedulerClient {
 	private final Map<Execution, CurrentlyExecuting> currentlyProcessing = Collections.synchronizedMap(new HashMap<>());
 	private final Waiter heartbeatWaiter;
 	private final SettableSchedulerState schedulerState = new SettableSchedulerState();
-	private final AtomicInteger currentGenerationNumber = new AtomicInteger(1);
+	private int currentGenerationNumber = 1;
 	final Semaphore executorsSemaphore;
 
 	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
@@ -183,12 +183,13 @@ public class Scheduler implements SchedulerClient {
 		List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 
-		int thisGenerationNumber = this.currentGenerationNumber.incrementAndGet();
+		int thisGenerationNumber = this.currentGenerationNumber + 1;
 		DueExecutionsBatch newDueBatch = new DueExecutionsBatch(Scheduler.this.threadpoolSize, thisGenerationNumber, dueExecutions.size(), pollingLimit == dueExecutions.size());
 
 		for (Execution e : dueExecutions) {
 			executorService.execute(new PickAndExecute(e, newDueBatch));
 		}
+		this.currentGenerationNumber = thisGenerationNumber;
 		statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
 	}
 
@@ -266,11 +267,11 @@ public class Scheduler implements SchedulerClient {
 					return;
 				}
 
-				if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber.get())) {
+				if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
 					// skipping execution due to it being stale
 					addedDueExecutionsBatch.markBatchAsStale();
 					statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
-					LOG.trace("Skipping queued execution (current currentGenerationNumber: {}, added currentGenerationNumber: {})", currentGenerationNumber.get(), addedDueExecutionsBatch);
+					LOG.trace("Skipping queued execution (current currentGenerationNumber: {}, added currentGenerationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch);
 					return;
 				}
 
