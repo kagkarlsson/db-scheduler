@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.fail;
 
@@ -19,6 +21,7 @@ public class TestableRegistry implements StatsRegistry {
     private final List<ExecutionComplete> completed;
     private final List<SchedulerStatsEvent> stats;
     private List<Condition> waitConditions;
+    private Map<String, AtomicLong> counters = new ConcurrentHashMap();
     private final boolean logEvents;
 
     public TestableRegistry(boolean logEvents, List<Condition> waitConditions) {
@@ -37,18 +40,21 @@ public class TestableRegistry implements StatsRegistry {
         this.stats.add(e);
         applyToConditions(e);
         log(e);
+        countEvent(e);
     }
 
     @Override
     public void register(CandidateStatsEvent e) {
         applyToConditions(e);
         log(e);
+        countEvent(e);
     }
 
     @Override
     public void register(ExecutionStatsEvent e) {
         applyToConditions(e);
         log(e);
+        countEvent(e);
     }
 
 
@@ -60,6 +66,11 @@ public class TestableRegistry implements StatsRegistry {
 
     public List<ExecutionComplete> getCompleted() {
         return completed;
+    }
+
+    public long getCount(Enum e) {
+        AtomicLong count = counters.get(counterKey(e.getClass(), e.name()));
+        return count != null ? count.get() : 0;
     }
 
     public void assertNoFailures() {
@@ -81,6 +92,27 @@ public class TestableRegistry implements StatsRegistry {
 
     private void applyToConditions(ExecutionStatsEvent e) {
         waitConditions.forEach(c -> c.apply(e));
+    }
+
+    private void countEvent(Enum e) {
+        String key = counterKey(e.getClass(), e.name());
+        AtomicLong counter = counters.get(key);
+        if (counter == null) {
+            synchronized (counters) {
+                if (counters.get(key) == null) {
+                    counter = new AtomicLong(0);
+                    counters.put(key, counter);
+                } else {
+                    counter = counters.get(key);
+                }
+            }
+        }
+
+        counter.incrementAndGet();
+    }
+
+    private String counterKey(Class enumClass, String enumName) {
+        return enumClass.getName() + "." + enumName;
     }
 
     private void log(SchedulerStatsEvent e) {
