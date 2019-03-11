@@ -1,5 +1,7 @@
 package com.github.kagkarlsson.scheduler;
 
+import co.unruly.matchers.OptionalMatchers;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
@@ -9,6 +11,7 @@ import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.google.common.collect.Lists;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public class SchedulerClientTest {
@@ -82,6 +86,16 @@ public class SchedulerClientTest {
         assertThat(countAllExecutions(client), is(5));
         assertThat(countExecutionsForTask(client, oneTimeTaskA.getName(), Void.class), is(2));
         assertThat(countExecutionsForTask(client, oneTimeTaskB.getName(), Void.class), is(3));
+    }
+
+    @Test
+    public void client_should_be_able_to_fetch_single_scheduled_execution() {
+        SchedulerClient client = SchedulerClient.Builder.create(DB.getDataSource(), oneTimeTaskA).build();
+        client.schedule(oneTimeTaskA.instance("1"), settableClock.now());
+
+        assertThat(client.getScheduledExecution(TaskInstanceId.of(oneTimeTaskA.getName(), "1")), not(OptionalMatchers.empty()));
+        assertThat(client.getScheduledExecution(TaskInstanceId.of(oneTimeTaskA.getName(), "2")), OptionalMatchers.empty());
+        assertThat(client.getScheduledExecution(TaskInstanceId.of(oneTimeTaskB.getName(), "1")), OptionalMatchers.empty());
     }
 
     private int countAllExecutions(SchedulerClient client) {

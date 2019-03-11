@@ -42,6 +42,8 @@ public interface SchedulerClient {
 
 	<T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
 
+	Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
+
 	class Builder {
 
 		private final DataSource dataSource;
@@ -142,6 +144,12 @@ public interface SchedulerClient {
 		@Override
 		public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
 			taskRepository.getScheduledExecutions(taskName, execution -> consumer.accept(new ScheduledExecution<>(dataClass, execution)));
+		}
+
+		@Override
+		public Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId) {
+			Optional<Execution> e = taskRepository.getExecution(taskInstanceId.getTaskName(), taskInstanceId.getId());
+			return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
 		}
 
 		private void notifyListeners(ClientEvent.EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {

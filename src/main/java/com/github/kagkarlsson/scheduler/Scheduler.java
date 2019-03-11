@@ -167,6 +167,11 @@ public class Scheduler implements SchedulerClient {
 		this.delegate.getScheduledExecutionsForTask(taskName, dataClass, consumer);
 	}
 
+	@Override
+	public Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId) {
+		return this.delegate.getScheduledExecution(taskInstanceId);
+	}
+
 	public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {
 		return taskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
 	}
