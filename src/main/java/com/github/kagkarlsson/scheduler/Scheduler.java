@@ -171,8 +171,8 @@ public class Scheduler implements SchedulerClient {
 		return taskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
 	}
 
-	public void triggerCheckForDueExecutions() {
-		executeDueWaiter.wake();
+	public boolean triggerCheckForDueExecutions() {
+		return executeDueWaiter.wake();
 	}
 
 	public List<CurrentlyExecuting> getCurrentlyExecuting() {

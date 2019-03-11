@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 class DueExecutionsBatch {
 
@@ -45,7 +46,7 @@ class DueExecutionsBatch {
      *
      * @param triggerCheckForNewBatch may be triggered more than one in racy conditions
      */
-    public void oneExecutionDone(Runnable triggerCheckForNewBatch) {
+    public void oneExecutionDone(Supplier<Boolean> triggerCheckForNewBatch) {
         executionsLeftInBatch.decrementAndGet();
 
         LOG.trace("Batch state: stale:{}, triggeredExecuteDue:{}, possiblyMoreExecutionsInDb:{}, executionsLeftInBatch:{}, ratio-trigger:{}",
@@ -54,8 +55,7 @@ class DueExecutionsBatch {
                 && !triggeredExecuteDue
                 && possiblyMoreExecutionsInDb
                 && executionsLeftInBatch.get() <= (threadpoolSize * Scheduler.TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO)) {
-            triggeredExecuteDue = true;
-            triggerCheckForNewBatch.run();
+            triggeredExecuteDue = triggerCheckForNewBatch.get();
         }
     }
 

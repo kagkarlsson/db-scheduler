@@ -28,6 +28,7 @@ public class Waiter {
 	private boolean woken = false;
 	private final Duration duration;
 	private Clock clock;
+	private boolean isWaiting = false;
 
 	public Waiter(Duration duration) {
 		this(duration, new SystemClock());
@@ -52,7 +53,9 @@ public class Waiter {
 				synchronized (lock) {
 					woken = false;
 					LOG.debug("Waiter start wait.");
+					this.isWaiting = true;
 					lock.wait(millis);
+					this.isWaiting = false;
 					if (woken) {
 						LOG.debug("Waiter woken, it had {}ms left to wait.", (waitUntil.toEpochMilli() - clock.now().toEpochMilli()));
 						break;
@@ -62,10 +65,15 @@ public class Waiter {
 		}
 	}
 
-	public void wake() {
+	public boolean wake() {
 		synchronized (lock) {
-			woken = true;
-			lock.notify();
+			if (!isWaiting) {
+				return false;
+			} else {
+				woken = true;
+				lock.notify();
+				return true;
+			}
 		}
 	}
 
