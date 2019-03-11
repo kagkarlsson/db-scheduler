@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import java.util.Objects;
+
 public interface TaskInstanceId {
     String getTaskName();
     String getId();
@@ -41,5 +43,18 @@ public interface TaskInstanceId {
             return this.id;
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            StandardTaskInstanceId that = (StandardTaskInstanceId) o;
+            return Objects.equals(taskName, that.taskName) &&
+                    Objects.equals(id, that.id);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(taskName, id);
+        }
     }
 }
