@@ -271,7 +271,7 @@ public class Scheduler implements SchedulerClient {
 					// skipping execution due to it being stale
 					addedDueExecutionsBatch.markBatchAsStale();
 					statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
-					LOG.trace("Skipping queued execution (current currentGenerationNumber: {}, added currentGenerationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch);
+					LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
 					return;
 				}
 

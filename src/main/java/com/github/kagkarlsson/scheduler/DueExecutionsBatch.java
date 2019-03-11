@@ -62,4 +62,8 @@ class DueExecutionsBatch {
     public boolean isOlderGenerationThan(int compareTo) {
         return generationNumber < compareTo;
     }
+
+    public int getGenerationNumber() {
+        return generationNumber;
+    }
 }
