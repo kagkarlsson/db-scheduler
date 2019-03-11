@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -12,7 +13,7 @@ public class RunUntilShutdownTest {
 
 	private TimeLimitedRunnable runnable;
 	private CountingWaiter countingWaiter;
-	private Scheduler.RunUntilShutdown runUntilShutdown;
+	private RunUntilShutdown runUntilShutdown;
 	private SchedulerState.SettableSchedulerState schedulerState;
 
 	@Before
@@ -20,7 +21,7 @@ public class RunUntilShutdownTest {
 		schedulerState = new SchedulerState.SettableSchedulerState();
 		runnable = new TimeLimitedRunnable(2, schedulerState);
 		countingWaiter = new CountingWaiter();
-		runUntilShutdown = new Scheduler.RunUntilShutdown(runnable, countingWaiter,
+		runUntilShutdown = new RunUntilShutdown(runnable, countingWaiter,
 				schedulerState, StatsRegistry.NOOP);
 	}
 

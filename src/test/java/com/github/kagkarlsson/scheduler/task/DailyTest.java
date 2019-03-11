@@ -46,6 +46,6 @@ public class DailyTest {
 	}
 
 	private ExecutionComplete complete(Instant timeDone) {
-		return ExecutionComplete.success(null, timeDone);
+		return ExecutionComplete.success(null, timeDone, timeDone);
 	}
 }

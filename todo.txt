@@ -3,10 +3,6 @@ Todo?
 ---------------
 - implement a Optional<ScheduledExecution> SchedulerClient.get(taskInstance) method for getting a single executions
 
-- double check DeadExecutionsTest is working properly
-
-- proper async test for when you enableImmediateExecution
-
 - move getFailingExecutions(Duration failingAtLeastFor) into client
 
 - optimize scheduler to look an interval forward in time, and trigger next cycle earlier if there are an immediate execution

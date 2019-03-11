@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.ComposableTask;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -43,7 +44,7 @@ public class SchedulerTest {
 	private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
 		TaskResolver taskResolver = new TaskResolver(tasks);
 		JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
-		return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, false, StatsRegistry.NOOP, 10_000, new ArrayList<>());
+		return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, StatsRegistry.NOOP, 10_000, new ArrayList<>());
 	}
 
 	@Test
@@ -120,31 +121,21 @@ public class SchedulerTest {
 	}
 
 	@Test
-	public void scheduler_should_stop_execution_when_executor_service_rejects() throws InterruptedException {
-		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
-		Scheduler scheduler = schedulerFor(oneTimeTask);
-		scheduler.executorsSemaphore.acquire();
-
-		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
-		scheduler.executeDue();
-		assertThat(handler.timesExecuted, is(0));
-	}
-
-	@Test
-	public void scheduler_should_track_duration() {
-		TestTasks.WaitingHandler<Void> waitingHandler = new TestTasks.WaitingHandler<>();
-		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, waitingHandler);
+	public void scheduler_should_track_duration() throws InterruptedException {
+		TestTasks.PausingHandler<Void> pausingHandler = new TestTasks.PausingHandler<>();
+		OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, pausingHandler);
 		Scheduler scheduler = schedulerFor(Executors.newSingleThreadExecutor(), oneTimeTask);
 
 		scheduler.schedule(oneTimeTask.instance("1"), clock.now());
 		scheduler.executeDue();
+		pausingHandler.waitForExecute.await();
 
 		assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));
 		clock.set(clock.now.plus(Duration.ofMinutes(1)));
 
 		assertThat(scheduler.getCurrentlyExecuting().get(0).getDuration(), is(Duration.ofMinutes(1)));
 
-		waitingHandler.waitForNotify.countDown();
+		pausingHandler.waitInExecuteUntil.countDown();
 	}
 
 	@Test

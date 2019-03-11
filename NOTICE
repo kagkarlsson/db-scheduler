@@ -18,6 +18,7 @@ This software includes third party software subject to the following licenses:
   Hamcrest library under New BSD License
   HikariCP under The Apache Software License, Version 2.0
   HyperSQL Database under HSQLDB License, a BSD open source license
+  java-8-matchers under MIT License
   JCL 1.2 implemented over SLF4J under MIT License
   JUnit under Eclipse Public License 1.0
   Micro JDBC under The Apache Software License, Version 2.0

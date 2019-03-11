@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -120,7 +121,28 @@ public class TestTasks {
 			}
 		}
 	}
-	
+
+	public static class PausingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
+
+		public final CountDownLatch waitInExecuteUntil;
+		public final CountDownLatch waitForExecute;
+
+		public PausingHandler() {
+			waitForExecute = new CountDownLatch(1);
+			waitInExecuteUntil = new CountDownLatch(1);
+		}
+
+		@Override
+		public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+			try {
+				waitForExecute.countDown();
+				waitInExecuteUntil.await();
+			} catch (InterruptedException e) {
+				LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
+			}
+		}
+	}
+
 	public static class SleepingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
 
 		private final int millis;
@@ -146,12 +168,15 @@ public class TestTasks {
 		}
 	}
 
-
-	public static class SimpleStatsRegistry implements StatsRegistry {
+	public static class SimpleStatsRegistry extends StatsRegistry.DefaultStatsRegistry {
 		public final AtomicInteger unexpectedErrors = new AtomicInteger(0);
+
 		@Override
-		public void registerUnexpectedError() {
-			unexpectedErrors.incrementAndGet();
+		public void register(SchedulerStatsEvent e) {
+			if (e == SchedulerStatsEvent.UNEXPECTED_ERROR) {
+				unexpectedErrors.incrementAndGet();
+			}
+			super.register(e);
 		}
 	}
 
