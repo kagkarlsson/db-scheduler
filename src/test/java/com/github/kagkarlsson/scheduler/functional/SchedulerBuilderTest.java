@@ -28,7 +28,7 @@ public class SchedulerBuilderTest {
 	@Rule
 	public EmbeddedPostgresqlRule postgres = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
 	@Rule
-	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
+	public Timeout timeout = new Timeout(10, TimeUnit.SECONDS);
 	@Rule
 	public StopSchedulerRule stopScheduler = new StopSchedulerRule();
 
