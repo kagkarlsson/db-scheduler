@@ -48,7 +48,7 @@ public class SchedulerBuilderTest {
 
 		Scheduler scheduler = Scheduler.create(postgres.getDataSource(), task)
 				.pollingLimit(2)
-				.threads(2)
+				.threads(10)
 				.pollingInterval(Duration.ofMinutes(1))
 				.statsRegistry(registry)
 				.build();
