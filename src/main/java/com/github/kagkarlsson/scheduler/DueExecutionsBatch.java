@@ -15,10 +15,14 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 class DueExecutionsBatch {
 
+    private static final Logger LOG = LoggerFactory.getLogger(DueExecutionsBatch.class);
     private final int generationNumber;
     private final AtomicInteger executionsLeftInBatch;
     private int threadpoolSize;
@@ -44,6 +48,8 @@ class DueExecutionsBatch {
     public void oneExecutionDone(Runnable triggerCheckForNewBatch) {
         executionsLeftInBatch.decrementAndGet();
 
+        LOG.trace("Batch state: stale:{}, triggeredExecuteDue:{}, possiblyMoreExecutionsInDb:{}, executionsLeftInBatch:{}, ratio-trigger:{}",
+                stale, triggeredExecuteDue, possiblyMoreExecutionsInDb, executionsLeftInBatch.get(), (threadpoolSize * Scheduler.TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO));
         if (!stale
                 && !triggeredExecuteDue
                 && possiblyMoreExecutionsInDb
