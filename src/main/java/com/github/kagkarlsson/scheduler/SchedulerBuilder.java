@@ -18,6 +18,8 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Duration;
@@ -26,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class SchedulerBuilder {
+    private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
     private static final int POLLING_CONCURRENCY_MULTIPLIER = 3;
 
     protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
@@ -119,6 +122,9 @@ public class SchedulerBuilder {
     }
 
     public Scheduler build() {
+        if (pollingLimit < executorThreads) {
+            LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
+        }
         final TaskResolver taskResolver = new TaskResolver(knownTasks);
         final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 

@@ -25,8 +25,9 @@ import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -260,42 +261,37 @@ public class Scheduler implements SchedulerClient {
 
 		@Override
 		public void run() {
+			if (schedulerState.isShuttingDown()) {
+				LOG.info("Scheduler has been shutdown. Skipping fetched due execution: " + candidate.taskInstance.getTaskAndInstance());
+				return;
+			}
+
+			if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
+				// skipping execution due to it being stale
+				addedDueExecutionsBatch.markBatchAsStale();
+				statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
+				LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
+				return;
+			}
+
+			final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
+
+			if (!pickedExecution.isPresent()) {
+				// someone else picked id
+				LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
+				statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
+				return;
+			}
+
+			currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
 			try {
-
-				if (schedulerState.isShuttingDown()) {
-					LOG.info("Scheduler has been shutdown. Skipping fetched due execution: " + candidate.taskInstance.getTaskAndInstance());
-					return;
-				}
-
-				if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
-					// skipping execution due to it being stale
-					addedDueExecutionsBatch.markBatchAsStale();
-					statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
-					LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
-					return;
-				}
-
-				final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
-
-				if (!pickedExecution.isPresent()) {
-					// someone else picked id
-					LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
-					statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
-					return;
-				}
-
-				currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
-				try {
-					statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
-					executePickedExecution(pickedExecution.get());
-				} finally {
-					if (currentlyProcessing.remove(pickedExecution.get()) == null) {
-						LOG.error("Released execution was not found in collection of executions currently being processed. Should never happen.");
-						statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
-					}
-				}
-
+				statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
+				executePickedExecution(pickedExecution.get());
 			} finally {
+				if (currentlyProcessing.remove(pickedExecution.get()) == null) {
+					LOG.error("Released execution was not found in collection of executions currently being processed. Should never happen.");
+					statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+				}
 				addedDueExecutionsBatch.oneExecutionDone(() -> triggerCheckForDueExecutions());
 			}
 		}
