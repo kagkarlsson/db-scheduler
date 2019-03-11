@@ -2,6 +2,8 @@ package com.github.kagkarlsson.scheduler.helper;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -11,11 +13,16 @@ public class TestableRegistry implements StatsRegistry {
 
     public static final EnumSet<SchedulerStatsEvent> FAILURE_EVENTS = EnumSet.of(SchedulerStatsEvent.UNEXPECTED_ERROR,
             SchedulerStatsEvent.COMPLETIONHANDLER_ERROR, SchedulerStatsEvent.FAILUREHANDLER_ERROR, SchedulerStatsEvent.DEAD_EXECUTION);
+
+    private static final Logger REGISTRY_LOGGER = LoggerFactory.getLogger(TestableRegistry.class);
+
     private final List<ExecutionComplete> completed;
     private final List<SchedulerStatsEvent> stats;
     private List<Condition> waitConditions;
+    private final boolean logEvents;
 
-    public TestableRegistry(List<Condition> waitConditions) {
+    public TestableRegistry(boolean logEvents, List<Condition> waitConditions) {
+        this.logEvents = logEvents;
         this.waitConditions = waitConditions;
         this.completed = Collections.synchronizedList(new ArrayList<>());
         this.stats = Collections.synchronizedList(new ArrayList<>());
@@ -24,6 +31,45 @@ public class TestableRegistry implements StatsRegistry {
     public static TestableRegistry.Builder create() {
         return new TestableRegistry.Builder();
     }
+
+    @Override
+    public void register(SchedulerStatsEvent e) {
+        this.stats.add(e);
+        applyToConditions(e);
+        log(e);
+    }
+
+    @Override
+    public void register(CandidateStatsEvent e) {
+        applyToConditions(e);
+        log(e);
+    }
+
+    @Override
+    public void register(ExecutionStatsEvent e) {
+        applyToConditions(e);
+        log(e);
+    }
+
+
+    @Override
+    public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {
+        completed.add(completeEvent);
+        log(completeEvent);
+    }
+
+    public List<ExecutionComplete> getCompleted() {
+        return completed;
+    }
+
+    public void assertNoFailures() {
+        this.stats.stream().forEach(e -> {
+            if (FAILURE_EVENTS.contains(e)) {
+                fail("Statsregistry contained unexpected error: " + e);
+            }
+        });
+    }
+
 
     private void applyToConditions(SchedulerStatsEvent e) {
         waitConditions.forEach(c -> c.apply(e));
@@ -37,38 +83,25 @@ public class TestableRegistry implements StatsRegistry {
         waitConditions.forEach(c -> c.apply(e));
     }
 
-    @Override
-    public void register(SchedulerStatsEvent e) {
-        this.stats.add(e);
-        applyToConditions(e);
+    private void log(SchedulerStatsEvent e) {
+        log("Event: " + e.name());
     }
 
-    @Override
-    public void register(CandidateStatsEvent e) {
-        applyToConditions(e);
+    private void log(CandidateStatsEvent e) {
+        log("Event: " + e.name());
     }
 
-    @Override
-    public void register(ExecutionStatsEvent e) {
-        applyToConditions(e);
+    private void log(ExecutionStatsEvent e) {
+        log("Event: " + e.name());
+    }
+    private void log(ExecutionComplete completeEvent) {
+        log("Event execution complete: " + completeEvent.getExecution().toString());
     }
 
-
-    @Override
-    public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {
-        completed.add(completeEvent);
-    }
-
-    public List<ExecutionComplete> getCompleted() {
-        return completed;
-    }
-
-    public void assertNoFailures() {
-        this.stats.stream().forEach(e -> {
-            if (FAILURE_EVENTS.contains(e)) {
-                fail("Statsregistry contained unexpected error: " + e);
-            }
-        });
+    private void log(String s) {
+        if (logEvents) {
+            REGISTRY_LOGGER.info(s);
+        }
     }
 
     public interface Condition {
@@ -84,14 +117,21 @@ public class TestableRegistry implements StatsRegistry {
     public static class Builder {
 
         private List<Condition> waitConditions = new ArrayList<>();
+        private boolean logEvents = false;
 
         public Builder waitConditions(Condition ... waitConditions) {
             this.waitConditions.addAll(Arrays.asList(waitConditions));
             return this;
         }
 
+        public Builder logEvents() {
+            this.logEvents = true;
+            return this;
+        }
+
+
         public TestableRegistry build() {
-            return new TestableRegistry(waitConditions);
+            return new TestableRegistry(logEvents, waitConditions);
         }
     }
 

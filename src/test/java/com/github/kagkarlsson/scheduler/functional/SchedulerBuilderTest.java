@@ -44,7 +44,7 @@ public class SchedulerBuilderTest {
 		Instant now = Instant.now();
 		OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
 		TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(10);
-		TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
+		TestableRegistry registry = TestableRegistry.create().logEvents().waitConditions(condition).build();
 
 		Scheduler scheduler = Scheduler.create(postgres.getDataSource(), task)
 				.pollingLimit(2)
