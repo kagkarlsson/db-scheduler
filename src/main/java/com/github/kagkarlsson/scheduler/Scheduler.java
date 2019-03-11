@@ -27,7 +27,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -36,9 +35,9 @@ import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactor
 public class Scheduler implements SchedulerClient {
 
 	public static final double TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO = 0.5;
-	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
-	private static final String THREAD_PREFIX = "db-scheduler";
+	public static final String THREAD_PREFIX = "db-scheduler";
 	public static final Duration SHUTDOWN_WAIT = Duration.ofMinutes(30);
+	private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
 	private final SchedulerClient delegate;
 	private final Clock clock;
 	private final TaskRepository taskRepository;
@@ -58,16 +57,6 @@ public class Scheduler implements SchedulerClient {
 	private final Waiter heartbeatWaiter;
 	private final SettableSchedulerState schedulerState = new SettableSchedulerState();
 	private int currentGenerationNumber = 1;
-	final Semaphore executorsSemaphore;
-
-	Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, SchedulerName schedulerName,
-			  Waiter executeDueWaiter, Duration updateHeartbeatWaiter, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
-		this(clock, taskRepository, taskResolver, maxThreads, defaultExecutorService(maxThreads), schedulerName, executeDueWaiter, updateHeartbeatWaiter, enableImmediateExecution, statsRegistry, pollingLimit, onStartup);
-	}
-
-	private static ExecutorService defaultExecutorService(int maxThreads) {
-		return Executors.newFixedThreadPool(maxThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
-	}
 
 	protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
 			  Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, List<OnStartup> onStartup) {
@@ -86,7 +75,6 @@ public class Scheduler implements SchedulerClient {
 		this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
 		this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
 		this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
-		executorsSemaphore = new Semaphore(threadpoolSize);
 		SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
 		delegate = new StandardSchedulerClient(taskRepository, earlyExecutionListener);
 	}

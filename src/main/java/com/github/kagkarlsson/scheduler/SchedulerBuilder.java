@@ -26,6 +26,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
+import static com.github.kagkarlsson.scheduler.Scheduler.THREAD_PREFIX;
 
 public class SchedulerBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
@@ -46,6 +51,7 @@ public class SchedulerBuilder {
     protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
     protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
     protected boolean enableImmediateExecution = false;
+    protected ExecutorService executorService;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -96,6 +102,11 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder executorService(ExecutorService executorService) {
+        this.executorService = executorService;
+        return this;
+    }
+
     public SchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
         this.statsRegistry = statsRegistry;
         return this;
@@ -128,6 +139,12 @@ public class SchedulerBuilder {
         final TaskResolver taskResolver = new TaskResolver(knownTasks);
         final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
-        return new Scheduler(clock, taskRepository, taskResolver, executorThreads, schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, startTasks);
+        ExecutorService candidateExecutorService = executorService;
+        if (candidateExecutorService == null) {
+            candidateExecutorService = Executors.newFixedThreadPool(executorThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
+        }
+
+        return new Scheduler(clock, taskRepository, taskResolver, executorThreads, candidateExecutorService,
+                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, startTasks);
     }
 }

@@ -133,12 +133,14 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 | Option  | Default | Description |
 | ------------- | ---- | ------------- |
 | `.threads(int)`  | 10  | Number of threads |
-| `.pollingInterval(Duration)`  |  30s  | How often the scheduler checks the database for due executions  |
-| `.heartbeatInterval(Duration)`  | 5m | How often to update the heartbeat timestamp for running executions  |
+| `.pollingInterval(Duration)`  |  30s  | How often the scheduler checks the database for due executions. |
+| `.pollingLimit(int)`  |  3 * <nr-of-threads>  | Maximum number of executions to fetch on a check for due executions. |
+| `.heartbeatInterval(Duration)`  | 5m | How often to update the heartbeat timestamp for running executions. |
 | `.schedulerName(SchedulerName)`  | hostname  | Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. |
 | `.tableName(String)`  | `scheduled_tasks` | Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. |
 | `.serializer(Serializer)`  | standard Java | Serializer implementation to use when serializing task data. |
 | `.enableImmediateExecution()`  | false | If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled to `now()`, or a time in the past. For this to work, the call to `schedule(..)` must not occur from within a transaction, because the record will not yet be visible to the scheduler (if this is a requirement, see the method `scheduler.triggerCheckForDueExecutions()`) |
+| `.executorService(ExecutorService)`  | `null`  | If specified, use this externally managed executor service to run executions. Ideally the number of threads it will use should still be supplied (for scheduler polling optimizations). |
 
 
 
