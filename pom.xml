@@ -48,6 +48,11 @@
 			<artifactId>slf4j-api</artifactId>
 			<version>${slf4j.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.cronutils</groupId>
+			<artifactId>cron-utils</artifactId>
+			<version>8.0.0</version>
+		</dependency>
 
 		<!-- Test -->
 		<dependency>
@@ -205,6 +210,7 @@
 								</excludes>
 								<includes>
 									<include>com.github.kagkarlsson:micro-jdbc</include>
+									<include>com.cronutils:cron-utils:jar</include>
 									<include>org.slf4j:slf4j-api</include>
 									<include>org.slf4j:slf4j-simple</include>
 									<!-- Tests -->
@@ -260,6 +266,32 @@
 								<goal>enforce</goal>
 							</goals>
 							<phase>test</phase>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>3.2.1</version>
+					<configuration>
+						<artifactSet>
+							<includes>
+								<include>com.cronutils:*</include>
+							</includes>
+						</artifactSet>
+						<relocations>
+							<relocation>
+								<pattern>com.cronutils</pattern>
+								<shadedPattern>com.github.kagkarlsson.shaded.cronutils</shadedPattern>
+							</relocation>
+						</relocations>
+					</configuration>
+					<executions>
+						<execution>
+							<phase>package</phase>
+							<goals>
+								<goal>shade</goal>
+							</goals>
 						</execution>
 					</executions>
 				</plugin>
@@ -350,6 +382,9 @@
 			</plugin>
 			<plugin>
 				<artifactId>maven-enforcer-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<artifactId>maven-shade-plugin</artifactId>
 			</plugin>
 		</plugins>
 
