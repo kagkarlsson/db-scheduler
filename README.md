@@ -29,8 +29,6 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 
 2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql), [mssql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mssql_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).  
 
-    Note: `scheduled_tasks` is the default table name, but it is [customizable](#scheduler-configuration).
-
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
 ```java
@@ -55,7 +53,7 @@ For more examples, continue reading. For details on the inner workings, see [How
 
 ### Recurring task
 
-Define a _recurring_ task and schedule the task's first execution on start-up using the `startTasks` builder-method. Upon completion, the task will be re-scheduled according to the defined schedule.
+Define a _recurring_ task and schedule the task's first execution on start-up using the `startTasks` builder-method. Upon completion, the task will be re-scheduled according to the defined schedule (see [pre-defined schedule-types](#schedules)).
 
 ```java
 RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.ofHours(1))
@@ -151,6 +149,17 @@ Tasks are created using one of the builder-classes in `Tasks`. The builders have
 | `.onFailure(FailureHandler)`  | see desc.  | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule` _one-time tasks_ are retried again in 5m. |
 | `.onDeadExecution(DeadExecutionHandler)`  | `ReviveDeadExecution`  | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`. |
 | `.initialData(T initialData)`  | `null`  | The data to use the first time a _recurring task_ is scheduled. |
+
+
+### Schedules
+
+The library contains a number of Schedule-implementations for recurring tasks. See class `Schedules`.
+
+| Schedule  | Description |
+| ------------- | ------------- |
+| `.daily(LocalTime ...)`  | Runs every day at specified times. |
+| `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. |
+| `.cron(String)`  | Spring-style cron-expression. |
 
 
 
