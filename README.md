@@ -23,7 +23,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>5.0</version>
+    <version>5.1</version>
 </dependency>
 ```
 
@@ -212,6 +212,12 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 
 ## Versions / upgrading
+
+### Version 5.1
+* PR [#52](https://github.com/kagkarlsson/db-scheduler/pull/52) redesigns use of the underlying `ExecutorService`, making better use of the backing queue. 
+* PR [#53](https://github.com/kagkarlsson/db-scheduler/pull/53) adds a method to the `SchedulerClient` for checking if a `TaskInstance` already exists, `client.getScheduledExecution(<task-instance-id>)` (fixes [#38](https://github.com/kagkarlsson/db-scheduler/issues/38).
+* PR [#54](https://github.com/kagkarlsson/db-scheduler/pull/54) adds a builder-method for supplying an externally managed `ExecutorService` (fixes [#51](https://github.com/kagkarlsson/db-scheduler/issues/51)).
+* PR [#56](https://github.com/kagkarlsson/db-scheduler/pull/56) adds cron-support, `Schedules.cron(<pattern>)` (fixes [#40](https://github.com/kagkarlsson/db-scheduler/issues/40)).
 
 ### Version 5.0
 * PR #47 allows for setting max number of executions fetched by the scheduler (contributed by [bgooren](https://github.com/bgooren))
