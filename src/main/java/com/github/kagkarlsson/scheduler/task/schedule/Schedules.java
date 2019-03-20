@@ -36,6 +36,8 @@ public class Schedules {
 		return FixedDelay.of(delay);
 	}
 
+	public static Schedule cron(String cronPattern) { return new CronSchedule(cronPattern); }
+
 	/**
 	 * Currently supports Daily- and FixedDelay-schedule on the formats:
 	 * <pre>DAILY|hh:mm,hh:mm,...,hh:mm</pre><br/>
