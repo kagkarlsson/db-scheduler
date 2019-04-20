@@ -27,22 +27,24 @@ public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 
 	public static final String INSTANCE = "recurring";
 	private final OnCompleteReschedule<T> onComplete;
-	private final T initialData;
+	private ScheduleOnStartup<T> scheduleOnStartup;
 
-	public RecurringTask(String name, Schedule schedule, Class<T> dataClass, T initialData) {
-		this(name, schedule, dataClass, initialData, new FailureHandler.OnFailureReschedule<T>(schedule), new ReviveDeadExecution<T>());
+	public RecurringTask(String name, Schedule schedule, Class<T> dataClass) {
+		this(name, schedule, dataClass, new ScheduleOnStartup<T>(INSTANCE), new FailureHandler.OnFailureReschedule<T>(schedule), new ReviveDeadExecution<T>());
 	}
 
-	public RecurringTask(String name, Schedule schedule, Class<T> dataClass, T initialData, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
+	public RecurringTask(String name, Schedule schedule, Class<T> dataClass, ScheduleOnStartup<T> scheduleOnStartup, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
 		super(name, dataClass, failureHandler, deadExecutionHandler);
 		onComplete = new OnCompleteReschedule<>(schedule);
-		this.initialData = initialData;
+		this.scheduleOnStartup = scheduleOnStartup;
 	}
-
+	
 	@Override
-	public void onStartup(Scheduler scheduler) {
-		scheduler.schedule(this.instance(INSTANCE, initialData), Instant.now());
-	}
+    public void onStartup(Scheduler scheduler) {
+        if (scheduleOnStartup != null) {
+        		scheduleOnStartup.apply(scheduler, this);
+        }
+    }
 
 	@Override
 	public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
@@ -51,4 +53,5 @@ public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 	}
 
 	public abstract void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+	
 }

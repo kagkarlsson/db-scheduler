@@ -34,11 +34,7 @@ public abstract class CustomTask<T> extends Task<T> implements OnStartup {
     @Override
     public void onStartup(Scheduler scheduler) {
         if (scheduleOnStartup != null) {
-            if (scheduleOnStartup.data == null) {
-                scheduler.schedule(this.instance(scheduleOnStartup.instance), Instant.now());
-            } else {
-                scheduler.schedule(this.instance(scheduleOnStartup.instance, scheduleOnStartup.data), Instant.now());
-            }
+        		scheduleOnStartup.apply(scheduler, this);
         }
     }
 }

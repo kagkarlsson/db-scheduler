@@ -48,9 +48,9 @@ public class Tasks {
         private final String name;
         private final Schedule schedule;
         private Class<T> dataClass;
-        private T initialData;
         private FailureHandler<T> onFailure;
         private DeadExecutionHandler<T> onDeadExecution;
+		private ScheduleOnStartup<T> scheduleOnStartup;
 
         public RecurringTaskBuilder(String name, Schedule schedule, Class<T> dataClass) {
             this.name = name;
@@ -58,6 +58,7 @@ public class Tasks {
             this.dataClass = dataClass;
             this.onFailure = new FailureHandler.OnFailureReschedule<>(schedule);
             this.onDeadExecution = new DeadExecutionHandler.ReviveDeadExecution<>();
+            this.scheduleOnStartup = new ScheduleOnStartup<T>(RecurringTask.INSTANCE, null, () -> schedule.getNextExecutionTime(ExecutionComplete.fake(RecurringTask.INSTANCE)));
         }
 
         public RecurringTaskBuilder<T> onFailureReschedule() {
@@ -86,7 +87,7 @@ public class Tasks {
         }
 
         public RecurringTask<T> execute(VoidExecutionHandler<T> executionHandler) {
-            return new RecurringTask<T>(name, schedule, dataClass, initialData, onFailure, onDeadExecution) {
+            return new RecurringTask<T>(name, schedule, dataClass, scheduleOnStartup, onFailure, onDeadExecution) {
 
                 @Override
                 public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {

@@ -15,12 +15,37 @@
  */
 package com.github.kagkarlsson.scheduler.task.helper;
 
-class ScheduleOnStartup<T> {
-    String instance;
-    T data;
+import java.time.Instant;
 
-    ScheduleOnStartup(String instance, T data) {
-        this.instance = instance;
-        this.data = data;
-    }
+import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.google.common.base.Supplier;
+
+class ScheduleOnStartup<T> {
+	String instance;
+	T data;
+	Supplier<Instant> firstExecutionTime;
+
+	ScheduleOnStartup(String instance) {
+		this(instance, null);
+	}
+	
+	ScheduleOnStartup(String instance, T data) {
+		this(instance, data, () -> Instant.now());
+	}
+	
+	ScheduleOnStartup(String instance, T data, Supplier<Instant> firstExecutionTime) {
+		this.firstExecutionTime = firstExecutionTime;
+		this.instance = instance;
+		this.data = data;
+	}
+
+	public void apply(Scheduler scheduler, Task<T> task) {
+		if (data == null) {
+            scheduler.schedule(task.instance(instance), firstExecutionTime.get());
+        } else {
+            scheduler.schedule(task.instance(instance, data), firstExecutionTime.get());
+        }
+	}
+
 }
