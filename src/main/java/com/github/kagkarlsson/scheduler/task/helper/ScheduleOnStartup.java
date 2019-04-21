@@ -16,10 +16,10 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
 import java.time.Instant;
+import java.util.function.Supplier;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.Task;
-import com.google.common.base.Supplier;
 
 class ScheduleOnStartup<T> {
 	String instance;
@@ -31,7 +31,7 @@ class ScheduleOnStartup<T> {
 	}
 	
 	ScheduleOnStartup(String instance, T data) {
-		this(instance, data, () -> Instant.now());
+		this(instance, data, Instant::now);
 	}
 	
 	ScheduleOnStartup(String instance, T data, Supplier<Instant> firstExecutionTime) {

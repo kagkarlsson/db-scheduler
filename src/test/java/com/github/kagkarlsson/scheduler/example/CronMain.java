@@ -25,26 +25,11 @@ public class CronMain {
 
         Schedule cron = Schedules.cron("*/3 * * * * ?");
 		RecurringTask<Void> cronTask = Tasks.recurring("cron-task", cron)
+                .initialExecution(null, cron::getInitialExecutionTime)
                 .execute((taskInstance, executionContext) -> {
                     System.out.println(Instant.now().getEpochSecond() + "s  -  Cron-schedule!");
                 });
 
-        CustomTask<Void> cronTask2 = Tasks.custom("cron-task", Void.class)
-        		.scheduleOnStartup("id", null)
-        		.execute(new ExecutionHandler<Void>() {
-					
-					@Override
-					public CompletionHandler<Void> execute(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
-						return new CompletionHandler.OnCompleteReschedule<>(cron);
-					}
-				})
-        		;
-        		.
-                .execute((taskInstance, executionContext) -> {
-                    System.out.println(Instant.now().getEpochSecond() + "s  -  Cron-schedule!");
-                });
-
-        
         final Scheduler scheduler = Scheduler
                 .create(dataSource)
                 .startTasks(cronTask)

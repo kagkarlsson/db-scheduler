@@ -19,6 +19,8 @@ import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.function.Supplier;
 
 public class Tasks {
     public static final Duration DEFAULT_RETRY_INTERVAL = Duration.ofMinutes(5);
@@ -58,7 +60,7 @@ public class Tasks {
             this.dataClass = dataClass;
             this.onFailure = new FailureHandler.OnFailureReschedule<>(schedule);
             this.onDeadExecution = new DeadExecutionHandler.ReviveDeadExecution<>();
-            this.scheduleOnStartup = new ScheduleOnStartup<T>(RecurringTask.INSTANCE, null, () -> schedule.getNextExecutionTime(ExecutionComplete.fake(RecurringTask.INSTANCE)));
+            this.scheduleOnStartup = new ScheduleOnStartup<>(RecurringTask.INSTANCE, null, schedule::getInitialExecutionTime);
         }
 
         public RecurringTaskBuilder<T> onFailureReschedule() {
@@ -81,8 +83,13 @@ public class Tasks {
             return this;
         }
 
-        public RecurringTaskBuilder<T> initialData(T initialData) {
-            this.initialData = initialData;
+        public RecurringTaskBuilder<T> initialExecution(T initialData) {
+            this.scheduleOnStartup = new ScheduleOnStartup<>(RecurringTask.INSTANCE, initialData, schedule::getInitialExecutionTime);
+            return this;
+        }
+
+        public RecurringTaskBuilder<T> initialExecution(T initialData, Supplier<Instant> initialExecutionTime) {
+            this.scheduleOnStartup = new ScheduleOnStartup<>(RecurringTask.INSTANCE, initialData, initialExecutionTime);
             return this;
         }
 
@@ -174,8 +181,8 @@ public class Tasks {
             return this;
         }
 
-        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData) {
-            this.onStartup = new ScheduleOnStartup<T>(instance, initialData);
+        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData, Supplier<Instant> firstExecutionTime) {
+            this.onStartup = new ScheduleOnStartup<T>(instance, initialData, firstExecutionTime);
             return this;
         }
 
