@@ -2,7 +2,6 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
-import com.github.kagkarlsson.scheduler.task.helper.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
@@ -16,9 +15,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestTasks {
 
 	public static final CompletionHandler<Void> REMOVE_ON_COMPLETE = new CompletionHandler.OnCompleteRemove<>();
-	public static final ExecutionHandlerWithExternalCompletion<Void> DO_NOTHING = (taskInstance, executionContext) -> {};
+	public static final VoidExecutionHandler<Void> DO_NOTHING = (taskInstance, executionContext) -> {};
 	
-	public static <T> OneTimeTask<T> oneTime(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler) {
+	public static <T> OneTimeTask<T> oneTime(String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {
 		return new OneTimeTask<T>(name, dataClass) {
 			@Override
 			public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
@@ -27,7 +26,7 @@ public class TestTasks {
 		};
 	}
 
-	public static <T> OneTimeTask<T> oneTimeWithType(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler) {
+	public static <T> OneTimeTask<T> oneTimeWithType(String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {
 		return new OneTimeTask<T>(name, dataClass) {
 			@Override
 			public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
@@ -36,7 +35,7 @@ public class TestTasks {
 		};
 	}
 
-	public static RecurringTask<Void> recurring(String name, FixedDelay schedule, ExecutionHandlerWithExternalCompletion<Void> handler) {
+	public static RecurringTask<Void> recurring(String name, FixedDelay schedule, VoidExecutionHandler<Void> handler) {
 		return new RecurringTask<Void>(name, schedule, Void.class) {
 			@Override
 			public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
@@ -45,7 +44,7 @@ public class TestTasks {
 		};
 	}
 
-	public static <T> RecurringTask<T> recurringWithData(String name, Class<T> dataClass, T initialData, FixedDelay schedule, ExecutionHandlerWithExternalCompletion<T> handler) {
+	public static <T> RecurringTask<T> recurringWithData(String name, Class<T> dataClass, T initialData, FixedDelay schedule, VoidExecutionHandler<T> handler) {
 		return new RecurringTask<T>(name, schedule, dataClass, initialData) {
 			@Override
 			public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
@@ -82,7 +81,7 @@ public class TestTasks {
 		}
 	}
 
-	public static class CountingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
+	public static class CountingHandler<T> implements VoidExecutionHandler<T> {
 		private final Duration wait;
 		public int timesExecuted = 0;
 
@@ -104,7 +103,7 @@ public class TestTasks {
 		}
 	}
 
-	public static class WaitingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
+	public static class WaitingHandler<T> implements VoidExecutionHandler<T> {
 
 		public final CountDownLatch waitForNotify;
 
@@ -122,7 +121,7 @@ public class TestTasks {
 		}
 	}
 
-	public static class PausingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
+	public static class PausingHandler<T> implements VoidExecutionHandler<T> {
 
 		public final CountDownLatch waitInExecuteUntil;
 		public final CountDownLatch waitForExecute;
@@ -143,7 +142,7 @@ public class TestTasks {
 		}
 	}
 
-	public static class SleepingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
+	public static class SleepingHandler<T> implements VoidExecutionHandler<T> {
 
 		private final int millis;
 
@@ -161,7 +160,7 @@ public class TestTasks {
 		}
 	}
 
-	public static class DoNothingHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
+	public static class DoNothingHandler<T> implements VoidExecutionHandler<T> {
 
 		@Override
 		public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {

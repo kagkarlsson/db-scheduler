@@ -33,7 +33,7 @@ public class SchedulerMain {
 
 		// recurring with contant data
 		RecurringTask<Integer> recurring2 = Tasks.recurring("recurring_constant_data", FixedDelay.of(Duration.ofSeconds(7)), Integer.class)
-				.initialExecution(1)
+				.initialData(1)
 				.onFailureReschedule()   // default
 				.onDeadExecutionRevive() // default
 				.execute((taskInstance, executionContext) -> {

@@ -23,9 +23,8 @@ public class CronMain {
 
     private static void example(DataSource dataSource) {
 
-        Schedule cron = Schedules.cron("*/3 * * * * ?");
+        Schedule cron = Schedules.cron("*/10 * * * * ?");
 		RecurringTask<Void> cronTask = Tasks.recurring("cron-task", cron)
-                .initialExecution(null, cron::getInitialExecutionTime)
                 .execute((taskInstance, executionContext) -> {
                     System.out.println(Instant.now().getEpochSecond() + "s  -  Cron-schedule!");
                 });

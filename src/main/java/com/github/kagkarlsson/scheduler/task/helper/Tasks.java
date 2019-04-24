@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Tasks {
@@ -83,13 +84,8 @@ public class Tasks {
             return this;
         }
 
-        public RecurringTaskBuilder<T> initialExecution(T initialData) {
+        public RecurringTaskBuilder<T> initialData(T initialData) {
             this.scheduleOnStartup = new ScheduleOnStartup<>(RecurringTask.INSTANCE, initialData, schedule::getInitialExecutionTime);
-            return this;
-        }
-
-        public RecurringTaskBuilder<T> initialExecution(T initialData, Supplier<Instant> initialExecutionTime) {
-            this.scheduleOnStartup = new ScheduleOnStartup<>(RecurringTask.INSTANCE, initialData, initialExecutionTime);
             return this;
         }
 
@@ -181,7 +177,7 @@ public class Tasks {
             return this;
         }
 
-        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData, Supplier<Instant> firstExecutionTime) {
+        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData, Function<Instant,Instant> firstExecutionTime) {
             this.onStartup = new ScheduleOnStartup<T>(instance, initialData, firstExecutionTime);
             return this;
         }

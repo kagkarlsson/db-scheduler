@@ -94,7 +94,7 @@ public class Scheduler implements SchedulerClient {
 	protected void executeOnStartup() {
 		onStartup.forEach(os -> {
 			try {
-				os.onStartup(this);
+				os.onStartup(this, this.clock);
 			} catch (Exception e) {
 				LOG.error("Unexpected error while executing OnStartup tasks. Continuing.", e);
 				statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);

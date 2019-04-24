@@ -2,7 +2,6 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
-import com.github.kagkarlsson.scheduler.task.helper.ComposableTask.ExecutionHandlerWithExternalCompletion;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -116,9 +115,9 @@ public class DeadExecutionsTest {
 	}
 
 	public static class NonCompletingTask<T> extends Task<T> {
-		private final ExecutionHandlerWithExternalCompletion<T> handler;
+		private final VoidExecutionHandler<T> handler;
 
-		public NonCompletingTask(String name, Class<T> dataClass, ExecutionHandlerWithExternalCompletion<T> handler, DeadExecutionHandler<T> deadExecutionHandler) {
+		public NonCompletingTask(String name, Class<T> dataClass, VoidExecutionHandler<T> handler, DeadExecutionHandler<T> deadExecutionHandler) {
 			super(name, dataClass, (executionComplete, executionOperations) -> {}, deadExecutionHandler);
 			this.handler = handler;
 		}

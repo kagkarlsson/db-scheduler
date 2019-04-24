@@ -15,37 +15,38 @@
  */
 package com.github.kagkarlsson.scheduler.task.helper;
 
-import java.time.Instant;
-import java.util.function.Supplier;
-
+import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.Task;
 
+import java.time.Instant;
+import java.util.function.Function;
+
 class ScheduleOnStartup<T> {
-	String instance;
-	T data;
-	Supplier<Instant> firstExecutionTime;
+    String instance;
+    T data;
+    Function<Instant, Instant> firstExecutionTime;
 
-	ScheduleOnStartup(String instance) {
-		this(instance, null);
-	}
-	
-	ScheduleOnStartup(String instance, T data) {
-		this(instance, data, Instant::now);
-	}
-	
-	ScheduleOnStartup(String instance, T data, Supplier<Instant> firstExecutionTime) {
-		this.firstExecutionTime = firstExecutionTime;
-		this.instance = instance;
-		this.data = data;
-	}
+    ScheduleOnStartup(String instance) {
+        this(instance, null);
+    }
 
-	public void apply(Scheduler scheduler, Task<T> task) {
-		if (data == null) {
-            scheduler.schedule(task.instance(instance), firstExecutionTime.get());
+    ScheduleOnStartup(String instance, T data) {
+        this(instance, data, Function.identity());
+    }
+
+    ScheduleOnStartup(String instance, T data, Function<Instant, Instant> firstExecutionTime) {
+        this.firstExecutionTime = firstExecutionTime;
+        this.instance = instance;
+        this.data = data;
+    }
+
+    public void apply(Scheduler scheduler, Clock clock, Task<T> task) {
+        if (data == null) {
+            scheduler.schedule(task.instance(instance), firstExecutionTime.apply(clock.now()));
         } else {
-            scheduler.schedule(task.instance(instance, data), firstExecutionTime.get());
+            scheduler.schedule(task.instance(instance, data), firstExecutionTime.apply(clock.now()));
         }
-	}
+    }
 
 }

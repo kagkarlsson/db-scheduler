@@ -26,7 +26,8 @@ public interface Schedule {
 	/**
 	 * Used to get the first execution-time for a schedule. Simulates an ExecutionComplete event.
 	 */
-	default Instant getInitialExecutionTime() {
-		return getNextExecutionTime(ExecutionComplete.simulatedSuccess(Instant.now()));
+	default Instant getInitialExecutionTime(Instant now) {
+		return getNextExecutionTime(ExecutionComplete.simulatedSuccess(now));
 	}
+
 }

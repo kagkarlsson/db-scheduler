@@ -18,6 +18,7 @@ package com.github.kagkarlsson.scheduler.testhelper;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
 
 import javax.sql.DataSource;
@@ -47,6 +48,11 @@ public class TestHelper {
 
         public ManualSchedulerBuilder clock(SettableClock clock) {
             this.clock = clock;
+            return this;
+        }
+
+        public <T extends Task<?> & OnStartup> ManualSchedulerBuilder startTasks(List<T> startTasks) {
+            super.startTasks(startTasks);
             return this;
         }
 

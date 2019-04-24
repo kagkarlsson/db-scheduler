@@ -15,13 +15,12 @@
  */
 package com.github.kagkarlsson.scheduler.task.helper;
 
+import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteReschedule;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-
-import java.time.Instant;
 
 public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 
@@ -44,9 +43,9 @@ public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 	}
 	
 	@Override
-    public void onStartup(Scheduler scheduler) {
+    public void onStartup(Scheduler scheduler, Clock clock) {
         if (scheduleOnStartup != null) {
-        		scheduleOnStartup.apply(scheduler, this);
+        		scheduleOnStartup.apply(scheduler, clock, this);
         }
     }
 
