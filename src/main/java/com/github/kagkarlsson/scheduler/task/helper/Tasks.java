@@ -19,6 +19,9 @@ import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Duration;
+import java.time.Instant;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class Tasks {
     public static final Duration DEFAULT_RETRY_INTERVAL = Duration.ofMinutes(5);
@@ -48,9 +51,9 @@ public class Tasks {
         private final String name;
         private final Schedule schedule;
         private Class<T> dataClass;
-        private T initialData;
         private FailureHandler<T> onFailure;
         private DeadExecutionHandler<T> onDeadExecution;
+		private ScheduleOnStartup<T> scheduleOnStartup;
 
         public RecurringTaskBuilder(String name, Schedule schedule, Class<T> dataClass) {
             this.name = name;
@@ -58,6 +61,7 @@ public class Tasks {
             this.dataClass = dataClass;
             this.onFailure = new FailureHandler.OnFailureReschedule<>(schedule);
             this.onDeadExecution = new DeadExecutionHandler.ReviveDeadExecution<>();
+            this.scheduleOnStartup = new ScheduleOnStartup<>(RecurringTask.INSTANCE, null, schedule::getInitialExecutionTime);
         }
 
         public RecurringTaskBuilder<T> onFailureReschedule() {
@@ -81,12 +85,12 @@ public class Tasks {
         }
 
         public RecurringTaskBuilder<T> initialData(T initialData) {
-            this.initialData = initialData;
+            this.scheduleOnStartup = new ScheduleOnStartup<>(RecurringTask.INSTANCE, initialData, schedule::getInitialExecutionTime);
             return this;
         }
 
         public RecurringTask<T> execute(VoidExecutionHandler<T> executionHandler) {
-            return new RecurringTask<T>(name, schedule, dataClass, initialData, onFailure, onDeadExecution) {
+            return new RecurringTask<T>(name, schedule, dataClass, scheduleOnStartup, onFailure, onDeadExecution) {
 
                 @Override
                 public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
@@ -173,8 +177,8 @@ public class Tasks {
             return this;
         }
 
-        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData) {
-            this.onStartup = new ScheduleOnStartup<T>(instance, initialData);
+        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData, Function<Instant,Instant> firstExecutionTime) {
+            this.onStartup = new ScheduleOnStartup<T>(instance, initialData, firstExecutionTime);
             return this;
         }
 

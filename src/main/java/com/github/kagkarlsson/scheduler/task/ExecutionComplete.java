@@ -44,6 +44,15 @@ public class ExecutionComplete {
 	public static ExecutionComplete failure(Execution execution, Instant timeStarted, Instant timeDone, Throwable cause) {
 		return new ExecutionComplete(execution, timeStarted, timeDone, Result.FAILED, cause);
 	}
+
+	/**
+	 * Simulated ExecutionComplete used to generate first execution-time from a Schedule.
+	 */
+	public static ExecutionComplete simulatedSuccess(Instant timeDone) {
+		TaskInstance nonExistingTaskInstance = new TaskInstance("non-existing-task", "non-existing-id");
+		Execution nonExistingExecution = new Execution(timeDone, nonExistingTaskInstance, false, "simulated-picked-by", timeDone, null, 0, null, 1);
+		return new ExecutionComplete(nonExistingExecution, timeDone.minus(Duration.ofSeconds(1)), timeDone, Result.OK, null);
+	}
 	
 	public Execution getExecution() {
 		return execution;

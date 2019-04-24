@@ -57,4 +57,9 @@ public class FixedDelay implements Schedule {
 	public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
 		return executionComplete.getTimeDone().plus(duration);
 	}
+
+	@Override
+	public Instant getInitialExecutionTime(Instant now) {
+		return now;
+	}
 }

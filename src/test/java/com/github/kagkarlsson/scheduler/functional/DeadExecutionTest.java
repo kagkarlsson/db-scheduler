@@ -10,8 +10,6 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -25,21 +23,12 @@ import static org.junit.Assert.assertEquals;
 
 public class DeadExecutionTest {
 
-	private SettableClock clock;
-
 	@Rule
 	public EmbeddedPostgresqlRule postgres = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
 	@Rule
 	public Timeout timeout = new Timeout(5, TimeUnit.SECONDS);
 	@Rule
 	public StopSchedulerRule stopScheduler = new StopSchedulerRule();
-
-
-	@Before
-	public void setUp() {
-		clock = new SettableClock();
-
-	}
 
 	@Test
 	public void test_dead_execution() {

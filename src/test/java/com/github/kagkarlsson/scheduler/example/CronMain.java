@@ -3,9 +3,11 @@ package com.github.kagkarlsson.scheduler.example;
 import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +23,8 @@ public class CronMain {
 
     private static void example(DataSource dataSource) {
 
-        RecurringTask<Void> cronTask = Tasks.recurring("cron-task", Schedules.cron("*/3 * * * * ?"))
+        Schedule cron = Schedules.cron("*/10 * * * * ?");
+		RecurringTask<Void> cronTask = Tasks.recurring("cron-task", cron)
                 .execute((taskInstance, executionContext) -> {
                     System.out.println(Instant.now().getEpochSecond() + "s  -  Cron-schedule!");
                 });

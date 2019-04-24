@@ -160,7 +160,7 @@ The library contains a number of Schedule-implementations for recurring tasks. S
 | Schedule  | Description |
 | ------------- | ------------- |
 | `.daily(LocalTime ...)`  | Runs every day at specified times. |
-| `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. |
+| `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)|
 | `.cron(String)`  | Spring-style cron-expression. |
 
 
@@ -178,7 +178,7 @@ The term _recurring task_ is used for tasks that should be run regularly, accord
 
 When the execution of a recurring task has finished, a `Schedule` is consulted to determine what the next time for execution should be, and a future task-execution is created for that time (i.e. it is _rescheduled_). The time chosen will be the nearest time according to the `Schedule`, but still in the future.
 
-To create the initial execution for a `RecurringTask`, the scheduler has a method  `startTasks(...)` that takes a list of tasks that should be "started" if they do not already have a future execution. Note: The first execution-time will not be according to the schedule, but simply `now()`.
+To create the initial execution for a `RecurringTask`, the scheduler has a method  `startTasks(...)` that takes a list of tasks that should be "started" if they do not already have a future execution.
 
 ### One-time tasks
 

@@ -44,7 +44,7 @@ public class SchedulerMain {
 		// recurring with changing data
 		Schedule custom1Schedule = FixedDelay.of(Duration.ofSeconds(4));
 		CustomTask<Integer> custom1 = Tasks.custom("recurring_changing_data", Integer.class)
-				.scheduleOnStartup("instance1", 1)
+				.scheduleOnStartup("instance1", 1, custom1Schedule::getInitialExecutionTime)
 				.onFailureReschedule(custom1Schedule)  // default
 				.onDeadExecutionRevive()               // default
 				.execute((taskInstance, executionContext) -> {

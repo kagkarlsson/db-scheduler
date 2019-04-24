@@ -15,13 +15,12 @@
  */
 package com.github.kagkarlsson.scheduler.task.helper;
 
+import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
-
-import java.time.Instant;
 
 public abstract class CustomTask<T> extends Task<T> implements OnStartup {
     private ScheduleOnStartup<T> scheduleOnStartup;
@@ -32,13 +31,9 @@ public abstract class CustomTask<T> extends Task<T> implements OnStartup {
     }
 
     @Override
-    public void onStartup(Scheduler scheduler) {
+    public void onStartup(Scheduler scheduler, Clock clock) {
         if (scheduleOnStartup != null) {
-            if (scheduleOnStartup.data == null) {
-                scheduler.schedule(this.instance(scheduleOnStartup.instance), Instant.now());
-            } else {
-                scheduler.schedule(this.instance(scheduleOnStartup.instance, scheduleOnStartup.data), Instant.now());
-            }
+        		scheduleOnStartup.apply(scheduler, clock, this);
         }
     }
 }

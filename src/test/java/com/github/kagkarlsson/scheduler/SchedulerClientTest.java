@@ -1,17 +1,15 @@
 package com.github.kagkarlsson.scheduler;
 
 import co.unruly.matchers.OptionalMatchers;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
+import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
-import com.github.kagkarlsson.scheduler.task.helper.ComposableTask.ExecutionHandlerWithExternalCompletion;
-import com.github.kagkarlsson.scheduler.task.ExecutionContext;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.google.common.collect.Lists;
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -111,7 +109,7 @@ public class SchedulerClientTest {
     }
 
 
-    public static class ScheduleAnotherTaskHandler<T> implements ExecutionHandlerWithExternalCompletion<T> {
+    public static class ScheduleAnotherTaskHandler<T> implements VoidExecutionHandler<T> {
         public int timesExecuted = 0;
         private final TaskInstance<Void> secondTask;
         private final Instant instant;
