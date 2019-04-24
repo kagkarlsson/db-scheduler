@@ -23,7 +23,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>5.1</version>
+    <version>5.2</version>
 </dependency>
 ```
 
@@ -212,6 +212,9 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 
 ## Versions / upgrading
+
+### Version 5.2
+* PR [#60](https://github.com/kagkarlsson/db-scheduler/pull/60) changes `RecurringTask` so that initial/first execution-time is defined in the `Schedule` and typically is the next Instant according to the Schedule. 
 
 ### Version 5.1
 * PR [#52](https://github.com/kagkarlsson/db-scheduler/pull/52) redesigns use of the underlying `ExecutorService`, making better use of the backing queue. 
