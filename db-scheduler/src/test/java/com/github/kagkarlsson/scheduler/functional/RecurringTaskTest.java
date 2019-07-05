@@ -8,16 +8,13 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 
 import java.time.*;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static org.junit.Assert.assertThat;

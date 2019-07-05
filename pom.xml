@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.github.kagkarlsson</groupId>
-	<artifactId>db-scheduler</artifactId>
+	<artifactId>db-scheduler-parent</artifactId>
 	<version>5.3-SNAPSHOT</version>
-	<packaging>jar</packaging>
+    <packaging>pom</packaging>
 
-	<name>Db-scheduler</name>
+	<name>DB Scheduler: Parent</name>
 	<description>Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.</description>
 	<url>https://github.com/kagkarlsson/db-scheduler</url>
 	<developers>
@@ -28,14 +28,22 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jdk.version>1.8</jdk.version>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>${jdk.version}</maven.compiler.source>
+		<maven.compiler.target>${jdk.version}</maven.compiler.target>
 		<compilerArgument />
 		<skipChecks>false</skipChecks>
 		<failOnMissingHeader>true</failOnMissingHeader>
+		<main.basedir>${project.basedir}</main.basedir>
+
+		<!-- Dependency versions -->
 		<slf4j.version>1.7.7</slf4j.version>
 		<hamcrest.version>1.3</hamcrest.version>
+		<gpg-maven-plugin.version>1.6</gpg-maven-plugin.version>
 	</properties>
+
+	<modules>
+		<module>db-scheduler</module>
+	</modules>
 
 	<dependencies>
 		<dependency>
@@ -135,7 +143,6 @@
 			<scope>test</scope>
 		</dependency>
 		-->
-
 	</dependencies>
 
 	<build>
@@ -153,9 +160,9 @@
 					<artifactId>maven-notice-plugin</artifactId>
 					<version>1.0.6.1</version>
 					<configuration>
-						<noticeTemplate>${project.basedir}/src/main/notice/NOTICE.template</noticeTemplate>
+						<noticeTemplate>${main.basedir}/src/main/notice/NOTICE.template</noticeTemplate>
 						<licenseMapping>
-							<param>${project.basedir}/src/main/notice/license-mappings.xml</param>
+							<param>${main.basedir}/src/main/notice/license-mappings.xml</param>
 						</licenseMapping>
 						<skipChecks>${skipChecks}</skipChecks>
 					</configuration>
@@ -330,7 +337,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-gpg-plugin</artifactId>
-					<version>1.6</version>
+					<version>${gpg-maven-plugin.version}</version>
 					<executions>
 						<execution>
 							<id>sign-artifacts</id>
@@ -373,18 +380,7 @@
 				</executions>
 			</plugin>
 			<plugin>
-				<groupId>com.mycila</groupId>
-				<artifactId>license-maven-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<groupId>org.jasig.maven</groupId>
-				<artifactId>maven-notice-plugin</artifactId>
-			</plugin>
-			<plugin>
 				<artifactId>maven-enforcer-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<artifactId>maven-shade-plugin</artifactId>
 			</plugin>
 		</plugins>
 
@@ -416,6 +412,7 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-gpg-plugin</artifactId>
+						<version>${gpg-maven-plugin.version}</version>
 					</plugin>
 				</plugins>
 			</build>

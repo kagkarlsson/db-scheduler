@@ -2,7 +2,6 @@ package com.github.kagkarlsson.scheduler.example;
 
 import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
@@ -15,8 +14,6 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoField;
-import java.time.temporal.TemporalField;
 
 public class CronMain {
     private static final Logger LOG = LoggerFactory.getLogger(CronMain.class);
