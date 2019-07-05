@@ -33,7 +33,7 @@
 		<compilerArgument />
 		<skipChecks>false</skipChecks>
 		<failOnMissingHeader>true</failOnMissingHeader>
-		<main.basedir>${project.basedir}</main.basedir>
+		<license.dir>${project.basedir}/.license</license.dir>
 
 		<!-- Dependency versions -->
 		<slf4j.version>1.7.7</slf4j.version>
@@ -160,9 +160,9 @@
 					<artifactId>maven-notice-plugin</artifactId>
 					<version>1.0.6.1</version>
 					<configuration>
-						<noticeTemplate>${main.basedir}/src/main/notice/NOTICE.template</noticeTemplate>
+						<noticeTemplate>${license.dir}/NOTICE.template</noticeTemplate>
 						<licenseMapping>
-							<param>${main.basedir}/src/main/notice/license-mappings.xml</param>
+							<param>${license.dir}/license-mappings.xml</param>
 						</licenseMapping>
 						<skipChecks>${skipChecks}</skipChecks>
 					</configuration>
@@ -173,6 +173,7 @@
 								<goal>check</goal>
 							</goals>
 							<phase>verify</phase>
+							<inherited>false</inherited>
 						</execution>
 					</executions>
 
@@ -182,7 +183,7 @@
 					<artifactId>license-maven-plugin</artifactId>
 					<version>2.11</version>
 					<configuration>
-						<header>src/main/license-header.txt</header>
+						<header>${license.dir}/license-header.txt</header>
 						<strictCheck>true</strictCheck>
 						<excludes>
 							<exclude>pom.xml</exclude>
@@ -190,8 +191,7 @@
 							<exclude>NOTICE</exclude>
 							<exclude>todo.txt</exclude>
 							<exclude>.java-version</exclude>
-							<exclude>src/main/notice/NOTICE.template</exclude>
-							<exclude>src/main/notice/license-mappings.xml</exclude>
+							<exclude>.license/**</exclude>
 							<exclude>src/test/**</exclude>
 						</excludes>
 						<failIfMissing>${failOnMissingHeader}</failIfMissing>
@@ -378,6 +378,10 @@
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.jasig.maven</groupId>
+				<artifactId>maven-notice-plugin</artifactId>
 			</plugin>
 			<plugin>
 				<artifactId>maven-enforcer-plugin</artifactId>

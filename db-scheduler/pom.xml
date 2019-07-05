@@ -13,7 +13,7 @@
     <name>DB Scheduler: Core</name>
 
     <properties>
-        <main.basedir>${project.parent.basedir}</main.basedir>
+        <license.dir>${project.parent.basedir}/.license</license.dir>
     </properties>
 
     <build>
@@ -36,10 +36,6 @@
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.jasig.maven</groupId>
-                <artifactId>maven-notice-plugin</artifactId>
             </plugin>
             <plugin>
                 <artifactId>maven-enforcer-plugin</artifactId>
