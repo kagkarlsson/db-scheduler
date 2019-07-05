@@ -39,10 +39,12 @@
 		<slf4j.version>1.7.7</slf4j.version>
 		<hamcrest.version>1.3</hamcrest.version>
 		<gpg-maven-plugin.version>1.6</gpg-maven-plugin.version>
+		<spring-boot.version>2.1.6.RELEASE</spring-boot.version>
 	</properties>
 
 	<modules>
 		<module>db-scheduler</module>
+		<module>db-scheduler-boot-starter</module>
 	</modules>
 
 	<dependencies>
@@ -257,6 +259,25 @@
 									<include>org.apache.commons:commons-compress</include>
 									<include>org.tukaani:xz</include>
 									<include>co.unruly:java-8-matchers</include>
+									<!-- Spring Boot integration -->
+									<include>org.springframework.boot:spring-boot-autoconfigure</include>
+									<include>org.slf4j:jul-to-slf4j</include>
+									<include>org.springframework:spring-jcl</include>
+									<include>com.github.kagkarlsson:db-scheduler</include>
+									<include>org.apache.logging.log4j:log4j-api</include>
+									<include>org.springframework.boot:spring-boot</include>
+									<include>ch.qos.logback:logback-core</include>
+									<include>org.springframework.boot:spring-boot-starter</include>
+									<include>org.springframework:spring-core</include>
+									<include>org.springframework:spring-expression</include>
+									<include>ch.qos.logback:logback-classic</include>
+									<include>javax.annotation:javax.annotation-api</include>
+									<include>org.springframework:spring-aop</include>
+									<include>org.springframework:spring-beans</include>
+									<include>org.apache.logging.log4j:log4j-to-slf4j</include>
+									<include>org.yaml:snakeyaml</include>
+									<include>org.springframework.boot:spring-boot-starter-logging</include>
+									<include>org.springframework:spring-context</include>
 								</includes>
 								<searchTransitive>true</searchTransitive>
 								<message>
