@@ -1,26 +1,28 @@
 package com.github.kagkarlsson.scheduler;
 
+import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.ComposableTask;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.google.common.util.concurrent.MoreExecutors;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class SchedulerTest {
 
@@ -36,7 +38,7 @@ public class SchedulerTest {
 		handler = new TestTasks.CountingHandler<>();
 	}
 
-	private Scheduler schedulerFor(Task<?> ... tasks) {
+	private Scheduler schedulerFor(Task<?>... tasks) {
 		return schedulerFor(MoreExecutors.newDirectExecutorService(), tasks);
 	}
 
