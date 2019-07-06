@@ -15,22 +15,21 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
+import static com.github.kagkarlsson.scheduler.Scheduler.THREAD_PREFIX;
+
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
-import static com.github.kagkarlsson.scheduler.Scheduler.THREAD_PREFIX;
+import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SchedulerBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);

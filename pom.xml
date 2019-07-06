@@ -278,6 +278,9 @@
 									<include>org.yaml:snakeyaml</include>
 									<include>org.springframework.boot:spring-boot-starter-logging</include>
 									<include>org.springframework:spring-context</include>
+									<include>org.springframework.boot:spring-boot-autoconfigure-processor</include>
+									<include>org.springframework.boot:spring-boot-configuration-processor</include>
+									<include>javax.validation:validation-api</include>
 								</includes>
 								<searchTransitive>true</searchTransitive>
 								<message>

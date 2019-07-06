@@ -14,6 +14,7 @@ This software includes third party software subject to the following licenses:
   Apache Commons Lang under Apache License, Version 2.0
   Apache Log4j API under Apache License, Version 2.0
   Apache Log4j to SLF4J Adapter under Apache License, Version 2.0
+  Bean Validation API under Apache License 2.0
   cron-utils under Apache 2.0
   DB Scheduler: Core under The Apache Software License, Version 2.0
   DB Scheduler: Parent under The Apache Software License, Version 2.0
@@ -39,7 +40,9 @@ This software includes third party software subject to the following licenses:
   Spring AOP under Apache License, Version 2.0
   Spring Beans under Apache License, Version 2.0
   Spring Boot under Apache License, Version 2.0
+  Spring Boot Auto-Configure Annotation Processor under Apache License, Version 2.0
   Spring Boot AutoConfigure under Apache License, Version 2.0
+  Spring Boot Configuration Processor under Apache License, Version 2.0
   Spring Boot Logging Starter under Apache License, Version 2.0
   Spring Boot Starter under Apache License, Version 2.0
   Spring Commons Logging Bridge under Apache License, Version 2.0
