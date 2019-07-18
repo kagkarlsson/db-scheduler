@@ -294,6 +294,26 @@
 									<include>org.springframework.boot:spring-boot-autoconfigure-processor</include>
 									<include>org.springframework.boot:spring-boot-configuration-processor</include>
 									<include>javax.validation:validation-api</include>
+									<include>net.minidev:json-smart</include>
+									<include>org.skyscreamer:jsonassert</include>
+									<include>org.springframework.boot:spring-boot-test-autoconfigure</include>
+									<include>net.minidev:accessors-smart</include>
+									<include>org.ow2.asm:asm</include>
+									<include>org.jboss.logging:jboss-logging</include>
+									<include>org.springframework.boot:spring-boot-starter-jdbc</include>
+									<include>org.xmlunit:xmlunit-core</include>
+									<include>org.springframework:spring-jdbc</include>
+									<include>org.hibernate.validator:hibernate-validator</include>
+									<include>org.assertj:assertj-core</include>
+									<include>com.fasterxml:classmate</include>
+									<include>org.springframework.boot:spring-boot-test</include>
+									<include>net.bytebuddy:byte-buddy</include>
+									<include>com.jayway.jsonpath:json-path</include>
+									<include>org.springframework:spring-tx</include>
+									<include>org.springframework:spring-test</include>
+									<include>com.vaadin.external.google:android-json</include>
+									<include>org.springframework.boot:spring-boot-starter-test</include>
+									<include>net.bytebuddy:byte-buddy-agent</include>
 								</includes>
 								<searchTransitive>true</searchTransitive>
 								<message>

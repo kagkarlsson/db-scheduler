@@ -14,7 +14,13 @@ This software includes third party software subject to the following licenses:
   Apache Commons Lang under Apache License, Version 2.0
   Apache Log4j API under Apache License, Version 2.0
   Apache Log4j to SLF4J Adapter under Apache License, Version 2.0
+  ASM based accessors helper used by json-smart under The Apache Software License, Version 2.0
+  ASM Core under BSD
+  AssertJ fluent assertions under Apache License, Version 2.0
   Bean Validation API under Apache License 2.0
+  Byte Buddy (without dependencies) under Apache License, Version 2.0
+  Byte Buddy Java agent under Apache License, Version 2.0
+  ClassMate under The Apache Software License, Version 2.0
   cron-utils under Apache 2.0
   DB Scheduler: Core under The Apache Software License, Version 2.0
   DB Scheduler: Parent under The Apache Software License, Version 2.0
@@ -22,18 +28,27 @@ This software includes third party software subject to the following licenses:
   Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
   Hamcrest Core under New BSD License
   Hamcrest library under New BSD License
+  Hibernate Validator Engine under Apache License 2.0
   HikariCP under The Apache Software License, Version 2.0
   HyperSQL Database under HSQLDB License, a BSD open source license
   java-8-matchers under MIT License
   javax.annotation API under CDDL + GPLv2 with classpath exception
+  JBoss Logging 3 under Apache License, version 2.0
   JCL 1.2 implemented over SLF4J under MIT License
+  JSON library from Android SDK under Apache License 2.0
+  JSON Small and Fast Parser under The Apache Software License, Version 2.0
+  JSONassert under The Apache Software License, Version 2.0
   JUL to SLF4J bridge under MIT License
   JUnit under Eclipse Public License 1.0
   Logback Classic Module under Eclipse Public License - v 1.0 or GNU Lesser General Public License
   Logback Core Module under Eclipse Public License - v 1.0 or GNU Lesser General Public License
   Micro JDBC under The Apache Software License, Version 2.0
+  mockito-core under The MIT License
+  Objenesis under Apache 2
+  org.xmlunit:xmlunit-core under The Apache Software License, Version 2.0
   otj-pg-embedded under Apache License, Version 2.0
   PostgreSQL JDBC Driver - JDBC 4.2 under The PostgreSQL License
+  project ':json-path' under The Apache Software License, Version 2.0
   SLF4J API Module under MIT License
   SLF4J Simple Binding under MIT License
   SnakeYAML under Apache License, Version 2.0
@@ -43,12 +58,19 @@ This software includes third party software subject to the following licenses:
   Spring Boot Auto-Configure Annotation Processor under Apache License, Version 2.0
   Spring Boot AutoConfigure under Apache License, Version 2.0
   Spring Boot Configuration Processor under Apache License, Version 2.0
+  Spring Boot JDBC Starter under Apache License, Version 2.0
   Spring Boot Logging Starter under Apache License, Version 2.0
   Spring Boot Starter under Apache License, Version 2.0
+  Spring Boot Test under Apache License, Version 2.0
+  Spring Boot Test Auto-Configure under Apache License, Version 2.0
+  Spring Boot Test Starter under Apache License, Version 2.0
   Spring Commons Logging Bridge under Apache License, Version 2.0
   Spring Context under Apache License, Version 2.0
   Spring Core under Apache License, Version 2.0
   Spring Expression Language (SpEL) under Apache License, Version 2.0
+  Spring JDBC under Apache License, Version 2.0
+  Spring TestContext Framework under Apache License, Version 2.0
+  Spring Transaction under Apache License, Version 2.0
   XZ for Java under Public Domain
 
 

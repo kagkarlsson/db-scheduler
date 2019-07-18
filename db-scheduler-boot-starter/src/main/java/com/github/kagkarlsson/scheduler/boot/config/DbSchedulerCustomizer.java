@@ -10,24 +10,24 @@ import java.util.concurrent.ExecutorService;
  * is not easily done with properties.
  */
 public interface DbSchedulerCustomizer {
-  /**
-   * Provide a custom {@link SchedulerName} implementation.
-   */
-  default Optional<SchedulerName> schedulerName() {
-    return Optional.empty();
-  }
+    /**
+     * Provide a custom {@link SchedulerName} implementation.
+     */
+    default Optional<SchedulerName> schedulerName() {
+        return Optional.empty();
+    }
 
-  /**
-   * A custom serializer for task data.
-   */
-  default Optional<Serializer> serializer() {
-    return Optional.empty();
-  }
+    /**
+     * A custom serializer for task data.
+     */
+    default Optional<Serializer> serializer() {
+        return Optional.empty();
+    }
 
-  /**
-   * Provide an existing {@link ExecutorService} instance.
-   */
-  default Optional<ExecutorService> executorService() {
-    return Optional.empty();
-  }
+    /**
+     * Provide an existing {@link ExecutorService} instance.
+     */
+    default Optional<ExecutorService> executorService() {
+        return Optional.empty();
+    }
 }
