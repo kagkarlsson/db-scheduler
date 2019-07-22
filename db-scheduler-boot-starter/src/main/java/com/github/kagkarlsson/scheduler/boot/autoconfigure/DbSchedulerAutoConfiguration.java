@@ -9,6 +9,8 @@ import com.github.kagkarlsson.scheduler.task.Task;
 import java.util.List;
 import java.util.Objects;
 import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -24,9 +26,11 @@ import org.springframework.context.annotation.Configuration;
 @AutoConfigureAfter(DataSourceAutoConfiguration.class)
 @ConditionalOnBean(DataSource.class)
 public class DbSchedulerAutoConfiguration {
-    final DbSchedulerProperties config;
-    final DataSource existingDataSource;
-    final List<Task<?>> configuredTasks;
+    private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfiguration.class);
+
+    private final DbSchedulerProperties config;
+    private final DataSource existingDataSource;
+    private final List<Task<?>> configuredTasks;
 
     public DbSchedulerAutoConfiguration(DbSchedulerProperties dbSchedulerProperties,
         DataSource dataSource, List<Task<?>> configuredTasks) {
@@ -49,6 +53,8 @@ public class DbSchedulerAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean(initMethod = "start", destroyMethod = "stop")
     public Scheduler scheduler(DbSchedulerCustomizer customizer) {
+        log.info("Creating DB Scheduler using tasks from Spring context: {}", configuredTasks);
+
         // Instantiate a new builder
         final SchedulerBuilder builder = Scheduler.create(existingDataSource, configuredTasks);
 

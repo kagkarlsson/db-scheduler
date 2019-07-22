@@ -4,17 +4,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.helper.Tasks;
+import com.google.common.collect.ImmutableList;
+import java.util.Objects;
 import javax.sql.DataSource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 @RunWith(JUnit4.class)
 public class DbSchedulerAutoConfigurationTest {
+    private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfigurationTest.class);
     private final ApplicationContextRunner ctxRunner;
 
     public DbSchedulerAutoConfigurationTest() {
@@ -37,5 +46,65 @@ public class DbSchedulerAutoConfigurationTest {
                 fail("No scheduled executions should be present", execution);
             });
         });
+    }
+
+    @Test
+    public void it_should_initialize_a_scheduler_with_a_single_task() {
+        ctxRunner
+            .withUserConfiguration(SingleTaskConfiguration.class)
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(Scheduler.class);
+                assertThat(ctx).hasSingleBean(Task.class);
+                assertThat(ctx).getBean("singleStringTask", Task.class).isNotNull();
+            });
+    }
+
+    @Test
+    public void it_should_initialize_a_scheduler_with_a_multiple_tasks() {
+        ctxRunner
+            .withUserConfiguration(MultipleTasksConfiguration.class)
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(Scheduler.class);
+
+                ImmutableList.of("firstTask", "secondTask", "thirdTask").forEach(beanName -> {
+                    assertThat(ctx).getBean(beanName, Task.class).isNotNull();
+                });
+            });
+    }
+
+    @Configuration
+    static class SingleTaskConfiguration {
+        @Bean
+        Task<String> singleStringTask() {
+            return namedStringTask("single-string-task");
+        }
+    }
+
+    @Configuration
+    static class MultipleTasksConfiguration {
+        @Bean
+        Task<String> firstTask() {
+            return namedStringTask("first-task");
+        }
+
+        @Bean
+        Task<String> secondTask() {
+            return namedStringTask("second-task");
+        }
+
+        @Bean
+        Task<String> thirdTask() {
+            return  namedStringTask("third-task");
+        }
+    }
+
+    private static Task<String> namedStringTask(String name) {
+        Objects.requireNonNull(name);
+
+        return Tasks
+            .oneTime(name, String.class)
+            .execute((instance, context) -> {
+                log.info("Executed task: {}, ctx: {}", instance, context);
+            });
     }
 }
