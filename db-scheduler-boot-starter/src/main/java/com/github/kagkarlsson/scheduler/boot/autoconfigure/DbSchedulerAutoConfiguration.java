@@ -19,6 +19,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 
 @Configuration
 @EnableConfigurationProperties(DbSchedulerProperties.class)
@@ -54,6 +55,12 @@ public class DbSchedulerAutoConfiguration {
     @Bean(initMethod = "start", destroyMethod = "stop")
     public Scheduler scheduler(DbSchedulerCustomizer customizer) {
         log.info("Creating DB Scheduler using tasks from Spring context: {}", configuredTasks);
+
+        if (existingDataSource instanceof TransactionAwareDataSourceProxy) {
+            log.info("Using a transaction aware DataSource");
+        } else {
+            log.info("The configured DataSource is not transaction aware: {}", existingDataSource);
+        }
 
         // Instantiate a new builder
         final SchedulerBuilder builder = Scheduler.create(existingDataSource, configuredTasks);
