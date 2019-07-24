@@ -5,9 +5,12 @@ import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
+import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,7 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 @ConditionalOnBean(DataSource.class)
 public class DbSchedulerAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfiguration.class);
+    private static Predicate<Task<?>> shouldBeStarted = task -> task instanceof OnStartup;
 
     private final DbSchedulerProperties config;
     private final DataSource existingDataSource;
@@ -63,7 +67,7 @@ public class DbSchedulerAutoConfiguration {
         }
 
         // Instantiate a new builder
-        final SchedulerBuilder builder = Scheduler.create(existingDataSource, configuredTasks);
+        final SchedulerBuilder builder = Scheduler.create(existingDataSource, nonStartupTasks(configuredTasks));
 
         builder.threads(config.getThreads());
 
@@ -93,6 +97,23 @@ public class DbSchedulerAutoConfiguration {
         // Use custom executor service if provided
         customizer.executorService().ifPresent(builder::executorService);
 
+        // Add recurring jobs and jobs that implements OnStartup
+        builder.startTasks(startupTasks(configuredTasks));
+
         return builder.build();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Task<?> & OnStartup> List<T> startupTasks(List<Task<?>> tasks) {
+        return tasks.stream()
+            .filter(shouldBeStarted)
+            .map(task -> (T) task)
+            .collect(Collectors.toList());
+    }
+
+    private static List<Task<?>> nonStartupTasks(List<Task<?>> tasks) {
+        return tasks.stream()
+            .filter(shouldBeStarted.negate())
+            .collect(Collectors.toList());
     }
 }
