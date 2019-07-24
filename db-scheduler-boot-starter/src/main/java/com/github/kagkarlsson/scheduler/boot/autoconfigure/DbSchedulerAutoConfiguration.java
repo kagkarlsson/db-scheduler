@@ -63,7 +63,7 @@ public class DbSchedulerAutoConfiguration {
         if (existingDataSource instanceof TransactionAwareDataSourceProxy) {
             log.info("Using a transaction aware DataSource");
         } else {
-            log.info("The configured DataSource is not transaction aware: {}", existingDataSource);
+            log.info("The configured DataSource is not transaction aware: '{}'. Operations such as schedule, reschedule and cancel will have effect regardless of spanning transactions.", existingDataSource);
         }
 
         // Instantiate a new builder
