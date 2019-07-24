@@ -49,7 +49,7 @@ public class DbSchedulerProperties {
      * scheduler (if this is a requirement, see the method
      * {@code scheduler.triggerCheckForDueExecutions())}
      */
-    private boolean immediateExecution = false;
+    private boolean immediateExecutionEnabled = false;
 
     /**
      * <p>How often the scheduler checks the database for due executions.
@@ -95,12 +95,12 @@ public class DbSchedulerProperties {
         this.tableName = tableName;
     }
 
-    public boolean isImmediateExecution() {
-        return immediateExecution;
+    public boolean isImmediateExecutionEnabled() {
+        return immediateExecutionEnabled;
     }
 
-    public void setImmediateExecution(boolean immediateExecution) {
-        this.immediateExecution = immediateExecution;
+    public void setImmediateExecutionEnabled(boolean immediateExecutionEnabled) {
+        this.immediateExecutionEnabled = immediateExecutionEnabled;
     }
 
     public Duration getPollingInterval() {

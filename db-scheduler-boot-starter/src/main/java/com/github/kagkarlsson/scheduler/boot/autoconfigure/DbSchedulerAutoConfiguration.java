@@ -86,7 +86,7 @@ public class DbSchedulerAutoConfiguration {
         // Use custom serializer if provided
         customizer.serializer().ifPresent(builder::serializer);
 
-        if (config.isImmediateExecution()) {
+        if (config.isImmediateExecutionEnabled()) {
             builder.enableImmediateExecution();
         }
 
