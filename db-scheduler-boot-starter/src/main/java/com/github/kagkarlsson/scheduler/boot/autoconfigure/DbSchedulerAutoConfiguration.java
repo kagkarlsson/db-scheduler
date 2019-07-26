@@ -22,6 +22,7 @@ import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,7 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 @AutoConfigurationPackage
 @AutoConfigureAfter({DataSourceAutoConfiguration.class, HealthIndicatorAutoConfiguration.class})
 @ConditionalOnBean(DataSource.class)
+@ConditionalOnProperty(value = "db-scheduler.enabled", matchIfMissing = true)
 public class DbSchedulerAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfiguration.class);
     private static Predicate<Task<?>> shouldBeStarted = task -> task instanceof OnStartup;

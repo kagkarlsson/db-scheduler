@@ -14,6 +14,11 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("db-scheduler")
 public class DbSchedulerProperties {
+    /**
+     * Whether to enable auto configuration of the DB scheduler.
+     */
+    private boolean enabled = true;
+
     /***
      * <p>Number of threads.
      */
@@ -62,6 +67,14 @@ public class DbSchedulerProperties {
      * <p>Maximum number of executions to fetch on a check for due executions.
      */
     private Optional<Integer> pollingLimit = Optional.empty();
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+        this.enabled = enabled;
+    }
 
     public int getThreads() {
         return threads;

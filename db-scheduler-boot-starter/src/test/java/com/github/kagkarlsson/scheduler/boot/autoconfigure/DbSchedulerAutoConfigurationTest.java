@@ -83,6 +83,15 @@ public class DbSchedulerAutoConfigurationTest {
             });
     }
 
+    @Test
+    public void it_should_skip_autoconfiguration_if_explicitly_disabled() {
+        ctxRunner
+            .withPropertyValues("db-scheduler.enabled=false")
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).doesNotHaveBean(Scheduler.class);
+            });
+    }
+
     @Configuration
     static class SingleTaskConfiguration {
         @Bean
