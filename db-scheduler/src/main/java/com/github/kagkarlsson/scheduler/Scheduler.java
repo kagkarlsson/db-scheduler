@@ -130,6 +130,10 @@ public class Scheduler implements SchedulerClient {
 		}
 	}
 
+	public SchedulerState getSchedulerState() {
+	    return schedulerState;
+    }
+
 	@Override
 	public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
 		this.delegate.schedule(taskInstance, executionTime);

@@ -31,6 +31,10 @@ This software includes third party software subject to the following licenses:
   Hibernate Validator Engine under Apache License 2.0
   HikariCP under The Apache Software License, Version 2.0
   HyperSQL Database under HSQLDB License, a BSD open source license
+  Jackson datatype: JSR310 under The Apache Software License, Version 2.0
+  Jackson-annotations under The Apache Software License, Version 2.0
+  Jackson-core under The Apache Software License, Version 2.0
+  jackson-databind under The Apache Software License, Version 2.0
   java-8-matchers under MIT License
   javax.annotation API under CDDL + GPLv2 with classpath exception
   JBoss Logging 3 under Apache License, version 2.0
@@ -55,6 +59,8 @@ This software includes third party software subject to the following licenses:
   Spring AOP under Apache License, Version 2.0
   Spring Beans under Apache License, Version 2.0
   Spring Boot under Apache License, Version 2.0
+  Spring Boot Actuator under Apache License, Version 2.0
+  Spring Boot Actuator AutoConfigure under Apache License, Version 2.0
   Spring Boot Auto-Configure Annotation Processor under Apache License, Version 2.0
   Spring Boot AutoConfigure under Apache License, Version 2.0
   Spring Boot Configuration Processor under Apache License, Version 2.0

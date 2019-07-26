@@ -46,6 +46,11 @@
             <artifactId>spring-jdbc</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <!-- Validation -->
         <dependency>

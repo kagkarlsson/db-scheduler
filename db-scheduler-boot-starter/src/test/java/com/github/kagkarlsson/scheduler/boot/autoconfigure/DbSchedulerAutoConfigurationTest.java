@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.google.common.collect.ImmutableList;
@@ -14,6 +15,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
@@ -72,6 +74,15 @@ public class DbSchedulerAutoConfigurationTest {
             });
     }
 
+    @Test
+    public void it_should_autoconfigure_a_health_check() {
+        ctxRunner
+            .withConfiguration(AutoConfigurations.of(HealthIndicatorAutoConfiguration.class))
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(DbSchedulerHealthIndicator.class);
+            });
+    }
+
     @Configuration
     static class SingleTaskConfiguration {
         @Bean
@@ -94,7 +105,7 @@ public class DbSchedulerAutoConfigurationTest {
 
         @Bean
         Task<String> thirdTask() {
-            return  namedStringTask("third-task");
+            return namedStringTask("third-task");
         }
     }
 

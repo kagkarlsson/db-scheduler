@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
+import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
@@ -14,6 +15,9 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.actuate.health.HealthIndicatorRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -27,7 +31,7 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 @Configuration
 @EnableConfigurationProperties(DbSchedulerProperties.class)
 @AutoConfigurationPackage
-@AutoConfigureAfter(DataSourceAutoConfiguration.class)
+@AutoConfigureAfter({DataSourceAutoConfiguration.class, HealthIndicatorAutoConfiguration.class})
 @ConditionalOnBean(DataSource.class)
 public class DbSchedulerAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfiguration.class);
@@ -101,6 +105,12 @@ public class DbSchedulerAutoConfiguration {
         builder.startTasks(startupTasks(configuredTasks));
 
         return builder.build();
+    }
+
+    @ConditionalOnBean({Scheduler.class, HealthIndicatorRegistry.class})
+    @Bean
+    public HealthIndicator dbScheduler(Scheduler scheduler) {
+        return new DbSchedulerHealthIndicator(scheduler);
     }
 
     @SuppressWarnings("unchecked")

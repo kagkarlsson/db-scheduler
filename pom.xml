@@ -181,6 +181,12 @@
 									<include>co.unruly:java-8-matchers</include>
 									<!-- Spring Boot integration -->
 									<include>org.springframework.boot:spring-boot-autoconfigure</include>
+									<include>org.springframework.boot:spring-boot-actuator-autoconfigure</include>
+									<include>org.springframework.boot:spring-boot-actuator</include>
+									<include>com.fasterxml.jackson.core:jackson-core</include>
+									<include>com.fasterxml.jackson.core:jackson-annotations</include>
+									<include>com.fasterxml.jackson.core:jackson-databind</include>
+									<include>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</include>
 									<include>org.slf4j:jul-to-slf4j</include>
 									<include>org.springframework:spring-jcl</include>
 									<include>com.github.kagkarlsson:db-scheduler</include>
