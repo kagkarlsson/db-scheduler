@@ -43,7 +43,8 @@
 	<modules>
 		<module>db-scheduler</module>
 		<module>db-scheduler-boot-starter</module>
-	</modules>
+        <module>examples</module>
+    </modules>
 
 	<dependencies>
 		<dependency>
@@ -227,6 +228,37 @@
 									<include>com.vaadin.external.google:android-json</include>
 									<include>org.springframework.boot:spring-boot-starter-test</include>
 									<include>net.bytebuddy:byte-buddy-agent</include>
+									<!-- Spring Boot example -->
+									<include>org.jboss:jandex</include>
+									<include>javax.xml.bind:jaxb-api</include>
+									<include>org.springframework.boot:spring-boot-starter-web</include>
+									<include>org.springframework.data:spring-data-commons</include>
+									<include>org.apache.tomcat.embed:tomcat-embed-el</include>
+									<include>org.hibernate:hibernate-core</include>
+									<include>org.hibernate.common:hibernate-commons-annotations</include>
+									<include>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</include>
+									<include>org.springframework.data:spring-data-jpa</include>
+									<include>org.springframework.boot:spring-boot-starter-aop</include>
+									<include>javax.transaction:javax.transaction-api</include>
+									<include>javax.activation:javax.activation-api</include>
+									<include>org.springframework:spring-aspects</include>
+									<include>org.springframework:spring-orm</include>
+									<include>org.springframework.boot:spring-boot-starter-tomcat</include>
+									<include>org.springframework:spring-web</include>
+									<include>org.aspectj:aspectjweaver</include>
+									<include>org.hdrhistogram:HdrHistogram</include>
+									<include>org.apache.tomcat.embed:tomcat-embed-core</include>
+									<include>org.springframework.boot:spring-boot-starter-actuator</include>
+									<include>com.github.kagkarlsson:db-scheduler-spring-boot-starter</include>
+									<include>com.fasterxml.jackson.module:jackson-module-parameter-names</include>
+									<include>org.springframework.boot:spring-boot-starter-data-jpa</include>
+									<include>org.apache.tomcat.embed:tomcat-embed-websocket</include>
+									<include>org.latencyutils:LatencyUtils</include>
+									<include>org.springframework.boot:spring-boot-starter-json</include>
+									<include>org.springframework:spring-webmvc</include>
+									<include>io.micrometer:micrometer-core</include>
+									<include>javax.persistence:javax.persistence-api</include>
+									<include>org.dom4j:dom4j</include>
 								</includes>
 								<searchTransitive>true</searchTransitive>
 								<message>
