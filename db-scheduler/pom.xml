@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>db-scheduler</artifactId>
-    <name>DB Scheduler: Core</name>
+    <name>db-scheduler: Core</name>
 
     <properties>
         <license.dir>${project.parent.basedir}/.license</license.dir>

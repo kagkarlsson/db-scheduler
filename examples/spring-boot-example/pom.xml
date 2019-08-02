@@ -10,15 +10,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>spring-boot-example</artifactId>
-    <name>DB Scheduler: Examples: Spring Boot</name>
-    <description>Examples on how to use DB Scheduler with Spring Boot</description>
+    <name>db-scheduler: Examples: Spring Boot</name>
+    <description>Examples on how to use db-scheduler with Spring Boot</description>
 
     <properties>
         <license.dir>${project.parent.parent.basedir}/.license</license.dir>
     </properties>
 
     <dependencies>
-        <!-- DB Scheduler Spring Boot starter -->
+        <!-- db-scheduler Spring Boot starter -->
         <dependency>
             <groupId>com.github.kagkarlsson</groupId>
             <artifactId>db-scheduler-spring-boot-starter</artifactId>

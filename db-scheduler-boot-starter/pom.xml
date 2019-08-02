@@ -10,8 +10,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>db-scheduler-spring-boot-starter</artifactId>
-    <name>DB Scheduler: Spring Boot Starter</name>
-    <description>A starter for Spring Boot that will configure DB Scheduler</description>
+    <name>db-scheduler: Spring Boot Starter</name>
+    <description>A starter for Spring Boot that will configure db-scheduler</description>
 
     <properties>
         <license.dir>${project.parent.basedir}/.license</license.dir>

@@ -80,7 +80,7 @@ public class Scheduler implements SchedulerClient {
 	}
 
 	public void start() {
-		LOG.info("Starting scheduler");
+		LOG.info("Starting scheduler.");
 
 		executeOnStartup();
 

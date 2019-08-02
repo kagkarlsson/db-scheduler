@@ -15,7 +15,7 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("db-scheduler")
 public class DbSchedulerProperties {
     /**
-     * Whether to enable auto configuration of the DB scheduler.
+     * Whether to enable auto configuration of the db-scheduler.
      */
     private boolean enabled = true;
 

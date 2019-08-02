@@ -77,4 +77,8 @@ public class Waiter {
 		}
 	}
 
+	public Duration getWaitDuration() {
+	    return duration;
+    }
+
 }

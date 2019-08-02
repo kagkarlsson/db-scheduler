@@ -3,9 +3,15 @@ package com.github.kagkarlsson.examples.boot.config;
 import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDelay;
 
 import com.github.kagkarlsson.examples.boot.CounterService;
+import com.github.kagkarlsson.scheduler.SchedulerName;
+import com.github.kagkarlsson.scheduler.Serializer;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -38,5 +44,18 @@ public class TaskConfiguration {
             .execute((instance, ctx) -> {
                 log.info("I am a one-time task!");
             });
+    }
+
+    /**
+     * Bean defined when a configuration-property in DbSchedulerCustomizer needs to be overridden.
+     */
+    @Bean
+    DbSchedulerCustomizer customizer() {
+        return new DbSchedulerCustomizer() {
+            @Override
+            public Optional<SchedulerName> schedulerName() {
+                return Optional.of(new SchedulerName.Fixed("spring-boot-scheduler-1"));
+            }
+        };
     }
 }

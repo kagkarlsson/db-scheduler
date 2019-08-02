@@ -143,6 +143,13 @@ public class SchedulerBuilder {
             candidateExecutorService = Executors.newFixedThreadPool(executorThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
         }
 
+        LOG.info("Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s enable-immediate-execution={}, table-name={}, name={}",
+            waiter.getWaitDuration().getSeconds(),
+            executorThreads,
+            heartbeatInterval.getSeconds(),
+            enableImmediateExecution,
+            tableName,
+            schedulerName.getName());
         return new Scheduler(clock, taskRepository, taskResolver, executorThreads, candidateExecutorService,
                 schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, startTasks);
     }

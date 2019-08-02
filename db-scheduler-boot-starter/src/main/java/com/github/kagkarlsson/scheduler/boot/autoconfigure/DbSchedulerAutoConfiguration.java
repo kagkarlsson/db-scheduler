@@ -45,7 +45,7 @@ public class DbSchedulerAutoConfiguration {
 
     public DbSchedulerAutoConfiguration(DbSchedulerProperties dbSchedulerProperties,
         DataSource dataSource, List<Task<?>> configuredTasks) {
-        this.config = Objects.requireNonNull(dbSchedulerProperties, "Can't configure DB Scheduler without required configuration");
+        this.config = Objects.requireNonNull(dbSchedulerProperties, "Can't configure db-scheduler without required configuration");
         this.existingDataSource = Objects.requireNonNull(dataSource, "An existing javax.sql.DataSource is required");
         this.configuredTasks = Objects.requireNonNull(configuredTasks, "At least one Task must be configured");
     }
@@ -64,7 +64,7 @@ public class DbSchedulerAutoConfiguration {
     @ConditionalOnMissingBean
     @Bean(initMethod = "start", destroyMethod = "stop")
     public Scheduler scheduler(DbSchedulerCustomizer customizer) {
-        log.info("Creating DB Scheduler using tasks from Spring context: {}", configuredTasks);
+        log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
 
         if (existingDataSource instanceof TransactionAwareDataSourceProxy) {
             log.info("Using a transaction aware DataSource");

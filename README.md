@@ -47,7 +47,7 @@ final Scheduler scheduler = Scheduler
 scheduler.start();
 ```
 
-For more examples, continue reading. For details on the inner workings, see [How it works](#how-it-works).
+For more examples, continue reading. For details on the inner workings, see [How it works](#how-it-works). If you have a Spring Boot application, have a look at [Spring Boot Usage](#spring-boot-usage).
 
 ## Examples
 
@@ -163,6 +163,46 @@ The library contains a number of Schedule-implementations for recurring tasks. S
 | `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)|
 | `.cron(String)`  | Spring-style cron-expression. |
 
+
+## Spring Boot usage
+
+For Spring Boot applications, there is a starter `db-scheduler-spring-boot-starter` making the scheduler-wiring very simple. (See [full example project](https://github.com/kagkarlsson/db-scheduler/tree/master/examples/spring-boot-example)).
+
+### Prerequisites
+
+- An existing Spring Boot application
+- A working `DataSource` with schema initialized. (In the example HSQLDB is used and schema is automatically applied.)
+
+### Getting started
+
+1. Add the following Maven dependency
+    ```xml
+    <dependency>
+        <groupId>com.github.kagkarlsson</groupId>
+        <artifactId>db-scheduler-spring-boot-starter</artifactId>
+        <version>5.3</version> <!-- Look up the current version -->
+    </dependency>
+    ```
+   **NOTE**: This includes the db-scheduler dependency itself.
+2. In your configuration, expose your `Task`'s as Spring beans. If they are recurring, they will automatically be picked up and started.
+3. Run the app.
+
+### Configuration options
+
+Configuration is mainly done via `application.properties`. Configuration of scheduler-name, serializer and executor-service is done by adding a bean of type `DbSchedulerCustomizer` to your Spring context.
+
+```
+# application.properties example showing default values
+
+db-scheduler.enabled=true
+db-scheduler.heartbeat-interval=5m
+db-scheduler.polling-interval=30s
+db-scheduler.polling-limit=
+db-scheduler.table-name=scheduled_tasks
+db-scheduler.immediate-execution-enabled=false
+db-scheduler.scheduler-name=
+db-scheduler.threads=10
+```
 
 
 ## How it works

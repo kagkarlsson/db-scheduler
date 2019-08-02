@@ -20,9 +20,9 @@ This software includes third party software subject to the following licenses:
   Byte Buddy Java agent under Apache License, Version 2.0
   ClassMate under The Apache Software License, Version 2.0
   cron-utils under Apache 2.0
-  DB Scheduler: Core under The Apache Software License, Version 2.0
-  DB Scheduler: Examples: Spring Boot under The Apache Software License, Version 2.0
-  DB Scheduler: Spring Boot Starter under The Apache Software License, Version 2.0
+  db-scheduler: Core under The Apache Software License, Version 2.0
+  db-scheduler: Examples: Spring Boot under The Apache Software License, Version 2.0
+  db-scheduler: Spring Boot Starter under The Apache Software License, Version 2.0
   dom4j under BSD 3-clause New License
   Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
   Hamcrest Core under New BSD License

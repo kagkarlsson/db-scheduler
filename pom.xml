@@ -7,7 +7,7 @@
 	<version>5.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-	<name>DB Scheduler: Parent</name>
+	<name>db-scheduler: Parent</name>
 	<description>Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.</description>
 	<url>https://github.com/kagkarlsson/db-scheduler</url>
 	<developers>

@@ -12,8 +12,8 @@
     <packaging>pom</packaging>
 
     <artifactId>examples</artifactId>
-    <name>DB Scheduler: Examples</name>
-    <description>Examples for how to use DB Scheduler</description>
+    <name>db-scheduler: Examples</name>
+    <description>Examples for how to use db-scheduler</description>
 
     <properties>
         <license.dir>${project.parent.basedir}/.license</license.dir>
