@@ -22,7 +22,7 @@
         <dependency>
             <groupId>com.github.kagkarlsson</groupId>
             <artifactId>db-scheduler-spring-boot-starter</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <!-- Spring Boot -->
