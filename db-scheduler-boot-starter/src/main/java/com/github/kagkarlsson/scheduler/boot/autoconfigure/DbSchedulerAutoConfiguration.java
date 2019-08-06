@@ -44,7 +44,7 @@ public class DbSchedulerAutoConfiguration {
     private final List<Task<?>> configuredTasks;
 
     public DbSchedulerAutoConfiguration(DbSchedulerProperties dbSchedulerProperties,
-        DataSource dataSource, List<Task<?>> configuredTasks) {
+                                        DataSource dataSource, List<Task<?>> configuredTasks) {
         this.config = Objects.requireNonNull(dbSchedulerProperties, "Can't configure db-scheduler without required configuration");
         this.existingDataSource = Objects.requireNonNull(dataSource, "An existing javax.sql.DataSource is required");
         this.configuredTasks = Objects.requireNonNull(configuredTasks, "At least one Task must be configured");
@@ -66,14 +66,11 @@ public class DbSchedulerAutoConfiguration {
     public Scheduler scheduler(DbSchedulerCustomizer customizer) {
         log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
 
-        if (existingDataSource instanceof TransactionAwareDataSourceProxy) {
-            log.info("Using a transaction aware DataSource");
-        } else {
-            log.info("The configured DataSource is not transaction aware: '{}'. Operations such as schedule, reschedule and cancel will have effect regardless of spanning transactions.", existingDataSource);
-        }
+        // Ensure that we are using a transactional aware data source
+        DataSource transactionalDataSource = configureDataSource(existingDataSource);
 
         // Instantiate a new builder
-        final SchedulerBuilder builder = Scheduler.create(existingDataSource, nonStartupTasks(configuredTasks));
+        final SchedulerBuilder builder = Scheduler.create(transactionalDataSource, nonStartupTasks(configuredTasks));
 
         builder.threads(config.getThreads());
 
@@ -113,6 +110,17 @@ public class DbSchedulerAutoConfiguration {
     @Bean
     public HealthIndicator dbScheduler(Scheduler scheduler) {
         return new DbSchedulerHealthIndicator(scheduler);
+    }
+
+    private static DataSource configureDataSource(DataSource existingDataSource) {
+        if (existingDataSource instanceof TransactionAwareDataSourceProxy) {
+            log.debug("Using an already transaction aware DataSource");
+            return existingDataSource;
+        }
+
+        log.debug("The configured DataSource is not transaction aware: '{}'. Wrapping in TransactionAwareDataSourceProxy.", existingDataSource);
+
+        return new TransactionAwareDataSourceProxy(existingDataSource);
     }
 
     @SuppressWarnings("unchecked")
