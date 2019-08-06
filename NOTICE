@@ -82,9 +82,7 @@ This software includes third party software subject to the following licenses:
   Spring Boot Actuator AutoConfigure under Apache License, Version 2.0
   Spring Boot Actuator Starter under Apache License, Version 2.0
   Spring Boot AOP Starter under Apache License, Version 2.0
-  Spring Boot Auto-Configure Annotation Processor under Apache License, Version 2.0
   Spring Boot AutoConfigure under Apache License, Version 2.0
-  Spring Boot Configuration Processor under Apache License, Version 2.0
   Spring Boot Data JPA Starter under Apache License, Version 2.0
   Spring Boot JDBC Starter under Apache License, Version 2.0
   Spring Boot Json Starter under Apache License, Version 2.0
