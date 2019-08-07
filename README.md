@@ -19,11 +19,11 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 ## Getting started
 
 1. Add maven dependency
-```
+```xml
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>5.2</version>
+    <version>6.0</version>
 </dependency>
 ```
 
@@ -180,7 +180,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>5.3</version> <!-- Look up the current version -->
+        <version>6.0</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -252,6 +252,9 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 
 ## Versions / upgrading
+
+### Version 6.0
+* PR [#63](https://github.com/kagkarlsson/db-scheduler/pull/63) adds Spring Boot support. Scheduler can now be autoconfigured using tasks available in the Spring context. 
 
 ### Version 5.2
 * PR [#60](https://github.com/kagkarlsson/db-scheduler/pull/60) changes `RecurringTask` so that initial/first execution-time is defined in the `Schedule` and typically is the next Instant according to the Schedule. 
