@@ -9,10 +9,6 @@ Licensed under Apache 2 - http://www.apache.org/licenses/LICENSE-2.0.html
 This software includes third party software subject to the following licenses:
 
   AntLR Parser Generator under BSD License
-  Apache Commons Codec under Apache License, Version 2.0
-  Apache Commons Compress under Apache License, Version 2.0
-  Apache Commons IO under Apache License, Version 2.0
-  Apache Commons Lang under Apache License, Version 2.0
   Apache Log4j API under Apache License, Version 2.0
   Apache Log4j to SLF4J Adapter under Apache License, Version 2.0
   ASM based accessors helper used by json-smart under The Apache Software License, Version 2.0
@@ -27,7 +23,6 @@ This software includes third party software subject to the following licenses:
   db-scheduler: Core under The Apache Software License, Version 2.0
   db-scheduler: Examples under The Apache Software License, Version 2.0
   db-scheduler: Examples: Spring Boot under The Apache Software License, Version 2.0
-  db-scheduler: Parent under The Apache Software License, Version 2.0
   db-scheduler: Spring Boot Starter under The Apache Software License, Version 2.0
   dom4j under BSD 3-clause New License
   Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
@@ -46,7 +41,6 @@ This software includes third party software subject to the following licenses:
   jackson-databind under The Apache Software License, Version 2.0
   Jackson-module-parameter-names under The Apache Software License, Version 2.0
   Java Annotation Indexer under Apache License, Version 2.0
-  java-8-matchers under MIT License
   JavaBeans Activation Framework API jar under CDDL/GPLv2+CE
   Javassist under MPL 1.1 or LGPL 2.1 or Apache License 2.0
   javax.annotation API under CDDL + GPLv2 with classpath exception
@@ -54,7 +48,6 @@ This software includes third party software subject to the following licenses:
   javax.transaction API under CDDL + GPLv2 with classpath exception
   jaxb-api under CDDL 1.1 or GPL2 w/ CPE
   JBoss Logging 3 under Apache License, version 2.0
-  JCL 1.2 implemented over SLF4J under MIT License
   JSON library from Android SDK under Apache License 2.0
   JSON Small and Fast Parser under The Apache Software License, Version 2.0
   JSONassert under The Apache Software License, Version 2.0
@@ -68,11 +61,8 @@ This software includes third party software subject to the following licenses:
   mockito-core under The MIT License
   Objenesis under Apache 2
   org.xmlunit:xmlunit-core under The Apache Software License, Version 2.0
-  otj-pg-embedded under Apache License, Version 2.0
-  PostgreSQL JDBC Driver - JDBC 4.2 under The PostgreSQL License
   project ':json-path' under The Apache Software License, Version 2.0
   SLF4J API Module under MIT License
-  SLF4J Simple Binding under MIT License
   SnakeYAML under Apache License, Version 2.0
   Spring AOP under Apache License, Version 2.0
   Spring Aspects under Apache License, Version 2.0
@@ -108,6 +98,5 @@ This software includes third party software subject to the following licenses:
   tomcat-embed-core under Apache License, Version 2.0
   tomcat-embed-el under Apache License, Version 2.0
   tomcat-embed-websocket under Apache License, Version 2.0
-  XZ for Java under Public Domain
 
 

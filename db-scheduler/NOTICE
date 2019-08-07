@@ -1,0 +1,32 @@
+Db-scheduler
+
+Copyright 2015 Gustav Karlsson. All Rights Reserved.
+
+This product includes software developed by Gustav Karlsson.
+Licensed under Apache 2 - http://www.apache.org/licenses/LICENSE-2.0.html
+
+
+This software includes third party software subject to the following licenses:
+
+  Apache Commons Codec under Apache License, Version 2.0
+  Apache Commons Compress under Apache License, Version 2.0
+  Apache Commons IO under Apache License, Version 2.0
+  Apache Commons Lang under Apache License, Version 2.0
+  cron-utils under Apache 2.0
+  db-scheduler: Core under The Apache Software License, Version 2.0
+  Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
+  Hamcrest Core under New BSD License
+  Hamcrest library under New BSD License
+  HikariCP under The Apache Software License, Version 2.0
+  HyperSQL Database under HSQLDB License, a BSD open source license
+  java-8-matchers under MIT License
+  JCL 1.2 implemented over SLF4J under MIT License
+  JUnit under Eclipse Public License 1.0
+  Micro JDBC under The Apache Software License, Version 2.0
+  otj-pg-embedded under Apache License, Version 2.0
+  PostgreSQL JDBC Driver - JDBC 4.2 under The PostgreSQL License
+  SLF4J API Module under MIT License
+  SLF4J Simple Binding under MIT License
+  XZ for Java under Public Domain
+
+
