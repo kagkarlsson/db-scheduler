@@ -27,7 +27,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql), [mssql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mssql_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).  
+2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).  
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
@@ -279,7 +279,7 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * Track number of consecutive failures of a task. For use in `FailureHandler` to avoid retrying forever, or retry with back-off. 
 
 **Upgrading to 4.x**
-* Add column `consecutive_failures` to the database schema. See table definitions for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql). `null` is handled as 0, so no need to update existing records.
+* Add column `consecutive_failures` to the database schema. See table definitions for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/src/test/resources/mysql_tables.sql). `null` is handled as 0, so no need to update existing records.
 
 ### Version 3.3
 * Customizable serlizer (PR https://github.com/kagkarlsson/db-scheduler/pull/32)
@@ -306,7 +306,7 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * Exposing the `Execution`to the `ExecutionHandler`.
 
 **Upgrading to 2.x**
-* Add column `task_data` to the database schema. See table definitions for [postgresql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/blob/master/src/test/resources/mysql_tables.sql).
+* Add column `task_data` to the database schema. See table definitions for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
 
 ## FAQ
 
