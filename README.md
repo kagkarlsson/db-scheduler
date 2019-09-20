@@ -23,7 +23,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>6.0</version>
+    <version>6.1</version>
 </dependency>
 ```
 
@@ -252,6 +252,9 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 
 ## Versions / upgrading
+
+### Version 6.1
+* PR [#68](https://github.com/kagkarlsson/db-scheduler/pull/68) allows for specifying time-zone for cron-schedules (contributed by [paulhilliar](https://github.com/paulhilliar))
 
 ### Version 6.0
 * PR [#63](https://github.com/kagkarlsson/db-scheduler/pull/63) adds Spring Boot support. Scheduler can now be autoconfigured using tasks available in the Spring context. 
