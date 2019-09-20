@@ -17,6 +17,7 @@ package com.github.kagkarlsson.scheduler.task.schedule;
 
 import java.time.Duration;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,6 +38,8 @@ public class Schedules {
 	}
 
 	public static Schedule cron(String cronPattern) { return new CronSchedule(cronPattern); }
+
+	public static Schedule cron(String cronPattern, ZoneId zoneId) { return new CronSchedule(cronPattern, zoneId); }
 
 	/**
 	 * Currently supports Daily- and FixedDelay-schedule on the formats:

@@ -1,6 +1,8 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -17,7 +19,6 @@ public class CronTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    ZoneId defaultZone = ZoneId.systemDefault();
     ZoneId london = ZoneId.of("Europe/London");
     ZoneId utc = ZoneId.of("UTC");
     ZoneId newYork = ZoneId.of("America/New_York");
@@ -75,10 +76,10 @@ public class CronTest {
     }
 
     private void assertNextExecutionTime(ZonedDateTime timeDone, String cronPattern, ZoneId zoneId, ZonedDateTime expectedTime) {
-        assertNextExecutionTime(timeDone, expectedTime, new CronSchedule(cronPattern, zoneId));
+        assertNextExecutionTime(timeDone, expectedTime, Schedules.cron(cronPattern, zoneId));
     }
 
-    private void assertNextExecutionTime(ZonedDateTime timeDone, ZonedDateTime expectedTime, CronSchedule schedule) {
+    private void assertNextExecutionTime(ZonedDateTime timeDone, ZonedDateTime expectedTime, Schedule schedule) {
         Instant nextExecutionTime = schedule.getNextExecutionTime(complete(timeDone.toInstant()));
 
         assertThat(nextExecutionTime, is(expectedTime.toInstant()));
