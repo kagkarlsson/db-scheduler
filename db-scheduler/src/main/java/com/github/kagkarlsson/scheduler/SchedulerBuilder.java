@@ -144,8 +144,8 @@ public class SchedulerBuilder {
         }
 
         LOG.info("Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s enable-immediate-execution={}, table-name={}, name={}",
-            waiter.getWaitDuration().getSeconds(),
             executorThreads,
+            waiter.getWaitDuration().getSeconds(),
             heartbeatInterval.getSeconds(),
             enableImmediateExecution,
             tableName,
