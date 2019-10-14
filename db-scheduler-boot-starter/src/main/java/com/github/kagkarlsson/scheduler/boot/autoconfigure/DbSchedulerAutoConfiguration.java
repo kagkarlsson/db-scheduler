@@ -6,6 +6,9 @@ import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
+import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
+import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
 import java.util.List;
@@ -62,7 +65,7 @@ public class DbSchedulerAutoConfiguration {
 
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnMissingBean
-    @Bean(initMethod = "start", destroyMethod = "stop")
+    @Bean(destroyMethod = "stop")
     public Scheduler scheduler(DbSchedulerCustomizer customizer) {
         log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
 
@@ -110,6 +113,16 @@ public class DbSchedulerAutoConfiguration {
     @Bean
     public HealthIndicator dbScheduler(Scheduler scheduler) {
         return new DbSchedulerHealthIndicator(scheduler);
+    }
+
+    @ConditionalOnBean(Scheduler.class)
+    @Bean
+    public DbSchedulerStarter dbSchedulerStarter(Scheduler scheduler) {
+        if (config.isStartSchedulerImmediately()) {
+            return new ImmediateStart(scheduler);
+        }
+
+        return new ContextReadyStart(scheduler);
     }
 
     private static DataSource configureDataSource(DataSource existingDataSource) {
