@@ -118,11 +118,11 @@ public class DbSchedulerAutoConfiguration {
     @ConditionalOnBean(Scheduler.class)
     @Bean
     public DbSchedulerStarter dbSchedulerStarter(Scheduler scheduler) {
-        if (config.isStartSchedulerImmediately()) {
-            return new ImmediateStart(scheduler);
+        if (config.isDelayStartupUntilContextReady()) {
+            return new ContextReadyStart(scheduler);
         }
 
-        return new ContextReadyStart(scheduler);
+        return new ImmediateStart(scheduler);
     }
 
     private static DataSource configureDataSource(DataSource existingDataSource) {

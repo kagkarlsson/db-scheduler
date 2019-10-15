@@ -69,10 +69,10 @@ public class DbSchedulerProperties {
     private Optional<Integer> pollingLimit = Optional.empty();
 
     /**
-     * <p>Whether to start the scheduler as soon as possible or to wait until the application
-     * context has been loaded.
+     * <p>Whether to start the scheduler when the application context has been loaded or as soon as
+     * possible.
      */
-    private boolean startSchedulerImmediately = true;
+    private boolean delayStartupUntilContextReady = false;
 
     public boolean isEnabled() {
         return enabled;
@@ -138,11 +138,11 @@ public class DbSchedulerProperties {
         this.pollingLimit = pollingLimit;
     }
 
-    public boolean isStartSchedulerImmediately() {
-        return startSchedulerImmediately;
+    public boolean isDelayStartupUntilContextReady() {
+        return delayStartupUntilContextReady;
     }
 
-    public void setStartSchedulerImmediately(final boolean startSchedulerImmediately) {
-        this.startSchedulerImmediately = startSchedulerImmediately;
+    public void setDelayStartupUntilContextReady(final boolean delayStartupUntilContextReady) {
+        this.delayStartupUntilContextReady = delayStartupUntilContextReady;
     }
 }
