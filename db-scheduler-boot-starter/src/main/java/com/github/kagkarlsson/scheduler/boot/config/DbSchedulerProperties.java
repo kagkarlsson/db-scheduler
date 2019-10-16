@@ -68,6 +68,12 @@ public class DbSchedulerProperties {
      */
     private Optional<Integer> pollingLimit = Optional.empty();
 
+    /**
+     * <p>Whether to start the scheduler when the application context has been loaded or as soon as
+     * possible.
+     */
+    private boolean delayStartupUntilContextReady = false;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -130,5 +136,13 @@ public class DbSchedulerProperties {
 
     public void setPollingLimit(final Optional<Integer> pollingLimit) {
         this.pollingLimit = pollingLimit;
+    }
+
+    public boolean isDelayStartupUntilContextReady() {
+        return delayStartupUntilContextReady;
+    }
+
+    public void setDelayStartupUntilContextReady(final boolean delayStartupUntilContextReady) {
+        this.delayStartupUntilContextReady = delayStartupUntilContextReady;
     }
 }

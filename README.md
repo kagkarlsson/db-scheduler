@@ -180,7 +180,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>6.0</version>
+        <version>6.1</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -202,6 +202,7 @@ db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=
 db-scheduler.threads=10
+db-scheduler.delay-startup-until-context-ready=false
 ```
 
 

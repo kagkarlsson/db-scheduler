@@ -377,6 +377,10 @@
 						<configuration>
 							<failOnWarning>true</failOnWarning>
 							<ignoreNonCompile>true</ignoreNonCompile>
+							<ignoredDependencies>
+								<ignoredDependency>org.springframework.boot:spring-boot-autoconfigure-processor</ignoredDependency>
+								<ignoredDependency>org.springframework.boot:spring-boot-configuration-processor</ignoredDependency>
+							</ignoredDependencies>
 						</configuration>
 					</execution>
 				</executions>
