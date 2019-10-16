@@ -23,7 +23,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>6.1</version>
+    <version>6.2</version>
 </dependency>
 ```
 
@@ -180,7 +180,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>6.1</version>
+        <version>6.2</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -254,11 +254,14 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 ## Versions / upgrading
 
+### Version 6.2
+* PR [#71](https://github.com/kagkarlsson/db-scheduler/pull/71) allows for configuring Spring to delay starting the scheduler  until after context is fully started. (contributed by [evenh](https://github.com/evenh))
+
 ### Version 6.1
 * PR [#68](https://github.com/kagkarlsson/db-scheduler/pull/68) allows for specifying time-zone for cron-schedules (contributed by [paulhilliar](https://github.com/paulhilliar))
 
 ### Version 6.0
-* PR [#63](https://github.com/kagkarlsson/db-scheduler/pull/63) adds Spring Boot support. Scheduler can now be autoconfigured using tasks available in the Spring context. 
+* PR [#63](https://github.com/kagkarlsson/db-scheduler/pull/63) adds Spring Boot support. Scheduler can now be autoconfigured using tasks available in the Spring context. (contributed by [evenh](https://github.com/evenh))
 
 ### Version 5.2
 * PR [#60](https://github.com/kagkarlsson/db-scheduler/pull/60) changes `RecurringTask` so that initial/first execution-time is defined in the `Schedule` and typically is the next Instant according to the Schedule. 
