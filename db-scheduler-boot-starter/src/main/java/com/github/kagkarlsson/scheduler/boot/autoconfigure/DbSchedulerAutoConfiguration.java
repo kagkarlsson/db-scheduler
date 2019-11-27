@@ -20,10 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.boot.actuate.health.HealthIndicatorRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -109,7 +109,8 @@ public class DbSchedulerAutoConfiguration {
         return builder.build();
     }
 
-    @ConditionalOnBean({Scheduler.class, HealthIndicatorRegistry.class})
+    @ConditionalOnClass(HealthIndicator.class)
+    @ConditionalOnBean(Scheduler.class)
     @Bean
     public HealthIndicator dbScheduler(Scheduler scheduler) {
         return new DbSchedulerHealthIndicator(scheduler);
