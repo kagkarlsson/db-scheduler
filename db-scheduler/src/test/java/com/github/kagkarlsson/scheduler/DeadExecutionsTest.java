@@ -67,6 +67,7 @@ public class DeadExecutionsTest {
 				false,
 				StatsRegistry.NOOP,
 				POLLING_LIMIT,
+                Duration.ofDays(14),
 				new ArrayList<>());
 
 	}

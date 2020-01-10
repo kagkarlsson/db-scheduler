@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,7 +60,7 @@ public class TaskResolver {
         Task task = taskMap.get(taskName);
         if (task == null) {
             addUnresolved(taskName);
-            statsRegistry.register(StatsRegistry.CandidateStatsEvent.UNRESOLVED);
+            statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK);
             LOG.info("Found execution with unknown task-name '{}'. Adding it to the list of known unresolved task-names.", taskName);
         }
         return Optional.ofNullable(task);
@@ -75,6 +76,17 @@ public class TaskResolver {
 
     public List<UnresolvedTask> getUnresolved() {
         return new ArrayList<>(unresolvedTasks.values());
+    }
+
+    public List<String> getUnresolvedTaskNames(Duration unresolvedFor) {
+        return unresolvedTasks.values().stream()
+            .filter(unresolved -> Duration.between(unresolved.firstUnresolved, clock.now()).toMillis() > unresolvedFor.toMillis())
+            .map(UnresolvedTask::getTaskName)
+            .collect(Collectors.toList());
+    }
+
+    public void clearUnresolved(String taskName) {
+        unresolvedTasks.remove(taskName);
     }
 
     public class UnresolvedTask {

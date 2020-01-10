@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.sql.DataSource;
@@ -51,6 +52,7 @@ public class SchedulerBuilder {
     protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
     protected boolean enableImmediateExecution = false;
     protected ExecutorService executorService;
+    protected Duration deleteUnresolvedAfter = Duration.ofDays(14);
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -131,6 +133,11 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder deleteUnresolvedAfter(Duration deleteAfter) {
+        this.deleteUnresolvedAfter = deleteAfter;
+        return this;
+    }
+
     public Scheduler build() {
         if (pollingLimit < executorThreads) {
             LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
@@ -151,6 +158,7 @@ public class SchedulerBuilder {
             tableName,
             schedulerName.getName());
         return new Scheduler(clock, taskRepository, taskResolver, executorThreads, candidateExecutorService,
-                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, startTasks);
+                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
+            deleteUnresolvedAfter, startTasks);
     }
 }

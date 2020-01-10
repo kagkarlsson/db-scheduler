@@ -132,7 +132,7 @@ public abstract class CompatibilityTest {
 		assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
 
 		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
-		assertThat(jdbcTaskRepository.getOldExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
+		assertThat(jdbcTaskRepository.getDeadExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
 
 		jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1), 0);
 		assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));

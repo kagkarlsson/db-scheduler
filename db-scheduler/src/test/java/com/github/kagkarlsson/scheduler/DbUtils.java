@@ -1,5 +1,7 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.jdbc.Mappers;
+import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
 import com.google.common.io.CharStreams;
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 
@@ -30,4 +32,9 @@ public class DbUtils {
 			}
 		};
 	}
+
+    public static int countExecutions(DataSource dataSource) {
+        return new JdbcRunner(dataSource).query("select count(*) from " + DEFAULT_TABLE_NAME,
+            PreparedStatementSetter.NOOP, Mappers.SINGLE_INT);
+    }
 }

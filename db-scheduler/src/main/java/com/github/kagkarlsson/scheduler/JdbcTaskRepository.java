@@ -33,16 +33,12 @@ import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
-import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -129,21 +125,15 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public List<Execution> getDue(Instant now, int limit) {
-	    // TODO: removing unresolved after x duration
-        final List<UnresolvedTask> unresolved = taskResolver.getUnresolved();
-        final String taskNameFilter = unresolved.isEmpty() ? "" :
-            "and task_name not in (" + unresolved.stream().map(ignored -> "?").collect(joining(",")) + ")";
-        final List<String> unresolvedTasknames = unresolved.stream().map(UnresolvedTask::getTaskName).collect(toList());
+        final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
 
         return jdbcRunner.query(
-				"select * from " + tableName + " where picked = ? and execution_time <= ? " + taskNameFilter + " order by execution_time asc",
+				"select * from " + tableName + " where picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() + " order by execution_time asc",
 				(PreparedStatement p) -> {
 				    int index = 1;
 					p.setBoolean(index++, false);
 					p.setTimestamp(index++, Timestamp.from(now));
-					for (String unresolvedTaskname : unresolvedTasknames) {
-                        p.setString(index++, unresolvedTaskname);
-					}
+                    unresolvedFilter.setParameters(p, index);
 					p.setMaxRows(limit);
 				},
 				new ExecutionResultSetMapper()
@@ -251,12 +241,15 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getOldExecutions(Instant olderThan) {
-		return jdbcRunner.query(
-				"select * from " + tableName + " where picked = ? and last_heartbeat <= ? order by last_heartbeat asc",
+	public List<Execution> getDeadExecutions(Instant olderThan) {
+        final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
+        return jdbcRunner.query(
+				"select * from " + tableName + " where picked = ? and last_heartbeat <= ? " + unresolvedFilter.andCondition() + " order by last_heartbeat asc",
 				(PreparedStatement p) -> {
-					p.setBoolean(1, true);
-					p.setTimestamp(2, Timestamp.from(olderThan));
+				    int index = 1;
+					p.setBoolean(index++, true);
+					p.setTimestamp(index++, Timestamp.from(olderThan));
+					unresolvedFilter.setParameters(p, index);
 				},
 				new ExecutionResultSetMapper()
 		);
@@ -320,7 +313,15 @@ public class JdbcTaskRepository implements TaskRepository {
 		return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.empty();
 	}
 
-	private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
+    @Override
+    public int removeExecutions(String taskName) {
+        return jdbcRunner.execute("delete from " + tableName + " where task_name = ?",
+            (PreparedStatement p) -> {
+                p.setString(1, taskName);
+            });
+    }
+
+    private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
 
 		private final ArrayList<Execution> executions;
 
@@ -408,4 +409,24 @@ public class JdbcTaskRepository implements TaskRepository {
 		}
 	}
 
+	private static class UnresolvedFilter {
+        private final List<UnresolvedTask> unresolved;
+
+        public UnresolvedFilter(List<UnresolvedTask> unresolved) {
+            this.unresolved = unresolved;
+        }
+
+        public String andCondition() {
+            return unresolved.isEmpty() ? "" :
+                "and task_name not in (" + unresolved.stream().map(ignored -> "?").collect(joining(",")) + ")";
+        }
+
+        public int setParameters(PreparedStatement p, int index) throws SQLException {
+            final List<String> unresolvedTasknames = unresolved.stream().map(UnresolvedTask::getTaskName).collect(toList());
+            for (String taskName : unresolvedTasknames) {
+                p.setString(index++, taskName);
+            }
+            return index;
+        }
+    }
 }

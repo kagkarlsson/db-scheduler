@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -37,7 +36,7 @@ public interface TaskRepository {
 
 	Optional<Execution> pick(Execution e, Instant timePicked);
 
-	List<Execution> getOldExecutions(Instant olderThan);
+	List<Execution> getDeadExecutions(Instant olderThan);
 
 	void updateHeartbeat(Execution execution, Instant heartbeatTime);
 
@@ -45,4 +44,5 @@ public interface TaskRepository {
 
 	Optional<Execution> getExecution(String taskName, String taskInstanceId);
 
+    int removeExecutions(String taskName);
 }
