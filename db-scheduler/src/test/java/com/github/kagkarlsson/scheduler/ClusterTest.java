@@ -57,6 +57,8 @@ public class ClusterTest {
 		});
 
         completeAllIds.await();
+        scheduler1.stop();
+        scheduler2.stop();
 
 		assertThat(completed.failed.size(), is(0));
 		assertThat(completed.ok.size(), is(ids.size()));
