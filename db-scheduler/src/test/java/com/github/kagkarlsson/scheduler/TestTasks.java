@@ -151,8 +151,8 @@ public class TestTasks {
 
 		private final int millis;
 
-		public SleepingHandler(int seconds) {
-			this.millis = seconds;
+		public SleepingHandler(int millis) {
+			this.millis = millis;
 		}
 
 		@Override

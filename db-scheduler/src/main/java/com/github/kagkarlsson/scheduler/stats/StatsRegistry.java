@@ -32,7 +32,8 @@ public interface StatsRegistry {
 	enum CandidateStatsEvent {
 		STALE,
 		ALREADY_PICKED,
-		EXECUTED
+        UNRESOLVED,
+        EXECUTED
 	}
 
 	enum ExecutionStatsEvent {

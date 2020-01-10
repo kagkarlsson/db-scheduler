@@ -135,7 +135,7 @@ public class SchedulerBuilder {
         if (pollingLimit < executorThreads) {
             LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
         }
-        final TaskResolver taskResolver = new TaskResolver(knownTasks);
+        final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
         final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
         ExecutorService candidateExecutorService = executorService;

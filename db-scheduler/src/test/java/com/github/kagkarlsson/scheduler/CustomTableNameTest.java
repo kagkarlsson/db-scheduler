@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.RowMapper;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -34,7 +35,7 @@ public class CustomTableNameTest {
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
 		List<Task<?>> knownTasks = new ArrayList<>();
 		knownTasks.add(oneTimeTask);
-		taskRepository = new JdbcTaskRepository(DB.getDataSource(), CUSTOM_TABLENAME, new TaskResolver(knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
+		taskRepository = new JdbcTaskRepository(DB.getDataSource(), CUSTOM_TABLENAME, new TaskResolver(StatsRegistry.NOOP, knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
 
 		DbUtils.runSqlResource("postgresql_custom_tablename.sql").accept(DB.getDataSource());
 	}

@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -70,7 +71,7 @@ public interface SchedulerClient {
 		}
 
 		public SchedulerClient build() {
-			TaskResolver taskResolver = new TaskResolver(knownTasks);
+			TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, knownTasks);
 			TaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, new SchedulerClientName(), serializer);
 			
 			return new StandardSchedulerClient(taskRepository);

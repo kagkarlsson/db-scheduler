@@ -52,7 +52,7 @@ public class DeadExecutionsTest {
 		deadExecutionHandler = new ReviveDead<>();
 		nonCompleting = new NonCompletingTask<>("NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
 
-		TaskResolver taskResolver = new TaskResolver(oneTimeTask, nonCompleting);
+		TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, oneTimeTask, nonCompleting);
 
 		jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
