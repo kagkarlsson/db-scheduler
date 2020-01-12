@@ -23,7 +23,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>6.2</version>
+    <version>6.3</version>
 </dependency>
 ```
 
@@ -181,7 +181,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>6.2</version>
+        <version>6.3</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -254,6 +254,9 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 
 ## Versions / upgrading
+
+### Version 6.3
+* PR [#80](https://github.com/kagkarlsson/db-scheduler/pull/80) adds more graceful handling of unresolved tasks. Executions with unknown tasks will not (in extreme cases) be able to block other executions. They will also automatically be removed from the database after a duration controlled by builder-method `deleteUnresolvedAfter(Duration)`, which currently defaults to 14d.
 
 ### Version 6.2
 * PR [#71](https://github.com/kagkarlsson/db-scheduler/pull/71) allows for configuring Spring to delay starting the scheduler  until after context is fully started. (contributed by [evenh](https://github.com/evenh))
