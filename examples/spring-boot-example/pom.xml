@@ -3,7 +3,7 @@
     <parent>
         <artifactId>examples</artifactId>
         <groupId>com.github.kagkarlsson</groupId>
-        <version>6.4-SNAPSHOT</version>
+        <version>6.4</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
