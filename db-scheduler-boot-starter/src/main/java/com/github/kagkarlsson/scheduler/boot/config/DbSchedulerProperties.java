@@ -1,8 +1,5 @@
 package com.github.kagkarlsson.scheduler.boot.config;
 
-import static java.time.temporal.ChronoUnit.MINUTES;
-import static java.time.temporal.ChronoUnit.SECONDS;
-
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
 import java.time.Duration;
 import java.util.Optional;
@@ -10,6 +7,8 @@ import javax.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 import org.springframework.validation.annotation.Validated;
+
+import static java.time.temporal.ChronoUnit.*;
 
 @Validated
 @ConfigurationProperties("db-scheduler")
@@ -73,6 +72,13 @@ public class DbSchedulerProperties {
      * possible.
      */
     private boolean delayStartupUntilContextReady = false;
+
+    /**
+     * <p>The time after which executions with unknown tasks are automatically deleted.</p>
+     */
+    @DurationUnit(HOURS)
+    @NotNull
+    private Duration deleteUnresolvedAfter = Duration.ofDays(14);
 
     public boolean isEnabled() {
         return enabled;
@@ -144,5 +150,13 @@ public class DbSchedulerProperties {
 
     public void setDelayStartupUntilContextReady(final boolean delayStartupUntilContextReady) {
         this.delayStartupUntilContextReady = delayStartupUntilContextReady;
+    }
+
+    public Duration getDeleteUnresolvedAfter() {
+        return deleteUnresolvedAfter;
+    }
+
+    public void setDeleteUnresolvedAfter(Duration deleteUnresolvedAfter) {
+        this.deleteUnresolvedAfter = deleteUnresolvedAfter;
     }
 }
