@@ -18,6 +18,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.Before;
@@ -43,9 +45,10 @@ public class SchedulerTest {
 	}
 
 	private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
-		TaskResolver taskResolver = new TaskResolver(tasks);
+        final StatsRegistry statsRegistry = StatsRegistry.NOOP;
+        TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, Arrays.asList(tasks));
 		JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
-		return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, StatsRegistry.NOOP, 10_000, new ArrayList<>());
+		return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, statsRegistry, 10_000, Duration.ofDays(14), new ArrayList<>());
 	}
 
 	@Test

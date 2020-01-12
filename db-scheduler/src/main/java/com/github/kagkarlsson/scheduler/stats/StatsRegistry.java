@@ -26,13 +26,14 @@ public interface StatsRegistry {
 		DEAD_EXECUTION,
 		RAN_UPDATE_HEARTBEATS,
 		RAN_DETECT_DEAD,
-		RAN_EXECUTE_DUE
+		RAN_EXECUTE_DUE,
+        UNRESOLVED_TASK
 	}
 
 	enum CandidateStatsEvent {
 		STALE,
 		ALREADY_PICKED,
-		EXECUTED
+        EXECUTED
 	}
 
 	enum ExecutionStatsEvent {

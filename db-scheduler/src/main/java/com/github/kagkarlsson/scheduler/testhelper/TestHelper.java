@@ -18,6 +18,7 @@ package com.github.kagkarlsson.scheduler.testhelper;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
 
@@ -25,6 +26,7 @@ import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -56,11 +58,16 @@ public class TestHelper {
             return this;
         }
 
+        public ManualSchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
+            super.statsRegistry = statsRegistry;
+            return this;
+        }
+
         public ManualScheduler build() {
-            final TaskResolver taskResolver = new TaskResolver(knownTasks);
+            final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
             final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
-            return new ManualScheduler(clock, taskRepository, taskResolver, executorThreads, new DirectExecutorService(), schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, startTasks);
+            return new ManualScheduler(clock, taskRepository, taskResolver, executorThreads, new DirectExecutorService(), schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, deleteUnresolvedAfter, startTasks);
         }
 
         public ManualScheduler start() {

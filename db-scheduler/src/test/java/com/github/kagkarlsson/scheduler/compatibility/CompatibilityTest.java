@@ -17,6 +17,7 @@ import com.github.kagkarlsson.scheduler.StopSchedulerRule;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -111,7 +112,7 @@ public abstract class CompatibilityTest {
 	}
 
 	private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
-		TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
+		TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
 		taskResolver.addTask(oneTime);
 
 		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
@@ -131,7 +132,7 @@ public abstract class CompatibilityTest {
 		assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
 
 		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
-		assertThat(jdbcTaskRepository.getOldExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
+		assertThat(jdbcTaskRepository.getDeadExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
 
 		jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1), 0);
 		assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
@@ -148,7 +149,7 @@ public abstract class CompatibilityTest {
 
 	@Test
 	public void test_jdbc_repository_compatibility_set_data() {
-		TaskResolver taskResolver = new TaskResolver(new ArrayList<>());
+		TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
 		taskResolver.addTask(recurringWithData);
 
 		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));

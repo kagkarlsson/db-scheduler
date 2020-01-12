@@ -5,11 +5,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
-import com.github.kagkarlsson.scheduler.task.CompletionHandler;
-import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
-import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
-import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.ComposableTask;
+import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.helper.Tasks;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import com.google.common.collect.Lists;
 import java.time.Duration;
 import java.time.Instant;
@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.junit.Rule;
@@ -55,7 +56,9 @@ public class ClusterTest {
 			scheduler1.schedule(task.instance(id), Instant.now());
 		});
 
-		completeAllIds.await();
+        completeAllIds.await();
+        scheduler1.stop();
+        scheduler2.stop();
 
 		assertThat(completed.failed.size(), is(0));
 		assertThat(completed.ok.size(), is(ids.size()));
@@ -66,11 +69,47 @@ public class ClusterTest {
 
 	}
 
+    @Test
+    public void test_concurrency_recurring() throws InterruptedException {
+
+        AtomicLong counter = new AtomicLong(0);
+        final RecurringTask<Void> task1 = Tasks.recurring("task1", Schedules.fixedDelay(Duration.ofMillis(0)))
+            .execute((taskInstance, executionContext) -> {
+                // do nothing
+                // System.out.println(counter.incrementAndGet() + " " + Thread.currentThread().getName());
+            });
+
+        final TestTasks.SimpleStatsRegistry stats = new TestTasks.SimpleStatsRegistry();
+        final Scheduler scheduler1 = createSchedulerRecurring("scheduler1", task1, stats);
+        final Scheduler scheduler2 = createSchedulerRecurring("scheduler2", task1, stats);
+
+        stopScheduler.register(scheduler1, scheduler2);
+        scheduler1.start();
+        scheduler2.start();
+
+        Thread.sleep(5_000);
+        scheduler1.stop();
+        scheduler2.stop();
+        assertThat(stats.unexpectedErrors.get(), is(0));
+        assertThat(scheduler1.getCurrentlyExecuting(), hasSize(0));
+        assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
+
+    }
+
 	private Scheduler createScheduler(String name, Task<?> task, TestTasks.SimpleStatsRegistry stats) {
 		return Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
 				.schedulerName(new SchedulerName.Fixed(name)).pollingInterval(Duration.ofMillis(0))
 				.heartbeatInterval(Duration.ofMillis(100)).statsRegistry(stats).build();
 	}
+
+    private Scheduler createSchedulerRecurring(String name, RecurringTask<?> task, TestTasks.SimpleStatsRegistry stats) {
+        return Scheduler.create(DB.getDataSource())
+            .startTasks(task)
+            .schedulerName(new SchedulerName.Fixed(name))
+            .pollingInterval(Duration.ofMillis(0))
+            .heartbeatInterval(Duration.ofMillis(100))
+            .statsRegistry(stats).build();
+    }
 
 	private static class RecordResultAndStopExecutionOnComplete<T> implements CompletionHandler<T> {
 

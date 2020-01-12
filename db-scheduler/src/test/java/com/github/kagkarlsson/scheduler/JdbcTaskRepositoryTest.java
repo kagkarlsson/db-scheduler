@@ -1,5 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -12,6 +15,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
@@ -31,8 +35,10 @@ public class JdbcTaskRepositoryTest {
 	private OneTimeTask<Void> oneTimeTask;
 	private OneTimeTask<Void> alternativeOneTimeTask;
 	private OneTimeTask<Integer> oneTimeTaskWithData;
+    private TaskResolver taskResolver;
+    private TestableRegistry testableRegistry;
 
-	@Before
+    @Before
 	public void setUp() {
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
 		alternativeOneTimeTask = TestTasks.oneTime("AlternativeOneTime", Void.class, TestTasks.DO_NOTHING);
@@ -41,7 +47,9 @@ public class JdbcTaskRepositoryTest {
 		knownTasks.add(oneTimeTask);
 		knownTasks.add(oneTimeTaskWithData);
 		knownTasks.add(alternativeOneTimeTask);
-		taskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, new TaskResolver(knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
+        testableRegistry = new TestableRegistry(true, Collections.emptyList());
+        taskResolver = new TaskResolver(testableRegistry, knownTasks);
+        taskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed(SCHEDULER_NAME));
 	}
 
 	@Test
@@ -90,7 +98,40 @@ public class JdbcTaskRepositoryTest {
 		assertThat(due, is(sortedDue));
 	}
 
-	@Test
+    @Test
+    public void get_due_should_not_include_previously_unresolved() {
+        Instant now = Instant.now();
+        final OneTimeTask<Void> unresolved1 = TestTasks.oneTime("unresolved1", Void.class, TestTasks.DO_NOTHING);
+        final OneTimeTask<Void> unresolved2 = TestTasks.oneTime("unresolved2", Void.class, TestTasks.DO_NOTHING);
+        final OneTimeTask<Void> unresolved3 = TestTasks.oneTime("unresolved3", Void.class, TestTasks.DO_NOTHING);
+
+        assertThat(taskResolver.getUnresolved(), hasSize(0));
+
+        // 1
+        taskRepository.createIfNotExists(new Execution(now, unresolved1.instance("id")));
+        assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+        assertThat(taskResolver.getUnresolved(), hasSize(1));
+        assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+
+        assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+        assertThat(taskResolver.getUnresolved(), hasSize(1));
+        assertEquals("Execution should not have have been in the ResultSet",
+            1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+
+        // 1, 2
+        taskRepository.createIfNotExists(new Execution(now, unresolved2.instance("id")));
+        assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+        assertThat(taskResolver.getUnresolved(), hasSize(2));
+        assertEquals(2, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+
+        // 1, 2, 3
+        taskRepository.createIfNotExists(new Execution(now, unresolved3.instance("id")));
+        assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+        assertThat(taskResolver.getUnresolved(), hasSize(3));
+        assertEquals(3, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    }
+
+    @Test
 	public void picked_executions_should_not_be_returned_as_due() {
 		Instant now = Instant.now();
 		taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
@@ -202,15 +243,15 @@ public class JdbcTaskRepositoryTest {
 
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
 
-		taskRepository.reschedule(getSingleExecution(), now, now, null, 0);
+		taskRepository.reschedule(getSingleDueExecution(), now, now, null, 0);
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
 
-		taskRepository.reschedule(getSingleExecution(), now, null, now, 1);
+		taskRepository.reschedule(getSingleDueExecution(), now, null, now, 1);
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofMinutes(1)), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofDays(1)), hasSize(1));
 
-		taskRepository.reschedule(getSingleExecution(), now, now.minus(Duration.ofMinutes(1)), now, 1);
+		taskRepository.reschedule(getSingleDueExecution(), now, now.minus(Duration.ofMinutes(1)), now, 1);
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofSeconds(1)), hasSize(1));
 		assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofHours(1)), hasSize(0));
@@ -252,9 +293,45 @@ public class JdbcTaskRepositoryTest {
 		assertThat(empty, empty());
 	}
 
-	private Execution getSingleExecution() {
-		List<Execution> due = taskRepository.getDue(Instant.now(), POLLING_LIMIT);
-		return due.get(0);
-	}
+    @Test
+    public void get_dead_executions_should_not_include_previously_unresolved() {
+        Instant now = Instant.now();
 
+        // 1
+        final Instant timeDied = now.minus(Duration.ofDays(5));
+        createDeadExecution(oneTimeTask.instance("id1"), timeDied);
+
+        TaskResolver taskResolverMissingTask = new TaskResolver(testableRegistry);
+        JdbcTaskRepository repoMissingTask = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, taskResolverMissingTask, new SchedulerName.Fixed(SCHEDULER_NAME));
+
+        assertThat(taskResolverMissingTask.getUnresolved(), hasSize(0));
+        assertEquals(0, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+
+        assertThat(repoMissingTask.getDeadExecutions(timeDied), hasSize(0));
+        assertThat(taskResolverMissingTask.getUnresolved(), hasSize(1));
+        assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+
+        assertThat(repoMissingTask.getDeadExecutions(timeDied), hasSize(0));
+        assertThat(taskResolverMissingTask.getUnresolved(), hasSize(1));
+        assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    }
+
+    private void createDeadExecution(TaskInstance<Void> taskInstance, Instant timeDied) {
+        taskRepository.createIfNotExists(new Execution(timeDied, taskInstance));
+        final Execution due = getSingleExecution();
+
+        final Optional<Execution> picked = taskRepository.pick(due, timeDied);
+        taskRepository.updateHeartbeat(picked.get(), timeDied);
+    }
+
+    private Execution getSingleDueExecution() {
+        List<Execution> due = taskRepository.getDue(Instant.now(), POLLING_LIMIT);
+        return due.get(0);
+    }
+
+    private Execution getSingleExecution() {
+        List<Execution> executions = new ArrayList<>();
+        taskRepository.getScheduledExecutions(executions::add);
+        return executions.get(0);
+    }
 }

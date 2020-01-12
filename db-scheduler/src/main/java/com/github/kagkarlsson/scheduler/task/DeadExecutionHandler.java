@@ -29,7 +29,7 @@ public interface DeadExecutionHandler<T> {
 		@Override
 		public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {
 			final Instant now = Instant.now();
-			LOG.warn("Reviving dead execution: " + execution + " to " + now);
+			LOG.info("Reviving dead execution: " + execution + " to " + now);
 			executionOperations.reschedule(new ExecutionComplete(execution, now, now, ExecutionComplete.Result.FAILED, null), now);
 		}
 	}
@@ -39,7 +39,7 @@ public interface DeadExecutionHandler<T> {
 
 		@Override
 		public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {
-			LOG.error("Cancelling dead execution: " + execution);
+			LOG.warn("Cancelling dead execution: " + execution);
 			executionOperations.stop();
 		}
 	}

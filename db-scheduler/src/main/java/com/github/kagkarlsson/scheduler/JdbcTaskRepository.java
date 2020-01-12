@@ -18,6 +18,7 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
+import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -39,6 +40,8 @@ import java.util.function.Supplier;
 
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 @SuppressWarnings("rawtypes")
 public class JdbcTaskRepository implements TaskRepository {
@@ -122,11 +125,15 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public List<Execution> getDue(Instant now, int limit) {
-		return jdbcRunner.query(
-				"select * from " + tableName + " where picked = ? and execution_time <= ? order by execution_time asc",
+        final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
+
+        return jdbcRunner.query(
+				"select * from " + tableName + " where picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() + " order by execution_time asc",
 				(PreparedStatement p) -> {
-					p.setBoolean(1, false);
-					p.setTimestamp(2, Timestamp.from(now));
+				    int index = 1;
+					p.setBoolean(index++, false);
+					p.setTimestamp(index++, Timestamp.from(now));
+                    unresolvedFilter.setParameters(p, index);
 					p.setMaxRows(limit);
 				},
 				new ExecutionResultSetMapper()
@@ -234,12 +241,15 @@ public class JdbcTaskRepository implements TaskRepository {
 	}
 
 	@Override
-	public List<Execution> getOldExecutions(Instant olderThan) {
-		return jdbcRunner.query(
-				"select * from " + tableName + " where picked = ? and last_heartbeat <= ? order by last_heartbeat asc",
+	public List<Execution> getDeadExecutions(Instant olderThan) {
+        final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
+        return jdbcRunner.query(
+				"select * from " + tableName + " where picked = ? and last_heartbeat <= ? " + unresolvedFilter.andCondition() + " order by last_heartbeat asc",
 				(PreparedStatement p) -> {
-					p.setBoolean(1, true);
-					p.setTimestamp(2, Timestamp.from(olderThan));
+				    int index = 1;
+					p.setBoolean(index++, true);
+					p.setTimestamp(index++, Timestamp.from(olderThan));
+					unresolvedFilter.setParameters(p, index);
 				},
 				new ExecutionResultSetMapper()
 		);
@@ -303,7 +313,15 @@ public class JdbcTaskRepository implements TaskRepository {
 		return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.empty();
 	}
 
-	private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
+    @Override
+    public int removeExecutions(String taskName) {
+        return jdbcRunner.execute("delete from " + tableName + " where task_name = ?",
+            (PreparedStatement p) -> {
+                p.setString(1, taskName);
+            });
+    }
+
+    private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
 
 		private final ArrayList<Execution> executions;
 
@@ -338,7 +356,7 @@ public class JdbcTaskRepository implements TaskRepository {
 				Optional<Task> task = taskResolver.resolve(taskName);
 
 				if (!task.isPresent()) {
-					LOG.error("Failed to find implementation for task with name '{}'. Either delete the execution from the database, or add an implementation for it.", taskName);
+					LOG.warn("Failed to find implementation for task with name '{}'. Execution will be excluded from due. Either delete the execution from the database, or add an implementation for it. The scheduler may be configured to automatically delete unresolved tasks after a certain period of time.", taskName);
 					continue;
 				}
 
@@ -391,4 +409,24 @@ public class JdbcTaskRepository implements TaskRepository {
 		}
 	}
 
+	private static class UnresolvedFilter {
+        private final List<UnresolvedTask> unresolved;
+
+        public UnresolvedFilter(List<UnresolvedTask> unresolved) {
+            this.unresolved = unresolved;
+        }
+
+        public String andCondition() {
+            return unresolved.isEmpty() ? "" :
+                "and task_name not in (" + unresolved.stream().map(ignored -> "?").collect(joining(",")) + ")";
+        }
+
+        public int setParameters(PreparedStatement p, int index) throws SQLException {
+            final List<String> unresolvedTasknames = unresolved.stream().map(UnresolvedTask::getTaskName).collect(toList());
+            for (String taskName : unresolvedTasknames) {
+                p.setString(index++, taskName);
+            }
+            return index;
+        }
+    }
 }
