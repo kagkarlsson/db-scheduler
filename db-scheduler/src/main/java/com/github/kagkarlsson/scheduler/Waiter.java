@@ -44,8 +44,12 @@ public class Waiter {
 		this.lock = lock;
 	}
 
-	public void doWait() throws InterruptedException {
-		final long millis = duration.toMillis();
+    public void doWait() throws InterruptedException {
+        doWait(duration);
+    }
+
+	public void doWait(Duration waitDuration) throws InterruptedException {
+		final long millis = waitDuration.toMillis();
 		if (millis > 0) {
 			Instant waitUntil = clock.now().plusMillis(millis);
 

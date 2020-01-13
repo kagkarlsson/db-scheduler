@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.RunUntilShutdown.OverriddenWaitDuration;
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
@@ -179,7 +180,7 @@ public class Scheduler implements SchedulerClient {
 		return new ArrayList<>(currentlyProcessing.values());
 	}
 
-	protected void executeDue() {
+	protected OverriddenWaitDuration executeDue() {
 		Instant now = clock.now();
 		List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
 		LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
@@ -192,6 +193,14 @@ public class Scheduler implements SchedulerClient {
 		}
 		this.currentGenerationNumber = thisGenerationNumber;
 		statsRegistry.register(SchedulerStatsEvent.RAN_EXECUTE_DUE);
+
+		if (config.lookAheadForDue()) {
+            Execution next = taskRepository.getNextExecution(now);
+            if (next.executionTime.isBefore(clock.now().plus(executeDueWaiter.getWaitDuration()))) {
+                return OverriddenWaitDuration.of(Duration.between(clock.now(), next.executionTime));
+            }
+        }
+		return OverriddenWaitDuration.absent();
 	}
 
 	@SuppressWarnings({"rawtypes","unchecked"})
