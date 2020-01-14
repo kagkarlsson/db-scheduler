@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.stream.IntStream;
 
 public class UnresolvedTaskMain {
     private static final Logger LOG = LoggerFactory.getLogger(UnresolvedTaskMain.class);
@@ -36,7 +37,7 @@ public class UnresolvedTaskMain {
                 .create(dataSource)
                 .pollingInterval(Duration.ofSeconds(1))
                 .heartbeatInterval(Duration.ofSeconds(5))
-                .deleteUnresolvedAfter(Duration.ofSeconds(3))
+                .deleteUnresolvedAfter(Duration.ofSeconds(20))
                 .build();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -45,6 +46,13 @@ public class UnresolvedTaskMain {
         }));
 
         scheduler.start();
+
+        IntStream.range(0, 5).forEach(i -> {
+            scheduler.getScheduledExecutions(e -> {});
+            scheduler.getFailingExecutions(Duration.ZERO);
+        });
+
+
     }
 
     public static void main(String[] args) throws Throwable {
