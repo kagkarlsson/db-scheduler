@@ -102,10 +102,13 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public void getScheduledExecutions(Consumer<Execution> consumer) {
-		jdbcRunner.query(
-				"select * from " + tableName + " where picked = ? order by execution_time asc",
+        UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
+        jdbcRunner.query(
+				"select * from " + tableName + " where picked = ? " + unresolvedFilter.andCondition() + " order by execution_time asc",
 				(PreparedStatement p) -> {
-					p.setBoolean(1, false);
+				    int index = 1;
+					p.setBoolean(index++, false);
+					unresolvedFilter.setParameters(p, index);
 				},
 				new ExecutionResultSetConsumer(consumer)
 		);
@@ -282,12 +285,16 @@ public class JdbcTaskRepository implements TaskRepository {
 
 	@Override
 	public List<Execution> getExecutionsFailingLongerThan(Duration interval) {
-		return jdbcRunner.query(
+        UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
+        return jdbcRunner.query(
 				"select * from " + tableName + " where " +
-						"	(last_success is null and last_failure is not null)" +
-						"	or (last_failure is not null and last_success < ?)",
+						"	((last_success is null and last_failure is not null)" +
+						"	or (last_failure is not null and last_success < ?)) " +
+                        unresolvedFilter.andCondition(),
 				(PreparedStatement p) -> {
-					p.setTimestamp(1, Timestamp.from(Instant.now().minus(interval)));
+				    int index = 1;
+					p.setTimestamp(index++, Timestamp.from(Instant.now().minus(interval)));
+					unresolvedFilter.setParameters(p, index);
 				},
 				new ExecutionResultSetMapper()
 		);
