@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -111,6 +112,7 @@ public class DbSchedulerAutoConfiguration {
         return builder.build();
     }
 
+    @ConditionalOnEnabledHealthIndicator("db-scheduler")
     @ConditionalOnClass(HealthIndicator.class)
     @ConditionalOnBean(Scheduler.class)
     @Bean

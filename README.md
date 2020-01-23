@@ -27,7 +27,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).  
+2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
@@ -77,7 +77,7 @@ scheduler.start();
 An instance of a _one-time_ task has a single execution-time some time in the future (i.e. non-recurring). The instance-id must be unique within this task, and may be used to encode some metadata (e.g. an id). For more complex state, custom serializable java objects are supported (as used in the example).
 
 Define a _one-time_ task and start the scheduler:
- 
+
 ```java
 OneTimeTask<MyTaskData> myAdhocTask = Tasks.oneTime("my-typed-adhoc-task", MyTaskData.class)
         .execute((inst, ctx) -> {
@@ -126,7 +126,7 @@ scheduler.start();
 
 ### Scheduler configuration
 
-The scheduler is created using the `Scheduler.create(...)` builder. The builder have sensible defaults, but the following options are configurable. 
+The scheduler is created using the `Scheduler.create(...)` builder. The builder have sensible defaults, but the following options are configurable.
 
 | Option  | Default | Description |
 | ------------- | ---- | ------------- |
@@ -145,7 +145,7 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 
 ### Task configuration
 
-Tasks are created using one of the builder-classes in `Tasks`. The builders have sensible defaults, but the following options can be overridden. 
+Tasks are created using one of the builder-classes in `Tasks`. The builders have sensible defaults, but the following options can be overridden.
 
 | Option  | Default | Description |
 | ------------- | ---- | ------------- |
@@ -186,7 +186,8 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
 2. In your configuration, expose your `Task`'s as Spring beans. If they are recurring, they will automatically be picked up and started.
-3. Run the app.
+3. If you want to expose `Scheduler` state into actuator health information you need to enable `db-scheduler` health indicator. [Spring Health Information.](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health)
+4. Run the app.
 
 ### Configuration options
 
@@ -224,18 +225,18 @@ To create the initial execution for a `RecurringTask`, the scheduler has a metho
 
 ### One-time tasks
 
-The term _one-time task_ is used for tasks that have a single execution-time (see `Tasks.oneTime(..)`). 
+The term _one-time task_ is used for tasks that have a single execution-time (see `Tasks.oneTime(..)`).
 In addition to encode data into the `instanceId`of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time. By default, Java serialization is used to marshal/unmarshal the data.
 
 ### Custom tasks
 
-For tasks not fitting the above categories, it is possible to fully customize the behavior of the tasks using `Tasks.custom(..)`. 
+For tasks not fitting the above categories, it is possible to fully customize the behavior of the tasks using `Tasks.custom(..)`.
 
 Use-cases might be:
 
 * Recurring tasks that needs to update its data
 * Tasks that should be either rescheduled or removed based on output from the actual execution
-  
+
 
 ### Dead executions
 
@@ -275,10 +276,10 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * PR [#63](https://github.com/kagkarlsson/db-scheduler/pull/63) adds Spring Boot support. Scheduler can now be autoconfigured using tasks available in the Spring context. (contributed by [evenh](https://github.com/evenh))
 
 ### Version 5.2
-* PR [#60](https://github.com/kagkarlsson/db-scheduler/pull/60) changes `RecurringTask` so that initial/first execution-time is defined in the `Schedule` and typically is the next Instant according to the Schedule. 
+* PR [#60](https://github.com/kagkarlsson/db-scheduler/pull/60) changes `RecurringTask` so that initial/first execution-time is defined in the `Schedule` and typically is the next Instant according to the Schedule.
 
 ### Version 5.1
-* PR [#52](https://github.com/kagkarlsson/db-scheduler/pull/52) redesigns use of the underlying `ExecutorService`, making better use of the backing queue. 
+* PR [#52](https://github.com/kagkarlsson/db-scheduler/pull/52) redesigns use of the underlying `ExecutorService`, making better use of the backing queue.
 * PR [#53](https://github.com/kagkarlsson/db-scheduler/pull/53) adds a method to the `SchedulerClient` for checking if a `TaskInstance` already exists, `client.getScheduledExecution(<task-instance-id>)` (fixes [#38](https://github.com/kagkarlsson/db-scheduler/issues/38).
 * PR [#54](https://github.com/kagkarlsson/db-scheduler/pull/54) adds a builder-method for supplying an externally managed `ExecutorService` (fixes [#51](https://github.com/kagkarlsson/db-scheduler/issues/51)).
 * PR [#56](https://github.com/kagkarlsson/db-scheduler/pull/56) adds cron-support, `Schedules.cron(<pattern>)` (fixes [#40](https://github.com/kagkarlsson/db-scheduler/issues/40)).
@@ -294,7 +295,7 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * Bugfix: `scheduler.getScheduledExecutionsForTask(...)` was not working properly
 
 ### Version 4.0
-* Track number of consecutive failures of a task. For use in `FailureHandler` to avoid retrying forever, or retry with back-off. 
+* Track number of consecutive failures of a task. For use in `FailureHandler` to avoid retrying forever, or retry with back-off.
 
 **Upgrading to 4.x**
 * Add column `consecutive_failures` to the database schema. See table definitions for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/src/test/resources/mysql_tables.sql). `null` is handled as 0, so no need to update existing records.
@@ -303,20 +304,20 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 * Customizable serlizer (PR https://github.com/kagkarlsson/db-scheduler/pull/32)
 
 ### Version 3.2
-* Customizable table-name for persistence 
+* Customizable table-name for persistence
 
 ### Version 3.1
 * Future executions can now be fetched using the `scheduler.getScheduledExecutions(..)`
 
 ### Version 3.0
 * New builders for task-creation, making it clearer what the config-options are. (See `Tasks` class and examples)
-* Better default for failure handling for one-time tasks 
+* Better default for failure handling for one-time tasks
 * Enables recurring tasks to have data
 * `Schedule.getNextExecutionTime` can now use all data from `ExecutionComplete`
 
 **Upgrading to 3.x**
 * No schema changes
-* Task creation are preferrably done through builders in `Tasks` class 
+* Task creation are preferrably done through builders in `Tasks` class
 
 ### Version 2.0
 * Possible to `cancel` and `reschedule` executions.
@@ -331,15 +332,15 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 #### Why `db-scheduler` when there is `Quartz`?
 
 The goal of `db-scheduler` is to be non-invasive and simple to use, but still solve the persistence problem, and the cluster-coordination problem.
- It was originally targeted at applications with modest database schemas, to which adding 11 tables would feel a bit overkill..   
- 
+ It was originally targeted at applications with modest database schemas, to which adding 11 tables would feel a bit overkill..
+
 #### Why use a RDBMS for persistence and coordination?
 
 KISS. It's the most common type of shared state applications have.
 
 #### I am missing feature X?
 
-Please create an issue with the feature request and we can discuss it there. 
+Please create an issue with the feature request and we can discuss it there.
 If you are impatient (or feel like contributing), pull requests are most welcome :)
 
 #### Is anybody using it?
