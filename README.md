@@ -23,7 +23,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>6.5</version>
+    <version>6.6</version>
 </dependency>
 ```
 
@@ -255,6 +255,9 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 
 ## Versions / upgrading
+
+### Version 6.6
+* PR [#86](https://github.com/kagkarlsson/db-scheduler/pull/85) changes Spring Boot `HealthIndicator` to opt-in rather than default on. (contributed by [ystarikovich](https://github.com/ystarikovich))
 
 ### Version 6.5
 * PR [#83](https://github.com/kagkarlsson/db-scheduler/pull/83) added additional exclusions of executions with unresolved task names to `getScheduledExecutions()` and `getExecutionsFailingLongerThan(..)`.
