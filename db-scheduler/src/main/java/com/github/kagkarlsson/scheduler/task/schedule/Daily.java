@@ -17,20 +17,35 @@ package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Daily implements Schedule {
 
 	private final List<LocalTime> times;
+	private final ZoneId zone;
 
-	public Daily(LocalTime... times) {
-		this(Arrays.asList(times));
+    public Daily(LocalTime... times) {
+        this(ZoneId.systemDefault(), Arrays.asList(times));
+    }
+
+    public Daily(List<LocalTime> times) {
+        this(ZoneId.systemDefault(), times);
+    }
+
+	public Daily(ZoneId zone, LocalTime... times) {
+		this(zone, Arrays.asList(times));
 	}
 
-	public Daily(List<LocalTime> times) {
+	public Daily(ZoneId zone, List<LocalTime> times) {
+        this.zone = Objects.requireNonNull(zone, "zone cannot be null");
 		if (times.size() < 1) {
 			throw new IllegalArgumentException("times cannot be empty");
 		}
@@ -39,7 +54,6 @@ public class Daily implements Schedule {
 
 	@Override
 	public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
-		ZoneId zone = ZoneId.systemDefault();
 		Instant timeDone = executionComplete.getTimeDone();
 		LocalDate doneDate = timeDone.atZone(zone).toLocalDate();
 

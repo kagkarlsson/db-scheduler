@@ -41,6 +41,12 @@ public class SchedulesTest {
 		assertThat(fixedDelaySchedule.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plusSeconds(10)));
 	}
 
+	@Test
+    public void should_create_daily_from_string() {
+        Schedule parsed = Schedules.daily("DAILY|12:00");
+        assertThat(parsed, instanceOf(Daily.class));
+    }
+
 	private ExecutionComplete complete(Instant timeDone) {
 		return ExecutionComplete.success(null, timeDone, timeDone);
 	}
