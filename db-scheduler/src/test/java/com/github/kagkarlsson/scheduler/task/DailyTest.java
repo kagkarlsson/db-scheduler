@@ -29,6 +29,7 @@ public class DailyTest {
     private static final LocalTime HOUR_7 = LocalTime.of(7, 0);
     private static final LocalTime HOUR_8 = LocalTime.of(8, 0);
     private static final LocalTime HOUR_12 = LocalTime.of(12, 0);
+    private static final LocalTime HOUR_23 = LocalTime.of(23, 0);
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -121,11 +122,11 @@ public class DailyTest {
         // Europe/Rome is UTC+1 during standard time
         // Europe/Rome is UTC+2 during daylight saving time
         // Standard saving begins on 25 October 2020 at 3AM
-        LocalDate currentDate = LocalDate.of(2020, 3, 29);
-        LocalDate nextDay = currentDate.plusDays(1);
+        LocalDate currentDate = LocalDate.of(2020, 10, 25);
+        LocalDate previousDay = currentDate.minusDays(1);
 
-        assertThat(new Daily(ROME, HOUR_2).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_1, UTC)));
-        assertThat(new Daily(ROME, HOUR_3).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_1, UTC)));
+        assertThat(new Daily(ROME, HOUR_2).getNextExecutionTime(complete(instant(previousDay, HOUR_23, UTC))), is(instant(currentDate, HOUR_0, UTC)));
+        assertThat(new Daily(ROME, HOUR_3).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_2, UTC)));
     }
 
     private Instant instant(LocalDate date, LocalTime time) {
