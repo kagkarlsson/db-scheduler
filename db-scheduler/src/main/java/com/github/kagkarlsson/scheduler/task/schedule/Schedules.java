@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler.task.schedule;
 
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 public class Schedules {
 
     private static final Pattern DAILY_PATTERN = Pattern.compile("^DAILY\\|((\\d{2}:\\d{2})(,\\d{2}:\\d{2})*)$");
+    private static final Pattern DAILY_PATTERN_WITH_TIMEZONE = Pattern.compile("^DAILY\\|(.+)\\|((\\d{2}:\\d{2})(,\\d{2}:\\d{2})*)$");
     private static final Pattern FIXED_DELAY_PATTERN = Pattern.compile("^FIXED_DELAY\\|(\\d+)s$");
 
     public static Schedule daily(LocalTime... times) {
@@ -37,16 +39,6 @@ public class Schedules {
 
     public static Schedule daily(ZoneId zone, LocalTime... times) {
         return new Daily(zone, times);
-    }
-
-    public static Schedule daily(String scheduleString) {
-        return daily(ZoneId.systemDefault(), scheduleString);
-    }
-
-    public static Schedule daily(ZoneId zone, String scheduleString) {
-        return Optional.ofNullable(scheduleString)
-            .flatMap(maybeDailySchedule(zone))
-            .orElseThrow(() -> new UnrecognizableSchedule(scheduleString));
     }
 
     public static Schedule fixedDelay(Duration delay) {
@@ -72,14 +64,14 @@ public class Schedules {
     public static Schedule parseSchedule(String scheduleString) {
         if (scheduleString == null) throw new UnrecognizableSchedule("null");
 
-        return Stream.of(maybeDailySchedule(ZoneId.systemDefault()), maybeFixedDelaySchedule())
+        return Stream.of(maybeDailySchedule(ZoneId.systemDefault()), maybeDailyScheduleWithTimezone(), maybeFixedDelaySchedule())
             .map(it -> it.apply(scheduleString))
             .filter(Optional::isPresent).map(Optional::get)
             .findFirst()
             .orElseThrow(() -> new UnrecognizableSchedule(scheduleString));
     }
 
-    private static Function<String, Optional<Schedule>> maybeDailySchedule(ZoneId zone) {
+    static Function<String, Optional<Schedule>> maybeDailySchedule(ZoneId zone) {
         return scheduleString -> {
             Matcher dailyMatcher = DAILY_PATTERN.matcher(scheduleString);
             if (dailyMatcher.matches()) {
@@ -93,6 +85,32 @@ public class Schedules {
 
             return Optional.empty();
         };
+    }
+
+    static Function<String, Optional<Schedule>> maybeDailyScheduleWithTimezone() {
+        return scheduleString -> {
+            Matcher dailyMatcher = DAILY_PATTERN_WITH_TIMEZONE.matcher(scheduleString);
+            if (dailyMatcher.matches()) {
+                ZoneId zone = zoneIdFrom(dailyMatcher.group(1));
+                String[] times = dailyMatcher.group(2).split(",");
+                List<LocalTime> parsedTimes = Stream.of(times).map(timeStr -> {
+                    String[] hourAndMinute = timeStr.split(":");
+                    return LocalTime.of(Integer.parseInt(hourAndMinute[0]), Integer.parseInt(hourAndMinute[1]));
+                }).collect(Collectors.toList());
+                return Optional.of(new Daily(zone, parsedTimes));
+            }
+
+            return Optional.empty();
+        };
+    }
+
+    static ZoneId zoneIdFrom(String str) {
+        try {
+            return ZoneId.of(str);
+        } catch (DateTimeException exception) {
+            throw new UnrecognizableSchedule(str);
+        }
+
     }
 
     private static Function<String, Optional<Schedule>> maybeFixedDelaySchedule() {
