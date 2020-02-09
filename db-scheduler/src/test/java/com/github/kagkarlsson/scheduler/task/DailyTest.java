@@ -1,7 +1,6 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.task.schedule.Daily;
-import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -14,6 +13,7 @@ import java.time.ZonedDateTime;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 
 public class DailyTest {
@@ -131,8 +131,10 @@ public class DailyTest {
     }
 
     @Test
-    public void equals_and_hash_code() {
-        EqualsVerifier.forClass(Daily.class).verify();
+    public void equals() {
+        assertEquals(new Daily(ZoneId.of("UTC"), LocalTime.MIDNIGHT), new Daily(ZoneId.of("UTC"), LocalTime.MIDNIGHT));
+        assertNotEquals(new Daily(ZoneId.of("UTC"), LocalTime.MIDNIGHT, LocalTime.NOON), new Daily(ZoneId.of("UTC"), LocalTime.MIDNIGHT));
+        assertNotEquals(new Daily(ZoneId.of("Europe/London"), LocalTime.MIDNIGHT), new Daily(ZoneId.of("UTC"), LocalTime.MIDNIGHT));
     }
 
     @Test
