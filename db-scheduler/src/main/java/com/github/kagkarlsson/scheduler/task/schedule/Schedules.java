@@ -15,23 +15,13 @@
  */
 package com.github.kagkarlsson.scheduler.task.schedule;
 
-import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class Schedules {
-
-    private static final Pattern DAILY_PATTERN = Pattern.compile("^DAILY\\|((\\d{2}:\\d{2})(,\\d{2}:\\d{2})*)$");
-    private static final Pattern DAILY_PATTERN_WITH_TIMEZONE = Pattern.compile("^DAILY\\|(.+)\\|((\\d{2}:\\d{2})(,\\d{2}:\\d{2})*)$");
-    private static final Pattern FIXED_DELAY_PATTERN = Pattern.compile("^FIXED_DELAY\\|(\\d+)s$");
+    private static final Parser SCHEDULE_PARSER = CompositeParser.of(new FixedDelayParser(), new DailyParser());
 
     public static Schedule daily(LocalTime... times) {
         return new Daily(times);
@@ -55,80 +45,23 @@ public class Schedules {
 
     /**
      * Currently supports Daily- and FixedDelay-schedule on the formats:
-     * <pre>DAILY|hh:mm,hh:mm,...,hh:mm</pre><br/>
+     * <pre>DAILY|hh:mm,hh:mm,...,hh:mm(|TIME_ZONE)</pre><br/>
      * <pre>FIXED_DELAY|xxxs  (xxx is number of seconds)</pre>
      *
      * @param scheduleString
      * @return
      */
     public static Schedule parseSchedule(String scheduleString) {
-        if (scheduleString == null) throw new UnrecognizableSchedule("null");
-
-        return Stream.of(maybeDailySchedule(ZoneId.systemDefault()), maybeDailyScheduleWithTimezone(), maybeFixedDelaySchedule())
-            .map(it -> it.apply(scheduleString))
-            .filter(Optional::isPresent).map(Optional::get)
-            .findFirst()
-            .orElseThrow(() -> new UnrecognizableSchedule(scheduleString));
-    }
-
-    static Function<String, Optional<Schedule>> maybeDailySchedule(ZoneId zone) {
-        return scheduleString -> {
-            Matcher dailyMatcher = DAILY_PATTERN.matcher(scheduleString);
-            if (dailyMatcher.matches()) {
-                String[] times = dailyMatcher.group(1).split(",");
-                List<LocalTime> parsedTimes = Stream.of(times).map(timeStr -> {
-                    String[] hourAndMinute = timeStr.split(":");
-                    return LocalTime.of(Integer.parseInt(hourAndMinute[0]), Integer.parseInt(hourAndMinute[1]));
-                }).collect(Collectors.toList());
-                return Optional.of(new Daily(zone, parsedTimes));
-            }
-
-            return Optional.empty();
-        };
-    }
-
-    static Function<String, Optional<Schedule>> maybeDailyScheduleWithTimezone() {
-        return scheduleString -> {
-            Matcher dailyMatcher = DAILY_PATTERN_WITH_TIMEZONE.matcher(scheduleString);
-            if (dailyMatcher.matches()) {
-                ZoneId zone = zoneIdFrom(dailyMatcher.group(1));
-                String[] times = dailyMatcher.group(2).split(",");
-                List<LocalTime> parsedTimes = Stream.of(times).map(timeStr -> {
-                    String[] hourAndMinute = timeStr.split(":");
-                    return LocalTime.of(Integer.parseInt(hourAndMinute[0]), Integer.parseInt(hourAndMinute[1]));
-                }).collect(Collectors.toList());
-                return Optional.of(new Daily(zone, parsedTimes));
-            }
-
-            return Optional.empty();
-        };
-    }
-
-    static ZoneId zoneIdFrom(String str) {
-        try {
-            return ZoneId.of(str);
-        } catch (DateTimeException exception) {
-            throw new UnrecognizableSchedule(str);
-        }
-
-    }
-
-    private static Function<String, Optional<Schedule>> maybeFixedDelaySchedule() {
-        return scheduleString -> {
-            Matcher fixedDelayMatcher = FIXED_DELAY_PATTERN.matcher(scheduleString);
-            if (fixedDelayMatcher.matches()) {
-                int secondsDelay = Integer.parseInt(fixedDelayMatcher.group(1));
-                return Optional.of(FixedDelay.of(Duration.ofSeconds(secondsDelay)));
-            }
-
-            return Optional.empty();
-        };
+        return SCHEDULE_PARSER.parse(scheduleString);
     }
 
     public static class UnrecognizableSchedule extends RuntimeException {
         public UnrecognizableSchedule(String inputSchedule) {
             super("Unrecognized schedule: '" + inputSchedule + "'");
         }
-    }
 
+        public UnrecognizableSchedule(String inputSchedule, List<String> examples) {
+            super("Unrecognized schedule: '" + inputSchedule + "'. Parsable examples: " + examples);
+        }
+    }
 }

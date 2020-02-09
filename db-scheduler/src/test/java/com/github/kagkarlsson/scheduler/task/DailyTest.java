@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.task.schedule.Daily;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -12,12 +13,12 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class DailyTest {
 
     private static final ZoneId ZONE = ZoneId.systemDefault();
-    private static final ZoneId LONDON = ZoneId.of("Europe/London");
     private static final ZoneId UTC = ZoneId.of("UTC");
     private static final ZoneId ROME = ZoneId.of("Europe/Rome");
 
@@ -127,6 +128,16 @@ public class DailyTest {
 
         assertThat(new Daily(ROME, HOUR_2).getNextExecutionTime(complete(instant(previousDay, HOUR_23, UTC))), is(instant(currentDate, HOUR_0, UTC)));
         assertThat(new Daily(ROME, HOUR_3).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_2, UTC)));
+    }
+
+    @Test
+    public void equals_and_hash_code() {
+        EqualsVerifier.forClass(Daily.class).verify();
+    }
+
+    @Test
+    public void to_string() {
+        assertEquals("Daily times=[01:00, 02:00], zone=Europe/Rome", new Daily(ZoneId.of("Europe/Rome"), HOUR_1, HOUR_2).toString());
     }
 
     private Instant instant(LocalDate date, LocalTime time) {

@@ -42,12 +42,9 @@ public class SchedulesTest {
 		Schedule dailySchedule = assertParsable("DAILY|12:00,13:00", Daily.class);
 		assertThat(dailySchedule.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plus(Duration.ofHours(1))));
 
-        assertParsable("DAILY|Europe/Rome|12:00", Daily.class);
-        Schedule dailyScheduleWithTimezone = assertParsable("DAILY|Europe/Rome|10:00,14:00", Daily.class);
+        assertParsable("DAILY|12:00|Europe/Rome", Daily.class);
+        Schedule dailyScheduleWithTimezone = assertParsable("DAILY|10:00,14:00|Europe/Rome", Daily.class);
         assertThat(dailyScheduleWithTimezone.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plus(Duration.ofHours(1))));
-
-		assertIllegalArgument("FIXED_DELAY|");
-		assertIllegalArgument("FIXED_DELAY|123");
 
 		Schedule fixedDelaySchedule = assertParsable("FIXED_DELAY|10s", FixedDelay.class);
 		assertThat(fixedDelaySchedule.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plusSeconds(10)));
@@ -67,7 +64,7 @@ public class SchedulesTest {
 	private void assertIllegalArgument(String schedule) {
 		try {
 			Schedules.parseSchedule(schedule);
-			fail("Should have thrown IllegalArgument for schedule '" + schedule + "'");
+			fail("Should have thrown UnrecognizableSchedule for schedule '" + schedule + "'");
 		} catch (Schedules.UnrecognizableSchedule e) {
 			assertThat(e.getMessage(), CoreMatchers.containsString("Unrecognized schedule"));
 		}

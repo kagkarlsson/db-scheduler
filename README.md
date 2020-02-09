@@ -160,10 +160,18 @@ The library contains a number of Schedule-implementations for recurring tasks. S
 
 | Schedule  | Description |
 | ------------- | ------------- |
-| `.daily(LocalTime ...)`  | Runs every day at specified times. |
+| `.daily(LocalTime ...)`  | Runs every day at specified times. Optionally a time zone can be specified. |
 | `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)|
 | `.cron(String)`  | Spring-style cron-expression. |
 
+Another option to configure schedules is reading string patterns with `Schedules.parse(String)`.
+
+The currently available patterns are:
+
+| Pattern  | Description |
+| ------------- | ------------- |
+| `FIXED_DELAY\|Ns`  | Same as `.fixedDelay(Duration)` with duration set to N seconds. |
+| `DAILY\|12:30,15:30...(\|time_zone)`  | Same as `.daily(LocalTime)` with optional time zone.|
 
 ## Spring Boot usage
 
