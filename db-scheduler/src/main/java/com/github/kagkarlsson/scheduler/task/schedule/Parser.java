@@ -19,15 +19,7 @@ import java.util.List;
 import java.util.Optional;
 
 interface Parser {
-    Schedule parse(String scheduleString);
+    Optional<Schedule> parse(String scheduleString);
 
     List<String> examples();
-
-    default Optional<Schedule> tryParse(String schedule) {
-        try {
-            return Optional.of(parse(schedule));
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-    }
 }

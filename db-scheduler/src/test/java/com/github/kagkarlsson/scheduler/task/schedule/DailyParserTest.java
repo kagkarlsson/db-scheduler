@@ -4,8 +4,10 @@ import org.junit.Test;
 
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Optional;
 
-import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertParsableSchedule;
+import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertScheduleNotPresent;
+import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertSchedulePresent;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertUnrecognizableSchedule;
 import static org.junit.Assert.assertEquals;
 
@@ -20,40 +22,40 @@ public class DailyParserTest {
 
     @Test
     public void should_fail_on_unrecognizable_schedule_string() {
-        assertUnrecognizableSchedule(parser, null);
-        assertUnrecognizableSchedule(parser,"");
-        assertUnrecognizableSchedule(parser,"LALA|123s");
-        assertUnrecognizableSchedule(parser,"DAILY|");
-        assertUnrecognizableSchedule(parser,"DAILY|1200");
-        assertUnrecognizableSchedule(parser,"DAILY|12:00;13:00");
-        assertUnrecognizableSchedule(parser,"DAILY|12:00,13:00,");
-        assertUnrecognizableSchedule(parser,"DAILY|UTC|12:00,13:00");
-        assertUnrecognizableSchedule(parser,"DAILY|UTC");
-        assertUnrecognizableSchedule(parser,"DAILY|1200|UTC");
-        assertUnrecognizableSchedule(parser,"DAILY|12:00|UTC|");
-        assertUnrecognizableSchedule(parser,"DAILY|12:00,13:00|");
-        assertUnrecognizableSchedule(parser,"DAILY|12:00,13:00|WRONG");
-        assertUnrecognizableSchedule(parser,"DAILY|12:00,13:00|WRONG|WRONG");
+        assertScheduleNotPresent(parser, null);
+        assertScheduleNotPresent(parser,"");
+        assertScheduleNotPresent(parser,"LALA|123s");
+        assertScheduleNotPresent(parser,"DAILY|");
+        assertScheduleNotPresent(parser,"DAILY|1200");
+        assertScheduleNotPresent(parser,"DAILY|12:00;13:00");
+        assertScheduleNotPresent(parser,"DAILY|12:00,13:00,");
+        assertScheduleNotPresent(parser,"DAILY|UTC|12:00,13:00");
+        assertScheduleNotPresent(parser,"DAILY|UTC");
+        assertScheduleNotPresent(parser,"DAILY|1200|UTC");
+        assertScheduleNotPresent(parser,"DAILY|12:00|UTC|");
+        assertScheduleNotPresent(parser,"DAILY|12:00,13:00|");
+        assertScheduleNotPresent(parser,"DAILY|12:00,13:00|WRONG");
+        assertScheduleNotPresent(parser,"DAILY|12:00,13:00|WRONG|WRONG");
     }
 
     @Test
     public void should_recognize_correct_schedule_string_without_timezone() {
-        assertEquals(new Daily(HOUR_9_30), parser.parse("DAILY|09:30"));
-        assertEquals(new Daily(HOUR_9_30, HOUR_16_30), parser.parse("DAILY|09:30,16:30"));
-        assertEquals(new Daily(HOUR_9_30, HOUR_16_30, HOUR_18_30), parser.parse("DAILY|09:30,16:30,18:30"));
-        assertEquals(new Daily(HOUR_9_30, HOUR_16_30, HOUR_18_30, HOUR_20_30), parser.parse("DAILY|09:30,16:30,18:30,20:30"));
+        assertEquals(Optional.of(new Daily(HOUR_9_30)), parser.parse("DAILY|09:30"));
+        assertEquals(Optional.of(new Daily(HOUR_9_30, HOUR_16_30)), parser.parse("DAILY|09:30,16:30"));
+        assertEquals(Optional.of(new Daily(HOUR_9_30, HOUR_16_30, HOUR_18_30)), parser.parse("DAILY|09:30,16:30,18:30"));
+        assertEquals(Optional.of(new Daily(HOUR_9_30, HOUR_16_30, HOUR_18_30, HOUR_20_30)), parser.parse("DAILY|09:30,16:30,18:30,20:30"));
     }
 
     @Test
     public void should_recognize_correct_schedule_with_timezone_string() {
-        assertEquals(new Daily(ROME, HOUR_9_30), parser.parse("DAILY|09:30|Europe/Rome"));
-        assertEquals(new Daily(ROME, HOUR_9_30, HOUR_16_30), parser.parse("DAILY|09:30,16:30|Europe/Rome"));
-        assertEquals(new Daily(ROME, HOUR_9_30, HOUR_16_30, HOUR_18_30), parser.parse("DAILY|09:30,16:30,18:30|Europe/Rome"));
-        assertEquals(new Daily(ROME, HOUR_9_30, HOUR_16_30, HOUR_18_30, HOUR_20_30), parser.parse("DAILY|09:30,16:30,18:30,20:30|Europe/Rome"));
+        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30)), parser.parse("DAILY|09:30|Europe/Rome"));
+        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30, HOUR_16_30)), parser.parse("DAILY|09:30,16:30|Europe/Rome"));
+        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30, HOUR_16_30, HOUR_18_30)), parser.parse("DAILY|09:30,16:30,18:30|Europe/Rome"));
+        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30, HOUR_16_30, HOUR_18_30, HOUR_20_30)), parser.parse("DAILY|09:30,16:30,18:30,20:30|Europe/Rome"));
     }
 
     @Test
     public void examples_should_be_parsable() {
-        parser.examples().forEach(it -> assertParsableSchedule(parser, it));
+        parser.examples().forEach(it -> assertSchedulePresent(parser, it));
     }
 }

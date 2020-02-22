@@ -1,17 +1,16 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import java.time.Duration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 public class FixedDelayTest {
     @Test
-    public void equals() {
-        assertEquals(FixedDelay.of(Duration.ofMinutes(10)), FixedDelay.ofMinutes(10));
-        assertNotEquals(FixedDelay.of(Duration.ofMinutes(10)), FixedDelay.ofMinutes(15));
+    public void equals_and_hash_code() {
+        EqualsVerifier.forClass(FixedDelay.class).verify();
     }
 
     @Test

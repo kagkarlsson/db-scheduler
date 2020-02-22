@@ -49,10 +49,12 @@ public class Schedules {
      * <pre>FIXED_DELAY|xxxs  (xxx is number of seconds)</pre>
      *
      * @param scheduleString
-     * @return
+     * @return A new schedule
+     * @throws UnrecognizableSchedule When the scheduleString cannot be parsed
      */
     public static Schedule parseSchedule(String scheduleString) {
-        return SCHEDULE_PARSER.parse(scheduleString);
+        return SCHEDULE_PARSER.parse(scheduleString)
+            .orElseThrow(() -> new UnrecognizableSchedule(scheduleString, SCHEDULE_PARSER.examples()));
     }
 
     public static class UnrecognizableSchedule extends RuntimeException {

@@ -28,12 +28,12 @@ final class CompositeParser implements Parser {
     }
 
     @Override
-    public Schedule parse(String scheduleString) {
+    public Optional<Schedule> parse(String scheduleString) {
         return delegates.stream()
-            .map(it -> it.tryParse(scheduleString))
+            .map(NotThrowingParser::of)
+            .map(it -> it.parse(scheduleString))
             .filter(Optional::isPresent).map(Optional::get)
-            .findFirst()
-            .orElseThrow(() -> new Schedules.UnrecognizableSchedule(scheduleString, this.examples()));
+            .findFirst();
     }
 
     @Override

@@ -13,30 +13,27 @@ import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelp
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.THROWING_PARSER;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertScheduleNotPresent;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertSchedulePresent;
+import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertUnrecognizableSchedule;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
-public class CompositeParserTest {
+public class NotThrowingParserTest {
 
     @Test
-    public void returns_schedule_from_the_first_successful_parser() {
-        assertParsingResult(DAILY, DAILY_PARSER, FIXED_DELAY_PARSER, THROWING_PARSER);
-        assertParsingResult(DAILY, THROWING_PARSER, DAILY_PARSER, FIXED_DELAY_PARSER);
-        assertParsingResult(FIXED_DELAY, FIXED_DELAY_PARSER, DAILY_PARSER, THROWING_PARSER);
-        assertParsingResult(FIXED_DELAY, THROWING_PARSER, FIXED_DELAY_PARSER, DAILY_PARSER);
+    public void returns_schedule_from_the_delegate() {
+        assertParsingResult(DAILY, DAILY_PARSER);
+        assertParsingResult(FIXED_DELAY, FIXED_DELAY_PARSER);
     }
 
     @Test
-    public void fails_when_no_successful_parsers() {
-        assertScheduleNotPresent(CompositeParser.of(THROWING_PARSER), ANY_SCHEDULE_STRING);
+    public void does_not_fail_when_delegate_throws_exception() {
+        assertScheduleNotPresent(NotThrowingParser.of(THROWING_PARSER), ANY_SCHEDULE_STRING);
     }
 
     @Test
     public void cannot_create_from_null_or_empty_list() {
         assertUnableToCreateParser(null);
-        assertUnableToCreateParser();
     }
 
     @Test
@@ -53,16 +50,16 @@ public class CompositeParserTest {
         assertThat(parser.examples(), containsInAnyOrder("PARSABLE 1", "PARSABLE 2"));
     }
 
-    static void assertParsingResult(Schedule expected, Parser... parsers) {
-        assertEquals(Optional.of(expected), CompositeParser.of(parsers).parse(ANY_SCHEDULE_STRING));
+    static void assertParsingResult(Schedule expected, Parser delegate) {
+        assertEquals(Optional.of(expected), NotThrowingParser.of(delegate).parse(ANY_SCHEDULE_STRING));
     }
 
-    static void assertUnableToCreateParser(Parser... parsers) {
+    static void assertUnableToCreateParser(Parser delegate) {
         try {
-            CompositeParser.of(parsers);
+            NotThrowingParser.of(delegate);
             fail("Should have thrown IllegalArgumentException");
-        } catch (IllegalArgumentException e) {
-            assertThat(e.getMessage(), CoreMatchers.containsString("Unable to create CompositeParser"));
+        } catch (NullPointerException e) {
+            assertThat(e.getMessage(), CoreMatchers.containsString("Delegate parser cannot be null"));
         }
     }
 }

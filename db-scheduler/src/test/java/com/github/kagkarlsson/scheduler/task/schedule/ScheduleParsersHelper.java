@@ -1,13 +1,19 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
+import org.hamcrest.CoreMatchers;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static java.time.LocalTime.MIDNIGHT;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 class ScheduleParsersHelper {
@@ -34,9 +40,17 @@ class ScheduleParsersHelper {
         }
     }
 
-    static void assertParsableSchedule(Parser parser, String schedule) {
+    static void assertSchedulePresent(Parser parser, String schedule) {
         try {
-            parser.parse(schedule);
+            assertTrue(parser.parse(schedule).isPresent());
+        } catch (Exception e) {
+            fail("Should not have thrown any Exception for schedule '" + schedule + "'. Exception: " + e.getMessage());
+        }
+    }
+
+    static void assertScheduleNotPresent(Parser parser, String schedule) {
+        try {
+            assertFalse(parser.parse(schedule).isPresent());
         } catch (Exception e) {
             fail("Should not have thrown any Exception for schedule '" + schedule + "'. Exception: " + e.getMessage());
         }
@@ -60,8 +74,8 @@ class ScheduleParsersHelper {
         }
 
         @Override
-        public Schedule parse(String scheduleString) {
-            return result.get();
+        public Optional<Schedule> parse(String scheduleString) {
+            return Optional.of(result.get());
         }
 
         @Override

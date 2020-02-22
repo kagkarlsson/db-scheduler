@@ -15,12 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler.task.schedule;
 
-import com.github.kagkarlsson.scheduler.task.schedule.Schedules.UnrecognizableSchedule;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
+import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
 final class FixedDelayParser implements Parser {
@@ -28,10 +26,10 @@ final class FixedDelayParser implements Parser {
     private static final List<String> EXAMPLES = Collections.singletonList("FIXED_DELAY|120s");
 
     @Override
-    public Schedule parse(String scheduleString) {
-        return FixedDelay.ofSeconds(
-            match(scheduleString).delayInSeconds()
-        );
+    public Optional<Schedule> parse(String scheduleString) {
+        return OptionalMatcher.from(FIXED_DELAY_PATTERN).match(scheduleString)
+            .map(MatchedSchedule::new)
+            .map(it -> FixedDelay.ofSeconds(it.delayInSeconds()));
     }
 
     @Override
@@ -39,18 +37,10 @@ final class FixedDelayParser implements Parser {
         return EXAMPLES;
     }
 
-    private MatchedSchedule match(String scheduleString) {
-        return Optional.ofNullable(scheduleString)
-            .map(FIXED_DELAY_PATTERN::matcher)
-            .filter(Matcher::matches)
-            .map(MatchedSchedule::new)
-            .orElseThrow(() -> new UnrecognizableSchedule(scheduleString, this.examples()));
-    }
-
     private static class MatchedSchedule {
-        private final Matcher matcher;
+        private final MatchResult matcher;
 
-        private MatchedSchedule(Matcher matcher) {
+        MatchedSchedule(MatchResult matcher) {
             this.matcher = matcher;
         }
 
