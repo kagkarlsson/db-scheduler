@@ -30,6 +30,7 @@ This software includes third party software subject to the following licenses:
   db-scheduler: Parent under The Apache Software License, Version 2.0
   db-scheduler: Spring Boot Starter under The Apache Software License, Version 2.0
   dom4j under BSD 3-clause New License
+  EqualsVerifier under Apache License, Version 2.0
   Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
   Hamcrest Core under New BSD License
   Hamcrest library under New BSD License

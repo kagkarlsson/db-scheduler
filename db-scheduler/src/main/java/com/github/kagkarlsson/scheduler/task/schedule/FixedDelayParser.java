@@ -17,35 +17,19 @@ package com.github.kagkarlsson.scheduler.task.schedule;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 
-final class FixedDelayParser implements Parser {
+final class FixedDelayParser extends RegexBasedParser {
     private static final Pattern FIXED_DELAY_PATTERN = Pattern.compile("^FIXED_DELAY\\|(\\d+)s$");
     private static final List<String> EXAMPLES = Collections.singletonList("FIXED_DELAY|120s");
 
-    @Override
-    public Optional<Schedule> parse(String scheduleString) {
-        return OptionalMatcher.from(FIXED_DELAY_PATTERN).match(scheduleString)
-            .map(MatchedSchedule::new)
-            .map(it -> FixedDelay.ofSeconds(it.delayInSeconds()));
+    public FixedDelayParser() {
+        super(FIXED_DELAY_PATTERN, EXAMPLES);
     }
 
     @Override
-    public List<String> examples() {
-        return EXAMPLES;
-    }
-
-    private static class MatchedSchedule {
-        private final MatchResult matcher;
-
-        MatchedSchedule(MatchResult matcher) {
-            this.matcher = matcher;
-        }
-
-        int delayInSeconds() {
-            return Integer.parseInt(matcher.group(1));
-        }
+    protected Schedule matchedSchedule(MatchResult matchResult) {
+        return FixedDelay.ofSeconds(Integer.parseInt(matchResult.group(1)));
     }
 }
