@@ -30,7 +30,6 @@ final class CompositeParser implements Parser {
     @Override
     public Optional<Schedule> parse(String scheduleString) {
         return delegates.stream()
-            .map(NotThrowingParser::of)
             .map(it -> it.parse(scheduleString))
             .filter(Optional::isPresent).map(Optional::get)
             .findFirst();

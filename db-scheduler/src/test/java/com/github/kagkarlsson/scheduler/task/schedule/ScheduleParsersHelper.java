@@ -1,7 +1,5 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
-import org.hamcrest.CoreMatchers;
-
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -9,8 +7,8 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static java.time.LocalTime.MIDNIGHT;
+import static java.time.LocalTime.NOON;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -22,10 +20,11 @@ class ScheduleParsersHelper {
 
     static final String ANY_SCHEDULE_STRING = "ANY STRING";
     static final Schedule FIXED_DELAY = FixedDelay.of(Duration.ZERO);
-    static final Schedule DAILY = new Daily(MIDNIGHT);
+    static final Schedule DAILY_AT_MIDNIGHT = new Daily(MIDNIGHT);
+    static final Schedule DAILY_AT_NOON = new Daily(NOON);
 
     static final Parser FIXED_DELAY_PARSER = new FakeParser(FIXED_DELAY);
-    static final Parser DAILY_PARSER = new FakeParser(DAILY);
+    static final Parser DAILY_PARSER = new FakeParser(DAILY_AT_MIDNIGHT);
     static final Parser THROWING_PARSER = new FakeParser(() -> {
         throw new IllegalArgumentException("Error!");
     });
@@ -75,12 +74,20 @@ class ScheduleParsersHelper {
 
         @Override
         public Optional<Schedule> parse(String scheduleString) {
-            return Optional.of(result.get());
+            return Optional.ofNullable(result.get());
         }
 
         @Override
         public List<String> examples() {
             return Collections.singletonList(example);
+        }
+
+        static Parser withMatchingSchedule(Schedule result) {
+            return new FakeParser(result);
+        }
+
+        static Parser nonMatching() {
+            return new FakeParser(() -> null);
         }
     }
 }

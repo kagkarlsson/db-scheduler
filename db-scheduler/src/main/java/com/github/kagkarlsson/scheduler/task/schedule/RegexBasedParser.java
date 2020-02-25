@@ -24,7 +24,7 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-abstract class RegexBasedParser implements Parser {
+public abstract class RegexBasedParser implements Parser {
     private final Pattern pattern;
     private final List<String> examples;
 

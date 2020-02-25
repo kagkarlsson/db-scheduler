@@ -29,7 +29,7 @@ final class DailyParser extends RegexBasedParser {
     private static final Pattern DAILY_PATTERN_WITH_TIMEZONE = Pattern.compile("^DAILY\\|((\\d{2}:\\d{2})(,\\d{2}:\\d{2})*)(\\|(.+))?$");
     private static final List<String> EXAMPLES = Arrays.asList("DAILY|12:00", "DAILY|12:00,13:45", "DAILY|12:00,13:45|Europe/Rome");
 
-    public DailyParser() {
+    DailyParser() {
         super(DAILY_PATTERN_WITH_TIMEZONE, EXAMPLES);
     }
 

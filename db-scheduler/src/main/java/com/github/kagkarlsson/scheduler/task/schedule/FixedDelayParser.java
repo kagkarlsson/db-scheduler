@@ -24,7 +24,7 @@ final class FixedDelayParser extends RegexBasedParser {
     private static final Pattern FIXED_DELAY_PATTERN = Pattern.compile("^FIXED_DELAY\\|(\\d+)s$");
     private static final List<String> EXAMPLES = Collections.singletonList("FIXED_DELAY|120s");
 
-    public FixedDelayParser() {
+    FixedDelayParser() {
         super(FIXED_DELAY_PATTERN, EXAMPLES);
     }
 
