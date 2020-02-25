@@ -14,6 +14,7 @@ This software includes third party software subject to the following licenses:
   Apache Commons Lang under Apache License, Version 2.0
   cron-utils under Apache 2.0
   db-scheduler: Core under The Apache Software License, Version 2.0
+  EqualsVerifier under Apache License, Version 2.0
   Guava: Google Core Libraries for Java under The Apache Software License, Version 2.0
   Hamcrest Core under New BSD License
   Hamcrest library under New BSD License

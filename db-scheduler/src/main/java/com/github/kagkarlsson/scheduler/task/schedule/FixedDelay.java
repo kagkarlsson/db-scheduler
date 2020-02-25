@@ -19,13 +19,14 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Objects;
 
 public class FixedDelay implements Schedule {
 
 	private final Duration duration;
 
 	private FixedDelay(Duration duration) {
-		this.duration = duration;
+		this.duration = Objects.requireNonNull(duration);
 	}
 
 	public static FixedDelay of(Duration duration) {
@@ -62,4 +63,22 @@ public class FixedDelay implements Schedule {
 	public Instant getInitialExecutionTime(Instant now) {
 		return now;
 	}
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof FixedDelay)) return false;
+        FixedDelay that = (FixedDelay) o;
+        return Objects.equals(this.duration, that.duration);
+    }
+
+    @Override
+    public final int hashCode() {
+        return Objects.hash(duration);
+    }
+
+    @Override
+    public String toString() {
+        return "FixedDelay duration=" + duration;
+    }
 }

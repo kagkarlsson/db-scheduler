@@ -180,6 +180,7 @@
 									<include>org.apache.commons:commons-compress</include>
 									<include>org.tukaani:xz</include>
 									<include>co.unruly:java-8-matchers</include>
+									<include>nl.jqno.equalsverifier:equalsverifier</include>
 									<!-- Spring Boot integration -->
 									<include>org.springframework.boot:spring-boot-autoconfigure</include>
 									<include>org.springframework.boot:spring-boot-actuator-autoconfigure</include>
@@ -228,6 +229,7 @@
 									<include>com.vaadin.external.google:android-json</include>
 									<include>org.springframework.boot:spring-boot-starter-test</include>
 									<include>net.bytebuddy:byte-buddy-agent</include>
+									<include>nl.jqno.equalsverifier:equalsverifier</include>
 									<!-- Spring Boot example -->
 									<include>org.jboss:jandex</include>
 									<include>javax.xml.bind:jaxb-api</include>
