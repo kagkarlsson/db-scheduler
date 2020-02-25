@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 import static org.hamcrest.Matchers.instanceOf;
@@ -18,6 +19,7 @@ import static org.junit.Assert.fail;
 
 public class SchedulesTest {
 	private static final Instant NOON_TODAY = ZonedDateTime.now().withHour(12).withMinute(0).withSecond(0).withNano(0).toInstant();
+	private static final Instant NOON_TODAY_ROME = ZonedDateTime.now(ZoneId.of("Europe/Rome")).withHour(12).withMinute(0).withSecond(0).withNano(0).toInstant();
 
 	@Test
 	public void should_validate_pattern() {
@@ -44,7 +46,7 @@ public class SchedulesTest {
 
         assertParsable("DAILY|12:00|Europe/Rome", Daily.class);
         Schedule dailyScheduleWithTimezone = assertParsable("DAILY|10:00,14:00|Europe/Rome", Daily.class);
-        assertThat(dailyScheduleWithTimezone.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plus(Duration.ofHours(1))));
+        assertThat(dailyScheduleWithTimezone.getNextExecutionTime(complete(NOON_TODAY_ROME)), is(NOON_TODAY_ROME.plus(Duration.ofHours(2))));
 
 		Schedule fixedDelaySchedule = assertParsable("FIXED_DELAY|10s", FixedDelay.class);
 		assertThat(fixedDelaySchedule.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plusSeconds(10)));
