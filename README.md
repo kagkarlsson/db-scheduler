@@ -23,7 +23,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>6.6</version>
+    <version>6.7</version>
 </dependency>
 ```
 
@@ -191,7 +191,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>6.5</version>
+        <version>6.7</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -265,6 +265,10 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 
 ## Versions / upgrading
+
+### Version 6.7
+* PR [#87](https://github.com/kagkarlsson/db-scheduler/pull/87) allow for specifying the TimeZone for the Daily schedule and the Schedule string-parser (contributed by [alex859](https://github.com/alex859))
+* PR [#90](https://github.com/kagkarlsson/db-scheduler/pull/90) adds task-name to logging of failures (contributed by [alex859](https://github.com/alex859))
 
 ### Version 6.6
 * PR [#86](https://github.com/kagkarlsson/db-scheduler/pull/85) changes Spring Boot `HealthIndicator` to opt-in rather than default on. (contributed by [ystarikovich](https://github.com/ystarikovich))
