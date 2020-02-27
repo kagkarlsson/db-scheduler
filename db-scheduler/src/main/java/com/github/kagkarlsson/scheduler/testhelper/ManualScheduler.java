@@ -32,7 +32,7 @@ public class ManualScheduler extends Scheduler {
     private final SettableClock clock;
 
     ManualScheduler(SettableClock clock, TaskRepository taskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName, Waiter waiter, Duration heartbeatInterval, boolean executeImmediately, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, List<OnStartup> onStartup) {
-        super(clock, taskRepository, taskResolver, maxThreads, executorService, schedulerName, waiter, heartbeatInterval, executeImmediately, statsRegistry, pollingLimit, deleteUnresolvedAfter, onStartup);
+        super(clock, taskRepository, taskResolver, maxThreads, executorService, null, schedulerName, waiter, heartbeatInterval, executeImmediately, statsRegistry, pollingLimit, deleteUnresolvedAfter, onStartup);
         this.clock = clock;
     }
 

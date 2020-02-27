@@ -48,23 +48,34 @@ public class ExecutorUtils {
 	}
 
 	public static ThreadFactory defaultThreadFactoryWithPrefix(String prefix) {
-		return new PrefixingDefaultThreadFactory(prefix);
+		return new PrefixingDefaultThreadFactory(prefix, false);
+	}
+
+	public static ThreadFactory defaultThreadFactoryWithPrefix(String prefix, boolean useDaemonThreads) {
+		return new PrefixingDefaultThreadFactory(prefix, useDaemonThreads);
 	}
 
 	private static class PrefixingDefaultThreadFactory implements ThreadFactory {
 
 		private final String prefix;
+		private final boolean useDaemonThreads;
 		private final ThreadFactory defaultThreadFactory;
 
 		public PrefixingDefaultThreadFactory(String prefix) {
+			this(prefix, false);
+		}
+
+		public PrefixingDefaultThreadFactory(String prefix, boolean useDaemonThreads) {
 			this.defaultThreadFactory = Executors.defaultThreadFactory();
 			this.prefix = prefix;
+			this.useDaemonThreads = useDaemonThreads;
 		}
 
 		@Override
 		public Thread newThread(Runnable r) {
 			final Thread thread = defaultThreadFactory.newThread(r);
 			thread.setName(prefix + thread.getName());
+			thread.setDaemon(useDaemonThreads);
 			return thread;
 		}
 	}

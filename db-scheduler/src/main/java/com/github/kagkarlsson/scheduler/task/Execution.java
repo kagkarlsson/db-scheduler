@@ -20,7 +20,7 @@ import java.util.Objects;
 
 @SuppressWarnings("rawtypes")
 public final class Execution {
-	public final TaskInstance taskInstance;
+	public final TaskInstance<?> taskInstance;
 	public final Instant executionTime;
 	public final boolean picked;
 	public final String pickedBy;

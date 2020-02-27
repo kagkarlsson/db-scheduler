@@ -15,9 +15,6 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
-import static com.github.kagkarlsson.scheduler.Scheduler.THREAD_PREFIX;
-
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -25,9 +22,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +47,7 @@ public class SchedulerBuilder {
     protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
     protected boolean enableImmediateExecution = false;
     protected ExecutorService executorService;
+    protected Duration executorShutdownTimeout;
     protected Duration deleteUnresolvedAfter = Duration.ofDays(14);
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
@@ -108,6 +104,11 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder executorServiceShutdownTimeout(Duration shutdownTimeout) {
+        this.executorShutdownTimeout = shutdownTimeout;
+        return this;
+    }
+
     public SchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
         this.statsRegistry = statsRegistry;
         return this;
@@ -145,11 +146,6 @@ public class SchedulerBuilder {
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
         final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
 
-        ExecutorService candidateExecutorService = executorService;
-        if (candidateExecutorService == null) {
-            candidateExecutorService = Executors.newFixedThreadPool(executorThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
-        }
-
         LOG.info("Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s enable-immediate-execution={}, table-name={}, name={}",
             executorThreads,
             waiter.getWaitDuration().getSeconds(),
@@ -157,7 +153,7 @@ public class SchedulerBuilder {
             enableImmediateExecution,
             tableName,
             schedulerName.getName());
-        return new Scheduler(clock, taskRepository, taskResolver, executorThreads, candidateExecutorService,
+        return new Scheduler(clock, taskRepository, taskResolver, executorThreads, executorService, executorShutdownTimeout,
                 schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
             deleteUnresolvedAfter, startTasks);
     }

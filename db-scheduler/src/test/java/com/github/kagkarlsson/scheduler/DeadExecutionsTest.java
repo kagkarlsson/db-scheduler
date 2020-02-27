@@ -61,6 +61,7 @@ public class DeadExecutionsTest {
 				taskResolver,
 				1,
 				MoreExecutors.newDirectExecutorService(),
+				null,
 				new SchedulerName.Fixed("test-scheduler"),
 				new Waiter(Duration.ZERO),
 				Duration.ofMinutes(1),

@@ -81,7 +81,7 @@
 				<plugin>
 					<groupId>org.jasig.maven</groupId>
 					<artifactId>maven-notice-plugin</artifactId>
-					<version>1.0.6.1</version>
+					<version>1.1.0</version>
 					<configuration>
 						<noticeTemplate>${license.dir}/NOTICE.template</noticeTemplate>
 						<licenseMapping>
@@ -99,6 +99,19 @@
 							<inherited>false</inherited>
 						</execution>
 					</executions>
+					<!-- missing dependencies that allow this plugin to run on JDK 9+ -->
+					<dependencies>
+						<dependency>
+							<groupId>jakarta.xml.bind</groupId>
+							<artifactId>jakarta.xml.bind-api</artifactId>
+							<version>2.3.2</version>
+						</dependency>
+						<dependency>
+							<groupId>org.glassfish.jaxb</groupId>
+							<artifactId>jaxb-runtime</artifactId>
+							<version>2.3.2</version>
+						</dependency>
+					</dependencies>
 
 				</plugin>
 				<plugin>

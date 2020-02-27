@@ -73,7 +73,6 @@ This software includes third party software subject to the following licenses:
   PostgreSQL JDBC Driver - JDBC 4.2 under The PostgreSQL License
   project ':json-path' under The Apache Software License, Version 2.0
   SLF4J API Module under MIT License
-  SLF4J Simple Binding under MIT License
   SnakeYAML under Apache License, Version 2.0
   Spring AOP under Apache License, Version 2.0
   Spring Aspects under Apache License, Version 2.0
