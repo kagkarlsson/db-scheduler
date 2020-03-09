@@ -1,6 +1,6 @@
 package com.github.kagkarlsson.scheduler.example;
 
-import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
+import com.github.kagkarlsson.scheduler.HsqlTestDatabaseExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -52,8 +52,8 @@ public class CheckForNewBatchDirectlyMain {
 
     public static void main(String[] args) throws Throwable {
         try {
-            final HsqlTestDatabaseRule hsqlRule = new HsqlTestDatabaseRule();
-            hsqlRule.before();
+            final HsqlTestDatabaseExtension hsqlRule = new HsqlTestDatabaseExtension();
+            hsqlRule.beforeEach(null);
             final DataSource dataSource = hsqlRule.getDataSource();
 
             example(dataSource);

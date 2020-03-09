@@ -1,11 +1,10 @@
 package com.github.kagkarlsson.scheduler.example;
 
-import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
+import com.github.kagkarlsson.scheduler.HsqlTestDatabaseExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,14 +50,12 @@ public class UnresolvedTaskMain {
             scheduler.getScheduledExecutions(e -> {});
             scheduler.getFailingExecutions(Duration.ZERO);
         });
-
-
     }
 
     public static void main(String[] args) throws Throwable {
         try {
-            final HsqlTestDatabaseRule hsqlRule = new HsqlTestDatabaseRule();
-            hsqlRule.before();
+            final HsqlTestDatabaseExtension hsqlRule = new HsqlTestDatabaseExtension();
+            hsqlRule.beforeEach(null);
             final DataSource dataSource = hsqlRule.getDataSource();
 
             example(dataSource);

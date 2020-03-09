@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -8,7 +9,8 @@ import java.util.Optional;
 
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertScheduleNotPresent;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertSchedulePresent;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 public class DailyParserTest {
     private final static LocalTime HOUR_9_30 = LocalTime.of(9, 30);
@@ -34,9 +36,11 @@ public class DailyParserTest {
         assertScheduleNotPresent(parser,"DAILY|12:00,13:00|");
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void should_fail_when_unable_to_parse_timezone() {
-        parser.parse("DAILY|12:00,13:00|WRONG");
+        Assertions.assertThrows(Exception.class, () -> {
+            parser.parse("DAILY|12:00,13:00|WRONG");
+        });
     }
 
     @Test

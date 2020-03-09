@@ -3,21 +3,18 @@ package com.github.kagkarlsson.scheduler.task;
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+
 
 public class CronTest {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
 
     ZoneId london = ZoneId.of("Europe/London");
     ZoneId utc = ZoneId.of("UTC");
@@ -26,14 +23,16 @@ public class CronTest {
 
     @Test
     public void should_validate_pattern() {
-        expectedException.expect(IllegalArgumentException.class);
-        new CronSchedule("asdf asdf asdf");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new CronSchedule("asdf asdf asdf");
+        });
     }
 
     @Test
     public void should_validate_zone() {
-        expectedException.expect(IllegalArgumentException.class);
-        new CronSchedule("0 * * * * ?", null);
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new CronSchedule("0 * * * * ?", null);
+        });
     }
 
     @Test

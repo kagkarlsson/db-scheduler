@@ -2,9 +2,8 @@ package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.task.schedule.Daily;
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -12,9 +11,11 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+
 
 public class DailyTest {
 
@@ -32,19 +33,18 @@ public class DailyTest {
     private static final LocalTime HOUR_12 = LocalTime.of(12, 0);
     private static final LocalTime HOUR_23 = LocalTime.of(23, 0);
 
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     public void should_not_allow_empty_times() {
-        expectedException.expect(IllegalArgumentException.class);
-        new Daily();
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            new Daily();
+        });
     }
 
     @Test
     public void should_not_allow_null_zone_id() {
-        expectedException.expect(NullPointerException.class);
-        new Daily(null, new LocalTime[]{LocalTime.MIDNIGHT});
+        Assertions.assertThrows(NullPointerException.class, () -> {
+            new Daily(null, new LocalTime[]{LocalTime.MIDNIGHT});
+        });
     }
 
     @Test

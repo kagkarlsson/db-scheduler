@@ -1,23 +1,23 @@
 package com.github.kagkarlsson.scheduler;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.concurrent.*;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WaiterTest {
     private ExecutorService executor;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         this.executor = Executors.newSingleThreadExecutor();
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         this.executor.shutdownNow();
     }
@@ -25,7 +25,7 @@ public class WaiterTest {
     @Test
     public void should_wait_at_least_duration() throws ExecutionException, InterruptedException {
         Future<Long> waitTime = executor.submit(new WaitForWaiter(new Waiter(Duration.ofMillis(100))));
-        assertTrue("Waited: " + waitTime.get(), waitTime.get() >= 100L);
+        assertTrue(waitTime.get() >= 100L,"Waited: " + waitTime.get());
     }
 
     @Test
@@ -35,13 +35,13 @@ public class WaiterTest {
         sleep(20); // give executor time to get to wait(..)
 
         waiter.wake();
-        assertTrue("Waited: " + waitTime.get(), waitTime.get() < 100L);
+        assertTrue(waitTime.get() < 100L, "Waited: " + waitTime.get());
 
         Future<Long> waitTime2 = executor.submit(new WaitForWaiter(waiter));
         sleep(20); // give executor time to get to wait(..)
 
         waiter.wake();
-        assertTrue("Waited: " + waitTime2.get(), waitTime2.get() < 100L);
+        assertTrue(waitTime2.get() < 100L, "Waited: " + waitTime2.get());
     }
 
     @Test
@@ -56,7 +56,7 @@ public class WaiterTest {
             lock.notify();
         }
 
-        assertTrue("Waited: " + waitTime.get(), waitTime.get() >= 200L);
+        assertTrue(waitTime.get() >= 200L, "Waited: " + waitTime.get());
     }
 
     private void sleep(int millis) {

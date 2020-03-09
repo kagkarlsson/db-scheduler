@@ -1,13 +1,14 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 public class RunUntilShutdownTest {
 
@@ -16,7 +17,7 @@ public class RunUntilShutdownTest {
 	private RunUntilShutdown runUntilShutdown;
 	private SchedulerState.SettableSchedulerState schedulerState;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		schedulerState = new SchedulerState.SettableSchedulerState();
 		runnable = new TimeLimitedRunnable(2, schedulerState);
@@ -25,19 +26,24 @@ public class RunUntilShutdownTest {
 				schedulerState, StatsRegistry.NOOP);
 	}
 
-	@Test(timeout = 1000)
+	@Test
 	public void should_wait_on_ok_execution() {
-		runUntilShutdown.run();
-		assertThat(countingWaiter.counter, is(2));
+	    Assertions.assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
+
+            runUntilShutdown.run();
+            assertThat(countingWaiter.counter, is(2));
+        });
 	}
 
-	@Test(timeout = 1000)
+	@Test
 	public void should_wait_on_runtime_exception() {
-		runnable.setAction(() -> {
-			throw new RuntimeException();
-		});
-		runUntilShutdown.run();
-		assertThat(countingWaiter.counter, is(2));
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
+            runnable.setAction(() -> {
+                throw new RuntimeException();
+            });
+            runUntilShutdown.run();
+            assertThat(countingWaiter.counter, is(2));
+        });
 	}
 
 

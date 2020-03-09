@@ -1,19 +1,22 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
-import com.github.kagkarlsson.scheduler.StopSchedulerRule;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
@@ -31,11 +34,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
+
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.LoggerFactory;
 
 
@@ -44,10 +44,8 @@ public abstract class CompatibilityTest {
 
 	private static final int POLLING_LIMIT = 10_000;
 
-	@Rule
-	public Timeout timeout = new Timeout(20, TimeUnit.SECONDS);
-	@Rule
-	public StopSchedulerRule stopScheduler = new StopSchedulerRule();
+	@RegisterExtension
+	public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
 	private TestTasks.CountingHandler<String> delayingHandlerOneTime;
 	private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
@@ -59,7 +57,7 @@ public abstract class CompatibilityTest {
 
 	public abstract DataSource getDataSource();
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		delayingHandlerOneTime = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
 		delayingHandlerRecurring = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
@@ -77,38 +75,46 @@ public abstract class CompatibilityTest {
 		stopScheduler.register(scheduler);
 	}
 
-	@After
+	@AfterEach
 	public void clearTables() {
-		DbUtils.clearTables(getDataSource());
+	    assertTimeout(Duration.ofSeconds(20), () ->
+            DbUtils.clearTables(getDataSource())
+        );
 	}
 
 	@Test
 	public void test_compatibility() {
-		scheduler.start();
+        assertTimeout(Duration.ofSeconds(20), () -> {
+            scheduler.start();
 
-		scheduler.schedule(oneTime.instance("id1"), Instant.now());
-		scheduler.schedule(oneTime.instance("id1"), Instant.now()); //duplicate
-		scheduler.schedule(recurring.instance("id1"), Instant.now());
-		scheduler.schedule(recurring.instance("id2"), Instant.now());
-		scheduler.schedule(recurring.instance("id3"), Instant.now());
-		scheduler.schedule(recurring.instance("id4"), Instant.now());
+            scheduler.schedule(oneTime.instance("id1"), Instant.now());
+            scheduler.schedule(oneTime.instance("id1"), Instant.now()); //duplicate
+            scheduler.schedule(recurring.instance("id1"), Instant.now());
+            scheduler.schedule(recurring.instance("id2"), Instant.now());
+            scheduler.schedule(recurring.instance("id3"), Instant.now());
+            scheduler.schedule(recurring.instance("id4"), Instant.now());
 
-		sleep(Duration.ofSeconds(10));
+            sleep(Duration.ofSeconds(10));
 
-		scheduler.stop();
-		assertThat(statsRegistry.unexpectedErrors.get(), is(0));
-		assertThat(delayingHandlerRecurring.timesExecuted, greaterThan(10));
-		assertThat(delayingHandlerOneTime.timesExecuted, is(1));
+            scheduler.stop();
+            assertThat(statsRegistry.unexpectedErrors.get(), is(0));
+            assertThat(delayingHandlerRecurring.timesExecuted, greaterThan(10));
+            assertThat(delayingHandlerOneTime.timesExecuted, is(1));
+        });
 	}
 
 	@Test
 	public void test_jdbc_repository_compatibility() {
-		doJDBCRepositoryCompatibilityTestUsingData(null);
+        assertTimeout(Duration.ofSeconds(20), () -> {
+            doJDBCRepositoryCompatibilityTestUsingData(null);
+        });
 	}
 
 	@Test
 	public void test_jdbc_repository_compatibility_with_data() {
-		doJDBCRepositoryCompatibilityTestUsingData("my data");
+        assertTimeout(Duration.ofSeconds(20), () -> {
+            doJDBCRepositoryCompatibilityTestUsingData("my data");
+        });
 	}
 
 	private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
