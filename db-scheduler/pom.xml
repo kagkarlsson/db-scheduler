@@ -153,9 +153,6 @@
                 <artifactId>license-maven-plugin</artifactId>
             </plugin>
             <plugin>
-                <artifactId>maven-enforcer-plugin</artifactId>
-            </plugin>
-            <plugin>
                 <artifactId>maven-shade-plugin</artifactId>
             </plugin>
         </plugins>

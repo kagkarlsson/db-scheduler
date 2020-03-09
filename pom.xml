@@ -85,30 +85,6 @@
 						<compilerArgument>${compilerArgument}</compilerArgument>
 					</configuration>
 				</plugin>
-
-				<plugin>
-					<groupId>org.jasig.maven</groupId>
-					<artifactId>maven-notice-plugin</artifactId>
-					<version>1.0.6.1</version>
-					<configuration>
-						<noticeTemplate>${license.dir}/NOTICE.template</noticeTemplate>
-						<licenseMapping>
-							<param>${license.dir}/license-mappings.xml</param>
-						</licenseMapping>
-						<skipChecks>${skipChecks}</skipChecks>
-					</configuration>
-					<executions>
-						<execution>
-							<id>generate-notice-file</id>
-							<goals>
-								<goal>check</goal>
-							</goals>
-							<phase>verify</phase>
-							<inherited>false</inherited>
-						</execution>
-					</executions>
-
-				</plugin>
 				<plugin>
 					<groupId>com.mycila</groupId>
 					<artifactId>license-maven-plugin</artifactId>
@@ -119,7 +95,6 @@
 						<excludes>
 							<exclude>pom.xml</exclude>
 							<exclude>LICENSE*</exclude>
-							<exclude>NOTICE</exclude>
 							<exclude>todo.txt</exclude>
 							<exclude>.java-version</exclude>
 							<exclude>.license/**</exclude>
@@ -132,157 +107,6 @@
 							<id>check-license-header</id>
 							<goals>
 								<goal>check</goal>
-							</goals>
-							<phase>test</phase>
-						</execution>
-					</executions>
-				</plugin>
-				<plugin>
-					<artifactId>maven-enforcer-plugin</artifactId>
-					<version>1.4.1</version>
-					<configuration>
-						<rules>
-							<bannedDependencies>
-								<excludes>
-									<exclude>*:*</exclude>
-								</excludes>
-								<includes>
-									<include>com.github.kagkarlsson:micro-jdbc</include>
-									<include>com.cronutils:cron-utils:jar</include>
-									<include>org.slf4j:slf4j-api</include>
-									<include>org.slf4j:slf4j-simple</include>
-									<!-- Tests -->
-									<include>org.hamcrest:hamcrest-core</include>
-									<include>org.hamcrest:hamcrest-library</include>
-									<include>junit:junit</include>
-									<include>org.mockito:mockito-core</include>
-									<include>org.objenesis:objenesis</include>
-									<include>org.hsqldb:hsqldb</include>
-									<include>com.google.guava:guava</include>
-									<include>com.google.inject:guice</include>
-									<include>com.zaxxer:HikariCP</include>
-									<include>org.javassist:javassist</include>
-									<include>com.opentable.components:otj-config</include>
-									<include>org.skife.config:config-magic</include>
-									<include>org.jdbi:jdbi</include>
-									<include>org.apache.httpcomponents:httpclient</include>
-									<include>com.opentable.components:otj-pg-embedded</include>
-									<include>aopalliance:aopalliance</include>
-									<include>commons-configuration:commons-configuration</include>
-									<include>com.google.code.findbugs:annotations</include>
-									<include>commons-lang:commons-lang</include>
-									<include>antlr:antlr</include>
-									<include>org.antlr:stringtemplate</include>
-									<include>org.postgresql:postgresql</include>
-									<include>com.microsoft.sqlserver</include>
-									<include>org.apache.httpcomponents:httpcore</include>
-									<include>com.nesscomputing.migratory:migratory-core</include>
-									<include>javax.inject:javax.inject</include>
-									<include>org.jgrapht:jgrapht-jdk1.5</include>
-									<include>commons-io:commons-io</include>
-									<include>commons-codec:commons-codec</include>
-									<include>org.slf4j:jcl-over-slf4j</include>
-									<include>com.opentable.components:otj-tinyhttp</include>
-									<include>postgresql:postgresql</include>
-									<include>org.apache.commons:commons-lang3</include>
-									<include>org.apache.commons:commons-compress</include>
-									<include>org.tukaani:xz</include>
-									<include>co.unruly:java-8-matchers</include>
-									<include>nl.jqno.equalsverifier:equalsverifier</include>
-									<!-- Spring Boot integration -->
-									<include>org.springframework.boot:spring-boot-autoconfigure</include>
-									<include>org.springframework.boot:spring-boot-actuator-autoconfigure</include>
-									<include>org.springframework.boot:spring-boot-actuator</include>
-									<include>com.fasterxml.jackson.core:jackson-core</include>
-									<include>com.fasterxml.jackson.core:jackson-annotations</include>
-									<include>com.fasterxml.jackson.core:jackson-databind</include>
-									<include>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</include>
-									<include>org.slf4j:jul-to-slf4j</include>
-									<include>org.springframework:spring-jcl</include>
-									<include>com.github.kagkarlsson:db-scheduler</include>
-									<include>org.apache.logging.log4j:log4j-api</include>
-									<include>org.springframework.boot:spring-boot</include>
-									<include>ch.qos.logback:logback-core</include>
-									<include>org.springframework.boot:spring-boot-starter</include>
-									<include>org.springframework:spring-core</include>
-									<include>org.springframework:spring-expression</include>
-									<include>ch.qos.logback:logback-classic</include>
-									<include>javax.annotation:javax.annotation-api</include>
-									<include>org.springframework:spring-aop</include>
-									<include>org.springframework:spring-beans</include>
-									<include>org.apache.logging.log4j:log4j-to-slf4j</include>
-									<include>org.yaml:snakeyaml</include>
-									<include>org.springframework.boot:spring-boot-starter-logging</include>
-									<include>org.springframework:spring-context</include>
-									<include>org.springframework.boot:spring-boot-autoconfigure-processor</include>
-									<include>org.springframework.boot:spring-boot-configuration-processor</include>
-									<include>javax.validation:validation-api</include>
-									<include>net.minidev:json-smart</include>
-									<include>org.skyscreamer:jsonassert</include>
-									<include>org.springframework.boot:spring-boot-test-autoconfigure</include>
-									<include>net.minidev:accessors-smart</include>
-									<include>org.ow2.asm:asm</include>
-									<include>org.jboss.logging:jboss-logging</include>
-									<include>org.springframework.boot:spring-boot-starter-jdbc</include>
-									<include>org.xmlunit:xmlunit-core</include>
-									<include>org.springframework:spring-jdbc</include>
-									<include>org.hibernate.validator:hibernate-validator</include>
-									<include>org.assertj:assertj-core</include>
-									<include>com.fasterxml:classmate</include>
-									<include>org.springframework.boot:spring-boot-test</include>
-									<include>net.bytebuddy:byte-buddy</include>
-									<include>com.jayway.jsonpath:json-path</include>
-									<include>org.springframework:spring-tx</include>
-									<include>org.springframework:spring-test</include>
-									<include>com.vaadin.external.google:android-json</include>
-									<include>org.springframework.boot:spring-boot-starter-test</include>
-									<include>net.bytebuddy:byte-buddy-agent</include>
-									<include>nl.jqno.equalsverifier:equalsverifier</include>
-									<!-- Spring Boot example -->
-									<include>org.jboss:jandex</include>
-									<include>javax.xml.bind:jaxb-api</include>
-									<include>org.springframework.boot:spring-boot-starter-web</include>
-									<include>org.springframework.data:spring-data-commons</include>
-									<include>org.apache.tomcat.embed:tomcat-embed-el</include>
-									<include>org.hibernate:hibernate-core</include>
-									<include>org.hibernate.common:hibernate-commons-annotations</include>
-									<include>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</include>
-									<include>org.springframework.data:spring-data-jpa</include>
-									<include>org.springframework.boot:spring-boot-starter-aop</include>
-									<include>javax.transaction:javax.transaction-api</include>
-									<include>javax.activation:javax.activation-api</include>
-									<include>org.springframework:spring-aspects</include>
-									<include>org.springframework:spring-orm</include>
-									<include>org.springframework.boot:spring-boot-starter-tomcat</include>
-									<include>org.springframework:spring-web</include>
-									<include>org.aspectj:aspectjweaver</include>
-									<include>org.hdrhistogram:HdrHistogram</include>
-									<include>org.apache.tomcat.embed:tomcat-embed-core</include>
-									<include>org.springframework.boot:spring-boot-starter-actuator</include>
-									<include>com.github.kagkarlsson:db-scheduler-spring-boot-starter</include>
-									<include>com.fasterxml.jackson.module:jackson-module-parameter-names</include>
-									<include>org.springframework.boot:spring-boot-starter-data-jpa</include>
-									<include>org.apache.tomcat.embed:tomcat-embed-websocket</include>
-									<include>org.latencyutils:LatencyUtils</include>
-									<include>org.springframework.boot:spring-boot-starter-json</include>
-									<include>org.springframework:spring-webmvc</include>
-									<include>io.micrometer:micrometer-core</include>
-									<include>javax.persistence:javax.persistence-api</include>
-									<include>org.dom4j:dom4j</include>
-								</includes>
-								<searchTransitive>true</searchTransitive>
-								<message>
-									Detected unknown dependencies! Verify that all licenses are OK, and run mvn notice:generate to update the NOTICE file.
-								</message>
-							</bannedDependencies>
-						</rules>
-						<skip>${skipChecks}</skip>
-					</configuration>
-					<executions>
-						<execution>
-							<id>check-banned-dependencies</id>
-							<goals>
-								<goal>enforce</goal>
 							</goals>
 							<phase>test</phase>
 						</execution>
@@ -394,13 +218,6 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.jasig.maven</groupId>
-				<artifactId>maven-notice-plugin</artifactId>
-			</plugin>
-			<plugin>
-				<artifactId>maven-enforcer-plugin</artifactId>
 			</plugin>
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
