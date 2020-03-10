@@ -1,16 +1,14 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
-import java.util.Properties;
-
-import javax.sql.DataSource;
-
-import org.junit.Ignore;
-
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
+import org.junit.jupiter.api.Disabled;
 
-@Ignore
+import javax.sql.DataSource;
+import java.util.Properties;
+
+@Disabled
 public class MysqlCompatibilityTest extends CompatibilityTest {
 
 	public static final String JDBC_URL = "jdbc:mysql://localhost:3306/test?useSSL=false&serverTimezone=UTC";

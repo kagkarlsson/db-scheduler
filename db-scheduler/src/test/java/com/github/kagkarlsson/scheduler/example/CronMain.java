@@ -1,9 +1,7 @@
 package com.github.kagkarlsson.scheduler.example;
 
-import com.github.kagkarlsson.scheduler.HsqlTestDatabaseRule;
+import com.github.kagkarlsson.scheduler.HsqlTestDatabaseExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
@@ -42,8 +40,9 @@ public class CronMain {
 
     public static void main(String[] args) throws Throwable {
         try {
-            final HsqlTestDatabaseRule hsqlRule = new HsqlTestDatabaseRule();
-            hsqlRule.before();
+            final HsqlTestDatabaseExtension hsqlRule = new HsqlTestDatabaseExtension();
+            hsqlRule.beforeEach(null);
+
             final DataSource dataSource = hsqlRule.getDataSource();
 
             example(dataSource);

@@ -5,7 +5,8 @@ import com.github.kagkarlsson.jdbc.Mappers;
 import com.opentable.db.postgres.embedded.EmbeddedPostgres;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.junit.rules.ExternalResource;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -13,14 +14,18 @@ import java.util.function.Consumer;
 
 import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
 
-public class EmbeddedPostgresqlRule extends ExternalResource {
+public class EmbeddedPostgresqlExtension implements AfterEachCallback {
 
 	private static EmbeddedPostgres embeddedPostgresql;
 	private static DataSource dataSource;
 	private final Consumer<DataSource> initializeSchema;
 	private final Consumer<DataSource> cleanupAfter;
 
-	public EmbeddedPostgresqlRule(Consumer<DataSource> initializeSchema, Consumer<DataSource> cleanupAfter) {
+    public EmbeddedPostgresqlExtension() {
+        this(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
+    }
+
+	public EmbeddedPostgresqlExtension(Consumer<DataSource> initializeSchema, Consumer<DataSource> cleanupAfter) {
 		this.initializeSchema = initializeSchema;
 		this.cleanupAfter = cleanupAfter;
 		try {
@@ -63,14 +68,9 @@ public class EmbeddedPostgresqlRule extends ExternalResource {
 		return newEmbeddedPostgresql;
 	}
 
-	@Override
-	protected void before() throws Throwable {
-		super.before();
-	}
+    @Override
+    public void afterEach(ExtensionContext extensionContext) throws Exception {
+        cleanupAfter.accept(getDataSource());
 
-	@Override
-	protected void after() {
-		super.after();
-		cleanupAfter.accept(getDataSource());
-	}
+    }
 }

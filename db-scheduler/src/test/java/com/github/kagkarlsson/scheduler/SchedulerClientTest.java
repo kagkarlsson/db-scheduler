@@ -10,22 +10,23 @@ import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import org.hamcrest.CoreMatchers;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
+
 
 public class SchedulerClientTest {
 
-    @Rule
-    public HsqlTestDatabaseRule DB = new HsqlTestDatabaseRule();
+    @RegisterExtension
+    public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
     private ManualScheduler scheduler;
     private SettableClock settableClock;
@@ -37,7 +38,7 @@ public class SchedulerClientTest {
     private OneTimeTask<Void> scheduleAnotherTask;
     private OneTimeTask<Void> oneTimeTaskB;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         settableClock = new SettableClock();
         onetimeTaskHandlerA = new TestTasks.CountingHandler<>();

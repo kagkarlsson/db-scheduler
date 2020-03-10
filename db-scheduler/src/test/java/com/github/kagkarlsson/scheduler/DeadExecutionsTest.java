@@ -1,12 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertTrue;
-
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
@@ -19,22 +12,31 @@ import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+
+import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public class DeadExecutionsTest {
 
 	private static final int POLLING_LIMIT = 10_000;
 
-	@Rule
-	public HsqlTestDatabaseRule DB = new HsqlTestDatabaseRule();
+	@RegisterExtension
+	public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
 	private Scheduler scheduler;
 	private SettableClock settableClock;
@@ -44,7 +46,7 @@ public class DeadExecutionsTest {
 	private TestTasks.CountingHandler<Void> nonCompletingExecutionHandler;
 	private ReviveDead<Void> deadExecutionHandler;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		settableClock = new SettableClock();
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);

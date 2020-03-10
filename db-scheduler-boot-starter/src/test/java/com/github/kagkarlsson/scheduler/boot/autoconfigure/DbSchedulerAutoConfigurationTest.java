@@ -10,9 +10,6 @@ import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import javax.sql.DataSource;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
@@ -23,7 +20,9 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@RunWith(JUnit4.class)
+import org.junit.jupiter.api.Test;
+
+
 public class DbSchedulerAutoConfigurationTest {
     private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfigurationTest.class);
     private final ApplicationContextRunner ctxRunner;

@@ -7,10 +7,10 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -24,13 +24,13 @@ public class CustomTableNameTest {
 
 	private static final String CUSTOM_TABLENAME = "custom_tablename";
 
-	@Rule
-	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
+	@RegisterExtension
+	public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
 	private JdbcTaskRepository taskRepository;
 	private OneTimeTask<Void> oneTimeTask;
 
-	@Before
+	@BeforeEach
 	public void setUp() {
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
 		List<Task<?>> knownTasks = new ArrayList<>();
@@ -52,7 +52,7 @@ public class CustomTableNameTest {
 
 	}
 
-	@After
+	@AfterEach
 	public void tearDown() {
 		new JdbcRunner(DB.getDataSource()).execute("DROP TABLE " + CUSTOM_TABLENAME, NOOP);
 	}

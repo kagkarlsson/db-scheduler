@@ -2,12 +2,13 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ScheduledExecutionTest {
 
@@ -35,12 +36,15 @@ public class ScheduledExecutionTest {
         assertEquals(new Integer(1), scheduledExecution.getData());
     }
 
-    @Test(expected = ScheduledExecution.DataClassMismatchException.class)
+    @Test
     public void test_data_class_type_not_equals() {
-        Instant now = Instant.now();
-        OneTimeTask<Integer> task = TestTasks.oneTime("OneTime", Integer.class, (instance, executionContext) -> {});
-        Execution execution = new Execution(now, task.instance("id1", new Integer(1))); // Data class is an integer
+        assertThrows(ScheduledExecution.DataClassMismatchException.class, () -> {
 
-        new ScheduledExecution<>(String.class, execution).getData(); // Instantiate with incorrect type
+            Instant now = Instant.now();
+            OneTimeTask<Integer> task = TestTasks.oneTime("OneTime", Integer.class, (instance, executionContext) -> {});
+            Execution execution = new Execution(now, task.instance("id1", new Integer(1))); // Data class is an integer
+
+            new ScheduledExecution<>(String.class, execution).getData(); // Instantiate with incorrect type
+        });
     }
 }

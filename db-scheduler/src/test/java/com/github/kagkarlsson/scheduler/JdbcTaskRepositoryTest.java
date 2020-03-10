@@ -7,9 +7,6 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -21,15 +18,26 @@ import java.util.stream.IntStream;
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
-import static org.junit.Assert.*;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
 
 @SuppressWarnings("unchecked")
 public class JdbcTaskRepositoryTest {
 
 	public static final String SCHEDULER_NAME = "scheduler1";
 	private static final int POLLING_LIMIT = 10_000;
-	@Rule
-	public EmbeddedPostgresqlRule DB = new EmbeddedPostgresqlRule(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
+	@RegisterExtension
+	public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
 	private JdbcTaskRepository taskRepository;
 	private OneTimeTask<Void> oneTimeTask;
@@ -38,7 +46,7 @@ public class JdbcTaskRepositoryTest {
     private TaskResolver taskResolver;
     private TestableRegistry testableRegistry;
 
-    @Before
+    @BeforeEach
 	public void setUp() {
 		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
 		alternativeOneTimeTask = TestTasks.oneTime("AlternativeOneTime", Void.class, TestTasks.DO_NOTHING);
@@ -115,8 +123,8 @@ public class JdbcTaskRepositoryTest {
 
         assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
         assertThat(taskResolver.getUnresolved(), hasSize(1));
-        assertEquals("Execution should not have have been in the ResultSet",
-            1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+        assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK),
+            "Execution should not have have been in the ResultSet");
 
         // 1, 2
         taskRepository.createIfNotExists(new Execution(now, unresolved2.instance("id")));

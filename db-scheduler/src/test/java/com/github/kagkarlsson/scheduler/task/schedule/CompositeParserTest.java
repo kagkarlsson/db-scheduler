@@ -2,7 +2,8 @@ package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.FakeParser;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
@@ -10,15 +11,15 @@ import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelp
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.DAILY_AT_MIDNIGHT;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.DAILY_AT_NOON;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.DAILY_PARSER;
-import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.FIXED_DELAY;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.FIXED_DELAY_PARSER;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.THROWING_PARSER;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertScheduleNotPresent;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertSchedulePresent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 
 public class CompositeParserTest {
     private final Parser MATCHING_PARSER_MIDNIGHT = FakeParser.withMatchingSchedule(DAILY_AT_MIDNIGHT);
@@ -43,9 +44,11 @@ public class CompositeParserTest {
         assertScheduleNotPresent(CompositeParser.of(NON_MATCHING_PARSER, ANOTHER_NON_MATCHING_PARSER), ANY_SCHEDULE_STRING);
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void fails_when_one_required_delegate_fails() {
-        CompositeParser.of(NON_MATCHING_PARSER, THROWING_PARSER, MATCHING_PARSER_MIDNIGHT).parse(ANY_SCHEDULE_STRING);
+        Assertions.assertThrows(Exception.class, () -> {
+            CompositeParser.of(NON_MATCHING_PARSER, THROWING_PARSER, MATCHING_PARSER_MIDNIGHT).parse(ANY_SCHEDULE_STRING);
+        });
     }
 
     @Test
