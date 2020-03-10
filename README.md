@@ -132,7 +132,7 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 | ------------- | ---- | ------------- |
 | `.threads(int)`  | 10  | Number of threads |
 | `.pollingInterval(Duration)`  |  30s  | How often the scheduler checks the database for due executions. |
-| `.pollingLimit(int)`  |  3 * <nr-of-threads>  | Maximum number of executions to fetch on a check for due executions. |
+| `.pollingLimit(int)`  |  3 * `<nr-of-threads>`  | Maximum number of executions to fetch on a check for due executions. |
 | `.heartbeatInterval(Duration)`  | 5m | How often to update the heartbeat timestamp for running executions. |
 | `.schedulerName(SchedulerName)`  | hostname  | Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. |
 | `.tableName(String)`  | `scheduled_tasks` | Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. |
@@ -161,7 +161,7 @@ The library contains a number of Schedule-implementations for recurring tasks. S
 | Schedule  | Description |
 | ------------- | ------------- |
 | `.daily(LocalTime ...)`  | Runs every day at specified times. Optionally a time zone can be specified. |
-| `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)|
+| `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)`|
 | `.cron(String)`  | Spring-style cron-expression. |
 
 Another option to configure schedules is reading string patterns with `Schedules.parse(String)`.
