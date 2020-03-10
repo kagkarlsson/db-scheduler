@@ -11,6 +11,7 @@ import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -50,6 +51,7 @@ public class ExecutorPoolTest {
 	}
 
 	@Test
+    @Disabled //FIXLATER: Disabled because of flakiness. Need to investigate and re-enable 
 	public void test_execute_until_none_left_high_volume() {
 		testExecuteUntilNoneLeft(12, 4, 200);
 	}
