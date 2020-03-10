@@ -2,14 +2,13 @@ package com.github.kagkarlsson.scheduler.helper;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static org.junit.Assert.fail;
 
 public class TestableRegistry implements StatsRegistry {
 
@@ -74,9 +73,9 @@ public class TestableRegistry implements StatsRegistry {
     }
 
     public void assertNoFailures() {
-        this.stats.stream().forEach(e -> {
+        this.stats.forEach(e -> {
             if (FAILURE_EVENTS.contains(e)) {
-                fail("Statsregistry contained unexpected error: " + e);
+                Assertions.fail("Statsregistry contained unexpected error: " + e);
             }
         });
     }

@@ -3,12 +3,12 @@ package com.github.kagkarlsson.scheduler.compatibility;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 import javax.sql.DataSource;
 import java.util.Properties;
 
-@Ignore
+@Disabled
 public class OracleCompatibilityTest extends CompatibilityTest {
 
 	public static final String JDBC_URL = "dummy";
