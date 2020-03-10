@@ -73,7 +73,7 @@ public class TestableRegistry implements StatsRegistry {
     }
 
     public void assertNoFailures() {
-        this.stats.stream().forEach(e -> {
+        this.stats.forEach(e -> {
             if (FAILURE_EVENTS.contains(e)) {
                 Assertions.fail("Statsregistry contained unexpected error: " + e);
             }
