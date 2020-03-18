@@ -31,14 +31,14 @@ import static org.hamcrest.Matchers.is;
 
 public class ClusterTest {
 
-	@RegisterExtension
-	public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
-	@RegisterExtension
-	public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
+    @RegisterExtension
+    public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
+    @RegisterExtension
+    public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
-	@Test
-	public void test_concurrency() throws InterruptedException {
-	    Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+    @Test
+    public void test_concurrency() throws InterruptedException {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
 
             final List<String> ids = IntStream.range(1, 1001).mapToObj(String::valueOf).collect(toList());
 
@@ -71,7 +71,7 @@ public class ClusterTest {
             assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
         });
 
-	}
+    }
 
     @Test
     public void test_concurrency_recurring() throws InterruptedException {
@@ -100,11 +100,11 @@ public class ClusterTest {
         });
     }
 
-	private Scheduler createScheduler(String name, Task<?> task, TestTasks.SimpleStatsRegistry stats) {
-		return Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
-				.schedulerName(new SchedulerName.Fixed(name)).pollingInterval(Duration.ofMillis(0))
-				.heartbeatInterval(Duration.ofMillis(100)).statsRegistry(stats).build();
-	}
+    private Scheduler createScheduler(String name, Task<?> task, TestTasks.SimpleStatsRegistry stats) {
+        return Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
+                .schedulerName(new SchedulerName.Fixed(name)).pollingInterval(Duration.ofMillis(0))
+                .heartbeatInterval(Duration.ofMillis(100)).statsRegistry(stats).build();
+    }
 
     private Scheduler createSchedulerRecurring(String name, RecurringTask<?> task, TestTasks.SimpleStatsRegistry stats) {
         return Scheduler.create(DB.getDataSource())
@@ -115,27 +115,27 @@ public class ClusterTest {
             .statsRegistry(stats).build();
     }
 
-	private static class RecordResultAndStopExecutionOnComplete<T> implements CompletionHandler<T> {
+    private static class RecordResultAndStopExecutionOnComplete<T> implements CompletionHandler<T> {
 
-		private final List<String> ok = Collections.synchronizedList(new ArrayList<>());
-		private final List<String> failed = Collections.synchronizedList(new ArrayList<>());
-		private final Consumer<String> onComplete;
+        private final List<String> ok = Collections.synchronizedList(new ArrayList<>());
+        private final List<String> failed = Collections.synchronizedList(new ArrayList<>());
+        private final Consumer<String> onComplete;
 
-		RecordResultAndStopExecutionOnComplete(Consumer<String> onComplete) {
-			this.onComplete = onComplete;
-		}
+        RecordResultAndStopExecutionOnComplete(Consumer<String> onComplete) {
+            this.onComplete = onComplete;
+        }
 
-		@Override
-		public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-			final String instanceId = executionComplete.getExecution().taskInstance.getId();
-			if (executionComplete.getResult() == ExecutionComplete.Result.OK) {
-				ok.add(instanceId);
-			} else {
-				failed.add(instanceId);
-			}
-			executionOperations.stop();
-			onComplete.accept(instanceId);
-		}
-	}
+        @Override
+        public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
+            final String instanceId = executionComplete.getExecution().taskInstance.getId();
+            if (executionComplete.getResult() == ExecutionComplete.Result.OK) {
+                ok.add(instanceId);
+            } else {
+                failed.add(instanceId);
+            }
+            executionOperations.stop();
+            onComplete.accept(instanceId);
+        }
+    }
 
 }

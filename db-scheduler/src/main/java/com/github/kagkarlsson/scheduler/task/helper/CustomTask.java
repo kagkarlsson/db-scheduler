@@ -33,7 +33,7 @@ public abstract class CustomTask<T> extends Task<T> implements OnStartup {
     @Override
     public void onStartup(Scheduler scheduler, Clock clock) {
         if (scheduleOnStartup != null) {
-        		scheduleOnStartup.apply(scheduler, clock, this);
+                scheduleOnStartup.apply(scheduler, clock, this);
         }
     }
 }

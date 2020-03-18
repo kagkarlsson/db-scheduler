@@ -19,7 +19,7 @@ public class UnresolvedTaskMain {
 
     private static void example(DataSource dataSource) {
 
-		RecurringTask<Void> unresolvedTask = Tasks.recurring("unresolved1", Schedules.fixedDelay(Duration.ofSeconds(1)))
+        RecurringTask<Void> unresolvedTask = Tasks.recurring("unresolved1", Schedules.fixedDelay(Duration.ofSeconds(1)))
                 .execute((taskInstance, executionContext) -> {
                     System.out.println("Ran");
                 });

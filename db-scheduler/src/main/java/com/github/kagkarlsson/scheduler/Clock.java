@@ -18,5 +18,5 @@ package com.github.kagkarlsson.scheduler;
 import java.time.Instant;
 
 public interface Clock {
-	Instant now();
+    Instant now();
 }

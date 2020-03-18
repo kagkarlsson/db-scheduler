@@ -42,48 +42,48 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("ConstantConditions")
 public abstract class CompatibilityTest {
 
-	private static final int POLLING_LIMIT = 10_000;
+    private static final int POLLING_LIMIT = 10_000;
 
-	@RegisterExtension
-	public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
+    @RegisterExtension
+    public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
-	private TestTasks.CountingHandler<String> delayingHandlerOneTime;
-	private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
-	private OneTimeTask<String> oneTime;
-	private RecurringTask<Void> recurring;
-	private RecurringTask<Integer> recurringWithData;
-	private TestTasks.SimpleStatsRegistry statsRegistry;
-	private Scheduler scheduler;
+    private TestTasks.CountingHandler<String> delayingHandlerOneTime;
+    private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
+    private OneTimeTask<String> oneTime;
+    private RecurringTask<Void> recurring;
+    private RecurringTask<Integer> recurringWithData;
+    private TestTasks.SimpleStatsRegistry statsRegistry;
+    private Scheduler scheduler;
 
-	public abstract DataSource getDataSource();
+    public abstract DataSource getDataSource();
 
-	@BeforeEach
-	public void setUp() {
-		delayingHandlerOneTime = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
-		delayingHandlerRecurring = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
+    @BeforeEach
+    public void setUp() {
+        delayingHandlerOneTime = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
+        delayingHandlerRecurring = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
 
-		oneTime = TestTasks.oneTimeWithType("oneTime", String.class, delayingHandlerOneTime);
-		recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandlerRecurring);
-		recurringWithData = TestTasks.recurringWithData("recurringWithData", Integer.class, 0, FixedDelay.of(Duration.ofMillis(10)), new DoNothingHandler<>());
+        oneTime = TestTasks.oneTimeWithType("oneTime", String.class, delayingHandlerOneTime);
+        recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandlerRecurring);
+        recurringWithData = TestTasks.recurringWithData("recurringWithData", Integer.class, 0, FixedDelay.of(Duration.ofMillis(10)), new DoNothingHandler<>());
 
-		statsRegistry = new TestTasks.SimpleStatsRegistry();
-		scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
-				.pollingInterval(Duration.ofMillis(10))
-				.heartbeatInterval(Duration.ofMillis(100))
-				.statsRegistry(statsRegistry)
-				.build();
-		stopScheduler.register(scheduler);
-	}
+        statsRegistry = new TestTasks.SimpleStatsRegistry();
+        scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
+                .pollingInterval(Duration.ofMillis(10))
+                .heartbeatInterval(Duration.ofMillis(100))
+                .statsRegistry(statsRegistry)
+                .build();
+        stopScheduler.register(scheduler);
+    }
 
-	@AfterEach
-	public void clearTables() {
-	    assertTimeout(Duration.ofSeconds(20), () ->
+    @AfterEach
+    public void clearTables() {
+        assertTimeout(Duration.ofSeconds(20), () ->
             DbUtils.clearTables(getDataSource())
         );
-	}
+    }
 
-	@Test
-	public void test_compatibility() {
+    @Test
+    public void test_compatibility() {
         assertTimeout(Duration.ofSeconds(20), () -> {
             scheduler.start();
 
@@ -101,92 +101,92 @@ public abstract class CompatibilityTest {
             assertThat(delayingHandlerRecurring.timesExecuted, greaterThan(10));
             assertThat(delayingHandlerOneTime.timesExecuted, is(1));
         });
-	}
+    }
 
-	@Test
-	public void test_jdbc_repository_compatibility() {
+    @Test
+    public void test_jdbc_repository_compatibility() {
         assertTimeout(Duration.ofSeconds(20), () -> {
             doJDBCRepositoryCompatibilityTestUsingData(null);
         });
-	}
+    }
 
-	@Test
-	public void test_jdbc_repository_compatibility_with_data() {
+    @Test
+    public void test_jdbc_repository_compatibility_with_data() {
         assertTimeout(Duration.ofSeconds(20), () -> {
             doJDBCRepositoryCompatibilityTestUsingData("my data");
         });
-	}
+    }
 
-	private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
-		TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
-		taskResolver.addTask(oneTime);
+    private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
+        TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+        taskResolver.addTask(oneTime);
 
-		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
-		final Instant now = Instant.now();
+        final Instant now = Instant.now();
 
-		final TaskInstance<String> taskInstance = oneTime.instance("id1", data);
-		final Execution newExecution = new Execution(now, taskInstance);
-		jdbcTaskRepository.createIfNotExists(newExecution);
-		assertThat((jdbcTaskRepository.getExecution(taskInstance)).get().getExecutionTime(), is(now));
+        final TaskInstance<String> taskInstance = oneTime.instance("id1", data);
+        final Execution newExecution = new Execution(now, taskInstance);
+        jdbcTaskRepository.createIfNotExists(newExecution);
+        assertThat((jdbcTaskRepository.getExecution(taskInstance)).get().getExecutionTime(), is(now));
 
-		final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
-		assertThat(due, hasSize(1));
-		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), Instant.now());
-		assertThat(pickedExecution.isPresent(), is(true));
+        final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
+        assertThat(due, hasSize(1));
+        final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), Instant.now());
+        assertThat(pickedExecution.isPresent(), is(true));
 
-		assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+        assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
 
-		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
-		assertThat(jdbcTaskRepository.getDeadExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
+        jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
+        assertThat(jdbcTaskRepository.getDeadExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
 
-		jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1), 0);
-		assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
-		assertThat(jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1)), POLLING_LIMIT), hasSize(1));
+        jdbcTaskRepository.reschedule(pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1), 0);
+        assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+        assertThat(jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1)), POLLING_LIMIT), hasSize(1));
 
-		final Optional<Execution> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
-		assertThat(rescheduled.isPresent(), is(true));
-		assertThat(rescheduled.get().lastHeartbeat, nullValue());
-		assertThat(rescheduled.get().isPicked(), is(false));
-		assertThat(rescheduled.get().pickedBy, nullValue());
-		assertThat(rescheduled.get().taskInstance.getData(), is(data));
-		jdbcTaskRepository.remove(rescheduled.get());
-	}
+        final Optional<Execution> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
+        assertThat(rescheduled.isPresent(), is(true));
+        assertThat(rescheduled.get().lastHeartbeat, nullValue());
+        assertThat(rescheduled.get().isPicked(), is(false));
+        assertThat(rescheduled.get().pickedBy, nullValue());
+        assertThat(rescheduled.get().taskInstance.getData(), is(data));
+        jdbcTaskRepository.remove(rescheduled.get());
+    }
 
-	@Test
-	public void test_jdbc_repository_compatibility_set_data() {
-		TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
-		taskResolver.addTask(recurringWithData);
+    @Test
+    public void test_jdbc_repository_compatibility_set_data() {
+        TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+        taskResolver.addTask(recurringWithData);
 
-		final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
-		final Instant now = Instant.now();
+        final Instant now = Instant.now();
 
-		final TaskInstance<Integer> taskInstance = recurringWithData.instance("id1", 1);
-		final Execution newExecution = new Execution(now, taskInstance);
+        final TaskInstance<Integer> taskInstance = recurringWithData.instance("id1", 1);
+        final Execution newExecution = new Execution(now, taskInstance);
 
-		jdbcTaskRepository.createIfNotExists(newExecution);
+        jdbcTaskRepository.createIfNotExists(newExecution);
 
-		Execution round1 = jdbcTaskRepository.getExecution(taskInstance).get();
-		assertEquals(round1.taskInstance.getData(), 1);
-		jdbcTaskRepository.reschedule(round1, now.plusSeconds(1), 2, now.minusSeconds(1), now.minusSeconds(1), 0);
+        Execution round1 = jdbcTaskRepository.getExecution(taskInstance).get();
+        assertEquals(round1.taskInstance.getData(), 1);
+        jdbcTaskRepository.reschedule(round1, now.plusSeconds(1), 2, now.minusSeconds(1), now.minusSeconds(1), 0);
 
-		Execution round2 = jdbcTaskRepository.getExecution(taskInstance).get();
-		assertEquals(round2.taskInstance.getData(), 2);
+        Execution round2 = jdbcTaskRepository.getExecution(taskInstance).get();
+        assertEquals(round2.taskInstance.getData(), 2);
 
-		jdbcTaskRepository.reschedule(round2, now.plusSeconds(2), null, now.minusSeconds(2), now.minusSeconds(2), 0);
-		Execution round3 = jdbcTaskRepository.getExecution(taskInstance).get();
-		assertNull(round3.taskInstance.getData());
-	}
+        jdbcTaskRepository.reschedule(round2, now.plusSeconds(2), null, now.minusSeconds(2), now.minusSeconds(2), 0);
+        Execution round3 = jdbcTaskRepository.getExecution(taskInstance).get();
+        assertNull(round3.taskInstance.getData());
+    }
 
 
-	private void sleep(Duration duration) {
-		try {
-			Thread.sleep(duration.toMillis());
-		} catch (InterruptedException e) {
-			LoggerFactory.getLogger(CompatibilityTest.class).info("Interrupted");
-		}
-	}
+    private void sleep(Duration duration) {
+        try {
+            Thread.sleep(duration.toMillis());
+        } catch (InterruptedException e) {
+            LoggerFactory.getLogger(CompatibilityTest.class).info("Interrupted");
+        }
+    }
 
 
 }

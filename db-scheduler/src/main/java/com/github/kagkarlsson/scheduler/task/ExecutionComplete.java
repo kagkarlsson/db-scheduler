@@ -20,62 +20,62 @@ import java.time.Instant;
 import java.util.Optional;
 
 public class ExecutionComplete {
-	private final Execution execution;
-	private final Instant timeStarted;
-	private final Instant timeDone;
-	private final Result result;
-	private final Throwable cause;
+    private final Execution execution;
+    private final Instant timeStarted;
+    private final Instant timeDone;
+    private final Result result;
+    private final Throwable cause;
 
-	ExecutionComplete(Execution execution, Instant timeStarted, Instant timeDone, Result result, Throwable cause) {
-		this.timeStarted = timeStarted;
-		this.cause = cause;
-		if (result == Result.OK && cause != null) {
-			throw new IllegalArgumentException("Result 'OK' should never have a cause.");
-		}
-		this.execution = execution;
-		this.timeDone = timeDone;
-		this.result = result;
-	}
+    ExecutionComplete(Execution execution, Instant timeStarted, Instant timeDone, Result result, Throwable cause) {
+        this.timeStarted = timeStarted;
+        this.cause = cause;
+        if (result == Result.OK && cause != null) {
+            throw new IllegalArgumentException("Result 'OK' should never have a cause.");
+        }
+        this.execution = execution;
+        this.timeDone = timeDone;
+        this.result = result;
+    }
 
-	public static ExecutionComplete success(Execution execution, Instant timeStarted, Instant timeDone) {
-		return new ExecutionComplete(execution, timeStarted, timeDone, Result.OK, null);
-	}
-	
-	public static ExecutionComplete failure(Execution execution, Instant timeStarted, Instant timeDone, Throwable cause) {
-		return new ExecutionComplete(execution, timeStarted, timeDone, Result.FAILED, cause);
-	}
+    public static ExecutionComplete success(Execution execution, Instant timeStarted, Instant timeDone) {
+        return new ExecutionComplete(execution, timeStarted, timeDone, Result.OK, null);
+    }
 
-	/**
-	 * Simulated ExecutionComplete used to generate first execution-time from a Schedule.
-	 */
-	public static ExecutionComplete simulatedSuccess(Instant timeDone) {
-		TaskInstance nonExistingTaskInstance = new TaskInstance("non-existing-task", "non-existing-id");
-		Execution nonExistingExecution = new Execution(timeDone, nonExistingTaskInstance, false, "simulated-picked-by", timeDone, null, 0, null, 1);
-		return new ExecutionComplete(nonExistingExecution, timeDone.minus(Duration.ofSeconds(1)), timeDone, Result.OK, null);
-	}
-	
-	public Execution getExecution() {
-		return execution;
-	}
+    public static ExecutionComplete failure(Execution execution, Instant timeStarted, Instant timeDone, Throwable cause) {
+        return new ExecutionComplete(execution, timeStarted, timeDone, Result.FAILED, cause);
+    }
 
-	public Instant getTimeDone() {
-		return timeDone;
-	}
+    /**
+     * Simulated ExecutionComplete used to generate first execution-time from a Schedule.
+     */
+    public static ExecutionComplete simulatedSuccess(Instant timeDone) {
+        TaskInstance nonExistingTaskInstance = new TaskInstance("non-existing-task", "non-existing-id");
+        Execution nonExistingExecution = new Execution(timeDone, nonExistingTaskInstance, false, "simulated-picked-by", timeDone, null, 0, null, 1);
+        return new ExecutionComplete(nonExistingExecution, timeDone.minus(Duration.ofSeconds(1)), timeDone, Result.OK, null);
+    }
 
-	public Duration getDuration() {
-		return Duration.between(timeStarted, timeDone);
-	}
+    public Execution getExecution() {
+        return execution;
+    }
 
-	public Result getResult() {
-		return result;
-	}
+    public Instant getTimeDone() {
+        return timeDone;
+    }
 
-	public Optional<Throwable> getCause() {
-		return Optional.ofNullable(cause);
-	}
+    public Duration getDuration() {
+        return Duration.between(timeStarted, timeDone);
+    }
 
-	public enum Result {
-		OK,
-		FAILED
-	}
+    public Result getResult() {
+        return result;
+    }
+
+    public Optional<Throwable> getCause() {
+        return Optional.ofNullable(cause);
+    }
+
+    public enum Result {
+        OK,
+        FAILED
+    }
 }

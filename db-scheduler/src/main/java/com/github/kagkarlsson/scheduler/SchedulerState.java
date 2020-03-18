@@ -17,32 +17,32 @@ package com.github.kagkarlsson.scheduler;
 
 public interface SchedulerState {
 
-	boolean isShuttingDown();
+    boolean isShuttingDown();
 
-	boolean isStarted();
+    boolean isStarted();
 
-	class SettableSchedulerState implements SchedulerState {
+    class SettableSchedulerState implements SchedulerState {
 
-		private boolean isShuttingDown;
-		private boolean isStarted;
+        private boolean isShuttingDown;
+        private boolean isStarted;
 
-		@Override
-		public boolean isShuttingDown() {
-			return isShuttingDown;
-		}
+        @Override
+        public boolean isShuttingDown() {
+            return isShuttingDown;
+        }
 
-		@Override
-		public boolean isStarted() {
-			return isStarted;
-		}
+        @Override
+        public boolean isStarted() {
+            return isStarted;
+        }
 
-		public void setIsShuttingDown() {
-			this.isShuttingDown = true;
-		}
+        public void setIsShuttingDown() {
+            this.isShuttingDown = true;
+        }
 
-		public void setStarted() {
-			this.isStarted = true;
-		}
-	}
+        public void setStarted() {
+            this.isStarted = true;
+        }
+    }
 
 }

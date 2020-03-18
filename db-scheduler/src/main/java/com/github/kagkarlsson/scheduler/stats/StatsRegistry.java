@@ -19,56 +19,56 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 
 public interface StatsRegistry {
 
-	enum SchedulerStatsEvent {
-		UNEXPECTED_ERROR,
-		COMPLETIONHANDLER_ERROR,
-		FAILUREHANDLER_ERROR,
-		DEAD_EXECUTION,
-		RAN_UPDATE_HEARTBEATS,
-		RAN_DETECT_DEAD,
-		RAN_EXECUTE_DUE,
+    enum SchedulerStatsEvent {
+        UNEXPECTED_ERROR,
+        COMPLETIONHANDLER_ERROR,
+        FAILUREHANDLER_ERROR,
+        DEAD_EXECUTION,
+        RAN_UPDATE_HEARTBEATS,
+        RAN_DETECT_DEAD,
+        RAN_EXECUTE_DUE,
         UNRESOLVED_TASK
-	}
+    }
 
-	enum CandidateStatsEvent {
-		STALE,
-		ALREADY_PICKED,
+    enum CandidateStatsEvent {
+        STALE,
+        ALREADY_PICKED,
         EXECUTED
-	}
+    }
 
-	enum ExecutionStatsEvent {
-		COMPLETED,
-		FAILED
-	}
+    enum ExecutionStatsEvent {
+        COMPLETED,
+        FAILED
+    }
 
-	void register(SchedulerStatsEvent e);
-	void register(CandidateStatsEvent e);
-	void register(ExecutionStatsEvent e);
+    void register(SchedulerStatsEvent e);
+    void register(CandidateStatsEvent e);
+    void register(ExecutionStatsEvent e);
 
-	void registerSingleCompletedExecution(ExecutionComplete completeEvent);
+    void registerSingleCompletedExecution(ExecutionComplete completeEvent);
 
-	StatsRegistry NOOP = new DefaultStatsRegistry();
+    StatsRegistry NOOP = new DefaultStatsRegistry();
 
-	class DefaultStatsRegistry implements StatsRegistry {
+    class DefaultStatsRegistry implements StatsRegistry {
 
-		@Override
-		public void register(SchedulerStatsEvent e) {
+        @Override
+        public void register(SchedulerStatsEvent e) {
 
-		}
+        }
 
-		@Override
-		public void register(CandidateStatsEvent e) {
+        @Override
+        public void register(CandidateStatsEvent e) {
 
-		}
+        }
 
-		@Override
-		public void register(ExecutionStatsEvent e) {
+        @Override
+        public void register(ExecutionStatsEvent e) {
 
-		}
+        }
 
-		@Override
-		public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {
+        @Override
+        public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {
 
-		}
-	}
+        }
+    }
 }

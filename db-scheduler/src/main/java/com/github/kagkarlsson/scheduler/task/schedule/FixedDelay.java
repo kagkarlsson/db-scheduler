@@ -23,46 +23,46 @@ import java.util.Objects;
 
 public class FixedDelay implements Schedule {
 
-	private final Duration duration;
+    private final Duration duration;
 
-	private FixedDelay(Duration duration) {
-		this.duration = Objects.requireNonNull(duration);
-	}
+    private FixedDelay(Duration duration) {
+        this.duration = Objects.requireNonNull(duration);
+    }
 
-	public static FixedDelay of(Duration duration) {
-		return new FixedDelay(duration);
-	}
+    public static FixedDelay of(Duration duration) {
+        return new FixedDelay(duration);
+    }
 
-	public static FixedDelay ofSeconds(int seconds) {
-		validateDuration(seconds);
-		return new FixedDelay(Duration.ofSeconds(seconds));
-	}
+    public static FixedDelay ofSeconds(int seconds) {
+        validateDuration(seconds);
+        return new FixedDelay(Duration.ofSeconds(seconds));
+    }
 
-	public static FixedDelay ofMinutes(int minutes) {
-		validateDuration(minutes);
-		return new FixedDelay(Duration.ofMinutes(minutes));
-	}
+    public static FixedDelay ofMinutes(int minutes) {
+        validateDuration(minutes);
+        return new FixedDelay(Duration.ofMinutes(minutes));
+    }
 
-	public static FixedDelay ofHours(int hours) {
-		validateDuration(hours);
-		return new FixedDelay(Duration.ofHours(hours));
-	}
+    public static FixedDelay ofHours(int hours) {
+        validateDuration(hours);
+        return new FixedDelay(Duration.ofHours(hours));
+    }
 
-	private static void validateDuration(int seconds) {
-		if (seconds <= 0) {
-			throw new IllegalArgumentException("argument must be greater than 0");
-		}
-	}
+    private static void validateDuration(int seconds) {
+        if (seconds <= 0) {
+            throw new IllegalArgumentException("argument must be greater than 0");
+        }
+    }
 
-	@Override
-	public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
-		return executionComplete.getTimeDone().plus(duration);
-	}
+    @Override
+    public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
+        return executionComplete.getTimeDone().plus(duration);
+    }
 
-	@Override
-	public Instant getInitialExecutionTime(Instant now) {
-		return now;
-	}
+    @Override
+    public Instant getInitialExecutionTime(Instant now) {
+        return now;
+    }
 
     @Override
     public final boolean equals(Object o) {

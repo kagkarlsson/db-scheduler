@@ -16,22 +16,22 @@ import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_
 
 public class DbUtils {
 
-	public static void clearTables(DataSource dataSource) {
-		new JdbcRunner(dataSource).execute("delete from " + DEFAULT_TABLE_NAME, NOOP);
-	}
+    public static void clearTables(DataSource dataSource) {
+        new JdbcRunner(dataSource).execute("delete from " + DEFAULT_TABLE_NAME, NOOP);
+    }
 
-	public static Consumer<DataSource> runSqlResource(String resource) {
-		return dataSource -> {
+    public static Consumer<DataSource> runSqlResource(String resource) {
+        return dataSource -> {
 
-			final JdbcRunner jdbcRunner = new JdbcRunner(dataSource);
-			try {
-				final String statements = CharStreams.toString(new InputStreamReader(DbUtils.class.getResourceAsStream(resource)));
-				jdbcRunner.execute(statements, NOOP);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		};
-	}
+            final JdbcRunner jdbcRunner = new JdbcRunner(dataSource);
+            try {
+                final String statements = CharStreams.toString(new InputStreamReader(DbUtils.class.getResourceAsStream(resource)));
+                jdbcRunner.execute(statements, NOOP);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
 
     public static int countExecutions(DataSource dataSource) {
         return new JdbcRunner(dataSource).query("select count(*) from " + DEFAULT_TABLE_NAME,

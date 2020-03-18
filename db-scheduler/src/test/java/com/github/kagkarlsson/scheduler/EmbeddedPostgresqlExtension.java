@@ -16,57 +16,57 @@ import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
 
 public class EmbeddedPostgresqlExtension implements AfterEachCallback {
 
-	private static EmbeddedPostgres embeddedPostgresql;
-	private static DataSource dataSource;
-	private final Consumer<DataSource> initializeSchema;
-	private final Consumer<DataSource> cleanupAfter;
+    private static EmbeddedPostgres embeddedPostgresql;
+    private static DataSource dataSource;
+    private final Consumer<DataSource> initializeSchema;
+    private final Consumer<DataSource> cleanupAfter;
 
     public EmbeddedPostgresqlExtension() {
         this(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
     }
 
-	public EmbeddedPostgresqlExtension(Consumer<DataSource> initializeSchema, Consumer<DataSource> cleanupAfter) {
-		this.initializeSchema = initializeSchema;
-		this.cleanupAfter = cleanupAfter;
-		try {
-			if (embeddedPostgresql == null) {
-				embeddedPostgresql = initPostgres();
+    public EmbeddedPostgresqlExtension(Consumer<DataSource> initializeSchema, Consumer<DataSource> cleanupAfter) {
+        this.initializeSchema = initializeSchema;
+        this.cleanupAfter = cleanupAfter;
+        try {
+            if (embeddedPostgresql == null) {
+                embeddedPostgresql = initPostgres();
 
-				HikariConfig config = new HikariConfig();
-				config.setDataSource(embeddedPostgresql.getDatabase("test", "test"));
+                HikariConfig config = new HikariConfig();
+                config.setDataSource(embeddedPostgresql.getDatabase("test", "test"));
 
-				dataSource = new HikariDataSource(config);
+                dataSource = new HikariDataSource(config);
 
-				initializeSchema.accept(dataSource);
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+                initializeSchema.accept(dataSource);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-	public DataSource getDataSource() {
-		return dataSource;
-	}
+    public DataSource getDataSource() {
+        return dataSource;
+    }
 
-	private EmbeddedPostgres initPostgres() throws IOException {
-		final EmbeddedPostgres newEmbeddedPostgresql = EmbeddedPostgres.builder().start();
+    private EmbeddedPostgres initPostgres() throws IOException {
+        final EmbeddedPostgres newEmbeddedPostgresql = EmbeddedPostgres.builder().start();
 
-		final JdbcRunner postgresJdbc = new JdbcRunner(newEmbeddedPostgresql.getPostgresDatabase());
+        final JdbcRunner postgresJdbc = new JdbcRunner(newEmbeddedPostgresql.getPostgresDatabase());
 
-		final Boolean databaseExists = postgresJdbc.query("SELECT 1 FROM pg_database WHERE datname = 'test'", NOOP, Mappers.NON_EMPTY_RESULTSET);
-		if (!databaseExists) {
-			postgresJdbc.execute("CREATE DATABASE test", NOOP);
-		}
+        final Boolean databaseExists = postgresJdbc.query("SELECT 1 FROM pg_database WHERE datname = 'test'", NOOP, Mappers.NON_EMPTY_RESULTSET);
+        if (!databaseExists) {
+            postgresJdbc.execute("CREATE DATABASE test", NOOP);
+        }
 
-		final Boolean userExists = postgresJdbc.query("SELECT 1 FROM pg_catalog.pg_user WHERE usename = 'test'", NOOP, Mappers.NON_EMPTY_RESULTSET);
-		if (!userExists) {
-			postgresJdbc.execute("CREATE ROLE test LOGIN PASSWORD ''", NOOP);
-		}
+        final Boolean userExists = postgresJdbc.query("SELECT 1 FROM pg_catalog.pg_user WHERE usename = 'test'", NOOP, Mappers.NON_EMPTY_RESULTSET);
+        if (!userExists) {
+            postgresJdbc.execute("CREATE ROLE test LOGIN PASSWORD ''", NOOP);
+        }
 
-		postgresJdbc.execute("CREATE SCHEMA IF NOT EXISTS AUTHORIZATION test ", NOOP);
+        postgresJdbc.execute("CREATE SCHEMA IF NOT EXISTS AUTHORIZATION test ", NOOP);
 
-		return newEmbeddedPostgresql;
-	}
+        return newEmbeddedPostgresql;
+    }
 
     @Override
     public void afterEach(ExtensionContext extensionContext) throws Exception {

@@ -23,39 +23,39 @@ import java.net.UnknownHostException;
 
 public interface SchedulerName {
 
-	String getName();
+    String getName();
 
 
-	class Fixed implements SchedulerName {
-		private final String name;
+    class Fixed implements SchedulerName {
+        private final String name;
 
-		public Fixed(String name) {
-			this.name = name;
-		}
+        public Fixed(String name) {
+            this.name = name;
+        }
 
-		@Override
-		public String getName() {
-			return name;
-		}
-	}
+        @Override
+        public String getName() {
+            return name;
+        }
+    }
 
 
-	class Hostname implements SchedulerName {
-		private static final Logger LOG = LoggerFactory.getLogger(Hostname.class);
-		private String cachedHostname;
-		
-		public Hostname() {
-			try {
-				cachedHostname = InetAddress.getLocalHost().getHostName();
-			} catch (UnknownHostException e) {
-				LOG.warn("Failed to resolve hostname. Using dummy-name for scheduler.");
-				cachedHostname = "failed.hostname.lookup";
-			}
-		}
+    class Hostname implements SchedulerName {
+        private static final Logger LOG = LoggerFactory.getLogger(Hostname.class);
+        private String cachedHostname;
 
-		@Override
-		public String getName() {
-			return cachedHostname;
-		}
-	}
+        public Hostname() {
+            try {
+                cachedHostname = InetAddress.getLocalHost().getHostName();
+            } catch (UnknownHostException e) {
+                LOG.warn("Failed to resolve hostname. Using dummy-name for scheduler.");
+                cachedHostname = "failed.hostname.lookup";
+            }
+        }
+
+        @Override
+        public String getName() {
+            return cachedHostname;
+        }
+    }
 }

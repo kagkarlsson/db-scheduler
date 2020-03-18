@@ -28,55 +28,55 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class RecurringTaskTest {
 
-	public static final ZoneId ZONE = ZoneId.systemDefault();
-	private static final LocalDate DATE = LocalDate.of(2018, 3, 1);
-	private static final LocalTime TIME = LocalTime.of(8, 0);
-	private SettableClock clock;
+    public static final ZoneId ZONE = ZoneId.systemDefault();
+    private static final LocalDate DATE = LocalDate.of(2018, 3, 1);
+    private static final LocalTime TIME = LocalTime.of(8, 0);
+    private SettableClock clock;
 
-	@RegisterExtension
-	public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
+    @RegisterExtension
+    public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
 
 
-	@BeforeEach
-	public void setUp() {
-		clock = new SettableClock();
-		clock.set(ZonedDateTime.of(DATE, TIME, ZONE).toInstant());
-	}
+    @BeforeEach
+    public void setUp() {
+        clock = new SettableClock();
+        clock.set(ZonedDateTime.of(DATE, TIME, ZONE).toInstant());
+    }
 
-	@Test
-	public void should_have_starttime_according_to_schedule_by_default() {
+    @Test
+    public void should_have_starttime_according_to_schedule_by_default() {
 
-		RecurringTask<Void> recurringTask = Tasks.recurring("recurring-a", Schedules.daily(LocalTime.of(23, 59)))
-				.execute(TestTasks.DO_NOTHING);
+        RecurringTask<Void> recurringTask = Tasks.recurring("recurring-a", Schedules.daily(LocalTime.of(23, 59)))
+                .execute(TestTasks.DO_NOTHING);
 
-		ManualScheduler scheduler = TestHelper.createManualScheduler(postgres.getDataSource())
-				.clock(clock)
-				.startTasks(Arrays.asList(recurringTask))
-				.build();
+        ManualScheduler scheduler = TestHelper.createManualScheduler(postgres.getDataSource())
+                .clock(clock)
+                .startTasks(Arrays.asList(recurringTask))
+                .build();
 
-		scheduler.start();
+        scheduler.start();
 
-		Optional<ScheduledExecution<Object>> firstExecution = scheduler.getScheduledExecution(TaskInstanceId.of("recurring-a", RecurringTask.INSTANCE));
-		assertThat(firstExecution.map(ScheduledExecution::getExecutionTime),
-				contains(ZonedDateTime.of(DATE, LocalTime.of(23, 59), ZONE).toInstant()));
-	}
+        Optional<ScheduledExecution<Object>> firstExecution = scheduler.getScheduledExecution(TaskInstanceId.of("recurring-a", RecurringTask.INSTANCE));
+        assertThat(firstExecution.map(ScheduledExecution::getExecutionTime),
+                contains(ZonedDateTime.of(DATE, LocalTime.of(23, 59), ZONE).toInstant()));
+    }
 
-	@Test
-	public void should_have_starttime_now_if_overridden_by_schedule() {
+    @Test
+    public void should_have_starttime_now_if_overridden_by_schedule() {
 
-		RecurringTask<Void> recurringTask = Tasks.recurring("recurring-a", Schedules.fixedDelay(Duration.ofHours(1)))
-				.execute(TestTasks.DO_NOTHING);
+        RecurringTask<Void> recurringTask = Tasks.recurring("recurring-a", Schedules.fixedDelay(Duration.ofHours(1)))
+                .execute(TestTasks.DO_NOTHING);
 
-		ManualScheduler scheduler = TestHelper.createManualScheduler(postgres.getDataSource())
-				.clock(clock)
-				.startTasks(Arrays.asList(recurringTask))
-				.build();
-		scheduler.start();
+        ManualScheduler scheduler = TestHelper.createManualScheduler(postgres.getDataSource())
+                .clock(clock)
+                .startTasks(Arrays.asList(recurringTask))
+                .build();
+        scheduler.start();
 
-		Optional<ScheduledExecution<Object>> firstExecution = scheduler.getScheduledExecution(TaskInstanceId.of("recurring-a", RecurringTask.INSTANCE));
+        Optional<ScheduledExecution<Object>> firstExecution = scheduler.getScheduledExecution(TaskInstanceId.of("recurring-a", RecurringTask.INSTANCE));
 
-		assertThat(firstExecution.map(ScheduledExecution::getExecutionTime),
-				contains(ZonedDateTime.of(DATE, TIME, ZONE).toInstant()));
-	}
+        assertThat(firstExecution.map(ScheduledExecution::getExecutionTime),
+                contains(ZonedDateTime.of(DATE, TIME, ZONE).toInstant()));
+    }
 
 }

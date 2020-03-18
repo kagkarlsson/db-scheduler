@@ -19,5 +19,5 @@ import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.Scheduler;
 
 public interface OnStartup {
-	void onStartup(Scheduler scheduler, Clock clock);
+    void onStartup(Scheduler scheduler, Clock clock);
 }

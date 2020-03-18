@@ -53,7 +53,7 @@ public class Tasks {
         private Class<T> dataClass;
         private FailureHandler<T> onFailure;
         private DeadExecutionHandler<T> onDeadExecution;
-		private ScheduleOnStartup<T> scheduleOnStartup;
+        private ScheduleOnStartup<T> scheduleOnStartup;
 
         public RecurringTaskBuilder(String name, Schedule schedule, Class<T> dataClass) {
             this.name = name;

@@ -26,20 +26,20 @@ import static org.hamcrest.core.Is.is;
 
 public class ImmediateExecutionTest {
 
-	private SettableClock clock;
+    private SettableClock clock;
 
-	@RegisterExtension
-	public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
-	@RegisterExtension
-	public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
+    @RegisterExtension
+    public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
+    @RegisterExtension
+    public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
-	@BeforeEach
-	public void setUp() {
-		clock = new SettableClock();
-	}
+    @BeforeEach
+    public void setUp() {
+        clock = new SettableClock();
+    }
 
-	@Test
-	public void test_immediate_execution() {
+    @Test
+    public void test_immediate_execution() {
         Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
 
             Instant now = Instant.now();
@@ -71,6 +71,6 @@ public class ImmediateExecutionTest {
             });
             registry.assertNoFailures();
         });
-	}
+    }
 
 }

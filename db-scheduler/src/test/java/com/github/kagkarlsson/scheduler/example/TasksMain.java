@@ -14,63 +14,63 @@ import java.io.Serializable;
 import java.time.Instant;
 
 public class TasksMain {
-	private static final Logger LOG = LoggerFactory.getLogger(TasksMain.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TasksMain.class);
 
-	public static void main(String[] args) throws Throwable {
-		try {
+    public static void main(String[] args) throws Throwable {
+        try {
             final HsqlTestDatabaseExtension hsqlRule = new HsqlTestDatabaseExtension();
             hsqlRule.beforeEach(null);
 
             final DataSource dataSource = hsqlRule.getDataSource();
 
-//			recurringTask(dataSource);
-			adhocTask(dataSource);
-		} catch (Exception e) {
-			LOG.error("Error", e);
-		}
-	}
+//            recurringTask(dataSource);
+            adhocTask(dataSource);
+        } catch (Exception e) {
+            LOG.error("Error", e);
+        }
+    }
 
-	private static void recurringTask(DataSource dataSource) {
+    private static void recurringTask(DataSource dataSource) {
 
-		RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.ofHours(1))
-				.execute((inst, ctx) -> {
-					System.out.println("Executed!");
-				});
+        RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.ofHours(1))
+                .execute((inst, ctx) -> {
+                    System.out.println("Executed!");
+                });
 
-		final Scheduler scheduler = Scheduler
-				.create(dataSource)
-				.startTasks(hourlyTask)
-				.threads(5)
-				.build();
+        final Scheduler scheduler = Scheduler
+                .create(dataSource)
+                .startTasks(hourlyTask)
+                .threads(5)
+                .build();
 
-		// hourlyTask is automatically scheduled on startup if not already started (i.e. exists in the db)
-		scheduler.start();
-	}
+        // hourlyTask is automatically scheduled on startup if not already started (i.e. exists in the db)
+        scheduler.start();
+    }
 
-	private static void adhocTask(DataSource dataSource) {
+    private static void adhocTask(DataSource dataSource) {
 
-		OneTimeTask<MyTaskData> myAdhocTask = Tasks.oneTime("my-typed-adhoc-task", MyTaskData.class)
-				.execute((inst, ctx) -> {
-					System.out.println("Executed! Custom data, Id: " + inst.getData().id);
-				});
+        OneTimeTask<MyTaskData> myAdhocTask = Tasks.oneTime("my-typed-adhoc-task", MyTaskData.class)
+                .execute((inst, ctx) -> {
+                    System.out.println("Executed! Custom data, Id: " + inst.getData().id);
+                });
 
-		final Scheduler scheduler = Scheduler
-				.create(dataSource, myAdhocTask)
-				.threads(5)
-				.build();
+        final Scheduler scheduler = Scheduler
+                .create(dataSource, myAdhocTask)
+                .threads(5)
+                .build();
 
-		scheduler.start();
+        scheduler.start();
 
-		// Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
-		scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.now().plusSeconds(5));
-	}
+        // Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
+        scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.now().plusSeconds(5));
+    }
 
-	public static class MyTaskData implements Serializable {
-		public final long id;
+    public static class MyTaskData implements Serializable {
+        public final long id;
 
-		public MyTaskData(long id) {
-			this.id = id;
-		}
-	}
+        public MyTaskData(long id) {
+            this.id = id;
+        }
+    }
 
 }

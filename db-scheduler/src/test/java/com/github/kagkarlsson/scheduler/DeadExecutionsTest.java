@@ -33,121 +33,121 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DeadExecutionsTest {
 
-	private static final int POLLING_LIMIT = 10_000;
+    private static final int POLLING_LIMIT = 10_000;
 
-	@RegisterExtension
-	public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
+    @RegisterExtension
+    public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
-	private Scheduler scheduler;
-	private SettableClock settableClock;
-	private OneTimeTask<Void> oneTimeTask;
-	private JdbcTaskRepository jdbcTaskRepository;
-	private NonCompletingTask<Void> nonCompleting;
-	private TestTasks.CountingHandler<Void> nonCompletingExecutionHandler;
-	private ReviveDead<Void> deadExecutionHandler;
+    private Scheduler scheduler;
+    private SettableClock settableClock;
+    private OneTimeTask<Void> oneTimeTask;
+    private JdbcTaskRepository jdbcTaskRepository;
+    private NonCompletingTask<Void> nonCompleting;
+    private TestTasks.CountingHandler<Void> nonCompletingExecutionHandler;
+    private ReviveDead<Void> deadExecutionHandler;
 
-	@BeforeEach
-	public void setUp() {
-		settableClock = new SettableClock();
-		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
-		nonCompletingExecutionHandler = new TestTasks.CountingHandler<>();
-		deadExecutionHandler = new ReviveDead<>();
-		nonCompleting = new NonCompletingTask<>("NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
+    @BeforeEach
+    public void setUp() {
+        settableClock = new SettableClock();
+        oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
+        nonCompletingExecutionHandler = new TestTasks.CountingHandler<>();
+        deadExecutionHandler = new ReviveDead<>();
+        nonCompleting = new NonCompletingTask<>("NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
 
-		TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, oneTimeTask, nonCompleting);
+        TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, oneTimeTask, nonCompleting);
 
-		jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
-		scheduler = new Scheduler(settableClock,
-				jdbcTaskRepository,
-				taskResolver,
-				1,
-				MoreExecutors.newDirectExecutorService(),
-				new SchedulerName.Fixed("test-scheduler"),
-				new Waiter(Duration.ZERO),
-				Duration.ofMinutes(1),
-				false,
-				StatsRegistry.NOOP,
-				POLLING_LIMIT,
+        scheduler = new Scheduler(settableClock,
+                jdbcTaskRepository,
+                taskResolver,
+                1,
+                MoreExecutors.newDirectExecutorService(),
+                new SchedulerName.Fixed("test-scheduler"),
+                new Waiter(Duration.ZERO),
+                Duration.ofMinutes(1),
+                false,
+                StatsRegistry.NOOP,
+                POLLING_LIMIT,
                 Duration.ofDays(14),
-				new ArrayList<>());
+                new ArrayList<>());
 
-	}
+    }
 
-	@Test
-	public void scheduler_should_handle_dead_executions() {
-		final Instant now = settableClock.now();
+    @Test
+    public void scheduler_should_handle_dead_executions() {
+        final Instant now = settableClock.now();
 
-		final TaskInstance<Void> taskInstance = oneTimeTask.instance("id1");
-		final Execution execution1 = new Execution(now.minus(Duration.ofDays(1)), taskInstance);
-		jdbcTaskRepository.createIfNotExists(execution1);
+        final TaskInstance<Void> taskInstance = oneTimeTask.instance("id1");
+        final Execution execution1 = new Execution(now.minus(Duration.ofDays(1)), taskInstance);
+        jdbcTaskRepository.createIfNotExists(execution1);
 
-		final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
-		assertThat(due, Matchers.hasSize(1));
-		final Execution execution = due.get(0);
-		final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(execution, now);
-		jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.minus(Duration.ofHours(1)));
+        final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
+        assertThat(due, Matchers.hasSize(1));
+        final Execution execution = due.get(0);
+        final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(execution, now);
+        jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.minus(Duration.ofHours(1)));
 
-		scheduler.detectDeadExecutions();
+        scheduler.detectDeadExecutions();
 
-		final Optional<Execution> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
-		assertTrue(rescheduled.isPresent());
-		assertThat(rescheduled.get().picked, is(false));
-		assertThat(rescheduled.get().pickedBy, nullValue());
+        final Optional<Execution> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
+        assertTrue(rescheduled.isPresent());
+        assertThat(rescheduled.get().picked, is(false));
+        assertThat(rescheduled.get().pickedBy, nullValue());
 
-		assertThat(jdbcTaskRepository.getDue(Instant.now(), POLLING_LIMIT), hasSize(1));
-	}
+        assertThat(jdbcTaskRepository.getDue(Instant.now(), POLLING_LIMIT), hasSize(1));
+    }
 
-	@Test
-	public void scheduler_should_detect_dead_execution_that_never_updated_heartbeat() {
-		final Instant now = Instant.now();
-		settableClock.set(now.minus(Duration.ofHours(1)));
-		final Instant oneHourAgo = settableClock.now();
+    @Test
+    public void scheduler_should_detect_dead_execution_that_never_updated_heartbeat() {
+        final Instant now = Instant.now();
+        settableClock.set(now.minus(Duration.ofHours(1)));
+        final Instant oneHourAgo = settableClock.now();
 
-		final TaskInstance<Void> taskInstance = nonCompleting.instance("id1");
-		final Execution execution1 = new Execution(oneHourAgo, taskInstance);
-		jdbcTaskRepository.createIfNotExists(execution1);
+        final TaskInstance<Void> taskInstance = nonCompleting.instance("id1");
+        final Execution execution1 = new Execution(oneHourAgo, taskInstance);
+        jdbcTaskRepository.createIfNotExists(execution1);
 
-		scheduler.executeDue();
-		assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
+        scheduler.executeDue();
+        assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
 
-		scheduler.executeDue();
-		assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
+        scheduler.executeDue();
+        assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
 
-		settableClock.set(Instant.now());
+        settableClock.set(Instant.now());
 
-		scheduler.detectDeadExecutions();
-		assertThat(deadExecutionHandler.timesCalled, is(1));
+        scheduler.detectDeadExecutions();
+        assertThat(deadExecutionHandler.timesCalled, is(1));
 
-		settableClock.set(Instant.now());
+        settableClock.set(Instant.now());
 
-		scheduler.executeDue();
-		assertThat(nonCompletingExecutionHandler.timesExecuted, is(2));
-	}
+        scheduler.executeDue();
+        assertThat(nonCompletingExecutionHandler.timesExecuted, is(2));
+    }
 
-	public static class NonCompletingTask<T> extends Task<T> {
-		private final VoidExecutionHandler<T> handler;
+    public static class NonCompletingTask<T> extends Task<T> {
+        private final VoidExecutionHandler<T> handler;
 
-		public NonCompletingTask(String name, Class<T> dataClass, VoidExecutionHandler<T> handler, DeadExecutionHandler<T> deadExecutionHandler) {
-			super(name, dataClass, (executionComplete, executionOperations) -> {}, deadExecutionHandler);
-			this.handler = handler;
-		}
+        public NonCompletingTask(String name, Class<T> dataClass, VoidExecutionHandler<T> handler, DeadExecutionHandler<T> deadExecutionHandler) {
+            super(name, dataClass, (executionComplete, executionOperations) -> {}, deadExecutionHandler);
+            this.handler = handler;
+        }
 
-		@Override
-		public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-			handler.execute(taskInstance, executionContext);
-			throw new RuntimeException("simulated unexpected exception");
-		}
-	}
+        @Override
+        public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+            handler.execute(taskInstance, executionContext);
+            throw new RuntimeException("simulated unexpected exception");
+        }
+    }
 
-	public static class ReviveDead<T> extends DeadExecutionHandler.ReviveDeadExecution<T> {
-		public int timesCalled = 0;
+    public static class ReviveDead<T> extends DeadExecutionHandler.ReviveDeadExecution<T> {
+        public int timesCalled = 0;
 
-		@Override
-		public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {
-			timesCalled++;
-			super.deadExecution(execution, executionOperations);
-		}
-	}
+        @Override
+        public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {
+            timesCalled++;
+            super.deadExecution(execution, executionOperations);
+        }
+    }
 
 }

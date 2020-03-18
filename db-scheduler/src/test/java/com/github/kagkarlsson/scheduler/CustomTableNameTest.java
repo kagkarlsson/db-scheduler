@@ -20,41 +20,41 @@ import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
 
 public class CustomTableNameTest {
 
-	private static final String SCHEDULER_NAME = "scheduler1";
+    private static final String SCHEDULER_NAME = "scheduler1";
 
-	private static final String CUSTOM_TABLENAME = "custom_tablename";
+    private static final String CUSTOM_TABLENAME = "custom_tablename";
 
-	@RegisterExtension
-	public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
+    @RegisterExtension
+    public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
-	private JdbcTaskRepository taskRepository;
-	private OneTimeTask<Void> oneTimeTask;
+    private JdbcTaskRepository taskRepository;
+    private OneTimeTask<Void> oneTimeTask;
 
-	@BeforeEach
-	public void setUp() {
-		oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
-		List<Task<?>> knownTasks = new ArrayList<>();
-		knownTasks.add(oneTimeTask);
-		taskRepository = new JdbcTaskRepository(DB.getDataSource(), CUSTOM_TABLENAME, new TaskResolver(StatsRegistry.NOOP, knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
+    @BeforeEach
+    public void setUp() {
+        oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
+        List<Task<?>> knownTasks = new ArrayList<>();
+        knownTasks.add(oneTimeTask);
+        taskRepository = new JdbcTaskRepository(DB.getDataSource(), CUSTOM_TABLENAME, new TaskResolver(StatsRegistry.NOOP, knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
 
-		DbUtils.runSqlResource("postgresql_custom_tablename.sql").accept(DB.getDataSource());
-	}
+        DbUtils.runSqlResource("postgresql_custom_tablename.sql").accept(DB.getDataSource());
+    }
 
-	@Test
-	public void can_customize_table_name() {
-		Instant now = Instant.now();
-		TaskInstance<Void> instance1 = oneTimeTask.instance("id1");
+    @Test
+    public void can_customize_table_name() {
+        Instant now = Instant.now();
+        TaskInstance<Void> instance1 = oneTimeTask.instance("id1");
 
-		taskRepository.createIfNotExists(new Execution(now, instance1));
+        taskRepository.createIfNotExists(new Execution(now, instance1));
 
-		JdbcRunner jdbcRunner = new JdbcRunner(DB.getDataSource());
-		jdbcRunner.query("SELECT count(1) AS number_of_tasks FROM " + CUSTOM_TABLENAME, NOOP, (RowMapper<Integer>) rs -> rs.getInt("number_of_tasks"));
+        JdbcRunner jdbcRunner = new JdbcRunner(DB.getDataSource());
+        jdbcRunner.query("SELECT count(1) AS number_of_tasks FROM " + CUSTOM_TABLENAME, NOOP, (RowMapper<Integer>) rs -> rs.getInt("number_of_tasks"));
 
-	}
+    }
 
-	@AfterEach
-	public void tearDown() {
-		new JdbcRunner(DB.getDataSource()).execute("DROP TABLE " + CUSTOM_TABLENAME, NOOP);
-	}
+    @AfterEach
+    public void tearDown() {
+        new JdbcRunner(DB.getDataSource()).execute("DROP TABLE " + CUSTOM_TABLENAME, NOOP);
+    }
 
 }

@@ -26,38 +26,38 @@ import static org.hamcrest.core.Is.is;
 
 
 public class ExecutorPoolTest {
-	private SettableClock clock;
+    private SettableClock clock;
 
-	@RegisterExtension
-	public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
-	@RegisterExtension
-	public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
+    @RegisterExtension
+    public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
+    @RegisterExtension
+    public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
-	@BeforeEach
-	public void setUp() {
-		clock = new SettableClock();
+    @BeforeEach
+    public void setUp() {
+        clock = new SettableClock();
 
-	}
+    }
 
-	// TODO: flaky test
-	@Test
-	public void test_execute_until_none_left_happy() {
-		testExecuteUntilNoneLeft(2, 2, 20);
-	}
+    // TODO: flaky test
+    @Test
+    public void test_execute_until_none_left_happy() {
+        testExecuteUntilNoneLeft(2, 2, 20);
+    }
 
-	@Test
-	public void test_execute_until_none_left_low_polling_limit() {
-		testExecuteUntilNoneLeft(2, 10, 20);
-	}
+    @Test
+    public void test_execute_until_none_left_low_polling_limit() {
+        testExecuteUntilNoneLeft(2, 10, 20);
+    }
 
-	@Test
+    @Test
     @Disabled //FIXLATER: Disabled because of flakiness. Need to investigate and re-enable 
-	public void test_execute_until_none_left_high_volume() {
-		testExecuteUntilNoneLeft(12, 4, 200);
-	}
+    public void test_execute_until_none_left_high_volume() {
+        testExecuteUntilNoneLeft(12, 4, 200);
+    }
 
 
-	private void testExecuteUntilNoneLeft(int pollingLimit, int threads, int executionsToRun) {
+    private void testExecuteUntilNoneLeft(int pollingLimit, int threads, int executionsToRun) {
         Assertions.assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
 
             Instant now = Instant.now();
@@ -87,6 +87,6 @@ public class ExecutorPoolTest {
             });
             registry.assertNoFailures();
         });
-	}
+    }
 
 }

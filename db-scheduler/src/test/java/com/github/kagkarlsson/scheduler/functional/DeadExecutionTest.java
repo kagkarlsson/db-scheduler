@@ -22,14 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DeadExecutionTest {
 
-	@RegisterExtension
-	public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
-	@RegisterExtension
-	public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
+    @RegisterExtension
+    public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
+    @RegisterExtension
+    public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
-	@Test
-	public void test_dead_execution() {
-	    Assertions.assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+    @Test
+    public void test_dead_execution() {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
             CustomTask<Void> customTask = Tasks.custom("custom-a", Void.class)
                 .execute((taskInstance, executionContext) -> new CompletionHandler<Void>() {
                     @Override
@@ -56,6 +56,6 @@ public class DeadExecutionTest {
             assertEquals(registry.getCount(SchedulerStatsEvent.DEAD_EXECUTION), 1);
 
         });
-	}
+    }
 
 }

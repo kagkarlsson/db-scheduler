@@ -9,12 +9,12 @@ import javax.sql.DataSource;
 
 public class PostgresqlCompatibilityTest extends CompatibilityTest {
 
-	@RegisterExtension
-	public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
+    @RegisterExtension
+    public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
 
-	@Override
-	public DataSource getDataSource() {
-		return postgres.getDataSource();
-	}
+    @Override
+    public DataSource getDataSource() {
+        return postgres.getDataSource();
+    }
 
 }

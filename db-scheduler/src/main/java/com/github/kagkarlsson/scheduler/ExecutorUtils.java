@@ -26,46 +26,46 @@ import java.util.concurrent.TimeUnit;
 
 public class ExecutorUtils {
 
-	private static final Logger LOG = LoggerFactory.getLogger(ExecutorUtils.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExecutorUtils.class);
 
-	public static boolean shutdownNowAndAwaitTermination(ExecutorService executor, Duration timeout) {
-		executor.shutdownNow();
-		return awaitTermination(executor, timeout);
-	}
+    public static boolean shutdownNowAndAwaitTermination(ExecutorService executor, Duration timeout) {
+        executor.shutdownNow();
+        return awaitTermination(executor, timeout);
+    }
 
-	public static boolean shutdownAndAwaitTermination(ExecutorService executorService, Duration timeout) {
-		executorService.shutdown();
-		return awaitTermination(executorService, timeout);
-	}
+    public static boolean shutdownAndAwaitTermination(ExecutorService executorService, Duration timeout) {
+        executorService.shutdown();
+        return awaitTermination(executorService, timeout);
+    }
 
-	private static boolean awaitTermination(ExecutorService executor, Duration timeout) {
-		try {
-			return executor.awaitTermination(timeout.toMillis(), TimeUnit.MILLISECONDS);
-		} catch (InterruptedException e) {
-			LOG.warn("Interrupted while waiting for termination of executor.", e);
-			return false;
-		}
-	}
+    private static boolean awaitTermination(ExecutorService executor, Duration timeout) {
+        try {
+            return executor.awaitTermination(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            LOG.warn("Interrupted while waiting for termination of executor.", e);
+            return false;
+        }
+    }
 
-	public static ThreadFactory defaultThreadFactoryWithPrefix(String prefix) {
-		return new PrefixingDefaultThreadFactory(prefix);
-	}
+    public static ThreadFactory defaultThreadFactoryWithPrefix(String prefix) {
+        return new PrefixingDefaultThreadFactory(prefix);
+    }
 
-	private static class PrefixingDefaultThreadFactory implements ThreadFactory {
+    private static class PrefixingDefaultThreadFactory implements ThreadFactory {
 
-		private final String prefix;
-		private final ThreadFactory defaultThreadFactory;
+        private final String prefix;
+        private final ThreadFactory defaultThreadFactory;
 
-		public PrefixingDefaultThreadFactory(String prefix) {
-			this.defaultThreadFactory = Executors.defaultThreadFactory();
-			this.prefix = prefix;
-		}
+        public PrefixingDefaultThreadFactory(String prefix) {
+            this.defaultThreadFactory = Executors.defaultThreadFactory();
+            this.prefix = prefix;
+        }
 
-		@Override
-		public Thread newThread(Runnable r) {
-			final Thread thread = defaultThreadFactory.newThread(r);
-			thread.setName(prefix + thread.getName());
-			return thread;
-		}
-	}
+        @Override
+        public Thread newThread(Runnable r) {
+            final Thread thread = defaultThreadFactory.newThread(r);
+            thread.setName(prefix + thread.getName());
+            return thread;
+        }
+    }
 }
