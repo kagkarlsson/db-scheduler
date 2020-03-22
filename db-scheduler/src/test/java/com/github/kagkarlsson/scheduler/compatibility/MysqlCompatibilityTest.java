@@ -1,26 +1,40 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
+import com.github.kagkarlsson.scheduler.DbUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import javax.sql.DataSource;
 import java.util.Properties;
 
-@Disabled
+@Tag("compatibility")
+@Testcontainers
 public class MysqlCompatibilityTest extends CompatibilityTest {
 
-    public static final String JDBC_URL = "jdbc:mysql://localhost:3306/test?useSSL=false&serverTimezone=UTC";
-    public static final String JDBC_USER = "dummy";
-    public static final String JDBC_PASSWORD = "dummy";
+    @Container
+    private static final MySQLContainer MY_SQL = new MySQLContainer();
+    private static HikariDataSource pooledDatasource;
 
-    @Override
-    public DataSource getDataSource() {
-        final DriverDataSource datasource = new DriverDataSource(JDBC_URL, "com.mysql.cj.jdbc.Driver", new Properties(), JDBC_USER, JDBC_PASSWORD);
+    @BeforeAll
+    private static void initSchema() {
+        final DriverDataSource datasource = new DriverDataSource(MY_SQL.getJdbcUrl(), "com.mysql.cj.jdbc.Driver", new Properties(), MY_SQL.getUsername(), MY_SQL.getPassword());
 
         final HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setDataSource(datasource);
-        return new HikariDataSource(hikariConfig);
+        pooledDatasource = new HikariDataSource(hikariConfig);
+
+        // init schema
+        DbUtils.runSqlResource("/mysql_tables.sql").accept(pooledDatasource);
+    }
+
+    @Override
+    public DataSource getDataSource() {
+        return pooledDatasource;
     }
 }
