@@ -6,13 +6,16 @@ import static org.assertj.core.api.Assertions.fail;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
+import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.google.common.collect.ImmutableList;
 import java.util.Objects;
 import javax.sql.DataSource;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
@@ -22,9 +25,6 @@ import org.springframework.boot.test.context.assertj.AssertableApplicationContex
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.test.util.AopTestUtils;
 
 
 public class DbSchedulerAutoConfigurationTest {
@@ -123,6 +123,19 @@ public class DbSchedulerAutoConfigurationTest {
             });
     }
 
+    @Test
+    public void it_should_support_custom_starting_strategies() {
+        ctxRunner
+            .withUserConfiguration(CustomStarterConfiguration.class)
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(Scheduler.class);
+
+                assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
+                assertThat(ctx).doesNotHaveBean(ContextReadyStart.class);
+                assertThat(ctx).doesNotHaveBean(ImmediateStart.class);
+            });
+    }
+
     @Configuration
     static class SingleTaskConfiguration {
         @Bean
@@ -146,6 +159,28 @@ public class DbSchedulerAutoConfigurationTest {
         @Bean
         Task<String> thirdTask() {
             return namedStringTask("third-task");
+        }
+    }
+
+    @Configuration
+    static class CustomStarterConfiguration extends SingleTaskConfiguration {
+        @Bean
+        DbSchedulerStarter someCustomStarter(Scheduler scheduler) {
+            return new SomeCustomStarter(scheduler);
+        }
+
+        static class SomeCustomStarter extends AbstractSchedulerStarter {
+            SomeCustomStarter(Scheduler scheduler) {
+                super(scheduler);
+
+                try {
+                    log.info("Thinking 5 seconds before starting the scheduler");
+                    Thread.sleep(5_000);
+                    doStart();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
