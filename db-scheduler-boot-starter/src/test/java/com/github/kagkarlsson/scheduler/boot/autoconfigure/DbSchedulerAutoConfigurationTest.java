@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.fail;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
+import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
+import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.google.common.collect.ImmutableList;
@@ -21,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.AopTestUtils;
 
 
 public class DbSchedulerAutoConfigurationTest {
@@ -88,6 +92,34 @@ public class DbSchedulerAutoConfigurationTest {
             .withPropertyValues("db-scheduler.enabled=false")
             .run((AssertableApplicationContext ctx) -> {
                 assertThat(ctx).doesNotHaveBean(Scheduler.class);
+            });
+    }
+
+    @Test
+    public void it_should_start_as_soon_as_possible() {
+        ctxRunner
+            .withPropertyValues("db-scheduler.delay-startup-until-context-ready=false")
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(Scheduler.class);
+
+                assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
+                assertThat(ctx).hasSingleBean(ImmediateStart.class);
+                assertThat(ctx).doesNotHaveBean(ContextReadyStart.class);
+
+            });
+    }
+
+    @Test
+    public void it_should_start_when_the_context_is_ready() {
+        ctxRunner
+            .withPropertyValues("db-scheduler.delay-startup-until-context-ready=true")
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(Scheduler.class);
+
+                assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
+                assertThat(ctx).hasSingleBean(ContextReadyStart.class);
+                assertThat(ctx).doesNotHaveBean(ImmediateStart.class);
+
             });
     }
 
