@@ -39,7 +39,7 @@
 		<dependency-plugin.failOnWarning>true</dependency-plugin.failOnWarning>
 
 		<!-- Dependency versions -->
-		<spring-boot.version>2.1.6.RELEASE</spring-boot.version>
+		<spring-boot.version>2.2.6.RELEASE</spring-boot.version>
 	</properties>
 
 	<modules>
