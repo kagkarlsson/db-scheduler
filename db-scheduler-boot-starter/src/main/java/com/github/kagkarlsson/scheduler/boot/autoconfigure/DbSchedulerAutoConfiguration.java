@@ -136,6 +136,7 @@ public class DbSchedulerAutoConfiguration {
     }
 
     @ConditionalOnBean(Scheduler.class)
+    @ConditionalOnMissingBean
     @Bean
     public DbSchedulerStarter dbSchedulerStarter(Scheduler scheduler) {
         if (config.isDelayStartupUntilContextReady()) {
