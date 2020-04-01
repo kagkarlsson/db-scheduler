@@ -267,6 +267,11 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 ## Versions / upgrading
 
+### Version 6.8
+* PR [#96](https://github.com/kagkarlsson/db-scheduler/pull/96) allow for overriding `DbSchedulerStarter` in Spring Boot starter. Contributed by [evenh](https://github.com/evenh).
+* Upgraded to JUnit 5
+* Full indentation reformatting of the codebase due to mix of tabs and spaces.
+
 ### Version 6.7
 * PR [#87](https://github.com/kagkarlsson/db-scheduler/pull/87) allow for specifying the TimeZone for the Daily schedule and the Schedule string-parser (contributed by [alex859](https://github.com/alex859))
 * PR [#90](https://github.com/kagkarlsson/db-scheduler/pull/90) adds task-name to logging of failures (contributed by [alex859](https://github.com/alex859))
