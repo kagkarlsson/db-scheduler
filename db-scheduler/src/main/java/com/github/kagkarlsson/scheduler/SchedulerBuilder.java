@@ -17,7 +17,10 @@ package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 import static com.github.kagkarlsson.scheduler.Scheduler.THREAD_PREFIX;
+import static java.util.Optional.ofNullable;
 
+import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -25,7 +28,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.sql.DataSource;
@@ -53,6 +55,7 @@ public class SchedulerBuilder {
     protected boolean enableImmediateExecution = false;
     protected ExecutorService executorService;
     protected Duration deleteUnresolvedAfter = Duration.ofDays(14);
+    protected JdbcCustomization jdbcCustomization = null;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -138,12 +141,18 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder jdbcCustomization(JdbcCustomization jdbcCustomization) {
+        this.jdbcCustomization = jdbcCustomization;
+        return this;
+    }
+
     public Scheduler build() {
         if (pollingLimit < executorThreads) {
             LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
         }
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
-        final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
+        final JdbcCustomization jdbcCustomization = ofNullable(this.jdbcCustomization).orElse(new AutodetectJdbcCustomization(dataSource));
+        final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, jdbcCustomization, tableName, taskResolver, schedulerName, serializer);
 
         ExecutorService candidateExecutorService = executorService;
         if (candidateExecutorService == null) {

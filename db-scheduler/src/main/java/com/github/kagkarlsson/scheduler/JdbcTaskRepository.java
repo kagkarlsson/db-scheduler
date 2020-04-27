@@ -19,6 +19,8 @@ import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
+import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -29,7 +31,6 @@ import javax.sql.DataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -54,17 +55,23 @@ public class JdbcTaskRepository implements TaskRepository {
     private final JdbcRunner jdbcRunner;
     private final Serializer serializer;
     private final String tableName;
+    private final JdbcCustomization jdbcCustomization;
 
     public JdbcTaskRepository(DataSource dataSource, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName) {
-        this(dataSource, tableName, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER);
+        this(dataSource, new AutodetectJdbcCustomization(dataSource), tableName, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER);
     }
 
-    public JdbcTaskRepository(DataSource dataSource, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer) {
+    public JdbcTaskRepository(DataSource dataSource, JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName) {
+        this(dataSource, jdbcCustomization, tableName, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER);
+    }
+
+    public JdbcTaskRepository(DataSource dataSource, JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer) {
         this.tableName = tableName;
         this.taskResolver = taskResolver;
         this.schedulerSchedulerName = schedulerSchedulerName;
         this.jdbcRunner = new JdbcRunner(dataSource);
         this.serializer = serializer;
+        this.jdbcCustomization = jdbcCustomization;
     }
 
     @Override
@@ -83,7 +90,7 @@ public class JdbcTaskRepository implements TaskRepository {
                         p.setString(1, execution.taskInstance.getTaskName());
                         p.setString(2, execution.taskInstance.getId());
                         p.setObject(3, serializer.serialize(execution.taskInstance.getData()));
-                        p.setTimestamp(4, Timestamp.from(execution.executionTime));
+                        jdbcCustomization.setInstant(p, 4, execution.executionTime);
                         p.setBoolean(5, false);
                         p.setLong(6, 1L);
                     });
@@ -135,7 +142,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 (PreparedStatement p) -> {
                     int index = 1;
                     p.setBoolean(index++, false);
-                    p.setTimestamp(index++, Timestamp.from(now));
+                    jdbcCustomization.setInstant(p, index++, now);
                     unresolvedFilter.setParameters(p, index);
                     p.setMaxRows(limit);
                 },
@@ -188,11 +195,11 @@ public class JdbcTaskRepository implements TaskRepository {
                     int index = 1;
                     ps.setBoolean(index++, false);
                     ps.setString(index++, null);
-                    ps.setTimestamp(index++, null);
-                    ps.setTimestamp(index++, ofNullable(lastSuccess).map(Timestamp::from).orElse(null));
-                    ps.setTimestamp(index++, ofNullable(lastFailure).map(Timestamp::from).orElse(null));
+                    jdbcCustomization.setInstant(ps, index++, null);
+                    jdbcCustomization.setInstant(ps, index++, ofNullable(lastSuccess).orElse(null));
+                    jdbcCustomization.setInstant(ps, index++, ofNullable(lastFailure).orElse(null));
                     ps.setInt(index++, consecutiveFailures);
-                    ps.setTimestamp(index++, Timestamp.from(nextExecutionTime));
+                    jdbcCustomization.setInstant(ps, index++, nextExecutionTime);
                     if (newData != null) {
                         // may cause datbase-specific problems, might have to use setNull instead
                         ps.setObject(index++, serializer.serialize(newData.data));
@@ -220,7 +227,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 ps -> {
                     ps.setBoolean(1, true);
                     ps.setString(2, truncate(schedulerSchedulerName.getName(), 50));
-                    ps.setTimestamp(3, Timestamp.from(timePicked));
+                    jdbcCustomization.setInstant(ps, 3, timePicked);
                     ps.setBoolean(4, false);
                     ps.setString(5, e.taskInstance.getTaskName());
                     ps.setString(6, e.taskInstance.getId());
@@ -251,7 +258,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 (PreparedStatement p) -> {
                     int index = 1;
                     p.setBoolean(index++, true);
-                    p.setTimestamp(index++, Timestamp.from(olderThan));
+                    jdbcCustomization.setInstant(p, index++, olderThan);
                     unresolvedFilter.setParameters(p, index);
                 },
                 new ExecutionResultSetMapper()
@@ -267,7 +274,7 @@ public class JdbcTaskRepository implements TaskRepository {
                         "and task_instance = ? " +
                         "and version = ?",
                 ps -> {
-                    ps.setTimestamp(1, Timestamp.from(newHeartbeat));
+                    jdbcCustomization.setInstant(ps, 1, newHeartbeat);
                     ps.setString(2, e.taskInstance.getTaskName());
                     ps.setString(3, e.taskInstance.getId());
                     ps.setLong(4, e.version);
@@ -293,7 +300,7 @@ public class JdbcTaskRepository implements TaskRepository {
                         unresolvedFilter.andCondition(),
                 (PreparedStatement p) -> {
                     int index = 1;
-                    p.setTimestamp(index++, Timestamp.from(Instant.now().minus(interval)));
+                    jdbcCustomization.setInstant(p, index++, Instant.now().minus(interval));
                     unresolvedFilter.setParameters(p, index);
                 },
                 new ExecutionResultSetMapper()
@@ -370,17 +377,14 @@ public class JdbcTaskRepository implements TaskRepository {
                 String instanceId = rs.getString("task_instance");
                 byte[] data = rs.getBytes("task_data");
 
-                Instant executionTime = rs.getTimestamp("execution_time").toInstant();
+                Instant executionTime = jdbcCustomization.getInstant(rs, "execution_time");
 
                 boolean picked = rs.getBoolean("picked");
                 final String pickedBy = rs.getString("picked_by");
-                Instant lastSuccess = ofNullable(rs.getTimestamp("last_success"))
-                        .map(Timestamp::toInstant).orElse(null);
-                Instant lastFailure = ofNullable(rs.getTimestamp("last_failure"))
-                        .map(Timestamp::toInstant).orElse(null);
+                Instant lastSuccess = jdbcCustomization.getInstant(rs,"last_success");
+                Instant lastFailure = jdbcCustomization.getInstant(rs,"last_failure");
                 int consecutiveFailures = rs.getInt("consecutive_failures"); // null-value is returned as 0 which is the preferred default
-                Instant lastHeartbeat = ofNullable(rs.getTimestamp("last_heartbeat"))
-                        .map(Timestamp::toInstant).orElse(null);
+                Instant lastHeartbeat = jdbcCustomization.getInstant(rs,"last_heartbeat");
                 long version = rs.getLong("version");
 
                 Supplier dataSupplier = memoize(() -> serializer.deserialize(task.get().getDataClass(), data));
