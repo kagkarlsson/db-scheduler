@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import co.unruly.matchers.OptionalMatchers;
+import com.github.kagkarlsson.scheduler.TestTasks.SavingHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
@@ -30,26 +31,37 @@ public class SchedulerClientTest {
 
     private ManualScheduler scheduler;
     private SettableClock settableClock;
-    private OneTimeTask<Void> oneTimeTaskA;
 
     private TestTasks.CountingHandler<Void> onetimeTaskHandlerA;
+    private OneTimeTask<Void> oneTimeTaskA;
+
     private TestTasks.CountingHandler<Void> onetimeTaskHandlerB;
+    private OneTimeTask<Void> oneTimeTaskB;
+
     private ScheduleAnotherTaskHandler<Void> scheduleAnother;
     private OneTimeTask<Void> scheduleAnotherTask;
-    private OneTimeTask<Void> oneTimeTaskB;
+
+    private SavingHandler<String> savingHandler;
+    private OneTimeTask<String> savingTask;
+
 
     @BeforeEach
     public void setUp() {
         settableClock = new SettableClock();
+
         onetimeTaskHandlerA = new TestTasks.CountingHandler<>();
-        onetimeTaskHandlerB = new TestTasks.CountingHandler<>();
         oneTimeTaskA = TestTasks.oneTime("OneTimeA", Void.class, onetimeTaskHandlerA);
+
         oneTimeTaskB = TestTasks.oneTime("OneTimeB", Void.class, onetimeTaskHandlerB);
+        onetimeTaskHandlerB = new TestTasks.CountingHandler<>();
 
         scheduleAnother = new ScheduleAnotherTaskHandler<>(oneTimeTaskA.instance("secondTask"), settableClock.now().plusSeconds(1));
         scheduleAnotherTask = TestTasks.oneTime("ScheduleAnotherTask", Void.class, scheduleAnother);
 
-        scheduler = TestHelper.createManualScheduler(DB.getDataSource(), oneTimeTaskA, oneTimeTaskB, scheduleAnotherTask).clock(settableClock).start();
+        savingHandler = new SavingHandler<>();
+        savingTask = TestTasks.oneTime("SavingTask", String.class, savingHandler);
+
+        scheduler = TestHelper.createManualScheduler(DB.getDataSource(), oneTimeTaskA, oneTimeTaskB, scheduleAnotherTask, savingTask).clock(settableClock).start();
     }
 
     @Test
@@ -95,6 +107,26 @@ public class SchedulerClientTest {
         assertThat(client.getScheduledExecution(TaskInstanceId.of(oneTimeTaskA.getName(), "1")), not(OptionalMatchers.empty()));
         assertThat(client.getScheduledExecution(TaskInstanceId.of(oneTimeTaskA.getName(), "2")), OptionalMatchers.empty());
         assertThat(client.getScheduledExecution(TaskInstanceId.of(oneTimeTaskB.getName(), "1")), OptionalMatchers.empty());
+    }
+
+    @Test
+    public void client_should_be_able_to_reschedule_executions() {
+        String data1 = "data1";
+        String data2 = "data2";
+
+        scheduler.schedule(savingTask.instance("1", data1), settableClock.now().plusSeconds(1));
+        scheduler.reschedule(savingTask.instance("1"), settableClock.now());
+        scheduler.runAnyDueExecutions();
+        assertThat(savingHandler.savedData, CoreMatchers.is(data1));
+
+        scheduler.schedule(savingTask.instance("2", "none"), settableClock.now().plusSeconds(1));
+        scheduler.reschedule(savingTask.instance("2"), settableClock.now(), data2);
+        scheduler.runAnyDueExecutions();
+        assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+
+        scheduler.tick(ofSeconds(1));
+        scheduler.runAnyDueExecutions();
+        assertThat(savingHandler.savedData, CoreMatchers.is(data2));
     }
 
     private int countAllExecutions(SchedulerClient client) {

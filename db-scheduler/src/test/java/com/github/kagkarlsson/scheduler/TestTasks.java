@@ -172,6 +172,15 @@ public class TestTasks {
         }
     }
 
+    public static class SavingHandler<T> implements VoidExecutionHandler<T> {
+        public T savedData;
+
+        @Override
+        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+            savedData = taskInstance.getData();
+        }
+    }
+
     public static class SimpleStatsRegistry extends StatsRegistry.DefaultStatsRegistry {
         public final AtomicInteger unexpectedErrors = new AtomicInteger(0);
 

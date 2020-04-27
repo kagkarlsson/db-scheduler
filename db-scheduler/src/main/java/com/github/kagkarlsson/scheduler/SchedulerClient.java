@@ -37,6 +37,8 @@ public interface SchedulerClient {
 
     void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
+    <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
+
     void cancel(TaskInstanceId taskInstanceId);
 
     void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
@@ -103,6 +105,11 @@ public interface SchedulerClient {
 
         @Override
         public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+            reschedule(taskInstanceId, newExecutionTime, null);
+        }
+
+        @Override
+        public <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
             String taskName = taskInstanceId.getTaskName();
             String instanceId = taskInstanceId.getId();
             Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
@@ -111,7 +118,13 @@ public interface SchedulerClient {
                     throw new RuntimeException(String.format("Could not reschedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
                 }
 
-                boolean success = taskRepository.reschedule(execution.get(), newExecutionTime, null, null, 0);
+                boolean success;
+                if (newData == null) {
+                    success = taskRepository.reschedule(execution.get(), newExecutionTime, null, null, 0);
+                } else {
+                    success = taskRepository.reschedule(execution.get(), newExecutionTime, newData, null, null, 0);
+                }
+
                 if (success) {
                     notifyListeners(ClientEvent.EventType.RESCHEDULE, taskInstanceId, newExecutionTime);
                 }
