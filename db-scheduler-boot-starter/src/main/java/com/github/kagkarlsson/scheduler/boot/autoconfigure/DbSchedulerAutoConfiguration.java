@@ -119,6 +119,9 @@ public class DbSchedulerAutoConfiguration {
         // Use custom executor service if provided
         customizer.executorService().ifPresent(builder::executorService);
 
+        // Use custom task repository if provided
+        customizer.taskRepository().ifPresent(builder::taskRepository);
+
         builder.deleteUnresolvedAfter(config.getDeleteUnresolvedAfter());
 
         // Add recurring jobs and jobs that implements OnStartup

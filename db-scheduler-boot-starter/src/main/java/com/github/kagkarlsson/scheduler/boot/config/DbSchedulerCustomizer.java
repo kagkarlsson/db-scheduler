@@ -17,6 +17,8 @@ package com.github.kagkarlsson.scheduler.boot.config;
 
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.Serializer;
+import com.github.kagkarlsson.scheduler.TaskRepository;
+import com.github.kagkarlsson.scheduler.TaskResolver;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
@@ -45,4 +47,12 @@ public interface DbSchedulerCustomizer {
     default Optional<ExecutorService> executorService() {
         return Optional.empty();
     }
+
+    /**
+     * Provide a custom {@link TaskRepository} implementation.
+     */
+    default Optional<TaskRepository> taskRepository() {
+        return Optional.empty();
+    }
+
 }

@@ -53,6 +53,7 @@ public class SchedulerBuilder {
     protected boolean enableImmediateExecution = false;
     protected ExecutorService executorService;
     protected Duration deleteUnresolvedAfter = Duration.ofDays(14);
+    protected TaskRepository taskRepository;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -138,12 +139,17 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder taskRepository(TaskRepository taskRepository) {
+        this.taskRepository = taskRepository;
+        return this;
+    }
+
     public Scheduler build() {
         if (pollingLimit < executorThreads) {
             LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
         }
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
-        final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
+        final TaskRepository taskRepository = buildTaskRepository(taskResolver);
 
         ExecutorService candidateExecutorService = executorService;
         if (candidateExecutorService == null) {
@@ -160,5 +166,13 @@ public class SchedulerBuilder {
         return new Scheduler(clock, taskRepository, taskResolver, executorThreads, candidateExecutorService,
                 schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
             deleteUnresolvedAfter, startTasks);
+    }
+
+    private TaskRepository buildTaskRepository(TaskResolver taskResolver) {
+        if (taskRepository != null) {
+            return taskRepository;
+        }
+
+        return new JdbcTaskRepository(dataSource, tableName, taskResolver, schedulerName, serializer);
     }
 }
