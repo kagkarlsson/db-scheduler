@@ -171,6 +171,6 @@ public class DbSchedulerAutoConfiguration {
     }
 
     private Predicate<Task<?>> shouldBeStarted() {
-        return task -> task instanceof OnStartup && config.isStartupTasksEnabled();
+        return task -> task instanceof OnStartup && config.isScheduleStartupTasksEnabled();
     }
 }

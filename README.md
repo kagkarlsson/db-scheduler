@@ -216,6 +216,8 @@ db-scheduler.scheduler-name=
 db-scheduler.threads=10
 # Ignored if a custom DbSchedulerStarter bean is defined
 db-scheduler.delay-startup-until-context-ready=false
+# Whether to schedule default recurring and startup tasks when application starts.
+db-scheduler.schedule-startup-tasks-enabled=true
 ```
 
 
