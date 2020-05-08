@@ -95,6 +95,11 @@ public class DbSchedulerProperties {
     @NotNull
     private Duration deleteUnresolvedAfter = Duration.ofDays(14);
 
+    /**
+     * <p>Whether to schedule recurring tasks on startup.</p>
+     */
+    private boolean startupTasksEnabled = true;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -173,5 +178,13 @@ public class DbSchedulerProperties {
 
     public void setDeleteUnresolvedAfter(Duration deleteUnresolvedAfter) {
         this.deleteUnresolvedAfter = deleteUnresolvedAfter;
+    }
+
+    public boolean isStartupTasksEnabled() {
+        return startupTasksEnabled;
+    }
+
+    public void setStartupTasksEnabled(boolean startupTasksEnabled) {
+        this.startupTasksEnabled = startupTasksEnabled;
     }
 }

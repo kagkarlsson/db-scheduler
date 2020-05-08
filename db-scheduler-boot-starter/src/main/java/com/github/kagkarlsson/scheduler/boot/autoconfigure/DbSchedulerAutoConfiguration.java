@@ -56,7 +56,6 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 @ConditionalOnProperty(value = "db-scheduler.enabled", matchIfMissing = true)
 public class DbSchedulerAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfiguration.class);
-    private static Predicate<Task<?>> shouldBeStarted = task -> task instanceof OnStartup;
 
     private final DbSchedulerProperties config;
     private final DataSource existingDataSource;
@@ -158,16 +157,20 @@ public class DbSchedulerAutoConfiguration {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T extends Task<?> & OnStartup> List<T> startupTasks(List<Task<?>> tasks) {
+    private <T extends Task<?> & OnStartup> List<T> startupTasks(List<Task<?>> tasks) {
         return tasks.stream()
-            .filter(shouldBeStarted)
+            .filter(shouldBeStarted())
             .map(task -> (T) task)
             .collect(Collectors.toList());
     }
 
-    private static List<Task<?>> nonStartupTasks(List<Task<?>> tasks) {
+    private List<Task<?>> nonStartupTasks(List<Task<?>> tasks) {
         return tasks.stream()
-            .filter(shouldBeStarted.negate())
+            .filter(shouldBeStarted().negate())
             .collect(Collectors.toList());
+    }
+
+    private Predicate<Task<?>> shouldBeStarted() {
+        return task -> task instanceof OnStartup && config.isStartupTasksEnabled();
     }
 }
