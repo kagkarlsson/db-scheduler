@@ -32,20 +32,22 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     private final JdbcCustomization jdbcCustomization;
 
     public AutodetectJdbcCustomization(DataSource dataSource) {
+        JdbcCustomization detectedCustomization = new DefaultJdbcCustomization();
+
         try (Connection c = dataSource.getConnection()) {
             String databaseProductName = c.getMetaData().getDatabaseProductName();
+            LOG.info("Detected database {}.", databaseProductName);
 
             if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
-                LOG.info("Detected database {}, overriding default jdbc-timestamp setter/getter.", MICROSOFT_SQL_SERVER);
-                this.jdbcCustomization = new MssqlJdbcCustomization();
-            } else {
-                LOG.info("Detected database {}, using default jdbc-timestamp setter/getter.", databaseProductName);
-                this.jdbcCustomization = new DefaultJdbcCustomization();
+                LOG.info("Using MSSQL jdbc-overrides.");
+                detectedCustomization = new MssqlJdbcCustomization();
             }
 
         } catch (SQLException e) {
-            throw new RuntimeException("Unable to detect database via getDatabaseMetadata", e);
+            LOG.error("Failed to detect database via getDatabaseMetadata. Using default.");
         }
+
+        this.jdbcCustomization = detectedCustomization;
     }
 
     @Override
