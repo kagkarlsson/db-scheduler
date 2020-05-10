@@ -136,6 +136,8 @@
 							<exclude>.java-version</exclude>
 							<exclude>.license/**</exclude>
 							<exclude>src/test/**</exclude>
+							<exclude>**.properties</exclude>
+							<exclude>**.sql</exclude>
 						</excludes>
 						<failIfMissing>${failOnMissingHeader}</failIfMissing>
 					</configuration>
