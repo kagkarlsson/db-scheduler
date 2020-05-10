@@ -8,3 +8,4 @@ language: java
 jdk:
   - oraclejdk8
   - openjdk11
+script: mvn -Pcompatibility clean test
