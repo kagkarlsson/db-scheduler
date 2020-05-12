@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler.task.helper;
 
+import com.github.kagkarlsson.scheduler.Clock;
+import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
@@ -95,6 +97,23 @@ public class Tasks {
                 @Override
                 public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                     executionHandler.execute(taskInstance, executionContext);
+                }
+            };
+        }
+
+        public RecurringTask<T> execute(VoidExecutionHandler<T> executionHandler, VoidOnStartupHandler<T> onStartupHandler) {
+            return new RecurringTask<T>(name, schedule, dataClass, scheduleOnStartup, onFailure, onDeadExecution) {
+
+                @Override
+                public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    executionHandler.execute(taskInstance, executionContext);
+                }
+
+                @Override
+                public void onStartup(Scheduler scheduler, Clock clock) {
+                    if (onStartupHandler != null) {
+                        onStartupHandler.execute(scheduler, clock, this);
+                    }
                 }
             };
         }
