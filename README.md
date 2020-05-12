@@ -16,6 +16,14 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * **Simple**.
 * **Minimal dependencies**. (slf4j)
 
+## Known users
+
+db-scheduler is used by many individuals and businesses. Feel free to open a PR to add your company to the list.
+
+| Company                         | Description                                      |
+|---------------------------------|--------------------------------------------------|
+| [Digipost](https://digipost.no) | A Norwegian provider of digital secure mailboxes |
+
 ## Getting started
 
 1. Add maven dependency
