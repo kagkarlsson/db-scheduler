@@ -16,7 +16,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * **Simple**.
 * **Minimal dependencies**. (slf4j)
 
-## Known users
+## Who uses db-scheduler?
 
 db-scheduler is used by many individuals and businesses. Feel free to open a PR to add your company to the list.
 
