@@ -1,4 +1,4 @@
-create table scheduled_tasks (
+create table test.scheduled_tasks (
   task_name varchar(40) not null,
   task_instance varchar(40) not null,
   task_data blob,

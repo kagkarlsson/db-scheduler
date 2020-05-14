@@ -60,6 +60,12 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
+				<groupId>ch.qos.logback</groupId>
+				<artifactId>logback-classic</artifactId>
+				<version>1.2.3</version>
+				<scope>test</scope>
+			</dependency>
+			<dependency>
 				<!-- Import dependency management from Spring Boot -->
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
@@ -71,6 +77,13 @@
 				<groupId>org.junit</groupId>
 				<artifactId>junit-bom</artifactId>
 				<version>5.6.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>1.13.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -123,6 +136,8 @@
 							<exclude>.java-version</exclude>
 							<exclude>.license/**</exclude>
 							<exclude>src/test/**</exclude>
+							<exclude>**/*.properties</exclude>
+							<exclude>**/*.sql</exclude>
 						</excludes>
 						<failIfMissing>${failOnMissingHeader}</failIfMissing>
 					</configuration>
@@ -224,7 +239,7 @@
 					<configuration>
 						<serverId>ossrh</serverId>
 						<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-						<autoReleaseAfterClose>false</autoReleaseAfterClose>
+						<autoReleaseAfterClose>true</autoReleaseAfterClose>
 					</configuration>
 				</plugin>
 			</plugins>

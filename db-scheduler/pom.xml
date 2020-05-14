@@ -23,6 +23,7 @@
         <otj-pg-embedded.version>0.11.4</otj-pg-embedded.version>
         <postgresql.version>9.4.1207</postgresql.version>
         <slf4j.version>1.7.7</slf4j.version>
+        <test.excludedTags>compatibility</test.excludedTags>
     </properties>
 
     <dependencies>
@@ -44,9 +45,8 @@
 
         <!-- Test -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -110,29 +110,44 @@
             <scope>test</scope>
         </dependency>
 
-        <!--
         <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>ojdbc6</artifactId>
-            <version>11.2.0.2.0</version>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mysql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>mssqlserver</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>6.0.3</version>
+            <version>8.0.19</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
-            <version>6.3.6.jre8-preview</version>
+            <version>8.2.1.jre8</version>
             <scope>test</scope>
         </dependency>
-        -->
+
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludedGroups>${test.excludedTags}</excludedGroups>
+                </configuration>
+            </plugin>
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
             </plugin>
@@ -145,4 +160,13 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>compatibility</id>
+            <properties>
+                <test.excludedTags/>
+            </properties>
+        </profile>
+    </profiles>
 </project>

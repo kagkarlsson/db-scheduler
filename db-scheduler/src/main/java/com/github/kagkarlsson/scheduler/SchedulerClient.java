@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -25,11 +27,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+
+import static java.util.Optional.ofNullable;
 
 public interface SchedulerClient {
 
@@ -53,6 +56,7 @@ public interface SchedulerClient {
         private List<Task<?>> knownTasks;
         private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
         private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
+        private JdbcCustomization jdbcCustomization;
 
         private Builder(DataSource dataSource, List<Task<?>> knownTasks) {
             this.dataSource = dataSource;
@@ -72,9 +76,21 @@ public interface SchedulerClient {
             return this;
         }
 
+        public Builder jdbcCustomization(JdbcCustomization jdbcCustomization) {
+            this.jdbcCustomization = jdbcCustomization;
+            return this;
+        }
+
         public SchedulerClient build() {
             TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, knownTasks);
-            TaskRepository taskRepository = new JdbcTaskRepository(dataSource, tableName, taskResolver, new SchedulerClientName(), serializer);
+
+            TaskRepository taskRepository = new JdbcTaskRepository(
+                dataSource,
+                ofNullable(jdbcCustomization).orElse(new DefaultJdbcCustomization()),
+                tableName,
+                taskResolver,
+                new SchedulerClientName(),
+                serializer);
 
             return new StandardSchedulerClient(taskRepository);
         }
