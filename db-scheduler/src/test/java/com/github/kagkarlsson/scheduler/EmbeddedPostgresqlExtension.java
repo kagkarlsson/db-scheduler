@@ -29,15 +29,18 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
         this.initializeSchema = initializeSchema;
         this.cleanupAfter = cleanupAfter;
         try {
-            if (embeddedPostgresql == null) {
-                embeddedPostgresql = initPostgres();
+            synchronized (this) {
 
-                HikariConfig config = new HikariConfig();
-                config.setDataSource(embeddedPostgresql.getDatabase("test", "test"));
+                if (embeddedPostgresql == null) {
+                    embeddedPostgresql = initPostgres();
 
-                dataSource = new HikariDataSource(config);
+                    HikariConfig config = new HikariConfig();
+                    config.setDataSource(embeddedPostgresql.getDatabase("test", "test"));
 
-                initializeSchema.accept(dataSource);
+                    dataSource = new HikariDataSource(config);
+
+                    initializeSchema.accept(dataSource);
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

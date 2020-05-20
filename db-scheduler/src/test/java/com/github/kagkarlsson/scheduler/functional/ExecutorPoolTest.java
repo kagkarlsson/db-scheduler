@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler.functional;
 import co.unruly.matchers.TimeMatchers;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
@@ -51,14 +52,14 @@ public class ExecutorPoolTest {
     }
 
     @Test
-    @Disabled //FIXLATER: Disabled because of flakiness. Need to investigate and re-enable 
+    @Disabled //FIXLATER: Disabled because of flakiness. Need to investigate and re-enable
     public void test_execute_until_none_left_high_volume() {
         testExecuteUntilNoneLeft(12, 4, 200);
     }
 
 
     private void testExecuteUntilNoneLeft(int pollingLimit, int threads, int executionsToRun) {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
 
             Instant now = Instant.now();
             OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
@@ -69,6 +70,7 @@ public class ExecutorPoolTest {
                 .pollingLimit(pollingLimit)
                 .threads(threads)
                 .pollingInterval(Duration.ofMinutes(1))
+                .schedulerName(new SchedulerName.Fixed("test"))
                 .statsRegistry(registry)
                 .build();
             stopScheduler.register(scheduler);

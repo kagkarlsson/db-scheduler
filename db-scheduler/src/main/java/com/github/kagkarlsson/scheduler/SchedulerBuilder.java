@@ -41,7 +41,7 @@ public class SchedulerBuilder {
     protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
 
     protected final DataSource dataSource;
-    protected SchedulerName schedulerName = new SchedulerName.Hostname();
+    protected SchedulerName schedulerName;
     protected int executorThreads = 10;
     protected final List<Task<?>> knownTasks = new ArrayList<>();
     protected final List<OnStartup> startTasks = new ArrayList<>();
@@ -150,6 +150,11 @@ public class SchedulerBuilder {
         if (pollingLimit < executorThreads) {
             LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
         }
+
+        if (schedulerName == null) {
+             schedulerName = new SchedulerName.Hostname();
+        }
+
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
         final JdbcCustomization jdbcCustomization = ofNullable(this.jdbcCustomization).orElse(new AutodetectJdbcCustomization(dataSource));
         final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, jdbcCustomization, tableName, taskResolver, schedulerName, serializer);

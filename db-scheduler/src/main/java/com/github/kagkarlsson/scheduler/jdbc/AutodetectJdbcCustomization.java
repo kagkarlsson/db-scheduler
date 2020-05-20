@@ -34,6 +34,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     public AutodetectJdbcCustomization(DataSource dataSource) {
         JdbcCustomization detectedCustomization = new DefaultJdbcCustomization();
 
+        LOG.debug("Detecting database...");
         try (Connection c = dataSource.getConnection()) {
             String databaseProductName = c.getMetaData().getDatabaseProductName();
             LOG.info("Detected database {}.", databaseProductName);

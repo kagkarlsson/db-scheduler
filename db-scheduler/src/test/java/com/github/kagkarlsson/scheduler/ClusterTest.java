@@ -38,7 +38,7 @@ public class ClusterTest {
 
     @Test
     public void test_concurrency() throws InterruptedException {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
 
             final List<String> ids = IntStream.range(1, 1001).mapToObj(String::valueOf).collect(toList());
 
@@ -75,7 +75,7 @@ public class ClusterTest {
 
     @Test
     public void test_concurrency_recurring() throws InterruptedException {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
 
             final RecurringTask<Void> task1 = Tasks.recurring("task1", Schedules.fixedDelay(Duration.ofMillis(0)))
                 .execute((taskInstance, executionContext) -> {

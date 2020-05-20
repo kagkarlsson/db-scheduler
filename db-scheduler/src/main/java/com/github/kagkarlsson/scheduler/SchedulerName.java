@@ -46,7 +46,14 @@ public interface SchedulerName {
 
         public Hostname() {
             try {
+                long start = System.currentTimeMillis();
+                LOG.debug("Resolving hostname..");
                 cachedHostname = InetAddress.getLocalHost().getHostName();
+                LOG.debug("Resolved hostname..");
+                long duration = System.currentTimeMillis() - start;
+                if (duration > 1000) {
+                    LOG.warn("Hostname-lookup took {}ms", duration);
+                }
             } catch (UnknownHostException e) {
                 LOG.warn("Failed to resolve hostname. Using dummy-name for scheduler.");
                 cachedHostname = "failed.hostname.lookup";

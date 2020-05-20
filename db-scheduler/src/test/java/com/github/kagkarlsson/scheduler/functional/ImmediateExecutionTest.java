@@ -4,6 +4,7 @@ import co.unruly.matchers.TimeMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
@@ -40,7 +41,7 @@ public class ImmediateExecutionTest {
 
     @Test
     public void test_immediate_execution() {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
 
             Instant now = Instant.now();
             OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
@@ -52,6 +53,7 @@ public class ImmediateExecutionTest {
             Scheduler scheduler = Scheduler.create(postgres.getDataSource(), task)
                 .pollingInterval(Duration.ofMinutes(1))
                 .enableImmediateExecution()
+                .schedulerName(new SchedulerName.Fixed("test"))
                 .statsRegistry(registry)
                 .build();
             stopScheduler.register(scheduler);
