@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler.functional;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
@@ -45,6 +46,7 @@ public class DeadExecutionTest {
             Scheduler scheduler = Scheduler.create(postgres.getDataSource(), customTask)
                 .pollingInterval(Duration.ofMillis(100))
                 .heartbeatInterval(Duration.ofMillis(100))
+                .schedulerName(new SchedulerName.Fixed("test"))
                 .statsRegistry(registry)
                 .build();
             stopScheduler.register(scheduler);

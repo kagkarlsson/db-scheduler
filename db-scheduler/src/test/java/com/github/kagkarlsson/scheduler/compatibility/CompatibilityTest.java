@@ -71,6 +71,7 @@ public abstract class CompatibilityTest {
         scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
                 .pollingInterval(Duration.ofMillis(10))
                 .heartbeatInterval(Duration.ofMillis(100))
+                .schedulerName(new SchedulerName.Fixed("test"))
                 .statsRegistry(statsRegistry)
                 .build();
         stopScheduler.register(scheduler);

@@ -19,7 +19,7 @@
         <hsqldb.version>2.3.3</hsqldb.version>
         <java8-matchers.version>1.6</java8-matchers.version>
         <equals-verifier.version>3.1.12</equals-verifier.version>
-        <micro-jdbc.version>0.1</micro-jdbc.version>
+        <micro-jdbc.version>0.2</micro-jdbc.version>
         <otj-pg-embedded.version>0.11.4</otj-pg-embedded.version>
         <postgresql.version>9.4.1207</postgresql.version>
         <slf4j.version>1.7.7</slf4j.version>
@@ -110,6 +110,11 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>mysql</artifactId>

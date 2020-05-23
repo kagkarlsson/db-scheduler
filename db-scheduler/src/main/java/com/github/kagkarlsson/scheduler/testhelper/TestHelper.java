@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler.testhelper;
 
+import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
@@ -65,7 +66,7 @@ public class TestHelper {
 
         public ManualScheduler build() {
             final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
-            final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, new DefaultJdbcCustomization(), tableName, taskResolver, schedulerName, serializer);
+            final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, new DefaultJdbcCustomization(), tableName, taskResolver, new SchedulerName.Fixed("manual"), serializer);
 
             return new ManualScheduler(clock, taskRepository, taskResolver, executorThreads, new DirectExecutorService(), schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, deleteUnresolvedAfter, startTasks);
         }
