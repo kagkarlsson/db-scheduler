@@ -41,7 +41,7 @@ public class ImmediateExecutionTest {
 
     @Test
     public void test_immediate_execution() {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
 
             Instant now = Instant.now();
             OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);

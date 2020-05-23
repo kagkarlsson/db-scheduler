@@ -30,7 +30,7 @@ public class DeadExecutionTest {
 
     @Test
     public void test_dead_execution() {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
             CustomTask<Void> customTask = Tasks.custom("custom-a", Void.class)
                 .execute((taskInstance, executionContext) -> new CompletionHandler<Void>() {
                     @Override

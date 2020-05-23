@@ -59,7 +59,7 @@ public class ExecutorPoolTest {
 
 
     private void testExecuteUntilNoneLeft(int pollingLimit, int threads, int executionsToRun) {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
 
             Instant now = Instant.now();
             OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
