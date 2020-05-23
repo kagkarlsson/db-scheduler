@@ -3,7 +3,7 @@
     <parent>
         <artifactId>db-scheduler-parent</artifactId>
         <groupId>com.github.kagkarlsson</groupId>
-        <version>6.10-SNAPSHOT</version>
+        <version>master-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
