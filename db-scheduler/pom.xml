@@ -42,6 +42,11 @@
             <artifactId>cron-utils</artifactId>
             <version>${cron-utils.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <optional>true</optional>
+        </dependency>
 
         <!-- Test -->
         <dependency>
