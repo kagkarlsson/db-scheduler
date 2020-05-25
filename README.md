@@ -16,6 +16,17 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * **Simple**.
 * **Minimal dependencies**. (slf4j)
 
+## Who uses db-scheduler?
+
+List of organizations known to be running db-scheduler in production:
+
+| Company                          | Description                                                  |
+|----------------------------------|--------------------------------------------------------------|
+| [Digipost](https://digipost.no)  | A Norwegian provider of digital secure mailboxes             |
+| [Vy Group](https://www.vy.no/en) | One of the largest transport groups in the Nordic countries. |
+
+Feel free to open a PR to add your organization to the list.
+
 ## Getting started
 
 1. Add maven dependency
