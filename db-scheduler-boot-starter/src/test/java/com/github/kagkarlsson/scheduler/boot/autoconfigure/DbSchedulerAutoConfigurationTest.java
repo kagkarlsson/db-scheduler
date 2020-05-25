@@ -5,22 +5,31 @@ import static org.assertj.core.api.Assertions.fail;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
+import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry.DefaultStatsRegistry;
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.google.common.collect.ImmutableList;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -37,7 +46,10 @@ public class DbSchedulerAutoConfigurationTest {
                 "spring.application.name=db-scheduler-boot-starter-test",
                 "spring.profiles.active=integration-test"
             ).withConfiguration(AutoConfigurations.of(
-                DataSourceAutoConfiguration.class, DbSchedulerAutoConfiguration.class
+                DataSourceAutoConfiguration.class,
+                MetricsAutoConfiguration.class,
+                CompositeMeterRegistryAutoConfiguration.class,
+                DbSchedulerAutoConfiguration.class
             ));
     }
 
@@ -92,6 +104,9 @@ public class DbSchedulerAutoConfigurationTest {
             .withPropertyValues("db-scheduler.enabled=false")
             .run((AssertableApplicationContext ctx) -> {
                 assertThat(ctx).doesNotHaveBean(Scheduler.class);
+                assertThat(ctx).doesNotHaveBean(DbSchedulerStarter.class);
+                assertThat(ctx).doesNotHaveBean(DbSchedulerCustomizer.class);
+                assertThat(ctx).doesNotHaveBean(DbSchedulerHealthIndicator.class);
             });
     }
 
@@ -133,6 +148,33 @@ public class DbSchedulerAutoConfigurationTest {
                 assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
                 assertThat(ctx).doesNotHaveBean(ContextReadyStart.class);
                 assertThat(ctx).doesNotHaveBean(ImmediateStart.class);
+            });
+    }
+
+    @Test
+    public void it_should_provide_micrometer_registry_if_micrometer_is_present() {
+        ctxRunner.withUserConfiguration(SingleTaskConfiguration.class)
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(MicrometerStatsRegistry.class);
+            });
+    }
+
+    @Test
+    public void it_should_provide_noop_registry_if_micrometer_not_present() {
+        ctxRunner.withUserConfiguration(SingleTaskConfiguration.class)
+            .withClassLoader(new FilteredClassLoader(Meter.class, MeterRegistry.class))
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(DefaultStatsRegistry.class);
+            });
+    }
+
+    @Test
+    public void it_should_use_custom_stats_registry_if_present_in_context() {
+        ctxRunner.withUserConfiguration(CustomStatsRegistry.class)
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(StatsRegistry.class);
+                assertThat(ctx).doesNotHaveBean(DefaultStatsRegistry.class);
+                assertThat(ctx).doesNotHaveBean(MicrometerStatsRegistry.class);
             });
     }
 
@@ -181,6 +223,26 @@ public class DbSchedulerAutoConfigurationTest {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    @Configuration
+    static class CustomStatsRegistry extends SingleTaskConfiguration {
+        @Bean
+        StatsRegistry customStatsRegistry() {
+            return new StatsRegistry() {
+                @Override
+                public void register(SchedulerStatsEvent e) {}
+
+                @Override
+                public void register(CandidateStatsEvent e) {}
+
+                @Override
+                public void register(ExecutionStatsEvent e) {}
+
+                @Override
+                public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {}
+            };
         }
     }
 
