@@ -20,10 +20,12 @@ import com.github.kagkarlsson.scheduler.task.Task;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,7 +43,25 @@ public class MicrometerStatsRegistry implements StatsRegistry {
     }
 
     private void initializeMetricsForAllTasks(List<? extends Task<?>> expectedTasks) {
-        expectedTasks.forEach(t -> metricsMap.put(t.getName(), new MetricsHolder(t.getName())));
+        expectedTasks.forEach(task -> getOrInitMetricHolder(task.getName()));
+    }
+
+    private MetricsHolder getOrInitMetricHolder(String taskName) {
+        MetricsHolder preSynchronizedValue = metricsMap.get(taskName);
+        if (preSynchronizedValue != null) {
+            return preSynchronizedValue;
+        } else {
+            // Thread-safe init
+            synchronized (this) {
+                MetricsHolder currentValue = metricsMap.get(taskName);
+                if (currentValue == null) {
+                    currentValue = new MetricsHolder(taskName);
+                    metricsMap.put(taskName, currentValue);
+                }
+                return currentValue;
+            }
+        }
+
     }
 
     @Override
@@ -61,12 +81,9 @@ public class MicrometerStatsRegistry implements StatsRegistry {
 
     @Override
     public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {
-        MetricsHolder metrics = getMetrics(completeEvent.getExecution().taskInstance.getTaskName());
+        String taskName = completeEvent.getExecution().taskInstance.getTaskName();
+        MetricsHolder metrics = getOrInitMetricHolder(taskName);
         metrics.registerExecution(completeEvent);
-    }
-
-    private synchronized MetricsHolder getMetrics(String taskName) {
-        return metricsMap.get(taskName);
     }
 
     private class MetricsHolder {
@@ -74,9 +91,10 @@ public class MicrometerStatsRegistry implements StatsRegistry {
         private final AtomicLong lastRunTimestampForTask = new AtomicLong(0);
         private final Counter successesForTask;
         private final Counter failuresForTask;
+        private final Timer durationsForTask;
 
         MetricsHolder(String taskName) {
-            Gauge.builder("dbscheduler_task_last_run_duration_seconds", lastDurationForTask::get)
+            Gauge.builder("dbscheduler_task_last_run_duration", lastDurationForTask::get)
                 .description("Duration in seconds for last execution of this task")
                 .tag("task", taskName)
                 .register(meterRegistry);
@@ -86,16 +104,21 @@ public class MicrometerStatsRegistry implements StatsRegistry {
                 .tag("task", taskName)
                 .register(meterRegistry);
 
-            successesForTask = Counter.builder("dbscheduler_task_completions_total")
+            successesForTask = Counter.builder("dbscheduler_task_completions")
                 .description("Successes and failures by task")
                 .tag("task", taskName)
                 .tag("result", RESULT_SUCCESS)
                 .register(meterRegistry);
 
-            failuresForTask = Counter.builder("dbscheduler_task_completions_total")
+            failuresForTask = Counter.builder("dbscheduler_task_completions")
                 .description("Successes and failures by task")
                 .tag("task", taskName)
                 .tag("result", RESULT_FAILURE)
+                .register(meterRegistry);
+
+            durationsForTask = Timer.builder("dbscheduler_task_duration_total")
+                .description("Duration of executions")
+                .tag("task", taskName)
                 .register(meterRegistry);
         }
 
@@ -103,6 +126,7 @@ public class MicrometerStatsRegistry implements StatsRegistry {
             lastDurationForTask.set((completeEvent.getDuration().toNanos()) / 1E9);
             lastRunTimestampForTask.set(completeEvent.getTimeDone().getEpochSecond());
 
+            durationsForTask.record(completeEvent.getDuration().toMillis(), TimeUnit.MILLISECONDS);
             if (completeEvent.getResult() == ExecutionComplete.Result.OK) {
                 successesForTask.increment();
             } else {
