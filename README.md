@@ -18,11 +18,13 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 
 ## Who uses db-scheduler?
 
-db-scheduler is used by many individuals and businesses. Feel free to open a PR to add your company to the list.
+List of organizations known to be running db-scheduler in production:
 
 | Company                         | Description                                      |
 |---------------------------------|--------------------------------------------------|
 | [Digipost](https://digipost.no) | A Norwegian provider of digital secure mailboxes |
+
+Feel free to open a PR to add your organization to the list.
 
 ## Getting started
 
