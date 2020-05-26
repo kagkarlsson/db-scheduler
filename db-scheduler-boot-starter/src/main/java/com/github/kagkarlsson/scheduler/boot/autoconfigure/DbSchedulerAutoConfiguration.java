@@ -24,8 +24,11 @@ import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
+import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -35,6 +38,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
 import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -51,7 +56,12 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 @Configuration
 @EnableConfigurationProperties(DbSchedulerProperties.class)
 @AutoConfigurationPackage
-@AutoConfigureAfter({DataSourceAutoConfiguration.class, HealthIndicatorAutoConfiguration.class})
+@AutoConfigureAfter({
+    DataSourceAutoConfiguration.class,
+    HealthIndicatorAutoConfiguration.class,
+    MetricsAutoConfiguration.class,
+    CompositeMeterRegistryAutoConfiguration.class,
+})
 @ConditionalOnBean(DataSource.class)
 @ConditionalOnProperty(value = "db-scheduler.enabled", matchIfMissing = true)
 public class DbSchedulerAutoConfiguration {
@@ -79,10 +89,26 @@ public class DbSchedulerAutoConfiguration {
         };
     }
 
+    @ConditionalOnClass(MeterRegistry.class)
+    @ConditionalOnBean(MeterRegistry.class)
+    @ConditionalOnMissingBean(StatsRegistry.class)
+    @Bean
+    StatsRegistry micrometerStatsRegistry(MeterRegistry registry) {
+        log.debug("Missing StatsRegistry bean in context but Micrometer detected. Will use: {}", registry.getClass().getName());
+        return new MicrometerStatsRegistry(registry, configuredTasks);
+    }
+
+    @ConditionalOnMissingBean(StatsRegistry.class)
+    @Bean
+    StatsRegistry noopStatsRegistry() {
+        log.debug("Missing StatsRegistry bean in context, creating a no-op StatsRegistry");
+        return StatsRegistry.NOOP;
+    }
+
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnMissingBean
     @Bean(destroyMethod = "stop")
-    public Scheduler scheduler(DbSchedulerCustomizer customizer) {
+    public Scheduler scheduler(DbSchedulerCustomizer customizer, StatsRegistry registry) {
         log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
 
         // Ensure that we are using a transactional aware data source
@@ -123,6 +149,9 @@ public class DbSchedulerAutoConfiguration {
 
         // Add recurring jobs and jobs that implements OnStartup
         builder.startTasks(startupTasks(configuredTasks));
+
+        // Expose metrics
+        builder.statsRegistry(registry);
 
         return builder.build();
     }
