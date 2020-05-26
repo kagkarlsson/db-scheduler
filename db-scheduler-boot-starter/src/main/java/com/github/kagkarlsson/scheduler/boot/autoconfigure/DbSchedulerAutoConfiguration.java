@@ -89,6 +89,7 @@ public class DbSchedulerAutoConfiguration {
         };
     }
 
+    @ConditionalOnClass(MeterRegistry.class)
     @ConditionalOnBean(MeterRegistry.class)
     @ConditionalOnMissingBean(StatsRegistry.class)
     @Bean
