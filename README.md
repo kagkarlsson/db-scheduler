@@ -23,7 +23,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>7.1</version>
+    <version>7.2</version>
 </dependency>
 ```
 
@@ -203,7 +203,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>7.1</version>
+        <version>7.2</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -278,6 +278,10 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 
 ## Versions / upgrading
+
+### Version 7.2
+* PR [#110](https://github.com/kagkarlsson/db-scheduler/pull/110) adds micrometer metrics support. Activated by setting `.statsRegistry(new MicrometerStatsRegistry(...))` on the builder. If you are using the Spring boot starter, the micrometer metrics will be added if you have micrometer on the classpath. 
+Contributions by [evenh](https://github.com/evenh).
 
 ### Version 7.1
 * PR [#109](https://github.com/kagkarlsson/db-scheduler/pull/109) fixes db-scheduler for data sources returning connections where `autoCommit=false`. db-scheduler will now issue an explicit `commit` for these cases.
