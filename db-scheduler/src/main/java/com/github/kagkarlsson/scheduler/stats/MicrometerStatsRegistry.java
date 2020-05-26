@@ -116,7 +116,7 @@ public class MicrometerStatsRegistry implements StatsRegistry {
                 .tag("result", RESULT_FAILURE)
                 .register(meterRegistry);
 
-            durationsForTask = Timer.builder("dbscheduler_task_duration_total")
+            durationsForTask = Timer.builder("dbscheduler_task_duration")
                 .description("Duration of executions")
                 .tag("task", taskName)
                 .register(meterRegistry);
