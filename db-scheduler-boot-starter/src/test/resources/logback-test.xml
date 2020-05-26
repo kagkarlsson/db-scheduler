@@ -6,7 +6,7 @@
         </encoder>
     </appender>
 
-    <logger level="DEBUG" name="com.github.kagkarlsson"/>
+    <logger level="INFO" name="com.github.kagkarlsson"/>
 
     <root level="WARN">
         <appender-ref ref="STDOUT"/>
