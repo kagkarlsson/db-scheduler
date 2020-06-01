@@ -1,20 +1,8 @@
 
 Todo?
 ---------------
-- implement a Optional<ScheduledExecution> SchedulerClient.get(taskInstance) method for getting a single executions
+- improve compatibility tasks, get rid of Thread.sleep
 
 - move getFailingExecutions(Duration failingAtLeastFor) into client
 
-- optimize scheduler to look an interval forward in time, and trigger next cycle earlier if there are an immediate execution
-  - keep a list if executions due between now and next interval
-
 - redesign api so that an ad-hoc task can be scheduled without having a reference to the Task-object
-
-- automatic tests for oracle and mysql using docker containers
-
-- profile for varying target db (hsql/postgresql) for tests
-
-- only update heartbeats if execution older than one heartbeat interval/cycles
-
-- cron schedule? (separate artifact if dependencies)
-   - https://github.com/jmrozanec/cron-utils

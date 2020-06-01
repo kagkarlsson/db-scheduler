@@ -86,7 +86,7 @@ public abstract class CompatibilityTest {
 
     @Test
     public void test_compatibility() {
-        assertTimeout(Duration.ofSeconds(20), () -> {
+        assertTimeout(Duration.ofSeconds(10), () -> {
             scheduler.start();
 
             scheduler.schedule(oneTime.instance("id1"), Instant.now());
@@ -96,7 +96,7 @@ public abstract class CompatibilityTest {
             scheduler.schedule(recurring.instance("id3"), Instant.now());
             scheduler.schedule(recurring.instance("id4"), Instant.now());
 
-            sleep(Duration.ofSeconds(10));
+            sleep(Duration.ofSeconds(1));
 
             scheduler.stop();
             assertThat(statsRegistry.unexpectedErrors.get(), is(0));
