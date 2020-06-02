@@ -1,0 +1,29 @@
+name: db-scheduler/integration-tests
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '8', '11' ]
+    name: AdoptOpenJDK ${{ matrix.java }}
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Java ${{ matrix.java }}
+      uses: joschi/setup-jdk@v2
+      with:
+        java-version: ${{ matrix.java }}
+
+    - name: Configure Maven cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Run all tests
+      run: mvn -Pcompatibility clean test --file pom.xml
+      env:
+        TZ: UTC
