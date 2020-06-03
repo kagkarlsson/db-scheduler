@@ -26,7 +26,10 @@ import java.util.function.Consumer;
 public interface TaskRepository {
 
     boolean createIfNotExists(Execution execution);
+    // fetch-(then-pick-later)
     List<Execution> getDue(Instant now, int limit);
+    // fetch-and-pick
+    List<Execution> pickDue(Instant now, int limit);
     void getScheduledExecutions(Consumer<Execution> consumer);
     void getScheduledExecutions(String taskName, Consumer<Execution> consumer);
 
@@ -45,4 +48,5 @@ public interface TaskRepository {
     Optional<Execution> getExecution(String taskName, String taskInstanceId);
 
     int removeExecutions(String taskName);
+
 }

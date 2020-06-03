@@ -1,14 +1,15 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
+import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.PollingStrategy;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
-import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -16,6 +17,7 @@ import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.google.common.collect.Lists;
+import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeout;
 public abstract class CompatibilityTest {
 
     private static final int POLLING_LIMIT = 10_000;
+    private final boolean supportsSelectForUpdate;
 
     @RegisterExtension
     public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
@@ -54,7 +57,10 @@ public abstract class CompatibilityTest {
     private RecurringTask<Void> recurring;
     private RecurringTask<Integer> recurringWithData;
     private TestTasks.SimpleStatsRegistry statsRegistry;
-    private Scheduler scheduler;
+
+    public CompatibilityTest(boolean supportsSelectForUpdate) {
+        this.supportsSelectForUpdate = supportsSelectForUpdate;
+    }
 
     public abstract DataSource getDataSource();
 
@@ -68,13 +74,6 @@ public abstract class CompatibilityTest {
         recurringWithData = TestTasks.recurringWithData("recurringWithData", Integer.class, 0, FixedDelay.of(Duration.ofMillis(10)), new DoNothingHandler<>());
 
         statsRegistry = new TestTasks.SimpleStatsRegistry();
-        scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
-                .pollingInterval(Duration.ofMillis(10))
-                .heartbeatInterval(Duration.ofMillis(100))
-                .schedulerName(new SchedulerName.Fixed("test"))
-                .statsRegistry(statsRegistry)
-                .build();
-        stopScheduler.register(scheduler);
     }
 
     @AfterEach
@@ -86,6 +85,37 @@ public abstract class CompatibilityTest {
 
     @Test
     public void test_compatibility() {
+        Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
+            .pollingInterval(Duration.ofMillis(10))
+            .heartbeatInterval(Duration.ofMillis(100))
+            .schedulerName(new SchedulerName.Fixed("test"))
+            .statsRegistry(statsRegistry)
+            .build();
+        stopScheduler.register(scheduler);
+
+        testCompatibilityForSchedulerConfiguration(scheduler);
+    }
+
+    @Test
+    public void test_select_for_update_compatibility() {
+        if (!supportsSelectForUpdate) {
+            return;
+        }
+
+        Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
+            .pollingInterval(Duration.ofMillis(10))
+            .pollingStrategy(PollingStrategy.LOCK_CANDIDATE_USING_SELECT_FOR_UPDATE)
+            .heartbeatInterval(Duration.ofMillis(100))
+            .schedulerName(new SchedulerName.Fixed("test"))
+            .statsRegistry(statsRegistry)
+            .pollingStrategy(PollingStrategy.LOCK_CANDIDATE_USING_SELECT_FOR_UPDATE)
+            .build();
+        stopScheduler.register(scheduler);
+
+        testCompatibilityForSchedulerConfiguration(scheduler);
+    }
+
+    private void testCompatibilityForSchedulerConfiguration(Scheduler scheduler) {
         assertTimeout(Duration.ofSeconds(10), () -> {
             scheduler.start();
 
@@ -117,6 +147,28 @@ public abstract class CompatibilityTest {
         assertTimeout(Duration.ofSeconds(20), () -> {
             doJDBCRepositoryCompatibilityTestUsingData("my data");
         });
+    }
+
+    @Test
+    public void test_jdbc_repository_select_for_update_compatibility() {
+        if (!supportsSelectForUpdate) {
+            return;
+        }
+
+        TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+        taskResolver.addTask(oneTime);
+
+        DataSource dataSource = getDataSource();
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+
+        final Instant now = Instant.now();
+
+        jdbcTaskRepository.createIfNotExists(new Execution(now.plusSeconds(10), oneTime.instance("future1")));
+        jdbcTaskRepository.createIfNotExists(new Execution(now, oneTime.instance("id1")));
+        List<Execution> picked = jdbcTaskRepository.pickDue(now, POLLING_LIMIT);
+        assertThat(picked, IsCollectionWithSize.hasSize(1));
+
+        assertThat(jdbcTaskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
     }
 
     private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
@@ -155,6 +207,14 @@ public abstract class CompatibilityTest {
         assertThat(rescheduled.get().pickedBy, nullValue());
         assertThat(rescheduled.get().taskInstance.getData(), is(data));
         jdbcTaskRepository.remove(rescheduled.get());
+
+        // Test pickDue (select for update)
+        final TaskInstance<String> instance2 = oneTime.instance("id2", data);
+        jdbcTaskRepository.createIfNotExists(new Execution(now, taskInstance));
+
+        List<Execution> pickedDue = jdbcTaskRepository.pickDue(now, POLLING_LIMIT);
+        assertThat(pickedDue, hasSize(1));
+        jdbcTaskRepository.remove(pickedDue.get(0));
     }
 
     @Test

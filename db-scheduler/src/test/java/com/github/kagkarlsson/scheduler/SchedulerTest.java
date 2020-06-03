@@ -1,6 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -49,7 +48,7 @@ public class SchedulerTest {
         final StatsRegistry statsRegistry = StatsRegistry.NOOP;
         TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, Arrays.asList(tasks));
         JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
-        return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, statsRegistry, 10_000, Duration.ofDays(14), new ArrayList<>());
+        return new Scheduler(clock, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, statsRegistry, 10_000, PollingStrategy.FETCH_CANDIDATES_THEN_LOCK_USING_OPTIMISTIC_LOCKING, Duration.ofDays(14), new ArrayList<>());
     }
 
     @Test
@@ -60,11 +59,11 @@ public class SchedulerTest {
         Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
         scheduler.schedule(oneTimeTask.instance("1"), executionTime);
 
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(handler.timesExecuted, is(0));
 
         clock.set(executionTime);
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(handler.timesExecuted, is(1));
     }
 
@@ -79,15 +78,15 @@ public class SchedulerTest {
         scheduler.schedule(oneTimeTaskInstance, executionTime);
         Instant reScheduledExecutionTime = clock.now().plus(Duration.ofMinutes(2));
         scheduler.reschedule(oneTimeTaskInstance, reScheduledExecutionTime);
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(handler.timesExecuted, is(0));
 
         clock.set(executionTime);
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(handler.timesExecuted, is(0));
 
         clock.set(reScheduledExecutionTime);
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(handler.timesExecuted, is(1));
     }
 
@@ -101,11 +100,11 @@ public class SchedulerTest {
         TaskInstance<Void> oneTimeTaskInstance = oneTimeTask.instance(instanceId);
         scheduler.schedule(oneTimeTaskInstance, executionTime);
         scheduler.cancel(oneTimeTaskInstance);
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(handler.timesExecuted, is(0));
 
         clock.set(executionTime);
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(handler.timesExecuted, is(0));
     }
 
@@ -115,13 +114,13 @@ public class SchedulerTest {
         Scheduler scheduler = schedulerFor(recurringTask);
 
         scheduler.schedule(recurringTask.instance("single"), clock.now());
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
 
         assertThat(handler.timesExecuted, is(1));
 
         Instant nextExecutionTime = clock.now().plus(Duration.ofHours(1));
         clock.set(nextExecutionTime);
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(handler.timesExecuted, is(2));
     }
 
@@ -132,7 +131,7 @@ public class SchedulerTest {
         Scheduler scheduler = schedulerFor(Executors.newSingleThreadExecutor(), oneTimeTask);
 
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         pausingHandler.waitForExecute.await();
 
         assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));
@@ -152,7 +151,7 @@ public class SchedulerTest {
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
 //        failureHandler.waitForNotify.await();
 
         assertThat(failureHandler.result, is(ExecutionComplete.Result.FAILED));

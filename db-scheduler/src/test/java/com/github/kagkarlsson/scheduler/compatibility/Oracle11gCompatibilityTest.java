@@ -19,6 +19,10 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
     private static final OracleContainer ORACLE = new OracleContainer("oracleinanutshell/oracle-xe-11g:1.0.0");
     private static HikariDataSource pooledDatasource;
 
+    public Oracle11gCompatibilityTest() {
+        super(true);
+    }
+
     @BeforeAll
     private static void initSchema() {
         final DriverDataSource datasource = new DriverDataSource(ORACLE.getJdbcUrl(), "oracle.jdbc.OracleDriver", new Properties(), ORACLE.getUsername(), ORACLE.getPassword());

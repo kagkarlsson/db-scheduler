@@ -12,6 +12,10 @@ public class PostgresqlCompatibilityTest extends CompatibilityTest {
     @RegisterExtension
     public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
 
+    private PostgresqlCompatibilityTest() {
+        super(true);
+    }
+
     @Override
     public DataSource getDataSource() {
         return postgres.getDataSource();

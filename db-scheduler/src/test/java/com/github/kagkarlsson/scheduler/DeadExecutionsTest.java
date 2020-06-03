@@ -1,6 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
@@ -70,6 +69,7 @@ public class DeadExecutionsTest {
                 false,
                 StatsRegistry.NOOP,
                 POLLING_LIMIT,
+                PollingStrategy.FETCH_CANDIDATES_THEN_LOCK_USING_OPTIMISTIC_LOCKING,
                 Duration.ofDays(14),
                 new ArrayList<>());
 
@@ -109,10 +109,10 @@ public class DeadExecutionsTest {
         final Execution execution1 = new Execution(oneHourAgo, taskInstance);
         jdbcTaskRepository.createIfNotExists(execution1);
 
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
 
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
 
         settableClock.set(Instant.now());
@@ -122,7 +122,7 @@ public class DeadExecutionsTest {
 
         settableClock.set(Instant.now());
 
-        scheduler.executeDue();
+        scheduler.fetchPickAndExecuteDue();
         assertThat(nonCompletingExecutionHandler.timesExecuted, is(2));
     }
 

@@ -26,9 +26,11 @@ import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
@@ -46,6 +48,7 @@ public class Scheduler implements SchedulerClient {
     private int threadpoolSize;
     private final ExecutorService executorService;
     private final Waiter executeDueWaiter;
+    private final PollingStrategy pollingStrategy;
     private final Duration deleteUnresolvedAfter;
     protected final List<OnStartup> onStartup;
     private final Waiter detectDeadWaiter;
@@ -61,13 +64,14 @@ public class Scheduler implements SchedulerClient {
     private int currentGenerationNumber = 1;
 
     protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
-              Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, List<OnStartup> onStartup) {
+                        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, PollingStrategy pollingStrategy, Duration deleteUnresolvedAfter, List<OnStartup> onStartup) {
         this.clock = clock;
         this.taskRepository = taskRepository;
         this.taskResolver = taskResolver;
         this.threadpoolSize = threadpoolSize;
         this.executorService = executorService;
         this.executeDueWaiter = executeDueWaiter;
+        this.pollingStrategy = pollingStrategy;
         this.deleteUnresolvedAfter = deleteUnresolvedAfter;
         this.onStartup = onStartup;
         this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
@@ -87,7 +91,14 @@ public class Scheduler implements SchedulerClient {
 
         executeOnStartup();
 
-        dueExecutor.submit(new RunUntilShutdown(this::executeDue, executeDueWaiter, schedulerState, statsRegistry));
+        Runnable executeDueStrategy;
+        if (pollingStrategy == PollingStrategy.LOCK_CANDIDATE_USING_SELECT_FOR_UPDATE) {
+            executeDueStrategy = this::pickAndExecuteDue;
+        } else {
+            executeDueStrategy = this::fetchPickAndExecuteDue;
+        }
+
+        dueExecutor.submit(new RunUntilShutdown(executeDueStrategy, executeDueWaiter, schedulerState, statsRegistry));
         detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter, schedulerState, statsRegistry));
         updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter, schedulerState, statsRegistry));
 
@@ -184,16 +195,63 @@ public class Scheduler implements SchedulerClient {
         return new ArrayList<>(currentlyProcessing.values());
     }
 
-    protected void executeDue() {
+    protected void fetchPickAndExecuteDue() {
         Instant now = clock.now();
         List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
         LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 
         int thisGenerationNumber = this.currentGenerationNumber + 1;
-        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(Scheduler.this.threadpoolSize, thisGenerationNumber, dueExecutions.size(), pollingLimit == dueExecutions.size());
+        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(
+            Scheduler.this.threadpoolSize,
+            thisGenerationNumber,
+            dueExecutions.size(),
+            pollingLimit == dueExecutions.size(),
+            actualExecutionsLeftInBatch -> actualExecutionsLeftInBatch <= threadpoolSize * 0.5);
 
         for (Execution e : dueExecutions) {
-            executorService.execute(new PickAndExecute(e, newDueBatch));
+            executorService.execute(() -> {
+                Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
+                candidate.ifPresent(picked -> new ExecutePicked(picked).run());
+                newDueBatch.oneExecutionDone(this::triggerCheckForDueExecutions);
+            });
+        }
+        this.currentGenerationNumber = thisGenerationNumber;
+        statsRegistry.register(SchedulerStatsEvent.RAN_EXECUTE_DUE);
+    }
+
+    // Select for update strategy
+
+    protected void pickAndExecuteDue() {
+        Instant now = clock.now();
+
+        int freeThreads = threadpoolSize - currentlyProcessing.size();
+        if (freeThreads == 0) {
+            LOG.trace("No available threads. Will not poll for new executions.");
+            return;
+        }
+
+        List<Execution> pickedExecutions = taskRepository.pickDue(now, freeThreads); // we could increase limit here to "pre-pick" a number of executions so that the executors are always busy
+        LOG.trace("Picked {} taskinstances due for execution", pickedExecutions.size());
+
+        if (pickedExecutions.size() == 0) {
+            // No picked executions to execute
+            LOG.trace("No executions due.");
+            return;
+        }
+
+        int thisGenerationNumber = this.currentGenerationNumber + 1;
+        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(
+            Scheduler.this.threadpoolSize,
+            thisGenerationNumber,
+            pickedExecutions.size(),
+            pickedExecutions.size() == freeThreads,
+            actualExecutionsLeftInBatch -> actualExecutionsLeftInBatch <= threadpoolSize * 1.0); // check for new executions directly
+
+        for (Execution picked : pickedExecutions) {
+            executorService.execute(() -> {
+                new ExecutePicked(picked).run();
+                newDueBatch.oneExecutionDone(this::triggerCheckForDueExecutions);
+            });
         }
         this.currentGenerationNumber = thisGenerationNumber;
         statsRegistry.register(SchedulerStatsEvent.RAN_EXECUTE_DUE);
@@ -264,20 +322,20 @@ public class Scheduler implements SchedulerClient {
         return heartbeatInterval.multipliedBy(4);
     }
 
-    private class PickAndExecute implements Runnable {
+    private class PickDue implements Callable<Optional<Execution>> {
         private Execution candidate;
         private DueExecutionsBatch addedDueExecutionsBatch;
 
-        public PickAndExecute(Execution candidate, DueExecutionsBatch dueExecutionsBatch) {
+        public PickDue(Execution candidate, DueExecutionsBatch dueExecutionsBatch) {
             this.candidate = candidate;
             this.addedDueExecutionsBatch = dueExecutionsBatch;
         }
 
         @Override
-        public void run() {
+        public Optional<Execution> call() {
             if (schedulerState.isShuttingDown()) {
                 LOG.info("Scheduler has been shutdown. Skipping fetched due execution: " + candidate.taskInstance.getTaskAndInstance());
-                return;
+                return Optional.empty();
             }
 
             if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
@@ -285,7 +343,7 @@ public class Scheduler implements SchedulerClient {
                 addedDueExecutionsBatch.markBatchAsStale();
                 statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
                 LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
-                return;
+                return Optional.empty();
             }
 
             final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
@@ -294,19 +352,31 @@ public class Scheduler implements SchedulerClient {
                 // someone else picked id
                 LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
                 statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
-                return;
             }
 
-            currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
+            return pickedExecution;
+        }
+    }
+
+
+    private class ExecutePicked implements Runnable {
+        private final Execution pickedExecution;
+
+        public ExecutePicked(Execution pickedExecution) {
+            this.pickedExecution = pickedExecution;
+        }
+
+        @Override
+        public void run() {
+            currentlyProcessing.put(pickedExecution, new CurrentlyExecuting(pickedExecution, clock));
             try {
                 statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
-                executePickedExecution(pickedExecution.get());
+                executePickedExecution(pickedExecution);
             } finally {
-                if (currentlyProcessing.remove(pickedExecution.get()) == null) {
+                if (currentlyProcessing.remove(pickedExecution) == null) {
                     // May happen in rare circumstances (typically concurrency tests)
                     LOG.warn("Released execution was not found in collection of executions currently being processed. Should never happen.");
                 }
-                addedDueExecutionsBatch.oneExecutionDone(() -> triggerCheckForDueExecutions());
             }
         }
 

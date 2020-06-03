@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
@@ -320,6 +321,18 @@ public class JdbcTaskRepositoryTest {
         assertThat(taskResolverMissingTask.getUnresolved(), hasSize(1));
         assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
     }
+
+    @Test
+    public void pickdue_should_pick_due() {
+        Instant now = Instant.now();
+        taskRepository.createIfNotExists(new Execution(now.plusSeconds(10), oneTimeTask.instance("future1")));
+        taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
+        List<Execution> picked = taskRepository.pickDue(now, POLLING_LIMIT);
+        assertThat(picked, hasSize(1));
+
+        assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
+    }
+
 
     private void createDeadExecution(TaskInstance<Void> taskInstance, Instant timeDied) {
         taskRepository.createIfNotExists(new Execution(timeDied, taskInstance));
