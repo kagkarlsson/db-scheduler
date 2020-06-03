@@ -37,19 +37,30 @@ public class ClusterTest {
     public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
     @Test
-    public void test_concurrency() throws InterruptedException {
+    public void test_concurrency_optimistic_locking() throws InterruptedException {
+        testConcurrencyForPollingStrategy(PollingStrategy.FETCH_CANDIDATES_THEN_LOCK_USING_OPTIMISTIC_LOCKING);
+
+    }
+
+    @Test
+    public void test_concurrency_select_for_update() throws InterruptedException {
+        testConcurrencyForPollingStrategy(PollingStrategy.LOCK_CANDIDATE_USING_SELECT_FOR_UPDATE);
+
+    }
+
+    private void testConcurrencyForPollingStrategy(PollingStrategy pollingStrategy) {
         Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
 
-            final List<String> ids = IntStream.range(1, 1001).mapToObj(String::valueOf).collect(toList());
+            final List<String> ids = IntStream.range(1, 10001).mapToObj(String::valueOf).collect(toList());
 
             final CountDownLatch completeAllIds = new CountDownLatch(ids.size());
             final RecordResultAndStopExecutionOnComplete<Void> completed = new RecordResultAndStopExecutionOnComplete<>(
                 (id) -> completeAllIds.countDown());
-            final Task<Void> task = ComposableTask.customTask("Custom", Void.class, completed, new TestTasks.SleepingHandler<>(1));
+            final Task<Void> task = ComposableTask.customTask("Custom", Void.class, completed, new TestTasks.SleepingHandler<>(0));
 
             final TestTasks.SimpleStatsRegistry stats = new TestTasks.SimpleStatsRegistry();
-            final Scheduler scheduler1 = createScheduler("scheduler1", task, stats);
-            final Scheduler scheduler2 = createScheduler("scheduler2", task, stats);
+            final Scheduler scheduler1 = createScheduler("scheduler1", pollingStrategy, task, stats);
+            final Scheduler scheduler2 = createScheduler("scheduler2", pollingStrategy, task, stats);
 
             stopScheduler.register(scheduler1, scheduler2);
             scheduler1.start();
@@ -70,7 +81,6 @@ public class ClusterTest {
             assertThat(scheduler1.getCurrentlyExecuting(), hasSize(0));
             assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
         });
-
     }
 
     @Test
@@ -100,10 +110,14 @@ public class ClusterTest {
         });
     }
 
-    private Scheduler createScheduler(String name, Task<?> task, TestTasks.SimpleStatsRegistry stats) {
+    private Scheduler createScheduler(String name, PollingStrategy pollingStrategy, Task<?> task, TestTasks.SimpleStatsRegistry stats) {
         return Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
-                .schedulerName(new SchedulerName.Fixed(name)).pollingInterval(Duration.ofMillis(0))
-                .heartbeatInterval(Duration.ofMillis(100)).statsRegistry(stats).build();
+            .schedulerName(new SchedulerName.Fixed(name))
+            .pollingInterval(Duration.ofMillis(0))
+            .pollingStrategy(pollingStrategy)
+            .heartbeatInterval(Duration.ofMillis(100))
+            .statsRegistry(stats)
+            .build();
     }
 
     private Scheduler createSchedulerRecurring(String name, RecurringTask<?> task, TestTasks.SimpleStatsRegistry stats) {
@@ -112,7 +126,8 @@ public class ClusterTest {
             .schedulerName(new SchedulerName.Fixed(name))
             .pollingInterval(Duration.ofMillis(0))
             .heartbeatInterval(Duration.ofMillis(100))
-            .statsRegistry(stats).build();
+            .statsRegistry(stats)
+            .build();
     }
 
     private static class RecordResultAndStopExecutionOnComplete<T> implements CompletionHandler<T> {
