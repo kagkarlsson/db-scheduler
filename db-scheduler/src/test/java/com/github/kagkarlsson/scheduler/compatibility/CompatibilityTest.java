@@ -207,14 +207,6 @@ public abstract class CompatibilityTest {
         assertThat(rescheduled.get().pickedBy, nullValue());
         assertThat(rescheduled.get().taskInstance.getData(), is(data));
         jdbcTaskRepository.remove(rescheduled.get());
-
-        // Test pickDue (select for update)
-        final TaskInstance<String> instance2 = oneTime.instance("id2", data);
-        jdbcTaskRepository.createIfNotExists(new Execution(now, taskInstance));
-
-        List<Execution> pickedDue = jdbcTaskRepository.pickDue(now, POLLING_LIMIT);
-        assertThat(pickedDue, hasSize(1));
-        jdbcTaskRepository.remove(pickedDue.get(0));
     }
 
     @Test

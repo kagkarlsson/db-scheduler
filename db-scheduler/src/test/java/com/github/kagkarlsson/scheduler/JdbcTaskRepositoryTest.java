@@ -330,6 +330,8 @@ public class JdbcTaskRepositoryTest {
         List<Execution> picked = taskRepository.pickDue(now, POLLING_LIMIT);
         assertThat(picked, hasSize(1));
 
+        // should not be able to pick the same execution twice
+        assertThat(taskRepository.pickDue(now, POLLING_LIMIT), hasSize(0));
         assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
     }
 
