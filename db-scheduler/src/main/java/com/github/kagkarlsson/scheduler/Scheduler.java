@@ -125,18 +125,18 @@ public class Scheduler implements SchedulerClient {
         schedulerState.setIsShuttingDown();
 
         LOG.info("Shutting down Scheduler.");
-        if (!ExecutorUtils.shutdownAndAwaitTermination(dueExecutor, Duration.ofSeconds(5))) {
+        if (!ExecutorUtils.shutdownAndAwaitTermination(dueExecutor, Duration.ofSeconds(1), Duration.ofSeconds(5))) {
             LOG.warn("Failed to shutdown due-executor properly.");
         }
-        if (!ExecutorUtils.shutdownAndAwaitTermination(detectDeadExecutor, Duration.ofSeconds(5))) {
+        if (!ExecutorUtils.shutdownAndAwaitTermination(detectDeadExecutor, Duration.ofSeconds(1), Duration.ofSeconds(5))) {
             LOG.warn("Failed to shutdown detect-dead-executor properly.");
         }
-        if (!ExecutorUtils.shutdownAndAwaitTermination(updateHeartbeatExecutor, Duration.ofSeconds(5))) {
+        if (!ExecutorUtils.shutdownAndAwaitTermination(updateHeartbeatExecutor, Duration.ofSeconds(1), Duration.ofSeconds(5))) {
             LOG.warn("Failed to shutdown update-heartbeat-executor properly.");
         }
 
         LOG.info("Letting running executions finish. Will wait up to {}.", SHUTDOWN_WAIT);
-        if (ExecutorUtils.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT)) {
+        if (ExecutorUtils.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT, SHUTDOWN_WAIT)) {
             LOG.info("Scheduler stopped.");
         } else {
             LOG.warn("Scheduler stopped, but some tasks did not complete. Was currently running the following executions:\n{}",
