@@ -206,7 +206,7 @@ public class Scheduler implements SchedulerClient {
             thisGenerationNumber,
             dueExecutions.size(),
             pollingLimit == dueExecutions.size(),
-            actualExecutionsLeftInBatch -> actualExecutionsLeftInBatch <= threadpoolSize * 0.5);
+            actualExecutionsLeftInBatch -> actualExecutionsLeftInBatch <= threadpoolSize * 0.5); // TODO: refactor ratio into low-water mark and high-water mark
 
         for (Execution e : dueExecutions) {
             executorService.execute(() -> {
@@ -220,17 +220,17 @@ public class Scheduler implements SchedulerClient {
     }
 
     // Select for update strategy
-
     protected void pickAndExecuteDue() {
         Instant now = clock.now();
 
         int freeThreads = threadpoolSize - currentlyProcessing.size();
-        if (freeThreads == 0) {
-            LOG.trace("No available threads. Will not poll for new executions.");
-            return;
-        }
-
-        List<Execution> pickedExecutions = taskRepository.pickDue(now, freeThreads); // we could increase limit here to "pre-pick" a number of executions so that the executors are always busy
+        // TODO: do not fetch more executions if "queue" is bigger than "low-water mark"
+        // TODO: fetch up to "high-water mark" if "queue" is smaller than "low-water mark"
+        // TODO: configurable low- and high-water marks
+        // TODO: how to control not triggering fetch "too often"? i.e. what to do when database is "known" to be empty of due
+        //       - possible if we know what type of event triggered the new fetch (executeImmediate or low-water mark)
+        int limit = freeThreads + (threadpoolSize *2);
+        List<Execution> pickedExecutions = taskRepository.pickDue(now, limit);
         LOG.trace("Picked {} taskinstances due for execution", pickedExecutions.size());
 
         if (pickedExecutions.size() == 0) {
@@ -244,7 +244,7 @@ public class Scheduler implements SchedulerClient {
             Scheduler.this.threadpoolSize,
             thisGenerationNumber,
             pickedExecutions.size(),
-            pickedExecutions.size() == freeThreads,
+            pickedExecutions.size() == limit,
             actualExecutionsLeftInBatch -> actualExecutionsLeftInBatch <= threadpoolSize * 1.0); // check for new executions directly
 
         for (Execution picked : pickedExecutions) {
