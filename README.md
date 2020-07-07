@@ -4,7 +4,13 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler)
 [![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
-Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
+Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz. 
+
+As such, also appreciated by users ([link](https://github.com/kagkarlsson/db-scheduler/issues/115#issuecomment-649601944)): 
+
+> Your lib rocks! I'm so glad I got rid of Quartz and replaced it by yours which is way easier to handle!
+>
+> [cbarbosa2](https://github.com/cbarbosa2) 
 
 See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 
