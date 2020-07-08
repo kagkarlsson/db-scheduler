@@ -69,7 +69,7 @@ public class DeadExecutionsTest {
                 false,
                 StatsRegistry.NOOP,
                 POLLING_LIMIT,
-                PollingStrategy.FETCH_CANDIDATES_THEN_LOCK_USING_OPTIMISTIC_LOCKING,
+                PollingStrategyConfig.DEFAULT,
                 Duration.ofDays(14),
                 new ArrayList<>());
 
@@ -109,10 +109,10 @@ public class DeadExecutionsTest {
         final Execution execution1 = new Execution(oneHourAgo, taskInstance);
         jdbcTaskRepository.createIfNotExists(execution1);
 
-        scheduler.fetchPickAndExecuteDue();
+        scheduler.executeDueStrategy.run();
         assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
 
-        scheduler.fetchPickAndExecuteDue();
+        scheduler.executeDueStrategy.run();
         assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
 
         settableClock.set(Instant.now());
@@ -122,7 +122,7 @@ public class DeadExecutionsTest {
 
         settableClock.set(Instant.now());
 
-        scheduler.fetchPickAndExecuteDue();
+        scheduler.executeDueStrategy.run();
         assertThat(nonCompletingExecutionHandler.timesExecuted, is(2));
     }
 

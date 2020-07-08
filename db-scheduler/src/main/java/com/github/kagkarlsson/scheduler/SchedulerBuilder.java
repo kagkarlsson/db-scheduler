@@ -56,7 +56,7 @@ public class SchedulerBuilder {
     protected ExecutorService executorService;
     protected Duration deleteUnresolvedAfter = Duration.ofDays(14);
     protected JdbcCustomization jdbcCustomization = null;
-    private PollingStrategy pollingStrategy = PollingStrategy.FETCH_CANDIDATES_THEN_LOCK_USING_OPTIMISTIC_LOCKING;
+    private PollingStrategyConfig pollingStrategyConfig;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -147,8 +147,8 @@ public class SchedulerBuilder {
         return this;
     }
 
-    public SchedulerBuilder pollingStrategy(PollingStrategy pollingStrategy) {
-        this.pollingStrategy = pollingStrategy;
+    public SchedulerBuilder pollingStrategy(PollingStrategyConfig pollingStrategyConfig) {
+        this.pollingStrategyConfig = pollingStrategyConfig;
         return this;
     }
 
@@ -159,6 +159,14 @@ public class SchedulerBuilder {
 
         if (schedulerName == null) {
              schedulerName = new SchedulerName.Hostname();
+        }
+
+        // TODO: deprecate pollingLimit (or remove..)
+        if (pollingStrategyConfig == null) {
+            pollingStrategyConfig = new PollingStrategyConfig(
+                PollingStrategyConfig.Type.FETCH_DUE_EXECUTIONS_THEN_LOCK_BEFORE_EXECUTING,
+                (int) Math.round(executorThreads*0.5),
+                pollingLimit);
         }
 
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
@@ -178,7 +186,7 @@ public class SchedulerBuilder {
             tableName,
             schedulerName.getName());
         return new Scheduler(clock, taskRepository, taskResolver, executorThreads, candidateExecutorService,
-                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, pollingStrategy,
+                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, pollingStrategyConfig,
             deleteUnresolvedAfter, startTasks);
     }
 

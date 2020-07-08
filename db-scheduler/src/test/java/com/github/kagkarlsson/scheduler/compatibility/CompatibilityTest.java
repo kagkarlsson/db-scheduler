@@ -3,7 +3,7 @@ package com.github.kagkarlsson.scheduler.compatibility;
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.PollingStrategy;
+import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
@@ -104,11 +104,10 @@ public abstract class CompatibilityTest {
 
         Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
-            .pollingStrategy(PollingStrategy.LOCK_CANDIDATE_USING_SELECT_FOR_UPDATE)
+            .pollingStrategy(PollingStrategyConfig.DEFAULT_SELECT_FOR_UPDATE)
             .heartbeatInterval(Duration.ofMillis(100))
             .schedulerName(new SchedulerName.Fixed("test"))
             .statsRegistry(statsRegistry)
-            .pollingStrategy(PollingStrategy.LOCK_CANDIDATE_USING_SELECT_FOR_UPDATE)
             .build();
         stopScheduler.register(scheduler);
 

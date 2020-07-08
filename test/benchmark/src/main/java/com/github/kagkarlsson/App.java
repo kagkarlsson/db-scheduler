@@ -1,9 +1,8 @@
 package com.github.kagkarlsson;
 
 import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.github.kagkarlsson.scheduler.PollingStrategy;
+import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -34,8 +33,7 @@ public class App {
         });
 
         Scheduler scheduler = Scheduler.create(ds, task1)
-            .pollingStrategy(PollingStrategy.LOCK_CANDIDATE_USING_SELECT_FOR_UPDATE)
-//            .pollingLimit(200)
+            .pollingStrategy(PollingStrategyConfig.DEFAULT_SELECT_FOR_UPDATE)
             .statsRegistry(new BenchmarkStatsRegistry(metrics))
             .threads(100)
             .build();
