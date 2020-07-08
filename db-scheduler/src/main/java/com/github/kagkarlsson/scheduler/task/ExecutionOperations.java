@@ -50,4 +50,12 @@ public class ExecutionOperations<T> {
         }
     }
 
+    public void rescheduleAndResetFailures(Instant nextExecutionTime) {
+        taskRepository.reschedule(execution, nextExecutionTime, execution.lastSuccess, execution.lastFailure, 0);
+    }
+
+    public void rescheduleAndResetFailures(Instant nextExecutionTime, T newData) {
+        taskRepository.reschedule(execution, nextExecutionTime, newData, execution.lastSuccess, execution.lastFailure, 0);
+    }
+
 }
