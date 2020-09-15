@@ -38,6 +38,10 @@ public class SchedulerBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
     private static final int POLLING_CONCURRENCY_MULTIPLIER = 3;
 
+    public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(10);
+    public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMinutes(5);
+    public static final Duration DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION = Duration.ofDays(14);
+
     protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
 
     protected final DataSource dataSource;
@@ -45,16 +49,16 @@ public class SchedulerBuilder {
     protected int executorThreads = 10;
     protected final List<Task<?>> knownTasks = new ArrayList<>();
     protected final List<OnStartup> startTasks = new ArrayList<>();
-    protected Waiter waiter = new Waiter(Duration.ofSeconds(10), clock);
+    protected Waiter waiter = new Waiter(DEFAULT_POLLING_INTERVAL, clock);
     protected int pollingLimit;
     protected boolean useDefaultPollingLimit;
     protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
-    protected Duration heartbeatInterval = Duration.ofMinutes(5);
+    protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
     protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
     protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
     protected boolean enableImmediateExecution = false;
     protected ExecutorService executorService;
-    protected Duration deleteUnresolvedAfter = Duration.ofDays(14);
+    protected Duration deleteUnresolvedAfter = DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
     protected JdbcCustomization jdbcCustomization = null;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {

@@ -228,7 +228,7 @@ Configuration is mainly done via `application.properties`. Configuration of sche
 
 db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
-db-scheduler.polling-interval=30s
+db-scheduler.polling-interval=10s
 db-scheduler.polling-limit=
 db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
