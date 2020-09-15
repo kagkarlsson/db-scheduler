@@ -16,6 +16,7 @@
 package com.github.kagkarlsson.scheduler.boot.config;
 
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import java.time.Duration;
 import java.util.Optional;
 import javax.validation.constraints.NotNull;
@@ -43,7 +44,7 @@ public class DbSchedulerProperties {
      */
     @DurationUnit(MINUTES)
     @NotNull
-    private Duration heartbeatInterval = Duration.ofMinutes(5);
+    private Duration heartbeatInterval = SchedulerBuilder.DEFAULT_HEARTBEAT_INTERVAL;
 
     /**
      * <p>Name of this scheduler-instance. The name is stored in the database when an execution is
@@ -75,7 +76,7 @@ public class DbSchedulerProperties {
      */
     @DurationUnit(SECONDS)
     @NotNull
-    private Duration pollingInterval = Duration.ofSeconds(30);
+    private Duration pollingInterval = SchedulerBuilder.DEFAULT_POLLING_INTERVAL;
 
     /**
      * <p>Maximum number of executions to fetch on a check for due executions.
@@ -93,7 +94,7 @@ public class DbSchedulerProperties {
      */
     @DurationUnit(HOURS)
     @NotNull
-    private Duration deleteUnresolvedAfter = Duration.ofDays(14);
+    private Duration deleteUnresolvedAfter = SchedulerBuilder.DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
 
     public boolean isEnabled() {
         return enabled;

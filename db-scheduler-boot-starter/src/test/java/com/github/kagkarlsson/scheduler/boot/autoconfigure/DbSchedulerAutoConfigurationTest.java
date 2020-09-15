@@ -1,11 +1,15 @@
 package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 
+import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
+import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_HEARTBEAT_INTERVAL;
+import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_POLLING_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
@@ -62,6 +66,19 @@ public class DbSchedulerAutoConfigurationTest {
             ctx.getBean(Scheduler.class).getScheduledExecutions(execution -> {
                 fail("No scheduled executions should be present", execution);
             });
+        });
+    }
+
+    @Test
+    public void it_should_use_the_default_values_from_library() {
+        ctxRunner.run((AssertableApplicationContext ctx) -> {
+            assertThat(ctx).hasSingleBean(DataSource.class);
+            assertThat(ctx).hasSingleBean(Scheduler.class);
+
+            DbSchedulerProperties props = ctx.getBean(DbSchedulerProperties.class);
+            assertThat(props.getPollingInterval()).isEqualTo(DEFAULT_POLLING_INTERVAL);
+            assertThat(props.getHeartbeatInterval()).isEqualTo(DEFAULT_HEARTBEAT_INTERVAL);
+            assertThat(props.getDeleteUnresolvedAfter()).isEqualTo(DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION);
         });
     }
 
