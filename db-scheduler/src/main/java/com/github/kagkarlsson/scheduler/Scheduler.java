@@ -193,13 +193,12 @@ public class Scheduler implements SchedulerClient {
         List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
         LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 
-        int thisGenerationNumber = this.currentGenerationNumber + 1;
-        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(Scheduler.this.threadpoolSize, thisGenerationNumber, dueExecutions.size(), pollingLimit == dueExecutions.size());
+        this.currentGenerationNumber = this.currentGenerationNumber + 1;
+        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(Scheduler.this.threadpoolSize, currentGenerationNumber, dueExecutions.size(), pollingLimit == dueExecutions.size());
 
         for (Execution e : dueExecutions) {
             executorService.execute(new PickAndExecute(e, newDueBatch));
         }
-        this.currentGenerationNumber = thisGenerationNumber;
         statsRegistry.register(SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }
 
