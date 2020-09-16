@@ -40,20 +40,24 @@ public class ExecutorPoolTest {
 
     }
 
-    // TODO: flaky test
-    @Test
+    // FIXLATER: make into normal test when it is working properly
+    @RepeatedTest(10)
     public void test_execute_until_none_left_happy() {
+        DEBUG_LOG.info("Starting test_execute_until_none_left_happy");
         testExecuteUntilNoneLeft(2, 2, 20);
     }
 
-    @Test
+    // FIXLATER: make into normal test when it is working properly
+    @RepeatedTest(10)
     public void test_execute_until_none_left_low_polling_limit() {
+        DEBUG_LOG.info("Starting test_execute_until_none_left_low_polling_limit");
         testExecuteUntilNoneLeft(2, 10, 20);
     }
 
-    @Test
-    @Disabled //FIXLATER: Disabled because of flakiness. Need to investigate and re-enable
+    // FIXLATER: make into normal test when it is working properly
+    @RepeatedTest(10)
     public void test_execute_until_none_left_high_volume() {
+        DEBUG_LOG.info("Starting test_execute_until_none_left_high_volume");
         testExecuteUntilNoneLeft(12, 4, 200);
     }
 
