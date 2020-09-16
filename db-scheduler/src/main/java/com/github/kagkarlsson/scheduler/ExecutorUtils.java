@@ -28,6 +28,11 @@ public class ExecutorUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExecutorUtils.class);
 
+    public static boolean shutdownNowAndAwaitTermination(ExecutorService executorService, Duration timeout) {
+        executorService.shutdownNow();
+        return awaitTermination(executorService, timeout);
+    }
+
     public static boolean shutdownAndAwaitTermination(ExecutorService executorService, Duration timeout) {
         executorService.shutdown();
         boolean successfulShutdown = awaitTermination(executorService, timeout);

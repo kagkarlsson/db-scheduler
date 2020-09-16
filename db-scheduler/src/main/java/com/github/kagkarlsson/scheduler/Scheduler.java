@@ -106,6 +106,10 @@ public class Scheduler implements SchedulerClient {
     }
 
     public void stop() {
+        stop(Duration.ofSeconds(5));
+    }
+
+    void stop(Duration utilExecutorsAwaitTerminationDuration) {
         if (schedulerState.isShuttingDown()) {
             LOG.warn("Multiple calls to 'stop()'. Scheduler is already stopping.");
             return;
@@ -114,13 +118,13 @@ public class Scheduler implements SchedulerClient {
         schedulerState.setIsShuttingDown();
 
         LOG.info("Shutting down Scheduler.");
-        if (!ExecutorUtils.shutdownAndAwaitTermination(dueExecutor, Duration.ofSeconds(5))) {
+        if (!ExecutorUtils.shutdownNowAndAwaitTermination(dueExecutor, utilExecutorsAwaitTerminationDuration)) {
             LOG.warn("Failed to shutdown due-executor properly.");
         }
-        if (!ExecutorUtils.shutdownAndAwaitTermination(detectDeadExecutor, Duration.ofSeconds(5))) {
+        if (!ExecutorUtils.shutdownNowAndAwaitTermination(detectDeadExecutor, utilExecutorsAwaitTerminationDuration)) {
             LOG.warn("Failed to shutdown detect-dead-executor properly.");
         }
-        if (!ExecutorUtils.shutdownAndAwaitTermination(updateHeartbeatExecutor, Duration.ofSeconds(5))) {
+        if (!ExecutorUtils.shutdownNowAndAwaitTermination(updateHeartbeatExecutor, utilExecutorsAwaitTerminationDuration)) {
             LOG.warn("Failed to shutdown update-heartbeat-executor properly.");
         }
 
