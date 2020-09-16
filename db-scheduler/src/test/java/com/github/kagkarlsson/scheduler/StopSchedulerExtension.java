@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
+import java.time.Duration;
 import java.util.stream.Stream;
 
 public class StopSchedulerExtension implements AfterEachCallback {
@@ -14,7 +15,7 @@ public class StopSchedulerExtension implements AfterEachCallback {
     }
 
     @Override
-    public void afterEach(ExtensionContext extensionContext) throws Exception {
-        Stream.of(scheduler).forEach(Scheduler::stop);
+    public void afterEach(ExtensionContext extensionContext) {
+        Stream.of(scheduler).forEach(s -> s.stop(Duration.ofMillis(100)));
     }
 }

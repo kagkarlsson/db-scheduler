@@ -16,6 +16,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
+import com.github.kagkarlsson.scheduler.concurrent.LoggingRunnable;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.*;
@@ -106,6 +107,10 @@ public class Scheduler implements SchedulerClient {
     }
 
     public void stop() {
+        stop(Duration.ofSeconds(5));
+    }
+
+    void stop(Duration utilExecutorsAwaitTerminationDuration) {
         if (schedulerState.isShuttingDown()) {
             LOG.warn("Multiple calls to 'stop()'. Scheduler is already stopping.");
             return;
@@ -114,13 +119,13 @@ public class Scheduler implements SchedulerClient {
         schedulerState.setIsShuttingDown();
 
         LOG.info("Shutting down Scheduler.");
-        if (!ExecutorUtils.shutdownAndAwaitTermination(dueExecutor, Duration.ofSeconds(5))) {
+        if (!ExecutorUtils.shutdownNowAndAwaitTermination(dueExecutor, utilExecutorsAwaitTerminationDuration)) {
             LOG.warn("Failed to shutdown due-executor properly.");
         }
-        if (!ExecutorUtils.shutdownAndAwaitTermination(detectDeadExecutor, Duration.ofSeconds(5))) {
+        if (!ExecutorUtils.shutdownNowAndAwaitTermination(detectDeadExecutor, utilExecutorsAwaitTerminationDuration)) {
             LOG.warn("Failed to shutdown detect-dead-executor properly.");
         }
-        if (!ExecutorUtils.shutdownAndAwaitTermination(updateHeartbeatExecutor, Duration.ofSeconds(5))) {
+        if (!ExecutorUtils.shutdownNowAndAwaitTermination(updateHeartbeatExecutor, utilExecutorsAwaitTerminationDuration)) {
             LOG.warn("Failed to shutdown update-heartbeat-executor properly.");
         }
 
@@ -176,8 +181,8 @@ public class Scheduler implements SchedulerClient {
         return taskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
     }
 
-    public boolean triggerCheckForDueExecutions() {
-        return executeDueWaiter.wake();
+    public void triggerCheckForDueExecutions() {
+        executeDueWaiter.wakeOrSkipNextWait();
     }
 
     public List<CurrentlyExecuting> getCurrentlyExecuting() {
@@ -189,13 +194,12 @@ public class Scheduler implements SchedulerClient {
         List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
         LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 
-        int thisGenerationNumber = this.currentGenerationNumber + 1;
-        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(Scheduler.this.threadpoolSize, thisGenerationNumber, dueExecutions.size(), pollingLimit == dueExecutions.size());
+        this.currentGenerationNumber = this.currentGenerationNumber + 1;
+        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(Scheduler.this.threadpoolSize, currentGenerationNumber, dueExecutions.size(), pollingLimit == dueExecutions.size());
 
         for (Execution e : dueExecutions) {
             executorService.execute(new PickAndExecute(e, newDueBatch));
         }
-        this.currentGenerationNumber = thisGenerationNumber;
         statsRegistry.register(SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }
 
@@ -264,7 +268,7 @@ public class Scheduler implements SchedulerClient {
         return heartbeatInterval.multipliedBy(4);
     }
 
-    private class PickAndExecute implements Runnable {
+    private class PickAndExecute extends LoggingRunnable {
         private Execution candidate;
         private DueExecutionsBatch addedDueExecutionsBatch;
 
@@ -274,39 +278,43 @@ public class Scheduler implements SchedulerClient {
         }
 
         @Override
-        public void run() {
+        public void runButLogExceptions() {
             if (schedulerState.isShuttingDown()) {
                 LOG.info("Scheduler has been shutdown. Skipping fetched due execution: " + candidate.taskInstance.getTaskAndInstance());
                 return;
             }
 
-            if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
-                // skipping execution due to it being stale
-                addedDueExecutionsBatch.markBatchAsStale();
-                statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
-                LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
-                return;
-            }
-
-            final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
-
-            if (!pickedExecution.isPresent()) {
-                // someone else picked id
-                LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
-                statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
-                return;
-            }
-
-            currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
             try {
-                statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
-                executePickedExecution(pickedExecution.get());
-            } finally {
-                if (currentlyProcessing.remove(pickedExecution.get()) == null) {
-                    // May happen in rare circumstances (typically concurrency tests)
-                    LOG.warn("Released execution was not found in collection of executions currently being processed. Should never happen.");
+                if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
+                    // skipping execution due to it being stale
+                    addedDueExecutionsBatch.markBatchAsStale();
+                    statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
+                    LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
+                    return;
                 }
-                addedDueExecutionsBatch.oneExecutionDone(() -> triggerCheckForDueExecutions());
+
+                final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
+
+                if (!pickedExecution.isPresent()) {
+                    // someone else picked id
+                    LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
+                    statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
+                    return;
+                }
+
+                currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
+                try {
+                    statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
+                    executePickedExecution(pickedExecution.get());
+                } finally {
+                    if (currentlyProcessing.remove(pickedExecution.get()) == null) {
+                        // May happen in rare circumstances (typically concurrency tests)
+                        LOG.warn("Released execution was not found in collection of executions currently being processed. Should never happen.");
+                    }
+                }
+            } finally {
+                // Make sure 'executionsLeftInBatch' is decremented for all executions (run or not run)
+                addedDueExecutionsBatch.oneExecutionDone(Scheduler.this::triggerCheckForDueExecutions);
             }
         }
 
