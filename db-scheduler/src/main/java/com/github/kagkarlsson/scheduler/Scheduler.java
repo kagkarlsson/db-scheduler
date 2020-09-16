@@ -310,7 +310,10 @@ public class Scheduler implements SchedulerClient {
                     // May happen in rare circumstances (typically concurrency tests)
                     LOG.warn("Released execution was not found in collection of executions currently being processed. Should never happen.");
                 }
-                addedDueExecutionsBatch.oneExecutionDone(() -> triggerCheckForDueExecutions());
+                }
+            } finally {
+                // Make sure 'executionsLeftInBatch' is decremented for all executions (run or not run)
+                addedDueExecutionsBatch.oneExecutionDone(Scheduler.this::triggerCheckForDueExecutions);
             }
         }
 
