@@ -268,7 +268,7 @@ public class Scheduler implements SchedulerClient {
         return heartbeatInterval.multipliedBy(4);
     }
 
-    private class PickAndExecute implements Runnable {
+    private class PickAndExecute extends LoggingRunnable {
         private Execution candidate;
         private DueExecutionsBatch addedDueExecutionsBatch;
 
@@ -278,12 +278,13 @@ public class Scheduler implements SchedulerClient {
         }
 
         @Override
-        public void run() {
+        public void runButLogExceptions() {
             if (schedulerState.isShuttingDown()) {
                 LOG.info("Scheduler has been shutdown. Skipping fetched due execution: " + candidate.taskInstance.getTaskAndInstance());
                 return;
             }
 
+            try {
             if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
                 // skipping execution due to it being stale
                 addedDueExecutionsBatch.markBatchAsStale();
