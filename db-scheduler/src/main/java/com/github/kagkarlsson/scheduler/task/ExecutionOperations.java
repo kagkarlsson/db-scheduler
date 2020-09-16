@@ -19,10 +19,10 @@ import com.github.kagkarlsson.scheduler.TaskRepository;
 
 import java.time.Instant;
 
-public class ExecutionOperations<T> {
+public abstract class ExecutionOperations<T> {
 
-    private final TaskRepository taskRepository;
-    private final Execution execution;
+    protected final TaskRepository taskRepository;
+    protected final Execution execution;
 
     public ExecutionOperations(TaskRepository taskRepository, Execution execution) {
         this.taskRepository = taskRepository;
@@ -50,12 +50,16 @@ public class ExecutionOperations<T> {
         }
     }
 
-    public void rescheduleAndResetFailures(Instant nextExecutionTime) {
-        taskRepository.reschedule(execution, nextExecutionTime, execution.lastSuccess, execution.lastFailure, 0);
-    }
-
-    public void rescheduleAndResetFailures(Instant nextExecutionTime, T newData) {
-        taskRepository.reschedule(execution, nextExecutionTime, newData, execution.lastSuccess, execution.lastFailure, 0);
-    }
+//    public void rescheduleAndResetFailures(ExecutionComplete completed, Instant nextExecutionTime) {
+//        if (completed.getResult() == ExecutionComplete.Result.OK) {
+//            taskRepository.reschedule(execution, nextExecutionTime, completed.getTimeDone(), execution.lastFailure, 0);
+//        } else {
+//            taskRepository.reschedule(execution, nextExecutionTime, execution.lastSuccess, completed.getTimeDone(), 0);
+//        }
+//    }
+//
+//    public void rescheduleAndResetFailures(Instant nextExecutionTime, T newData) {
+//        taskRepository.reschedule(execution, nextExecutionTime, newData, execution.lastSuccess, execution.lastFailure, 0);
+//    }
 
 }
