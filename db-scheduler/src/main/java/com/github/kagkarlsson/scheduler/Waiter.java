@@ -29,6 +29,7 @@ public class Waiter {
     private final Duration duration;
     private Clock clock;
     private boolean isWaiting = false;
+    private boolean skipNextWait = false;
 
     public Waiter(Duration duration) {
         this(duration, new SystemClock());
@@ -45,7 +46,14 @@ public class Waiter {
     }
 
     public void doWait() throws InterruptedException {
-        final long millis = duration.toMillis();
+        if (skipNextWait) {
+            LOG.debug("Waiter has been notified to skip next wait-period. Skipping wait.");
+            skipNextWait = false;
+            return;
+        }
+
+        long millis = duration.toMillis();
+
         if (millis > 0) {
             Instant waitUntil = clock.now().plusMillis(millis);
 
@@ -74,6 +82,13 @@ public class Waiter {
                 lock.notify();
                 return true;
             }
+        }
+    }
+
+    public void wakeOrSkipNextWait() {
+        final boolean awoken = wake();
+        if (!awoken) {
+            this.skipNextWait = true;
         }
     }
 

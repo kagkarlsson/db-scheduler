@@ -32,10 +32,7 @@ public class DueExecutionsBatchTest {
 
     private void assertTrigger(int timesTriggered, int afterExeutionsHandled, DueExecutionsBatch batch) {
         AtomicInteger triggered = new AtomicInteger(0);
-        IntStream.range(0, afterExeutionsHandled).forEach(val -> batch.oneExecutionDone(() -> {
-            triggered.incrementAndGet();
-            return true;
-        }));
+        IntStream.range(0, afterExeutionsHandled).forEach(val -> batch.oneExecutionDone(triggered::incrementAndGet));
         assertEquals(timesTriggered, triggered.get());
     }
 

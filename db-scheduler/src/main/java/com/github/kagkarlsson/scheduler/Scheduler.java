@@ -16,6 +16,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
+import com.github.kagkarlsson.scheduler.concurrent.LoggingRunnable;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.*;
@@ -180,8 +181,8 @@ public class Scheduler implements SchedulerClient {
         return taskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
     }
 
-    public boolean triggerCheckForDueExecutions() {
-        return executeDueWaiter.wake();
+    public void triggerCheckForDueExecutions() {
+        executeDueWaiter.wakeOrSkipNextWait();
     }
 
     public List<CurrentlyExecuting> getCurrentlyExecuting() {
@@ -284,32 +285,32 @@ public class Scheduler implements SchedulerClient {
             }
 
             try {
-            if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
-                // skipping execution due to it being stale
-                addedDueExecutionsBatch.markBatchAsStale();
-                statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
-                LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
-                return;
-            }
-
-            final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
-
-            if (!pickedExecution.isPresent()) {
-                // someone else picked id
-                LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
-                statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
-                return;
-            }
-
-            currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
-            try {
-                statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
-                executePickedExecution(pickedExecution.get());
-            } finally {
-                if (currentlyProcessing.remove(pickedExecution.get()) == null) {
-                    // May happen in rare circumstances (typically concurrency tests)
-                    LOG.warn("Released execution was not found in collection of executions currently being processed. Should never happen.");
+                if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
+                    // skipping execution due to it being stale
+                    addedDueExecutionsBatch.markBatchAsStale();
+                    statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
+                    LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
+                    return;
                 }
+
+                final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
+
+                if (!pickedExecution.isPresent()) {
+                    // someone else picked id
+                    LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
+                    statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
+                    return;
+                }
+
+                currentlyProcessing.put(pickedExecution.get(), new CurrentlyExecuting(pickedExecution.get(), clock));
+                try {
+                    statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
+                    executePickedExecution(pickedExecution.get());
+                } finally {
+                    if (currentlyProcessing.remove(pickedExecution.get()) == null) {
+                        // May happen in rare circumstances (typically concurrency tests)
+                        LOG.warn("Released execution was not found in collection of executions currently being processed. Should never happen.");
+                    }
                 }
             } finally {
                 // Make sure 'executionsLeftInBatch' is decremented for all executions (run or not run)
