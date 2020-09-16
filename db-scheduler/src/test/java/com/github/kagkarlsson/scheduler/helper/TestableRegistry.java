@@ -25,7 +25,7 @@ public class TestableRegistry implements StatsRegistry {
 
     public TestableRegistry(boolean logEvents, List<Condition> waitConditions) {
         this.logEvents = logEvents;
-        this.waitConditions = waitConditions;
+        this.waitConditions = Collections.synchronizedList(waitConditions);
         this.completed = Collections.synchronizedList(new ArrayList<>());
         this.stats = Collections.synchronizedList(new ArrayList<>());
     }
