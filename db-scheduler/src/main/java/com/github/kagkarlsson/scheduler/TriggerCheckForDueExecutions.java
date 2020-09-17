@@ -49,7 +49,7 @@ class TriggerCheckForDueExecutions implements SchedulerClientEventListener {
             if (scheduledToExecutionTime.toEpochMilli() <= clock.now().toEpochMilli()) {
                 LOG.info("Task-instance scheduled to run directly, triggering check for due exections (unless it is already running). Task: {}, instance: {}",
                         ctx.getTaskInstanceId().getTaskName(), ctx.getTaskInstanceId().getId());
-                executeDueWaiter.wake();
+                executeDueWaiter.wakeOrSkipNextWait();
             }
         }
     }
