@@ -70,7 +70,7 @@ public class SchedulerClientTest {
         client.schedule(oneTimeTaskA.instance("1"), settableClock.now());
 
         scheduler.runAnyDueExecutions();
-        assertThat(onetimeTaskHandlerA.timesExecuted, CoreMatchers.is(1));
+        assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(1));
     }
 
     @Test
@@ -78,11 +78,11 @@ public class SchedulerClientTest {
         scheduler.schedule(scheduleAnotherTask.instance("1"), settableClock.now());
         scheduler.runAnyDueExecutions();
         assertThat(scheduleAnother.timesExecuted, CoreMatchers.is(1));
-        assertThat(onetimeTaskHandlerA.timesExecuted, CoreMatchers.is(0));
+        assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(0));
 
         scheduler.tick(ofSeconds(1));
         scheduler.runAnyDueExecutions();
-        assertThat(onetimeTaskHandlerA.timesExecuted, CoreMatchers.is(1));
+        assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(1));
     }
 
     @Test

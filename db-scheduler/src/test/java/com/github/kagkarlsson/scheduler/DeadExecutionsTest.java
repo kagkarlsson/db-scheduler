@@ -110,10 +110,10 @@ public class DeadExecutionsTest {
         jdbcTaskRepository.createIfNotExists(execution1);
 
         scheduler.executeDue();
-        assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
+        assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(1));
 
         scheduler.executeDue();
-        assertThat(nonCompletingExecutionHandler.timesExecuted, is(1));
+        assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(1));
 
         settableClock.set(Instant.now());
 
@@ -123,7 +123,7 @@ public class DeadExecutionsTest {
         settableClock.set(Instant.now());
 
         scheduler.executeDue();
-        assertThat(nonCompletingExecutionHandler.timesExecuted, is(2));
+        assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(2));
     }
 
     public static class NonCompletingTask<T> extends Task<T> {

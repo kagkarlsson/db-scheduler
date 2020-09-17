@@ -58,7 +58,7 @@ public abstract class CompatibilityTest {
     private RecurringTask<Integer> recurringWithData;
     private TestableRegistry testableRegistry;
     private Scheduler scheduler;
-    private ExecutionCompletedCondition completed11Condition;
+    private ExecutionCompletedCondition completed12Condition;
 
     public abstract DataSource getDataSource();
 
@@ -71,8 +71,8 @@ public abstract class CompatibilityTest {
         recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandlerRecurring);
         recurringWithData = TestTasks.recurringWithData("recurringWithData", Integer.class, 0, FixedDelay.of(Duration.ofMillis(10)), new DoNothingHandler<>());
 
-        completed11Condition = new ExecutionCompletedCondition(12);
-        testableRegistry = new TestableRegistry(false, singletonList(completed11Condition));
+        completed12Condition = new ExecutionCompletedCondition(12);
+        testableRegistry = new TestableRegistry(false, singletonList(completed12Condition));
 
         scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
                 .pollingInterval(Duration.ofMillis(10))
@@ -93,8 +93,6 @@ public abstract class CompatibilityTest {
     @RepeatedTest(10)
     public void test_compatibility() {
         assertTimeout(Duration.ofSeconds(10), () -> {
-            scheduler.start();
-
             scheduler.schedule(oneTime.instance("id1"), Instant.now());
             scheduler.schedule(oneTime.instance("id1"), Instant.now()); //duplicate
             scheduler.schedule(recurring.instance("id1"), Instant.now());
@@ -102,12 +100,13 @@ public abstract class CompatibilityTest {
             scheduler.schedule(recurring.instance("id3"), Instant.now());
             scheduler.schedule(recurring.instance("id4"), Instant.now());
 
-            completed11Condition.waitFor();
+            scheduler.start();
+            completed12Condition.waitFor();
             scheduler.stop();
 
             testableRegistry.assertNoFailures();
-            assertThat(delayingHandlerRecurring.timesExecuted, greaterThan(10));
-            assertThat(delayingHandlerOneTime.timesExecuted, is(1));
+            assertThat(delayingHandlerRecurring.timesExecuted.get(), greaterThan(10));
+            assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
 
         });
     }
