@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 
 public class StopSchedulerExtension implements AfterEachCallback {
 
+    private Duration waitBeforeInterrupt = Duration.ZERO;
     private Scheduler[] scheduler = new Scheduler[]{};
 
     public void register(Scheduler ... scheduler) {
@@ -16,6 +17,10 @@ public class StopSchedulerExtension implements AfterEachCallback {
 
     @Override
     public void afterEach(ExtensionContext extensionContext) {
-        Stream.of(scheduler).forEach(s -> s.stop(Duration.ofMillis(100)));
+        Stream.of(scheduler).forEach(s -> s.stop(waitBeforeInterrupt, Duration.ofMillis(100)));
+    }
+
+    public void setWaitBeforeInterrupt(Duration waitBeforeInterrupt) {
+        this.waitBeforeInterrupt = waitBeforeInterrupt;
     }
 }

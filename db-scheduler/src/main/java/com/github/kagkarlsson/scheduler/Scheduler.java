@@ -107,10 +107,10 @@ public class Scheduler implements SchedulerClient {
     }
 
     public void stop() {
-        stop(Duration.ofSeconds(5));
+        stop(Duration.ofSeconds(1), Duration.ofSeconds(5));
     }
 
-    void stop(Duration utilExecutorsAwaitTerminationDuration) {
+    void stop(Duration utilExecutorsWaitBeforeInterrupt, Duration utilExecutorsWaitAfterInterrupt) {
         if (schedulerState.isShuttingDown()) {
             LOG.warn("Multiple calls to 'stop()'. Scheduler is already stopping.");
             return;
@@ -119,18 +119,18 @@ public class Scheduler implements SchedulerClient {
         schedulerState.setIsShuttingDown();
 
         LOG.info("Shutting down Scheduler.");
-        if (!ExecutorUtils.shutdownNowAndAwaitTermination(dueExecutor, utilExecutorsAwaitTerminationDuration)) {
+        if (!ExecutorUtils.shutdownAndAwaitTermination(dueExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
             LOG.warn("Failed to shutdown due-executor properly.");
         }
-        if (!ExecutorUtils.shutdownNowAndAwaitTermination(detectDeadExecutor, utilExecutorsAwaitTerminationDuration)) {
+        if (!ExecutorUtils.shutdownAndAwaitTermination(detectDeadExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
             LOG.warn("Failed to shutdown detect-dead-executor properly.");
         }
-        if (!ExecutorUtils.shutdownNowAndAwaitTermination(updateHeartbeatExecutor, utilExecutorsAwaitTerminationDuration)) {
+        if (!ExecutorUtils.shutdownAndAwaitTermination(updateHeartbeatExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
             LOG.warn("Failed to shutdown update-heartbeat-executor properly.");
         }
 
-        LOG.info("Letting running executions finish. Will wait up to {}.", SHUTDOWN_WAIT);
-        if (ExecutorUtils.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT)) {
+        LOG.info("Letting running executions finish. Will wait up to 2x{}.", SHUTDOWN_WAIT);
+        if (ExecutorUtils.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT, SHUTDOWN_WAIT)) {
             LOG.info("Scheduler stopped.");
         } else {
             LOG.warn("Scheduler stopped, but some tasks did not complete. Was currently running the following executions:\n{}",
