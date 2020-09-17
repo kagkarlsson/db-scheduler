@@ -4,9 +4,12 @@ import com.github.kagkarlsson.scheduler.DbUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
+
+import java.time.Duration;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -30,6 +33,11 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
 
         // init schema
         DbUtils.runSqlResource("/oracle_tables.sql").accept(pooledDatasource);
+    }
+
+    @BeforeEach
+    void overrideSchedulerShutdown() {
+        stopScheduler.setWaitBeforeInterrupt(Duration.ofMillis(100));
     }
 
     @Override

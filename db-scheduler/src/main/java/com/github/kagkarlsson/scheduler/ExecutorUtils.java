@@ -28,18 +28,14 @@ public class ExecutorUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExecutorUtils.class);
 
-    public static boolean shutdownNowAndAwaitTermination(ExecutorService executorService, Duration timeout) {
-        executorService.shutdownNow();
-        return awaitTermination(executorService, timeout);
-    }
-
-    public static boolean shutdownAndAwaitTermination(ExecutorService executorService, Duration timeout) {
+    public static boolean shutdownAndAwaitTermination(ExecutorService executorService, Duration waitBeforeInterrupt,
+                                                      Duration waitAfterInterrupt) {
         executorService.shutdown();
-        boolean successfulShutdown = awaitTermination(executorService, timeout);
+        boolean successfulShutdown = awaitTermination(executorService, waitBeforeInterrupt);
         if (!successfulShutdown) {
-            LOG.info("Failed to shutdown executor service gracefully. Trying interrupt...");
+            LOG.info("Interrupting executor service threads for shutdown.");
             executorService.shutdownNow();
-            return awaitTermination(executorService, timeout);
+            return awaitTermination(executorService, waitAfterInterrupt);
         } else {
             return true;
         }
