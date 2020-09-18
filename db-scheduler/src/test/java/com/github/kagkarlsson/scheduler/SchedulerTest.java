@@ -61,11 +61,11 @@ public class SchedulerTest {
         scheduler.schedule(oneTimeTask.instance("1"), executionTime);
 
         scheduler.executeDue();
-        assertThat(handler.timesExecuted, is(0));
+        assertThat(handler.timesExecuted.get(), is(0));
 
         clock.set(executionTime);
         scheduler.executeDue();
-        assertThat(handler.timesExecuted, is(1));
+        assertThat(handler.timesExecuted.get(), is(1));
     }
 
     @Test
@@ -80,15 +80,15 @@ public class SchedulerTest {
         Instant reScheduledExecutionTime = clock.now().plus(Duration.ofMinutes(2));
         scheduler.reschedule(oneTimeTaskInstance, reScheduledExecutionTime);
         scheduler.executeDue();
-        assertThat(handler.timesExecuted, is(0));
+        assertThat(handler.timesExecuted.get(), is(0));
 
         clock.set(executionTime);
         scheduler.executeDue();
-        assertThat(handler.timesExecuted, is(0));
+        assertThat(handler.timesExecuted.get(), is(0));
 
         clock.set(reScheduledExecutionTime);
         scheduler.executeDue();
-        assertThat(handler.timesExecuted, is(1));
+        assertThat(handler.timesExecuted.get(), is(1));
     }
 
     @Test
@@ -102,11 +102,11 @@ public class SchedulerTest {
         scheduler.schedule(oneTimeTaskInstance, executionTime);
         scheduler.cancel(oneTimeTaskInstance);
         scheduler.executeDue();
-        assertThat(handler.timesExecuted, is(0));
+        assertThat(handler.timesExecuted.get(), is(0));
 
         clock.set(executionTime);
         scheduler.executeDue();
-        assertThat(handler.timesExecuted, is(0));
+        assertThat(handler.timesExecuted.get(), is(0));
     }
 
     @Test
@@ -117,12 +117,12 @@ public class SchedulerTest {
         scheduler.schedule(recurringTask.instance("single"), clock.now());
         scheduler.executeDue();
 
-        assertThat(handler.timesExecuted, is(1));
+        assertThat(handler.timesExecuted.get(), is(1));
 
         Instant nextExecutionTime = clock.now().plus(Duration.ofHours(1));
         clock.set(nextExecutionTime);
         scheduler.executeDue();
-        assertThat(handler.timesExecuted, is(2));
+        assertThat(handler.timesExecuted.get(), is(2));
     }
 
     @Test

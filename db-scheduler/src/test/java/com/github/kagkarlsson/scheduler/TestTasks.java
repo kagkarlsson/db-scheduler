@@ -88,7 +88,7 @@ public class TestTasks {
 
     public static class CountingHandler<T> implements VoidExecutionHandler<T> {
         private final Duration wait;
-        public int timesExecuted = 0;
+        public AtomicInteger timesExecuted = new AtomicInteger(0);
 
         public CountingHandler() {
             wait = Duration.ofMillis(0);
@@ -99,7 +99,7 @@ public class TestTasks {
 
         @Override
         public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-            this.timesExecuted++;
+            this.timesExecuted.incrementAndGet();
             try {
                 Thread.sleep(wait.toMillis());
             } catch (InterruptedException e) {
