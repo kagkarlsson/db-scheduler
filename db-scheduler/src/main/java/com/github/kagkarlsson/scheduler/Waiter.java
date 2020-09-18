@@ -24,7 +24,7 @@ import java.time.Instant;
 public class Waiter {
     private static final Logger LOG = LoggerFactory.getLogger(Waiter.class);
 
-    private Object lock;
+    private final Object lock;
     private boolean woken = false;
     private final Duration duration;
     private Clock clock;
@@ -46,12 +46,6 @@ public class Waiter {
     }
 
     public void doWait() throws InterruptedException {
-        if (skipNextWait) {
-            LOG.debug("Waiter has been notified to skip next wait-period. Skipping wait.");
-            skipNextWait = false;
-            return;
-        }
-
         long millis = duration.toMillis();
 
         if (millis > 0) {
@@ -59,6 +53,12 @@ public class Waiter {
 
             while (clock.now().isBefore(waitUntil)) {
                 synchronized (lock) {
+                    if (skipNextWait) {
+                        LOG.debug("Waiter has been notified to skip next wait-period. Skipping wait.");
+                        skipNextWait = false;
+                        return;
+                    }
+
                     woken = false;
                     LOG.debug("Waiter start wait.");
                     this.isWaiting = true;
@@ -66,7 +66,7 @@ public class Waiter {
                     this.isWaiting = false;
                     if (woken) {
                         LOG.debug("Waiter woken, it had {}ms left to wait.", (waitUntil.toEpochMilli() - clock.now().toEpochMilli()));
-                        break;
+                        return;
                     }
                 }
             }
@@ -86,9 +86,13 @@ public class Waiter {
     }
 
     public void wakeOrSkipNextWait() {
-        final boolean awoken = wake();
-        if (!awoken) {
-            this.skipNextWait = true;
+        // Take early lock to avoid race-conditions. Lock is also taken in wake() (lock is re-entrant)
+        synchronized (lock) {
+            final boolean awoken = wake();
+            if (!awoken) {
+                LOG.debug("Waiter not waiting, instructing to skip next wait.");
+                this.skipNextWait = true;
+            }
         }
     }
 

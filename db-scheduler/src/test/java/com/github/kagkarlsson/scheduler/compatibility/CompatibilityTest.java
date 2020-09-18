@@ -8,6 +8,8 @@ import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
+import com.github.kagkarlsson.scheduler.helper.ExecutionCompletedCondition;
+import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -17,6 +19,7 @@ import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.LoggerFactory;
@@ -29,6 +32,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
@@ -52,8 +56,9 @@ public abstract class CompatibilityTest {
     private OneTimeTask<String> oneTime;
     private RecurringTask<Void> recurring;
     private RecurringTask<Integer> recurringWithData;
-    private TestTasks.SimpleStatsRegistry statsRegistry;
+    private TestableRegistry testableRegistry;
     private Scheduler scheduler;
+    private ExecutionCompletedCondition completed12Condition;
 
     public abstract DataSource getDataSource();
 
@@ -66,12 +71,14 @@ public abstract class CompatibilityTest {
         recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandlerRecurring);
         recurringWithData = TestTasks.recurringWithData("recurringWithData", Integer.class, 0, FixedDelay.of(Duration.ofMillis(10)), new DoNothingHandler<>());
 
-        statsRegistry = new TestTasks.SimpleStatsRegistry();
+        completed12Condition = new ExecutionCompletedCondition(12);
+        testableRegistry = new TestableRegistry(false, singletonList(completed12Condition));
+
         scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
                 .pollingInterval(Duration.ofMillis(10))
                 .heartbeatInterval(Duration.ofMillis(100))
                 .schedulerName(new SchedulerName.Fixed("test"))
-                .statsRegistry(statsRegistry)
+                .statsRegistry(testableRegistry)
                 .build();
         stopScheduler.register(scheduler);
     }
@@ -86,8 +93,6 @@ public abstract class CompatibilityTest {
     @Test
     public void test_compatibility() {
         assertTimeout(Duration.ofSeconds(10), () -> {
-            scheduler.start();
-
             scheduler.schedule(oneTime.instance("id1"), Instant.now());
             scheduler.schedule(oneTime.instance("id1"), Instant.now()); //duplicate
             scheduler.schedule(recurring.instance("id1"), Instant.now());
@@ -95,12 +100,14 @@ public abstract class CompatibilityTest {
             scheduler.schedule(recurring.instance("id3"), Instant.now());
             scheduler.schedule(recurring.instance("id4"), Instant.now());
 
-            sleep(Duration.ofSeconds(1));
-
+            scheduler.start();
+            completed12Condition.waitFor();
             scheduler.stop();
-            assertThat(statsRegistry.unexpectedErrors.get(), is(0));
-            assertThat(delayingHandlerRecurring.timesExecuted, greaterThan(10));
-            assertThat(delayingHandlerOneTime.timesExecuted, is(1));
+
+            testableRegistry.assertNoFailures();
+            assertThat(delayingHandlerRecurring.timesExecuted.get(), greaterThan(10));
+            assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
+
         });
     }
 

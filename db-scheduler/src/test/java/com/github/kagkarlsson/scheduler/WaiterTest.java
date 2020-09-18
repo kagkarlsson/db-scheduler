@@ -59,6 +59,15 @@ public class WaiterTest {
         assertTrue(waitTime.get() >= 200L, "Waited: " + waitTime.get());
     }
 
+    @Test
+    public void should_not_wait_if_instructed_to_skip_next() throws ExecutionException, InterruptedException {
+        Waiter waiter = new Waiter(Duration.ofMillis(1000));
+        waiter.wakeOrSkipNextWait(); //set skip
+        Future<Long> waitTime = executor.submit(new WaitForWaiter(waiter));
+
+        assertTrue(waitTime.get() < 10L, "Waited: " + waitTime.get());
+    }
+
     private void sleep(int millis) {
         try {
             Thread.sleep(millis);
