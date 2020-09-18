@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler.functional;
 
+import ch.qos.logback.classic.Level;
 import co.unruly.matchers.TimeMatchers;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
@@ -7,6 +8,8 @@ import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.TestTasks;
+import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension;
+import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension.LogLevelOverride;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -41,6 +44,13 @@ public class ExecutorPoolTest {
     public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
     @RegisterExtension
     public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
+//    Enable if test gets flaky!
+//    @RegisterExtension
+//    public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.DueExecutionsBatch", Level.TRACE),
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.Waiter", Level.DEBUG),
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.Scheduler", Level.DEBUG)
+//    );
 
     @BeforeEach
     public void setUp() {
