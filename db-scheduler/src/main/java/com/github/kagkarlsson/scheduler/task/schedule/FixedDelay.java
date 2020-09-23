@@ -65,6 +65,12 @@ public class FixedDelay implements Schedule {
     }
 
     @Override
+    public boolean isDeterministic() {
+        // Only deterministic if relative to a certain instant
+        return false;
+    }
+
+    @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof FixedDelay)) return false;

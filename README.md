@@ -4,13 +4,13 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler)
 [![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
-Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz. 
+Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
 
-As such, also appreciated by users ([link](https://github.com/kagkarlsson/db-scheduler/issues/115#issuecomment-649601944)): 
+As such, also appreciated by users ([link](https://github.com/kagkarlsson/db-scheduler/issues/115#issuecomment-649601944)):
 
 > Your lib rocks! I'm so glad I got rid of Quartz and replaced it by yours which is way easier to handle!
 >
-> [cbarbosa2](https://github.com/cbarbosa2) 
+> [cbarbosa2](https://github.com/cbarbosa2)
 
 See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 
@@ -238,6 +238,9 @@ db-scheduler.threads=10
 db-scheduler.delay-startup-until-context-ready=false
 ```
 
+## Interacting with scheduled executions using the SchedulerClient
+
+TODO
 
 ## How it works
 
@@ -250,9 +253,15 @@ Optimistic locking is used to guarantee that a one and only one scheduler-instan
 
 The term _recurring task_ is used for tasks that should be run regularly, according to some schedule (see ``Tasks.recurring(..)``).
 
-When the execution of a recurring task has finished, a `Schedule` is consulted to determine what the next time for execution should be, and a future task-execution is created for that time (i.e. it is _rescheduled_). The time chosen will be the nearest time according to the `Schedule`, but still in the future.
+When the execution of a recurring task has finished, a `Schedule` is consulted to determine what the next time for
+execution should be, and a future task-execution is created for that time (i.e. it is _rescheduled_).
+The time chosen will be the nearest time according to the `Schedule`, but still in the future.
 
-To create the initial execution for a `RecurringTask`, the scheduler has a method  `startTasks(...)` that takes a list of tasks that should be "started" if they do not already have a future execution.
+To create the initial execution for a `RecurringTask`, the scheduler has a method `startTasks(...)` that takes a list of tasks
+that should be "started" if they do not already have an existing execution. The initial execution-time is determined by the `Schedule`.
+If the task already has a future execution (i.e. has been started at least once before), but an updated `Schedule` now indicates another execution-time,
+the existing execution will be rescheduled to the new execution-time (with the exception of _non-deterministic_ schedules
+such as `FixedDelay` where new execution-time is further into the future).
 
 ### One-time tasks
 
@@ -288,7 +297,7 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 ## Versions / upgrading
 
 ### Version 7.2
-* PR [#110](https://github.com/kagkarlsson/db-scheduler/pull/110) adds micrometer metrics support. Activated by setting `.statsRegistry(new MicrometerStatsRegistry(...))` on the builder. If you are using the Spring boot starter, the micrometer metrics will be added if you have micrometer on the classpath. 
+* PR [#110](https://github.com/kagkarlsson/db-scheduler/pull/110) adds micrometer metrics support. Activated by setting `.statsRegistry(new MicrometerStatsRegistry(...))` on the builder. If you are using the Spring boot starter, the micrometer metrics will be added if you have micrometer on the classpath.
 Contributions by [evenh](https://github.com/evenh).
 
 ### Version 7.1

@@ -68,6 +68,11 @@ public class Daily implements Schedule {
     }
 
     @Override
+    public boolean isDeterministic() {
+        return true;
+    }
+
+    @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Daily)) return false;

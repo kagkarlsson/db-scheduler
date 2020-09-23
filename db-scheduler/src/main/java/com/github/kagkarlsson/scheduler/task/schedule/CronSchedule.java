@@ -66,4 +66,9 @@ public class CronSchedule implements Schedule {
         }
         return nextTime.get().toInstant();
     }
+
+    @Override
+    public boolean isDeterministic() {
+        return true;
+    }
 }
