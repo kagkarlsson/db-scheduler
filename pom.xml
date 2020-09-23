@@ -156,11 +156,22 @@
 					<artifactId>maven-shade-plugin</artifactId>
 					<version>3.2.1</version>
 					<configuration>
+						<createSourcesJar>true</createSourcesJar>
+						<shadeSourcesContent>true</shadeSourcesContent>
 						<artifactSet>
 							<includes>
 								<include>com.cronutils:*</include>
 							</includes>
 						</artifactSet>
+						<filters>
+							<filter>
+								<artifact>com.cronutils:*</artifact>
+								<excludes>
+									<exclude>CronUtilsI18N*.properties</exclude>
+									<exclude>checkstyle.xml</exclude>
+								</excludes>
+							</filter>
+						</filters>
 						<relocations>
 							<relocation>
 								<pattern>com.cronutils</pattern>
@@ -270,6 +281,19 @@
 				<failOnMissingHeader>false</failOnMissingHeader>
 				<dependency-plugin.failOnWarning>false</dependency-plugin.failOnWarning>
 			</properties>
+		</profile>
+		<profile>
+			<id>sources</id>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-javadoc-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<artifactId>maven-source-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 		<profile>
 			<id>release</id>
