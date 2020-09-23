@@ -259,10 +259,9 @@ The time chosen will be the nearest time according to the `Schedule`, but still 
 
 To create the initial execution for a `RecurringTask`, the scheduler has a method `startTasks(...)` that takes a list of tasks
 that should be "started" if they do not already have an existing execution. The initial execution-time is determined by the `Schedule`.
-If the task already has a future execution, but an updated `Schedule` now indicates that the next execution-time is before
-the existing one, the existing execution will be rescheduled to the new execution-time.
-If the next execution-time is after the existing one, it will not be rescheduled. Any changes to the `Schedule`
-will then have effect only after the existing execution has run.
+If the task already has a future execution (i.e. has been started at least once before), but an updated `Schedule` now indicates another execution-time,
+the existing execution will be rescheduled to the new execution-time (with the exception of _non-deterministic_ schedules
+such as `FixedDelay` where new execution-time is further into the future).
 
 ### One-time tasks
 

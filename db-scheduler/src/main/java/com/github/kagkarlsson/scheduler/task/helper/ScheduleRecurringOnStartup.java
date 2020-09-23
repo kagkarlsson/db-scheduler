@@ -84,7 +84,9 @@ class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
 
         } else if (preexistingExecutionTime.isAfter(nextExecutionTimeRelativeToNow)) {
             // Schedules: FixedDelay
-            // the schedule has likely been updated, rescheduling to next execution-time according to schedule
+            // The schedule has likely been updated, rescheduling to next execution-time according to schedule
+            // We cannot reschedule if new execution-time is further into the future than existing since that may cause
+            // us to never run executions if scheduler restarts is more frequent than the fixed-delay duration
 
             LOG.info("Rescheduling task-instance '{}' because non-deterministic Schedule seem to have been updated to " +
                     "a more frequent one. Previous execution-time: {}, new execution-time: {}",
