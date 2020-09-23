@@ -38,7 +38,6 @@ public class Scheduler implements SchedulerClient {
 
     public static final double TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO = 0.5;
     public static final String THREAD_PREFIX = "db-scheduler";
-    public static final Duration SHUTDOWN_WAIT = Duration.ofMinutes(30);
     private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
     private final SchedulerClient delegate;
     private final Clock clock;
@@ -48,6 +47,7 @@ public class Scheduler implements SchedulerClient {
     private final ExecutorService executorService;
     private final Waiter executeDueWaiter;
     private final Duration deleteUnresolvedAfter;
+    private final Duration shutdownMaxWait;
     protected final List<OnStartup> onStartup;
     private final Waiter detectDeadWaiter;
     private final Duration heartbeatInterval;
@@ -62,7 +62,7 @@ public class Scheduler implements SchedulerClient {
     private int currentGenerationNumber = 1;
 
     protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
-              Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, List<OnStartup> onStartup) {
+                        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, Duration shutdownMaxWait, List<OnStartup> onStartup) {
         this.clock = clock;
         this.taskRepository = taskRepository;
         this.taskResolver = taskResolver;
@@ -70,6 +70,7 @@ public class Scheduler implements SchedulerClient {
         this.executorService = executorService;
         this.executeDueWaiter = executeDueWaiter;
         this.deleteUnresolvedAfter = deleteUnresolvedAfter;
+        this.shutdownMaxWait = shutdownMaxWait;
         this.onStartup = onStartup;
         this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
         this.heartbeatInterval = heartbeatInterval;
@@ -129,9 +130,9 @@ public class Scheduler implements SchedulerClient {
             LOG.warn("Failed to shutdown update-heartbeat-executor properly.");
         }
 
-        LOG.info("Letting running executions finish. Will wait up to 2x{}.", SHUTDOWN_WAIT);
+        LOG.info("Letting running executions finish. Will wait up to 2x{}.", shutdownMaxWait);
         final Instant startShutdown = clock.now();
-        if (ExecutorUtils.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT, SHUTDOWN_WAIT)) {
+        if (ExecutorUtils.shutdownAndAwaitTermination(executorService, shutdownMaxWait, shutdownMaxWait)) {
             LOG.info("Scheduler stopped.");
         } else {
             LOG.warn("Scheduler stopped, but some tasks did not complete. Was currently running the following executions:\n{}",
@@ -139,7 +140,8 @@ public class Scheduler implements SchedulerClient {
         }
 
         final Duration shutdownTime = Duration.between(startShutdown, clock.now());
-        if (shutdownTime.toMillis() >= SHUTDOWN_WAIT.toMillis()) {
+        if (shutdownMaxWait.toMillis() > Duration.ofMinutes(1).toMillis()
+            && shutdownTime.toMillis() >= shutdownMaxWait.toMillis()) {
             LOG.info("Shutdown of the scheduler executor service took {}. Consider regularly checking for " +
                 "'executionContext.getSchedulerState().isShuttingDown()' in task execution-handler and abort when " +
                 "scheduler is shutting down.", shutdownTime);

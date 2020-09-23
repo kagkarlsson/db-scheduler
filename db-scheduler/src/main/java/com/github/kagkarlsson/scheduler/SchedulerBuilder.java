@@ -60,6 +60,7 @@ public class SchedulerBuilder {
     protected ExecutorService executorService;
     protected Duration deleteUnresolvedAfter = DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
     protected JdbcCustomization jdbcCustomization = null;
+    private Duration shutdownMaxWait = Duration.ofMinutes(30);
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -150,6 +151,11 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder shutdownMaxWait(Duration shutdownMaxWait) {
+        this.shutdownMaxWait = shutdownMaxWait;
+        return this;
+    }
+
     public Scheduler build() {
         if (pollingLimit < executorThreads) {
             LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
@@ -177,6 +183,6 @@ public class SchedulerBuilder {
             schedulerName.getName());
         return new Scheduler(clock, taskRepository, taskResolver, executorThreads, candidateExecutorService,
                 schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
-            deleteUnresolvedAfter, startTasks);
+            deleteUnresolvedAfter, shutdownMaxWait, startTasks);
     }
 }

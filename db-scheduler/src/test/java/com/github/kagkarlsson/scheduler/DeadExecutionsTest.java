@@ -1,6 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
@@ -60,18 +59,19 @@ public class DeadExecutionsTest {
         jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
         scheduler = new Scheduler(settableClock,
-                jdbcTaskRepository,
-                taskResolver,
-                1,
-                MoreExecutors.newDirectExecutorService(),
-                new SchedulerName.Fixed("test-scheduler"),
-                new Waiter(Duration.ZERO),
-                Duration.ofMinutes(1),
-                false,
-                StatsRegistry.NOOP,
-                POLLING_LIMIT,
-                Duration.ofDays(14),
-                new ArrayList<>());
+            jdbcTaskRepository,
+            taskResolver,
+            1,
+            MoreExecutors.newDirectExecutorService(),
+            new SchedulerName.Fixed("test-scheduler"),
+            new Waiter(Duration.ZERO),
+            Duration.ofMinutes(1),
+            false,
+            StatsRegistry.NOOP,
+            POLLING_LIMIT,
+            Duration.ofDays(14),
+            Duration.ZERO,
+            new ArrayList<>());
 
     }
 
