@@ -84,7 +84,7 @@ public class ExecutorPoolTest {
         Instant now = Instant.now();
         OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
         TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(executionsToRun);
-        TestableRegistry registry = TestableRegistry.create().logEvents().waitConditions(condition).build();
+        TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
 
         Scheduler scheduler = Scheduler.create(postgres.getDataSource(), task)
             .pollingLimit(pollingLimit)

@@ -18,7 +18,7 @@ public class ExecutionCompletedCondition implements TestableRegistry.Condition {
     @Override
     public void waitFor() {
         try {
-            LoggerFactory.getLogger(ExecutionCompletedCondition.class).info("Starting await for "+numberCompleted+" ExecutionCompleted");
+            LoggerFactory.getLogger(ExecutionCompletedCondition.class).debug("Starting await for "+numberCompleted+" ExecutionCompleted");
             completed.await();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -36,7 +36,7 @@ public class ExecutionCompletedCondition implements TestableRegistry.Condition {
     @Override
     public void apply(StatsRegistry.ExecutionStatsEvent e) {
         if (e == StatsRegistry.ExecutionStatsEvent.COMPLETED) {
-            LoggerFactory.getLogger(ExecutionCompletedCondition.class).info("Received event execution-completed, counting down");
+            LoggerFactory.getLogger(ExecutionCompletedCondition.class).debug("Received event execution-completed, counting down");
             completed.countDown();
         }
     }
