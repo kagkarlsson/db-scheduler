@@ -296,6 +296,19 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 ## Versions / upgrading
 
+### Version 8.0
+* PR [#136](https://github.com/kagkarlsson/db-scheduler/pull/136) introduces a new feature where changes to the `Schedule` for
+    a `RecurringTask` is detected by the Scheduler on startup. Any existing execution is rescheduled to the new next execution-time
+    according to the new `Schedule`.
+    **Note:** A `Schedule` must now indicate whether it is deterministic or not (i.e. if it will evaluate to the same instants).
+* PR [#134](https://github.com/kagkarlsson/db-scheduler/pull/134) fixes some edge-cases (that were fairly likely for
+    high-throughput cases) that caused the Scheduler to stop fetching further batches of due executions until next pollInterval.
+* PR [#132](https://github.com/kagkarlsson/db-scheduler/pull/132) fixes race-condition for immediate-execution that may cause
+    the execution to be "missed" until next pollingInterval.
+* PR [#131](https://github.com/kagkarlsson/db-scheduler/pull/131) upgrades guava to 29.0.
+* PR [#129](https://github.com/kagkarlsson/db-scheduler/pull/129) adjusts defaults for Spring Boot to match `SchedulerBuilder`.
+  Contributions by [evenh](https://github.com/evenh).
+
 ### Version 7.2
 * PR [#110](https://github.com/kagkarlsson/db-scheduler/pull/110) adds micrometer metrics support. Activated by setting `.statsRegistry(new MicrometerStatsRegistry(...))` on the builder. If you are using the Spring boot starter, the micrometer metrics will be added if you have micrometer on the classpath.
 Contributions by [evenh](https://github.com/evenh).
