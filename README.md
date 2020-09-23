@@ -296,110 +296,17 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 
 ## Versions / upgrading
 
-### Version 8.0
-* PR [#136](https://github.com/kagkarlsson/db-scheduler/pull/136) introduces a new feature where changes to the `Schedule` for
-    a `RecurringTask` is detected by the Scheduler on startup. Any existing execution is rescheduled to the new next execution-time
-    according to the new `Schedule`.
-    **Note:** A `Schedule` must now indicate whether it is deterministic or not (i.e. if it will evaluate to the same instants).
-* PR [#134](https://github.com/kagkarlsson/db-scheduler/pull/134) fixes some edge-cases (that were fairly likely for
-    high-throughput cases) that caused the Scheduler to stop fetching further batches of due executions until next pollInterval.
-* PR [#132](https://github.com/kagkarlsson/db-scheduler/pull/132) fixes race-condition for immediate-execution that may cause
-    the execution to be "missed" until next pollingInterval.
-* PR [#131](https://github.com/kagkarlsson/db-scheduler/pull/131) upgrades guava to 29.0.
-* PR [#129](https://github.com/kagkarlsson/db-scheduler/pull/129) adjusts defaults for Spring Boot to match `SchedulerBuilder`.
-  Contributions by [evenh](https://github.com/evenh).
+See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
 
-### Version 7.2
-* PR [#110](https://github.com/kagkarlsson/db-scheduler/pull/110) adds micrometer metrics support. Activated by setting `.statsRegistry(new MicrometerStatsRegistry(...))` on the builder. If you are using the Spring boot starter, the micrometer metrics will be added if you have micrometer on the classpath.
-Contributions by [evenh](https://github.com/evenh).
-
-### Version 7.1
-* PR [#109](https://github.com/kagkarlsson/db-scheduler/pull/109) fixes db-scheduler for data sources returning connections where `autoCommit=false`. db-scheduler will now issue an explicit `commit` for these cases.
-
-### Version 7.0
-* PR [#105](https://github.com/kagkarlsson/db-scheduler/pull/105) fixes bug for `Microsoft Sql Server` where incorrect timezone handling caused persisted instant != read instant.
-  This bug was discovered when adding testcontainers-based compatibility tests and has strangely enough never been reported by users. So this release will cause a change
-  in behavior for users where the database is discovered to be `Microsoft SQL Server`.
-
-### Version 6.8
-* PR [#96](https://github.com/kagkarlsson/db-scheduler/pull/96) allow for overriding `DbSchedulerStarter` in Spring Boot starter. Contributed by [evenh](https://github.com/evenh).
-* Upgraded to JUnit 5
-* Full indentation reformatting of the codebase due to mix of tabs and spaces.
-
-### Version 6.7
-* PR [#87](https://github.com/kagkarlsson/db-scheduler/pull/87) allow for specifying the TimeZone for the Daily schedule and the Schedule string-parser (contributed by [alex859](https://github.com/alex859))
-* PR [#90](https://github.com/kagkarlsson/db-scheduler/pull/90) adds task-name to logging of failures (contributed by [alex859](https://github.com/alex859))
-
-### Version 6.6
-* PR [#86](https://github.com/kagkarlsson/db-scheduler/pull/85) changes Spring Boot `HealthIndicator` to opt-in rather than default on. (contributed by [ystarikovich](https://github.com/ystarikovich))
-
-### Version 6.5
-* PR [#83](https://github.com/kagkarlsson/db-scheduler/pull/83) added additional exclusions of executions with unresolved task names to `getScheduledExecutions()` and `getExecutionsFailingLongerThan(..)`.
-* PR [#82](https://github.com/kagkarlsson/db-scheduler/pull/82) sets junit to test-scope in `db-scheduler-boot-starter` `pom.xml`. (contributed by [ystarikovich](https://github.com/ystarikovich))
-
-### Version 6.4
-* Added configuration option from version 6.3 (`deleteUnresolvedAfter(Duration)`) to Spring Boot starter.
-
-### Version 6.3
-* PR [#80](https://github.com/kagkarlsson/db-scheduler/pull/80) adds more graceful handling of unresolved tasks. Executions with unknown tasks will not (in extreme cases) be able to block other executions. They will also automatically be removed from the database after a duration controlled by builder-method `deleteUnresolvedAfter(Duration)`, which currently defaults to 14d.
-
-### Version 6.2
-* PR [#71](https://github.com/kagkarlsson/db-scheduler/pull/71) allows for configuring Spring to delay starting the scheduler  until after context is fully started. (contributed by [evenh](https://github.com/evenh))
-
-### Version 6.1
-* PR [#68](https://github.com/kagkarlsson/db-scheduler/pull/68) allows for specifying time-zone for cron-schedules (contributed by [paulhilliar](https://github.com/paulhilliar))
-
-### Version 6.0
-* PR [#63](https://github.com/kagkarlsson/db-scheduler/pull/63) adds Spring Boot support. Scheduler can now be autoconfigured using tasks available in the Spring context. (contributed by [evenh](https://github.com/evenh))
-
-### Version 5.2
-* PR [#60](https://github.com/kagkarlsson/db-scheduler/pull/60) changes `RecurringTask` so that initial/first execution-time is defined in the `Schedule` and typically is the next Instant according to the Schedule.
-
-### Version 5.1
-* PR [#52](https://github.com/kagkarlsson/db-scheduler/pull/52) redesigns use of the underlying `ExecutorService`, making better use of the backing queue.
-* PR [#53](https://github.com/kagkarlsson/db-scheduler/pull/53) adds a method to the `SchedulerClient` for checking if a `TaskInstance` already exists, `client.getScheduledExecution(<task-instance-id>)` (fixes [#38](https://github.com/kagkarlsson/db-scheduler/issues/38).
-* PR [#54](https://github.com/kagkarlsson/db-scheduler/pull/54) adds a builder-method for supplying an externally managed `ExecutorService` (fixes [#51](https://github.com/kagkarlsson/db-scheduler/issues/51)).
-* PR [#56](https://github.com/kagkarlsson/db-scheduler/pull/56) adds cron-support, `Schedules.cron(<pattern>)` (fixes [#40](https://github.com/kagkarlsson/db-scheduler/issues/40)).
-
-### Version 5.0
-* PR #47 allows for setting max number of executions fetched by the scheduler (contributed by [bgooren](https://github.com/bgooren))
-* PR #48 fixes a bug for medium-sized volumes where the scheduler would not continue to poll for executions until there were none left (contributed by [bgooren](https://github.com/bgooren))
-
-### Version 4.1
-* Helper for using a version of the scheduler in unit/integration tests is now available in the artifact, through the class `TestHelper.createManualScheduler(...)`. For usage example see `SchedulerClientTest`.
-* It is now possible to manually trigger a check for due executions in the database. Of course, if this is done too frequently there will be an increased overhead.
-* The scheduler can be instructed to do a best-effort attempt at executing executions it sees is being scheduled to run `now()` or earlier through the builder-method `enableImmediateExecution()`.
-* Bugfix: `scheduler.getScheduledExecutionsForTask(...)` was not working properly
-
-### Version 4.0
-* Track number of consecutive failures of a task. For use in `FailureHandler` to avoid retrying forever, or retry with back-off.
+**Upgrading to 8.x**
+* Custom Schedules must implement a method `boolean isDeterministic()` to indicate whether they will always produce the same instants or not.
 
 **Upgrading to 4.x**
 * Add column `consecutive_failures` to the database schema. See table definitions for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/src/test/resources/mysql_tables.sql). `null` is handled as 0, so no need to update existing records.
 
-### Version 3.3
-* Customizable serlizer (PR https://github.com/kagkarlsson/db-scheduler/pull/32)
-
-### Version 3.2
-* Customizable table-name for persistence
-
-### Version 3.1
-* Future executions can now be fetched using the `scheduler.getScheduledExecutions(..)`
-
-### Version 3.0
-* New builders for task-creation, making it clearer what the config-options are. (See `Tasks` class and examples)
-* Better default for failure handling for one-time tasks
-* Enables recurring tasks to have data
-* `Schedule.getNextExecutionTime` can now use all data from `ExecutionComplete`
-
 **Upgrading to 3.x**
 * No schema changes
 * Task creation are preferrably done through builders in `Tasks` class
-
-### Version 2.0
-* Possible to `cancel` and `reschedule` executions.
-* Optional data can be stored with the execution. Default using Java Serialization.
-* Exposing the `Execution`to the `ExecutionHandler`.
 
 **Upgrading to 2.x**
 * Add column `task_data` to the database schema. See table definitions for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
