@@ -130,11 +130,19 @@ public class Scheduler implements SchedulerClient {
         }
 
         LOG.info("Letting running executions finish. Will wait up to 2x{}.", SHUTDOWN_WAIT);
+        final Instant startShutdown = clock.now();
         if (ExecutorUtils.shutdownAndAwaitTermination(executorService, SHUTDOWN_WAIT, SHUTDOWN_WAIT)) {
             LOG.info("Scheduler stopped.");
         } else {
             LOG.warn("Scheduler stopped, but some tasks did not complete. Was currently running the following executions:\n{}",
                     new ArrayList<>(currentlyProcessing.keySet()).stream().map(Execution::toString).collect(Collectors.joining("\n")));
+        }
+
+        final Duration shutdownTime = Duration.between(startShutdown, clock.now());
+        if (shutdownTime.toMillis() >= SHUTDOWN_WAIT.toMillis()) {
+            LOG.info("Shutdown of the scheduler executor service took {}. Consider regularly checking for " +
+                "'executionContext.getSchedulerState().isShuttingDown()' in task execution-handler and abort when " +
+                "scheduler is shutting down.", shutdownTime);
         }
     }
 
