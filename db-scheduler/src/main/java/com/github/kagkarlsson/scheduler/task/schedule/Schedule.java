@@ -30,4 +30,6 @@ public interface Schedule {
         return getNextExecutionTime(ExecutionComplete.simulatedSuccess(now));
     }
 
+    boolean isDeterministic();
+
 }

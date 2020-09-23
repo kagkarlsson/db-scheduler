@@ -25,14 +25,15 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 
 class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
     private static final Logger LOG = LoggerFactory.getLogger(ScheduleRecurringOnStartup.class);
-    private Schedule schedule;
-    private String instance;
-    private T data;
+    private final Schedule schedule;
+    private final String instance;
+    private final T data;
 
     ScheduleRecurringOnStartup(String instance, T data, Schedule schedule) {
         this.instance = instance;
@@ -46,26 +47,59 @@ class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
         final Optional<ScheduledExecution<Object>> preexistingExecution = scheduler.getScheduledExecution(instanceWithoutData);
 
         if (preexistingExecution.isPresent()) {
-            final Instant nextExecutionTime = schedule.getNextExecutionTime(ExecutionComplete.simulatedSuccess(clock.now()));
+            Optional<Instant> newNextExecutionTime = checkForNewExecutionTime(clock, instanceWithoutData, preexistingExecution.get());
 
-            if (preexistingExecution.get().getExecutionTime().isAfter(nextExecutionTime)) {
-                // the schedule has likely been updated, rescheduling to next execution-time according to schedule
-
-                LOG.info("Rescheduling task-instance '{}' because Schedule seem to have been updated. " +
-                        "Previous execution-time: {}, new execution-time: {}",
-                    instanceWithoutData, preexistingExecution.get().getExecutionTime(), nextExecutionTime);
+            newNextExecutionTime.ifPresent(instant -> {
                 // Intentionally leaving out data here, since we do not want to update existing data
-                scheduler.reschedule(instanceWithoutData, nextExecutionTime);
-
-            } else {
-                LOG.debug("Task-instance '{}' is already scheduled, skipping schedule-on-startup.", instanceWithoutData);
-            }
+                scheduler.reschedule(instanceWithoutData, instant);
+            });
 
         } else {
+            // No preexisting execution, create initial one
             final Instant initialExecutionTime = schedule.getInitialExecutionTime(clock.now());
             LOG.info("Creating initial execution for task-instance '{}'. Next execution-time: {}", instanceWithoutData, initialExecutionTime);
             scheduler.schedule(getSchedulableInstance(task), initialExecutionTime);
         }
+    }
+
+    Optional<Instant> checkForNewExecutionTime(Clock clock, TaskInstance<T> instanceWithoutData, ScheduledExecution<Object> preexistingExecution) {
+        final Instant preexistingExecutionTime = preexistingExecution.getExecutionTime();
+        final Instant nextExecutionTimeRelativeToNow = schedule.getNextExecutionTime(ExecutionComplete.simulatedSuccess(clock.now()));
+
+        if (preexistingExecutionTime.isBefore(clock.now().plus(Duration.ofSeconds(10)))) {
+            // Only touch future executions as a precaution to avoid warnings/noise related to execution being run by the scheduler
+            LOG.debug("Not checking if task-instance '{}' needs rescheduling as its execution-time is too near now().", instanceWithoutData);
+            return Optional.empty();
+
+        } else if (schedule.isDeterministic()) {
+            final Instant potentiallyNewExecutionTime = schedule.getNextExecutionTime(ExecutionComplete.simulatedSuccess(clock.now()));
+            // Schedules: Cron, Daily
+            if (differenceGreaterThan(preexistingExecutionTime, potentiallyNewExecutionTime, Duration.ofSeconds(1))) {
+                // Deterministic schedule must have changed (note: may be nuances here depending on precision of database timestamp)
+                LOG.info("Rescheduling task-instance '{}' because deterministic Schedule seem to have been updated. " +
+                        "Previous execution-time: {}, new execution-time: {}",
+                    instanceWithoutData, preexistingExecutionTime, potentiallyNewExecutionTime);
+                return Optional.of(potentiallyNewExecutionTime);
+            }
+
+        } else if (preexistingExecutionTime.isAfter(nextExecutionTimeRelativeToNow)) {
+            // Schedules: FixedDelay
+            // the schedule has likely been updated, rescheduling to next execution-time according to schedule
+
+            LOG.info("Rescheduling task-instance '{}' because non-deterministic Schedule seem to have been updated to " +
+                    "a more frequent one. Previous execution-time: {}, new execution-time: {}",
+                instanceWithoutData, preexistingExecutionTime, nextExecutionTimeRelativeToNow);
+            return Optional.of(nextExecutionTimeRelativeToNow);
+
+        }
+
+        LOG.debug("Task-instance '{}' is already scheduled, skipping schedule-on-startup.", instanceWithoutData);
+        return Optional.empty();
+    }
+
+    static boolean differenceGreaterThan(Instant preexistingExecutionTime, Instant potentiallyNewExecutionTime, Duration delta) {
+        final Duration difference = Duration.between(preexistingExecutionTime, potentiallyNewExecutionTime).abs();
+        return difference.toMillis() > delta.toMillis();
     }
 
     private TaskInstance<T> getSchedulableInstance(Task<T> task) {

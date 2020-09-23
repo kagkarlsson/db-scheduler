@@ -94,7 +94,7 @@ public class RecurringTaskTest {
     }
 
     @Test
-    public void should_not_update_preexisting_exeutions_with_new_schedule_if_new_next_execution_time_after_preexisting() {
+    public void should_update_preexisting_exeutions_with_new_deterministic_schedule_if_new_next_execution_time_after_preexisting() {
         RecurringTask<Void> recurringTask = Tasks.recurring(RECURRING_A, Schedules.daily(LocalTime.of(12, 0)))
             .execute(TestTasks.DO_NOTHING);
 
@@ -103,11 +103,8 @@ public class RecurringTaskTest {
         scheduler.start();
         assertScheduled(scheduler, RECURRING_A, LocalTime.of(12, 0));
 
-        // Add an additional execution-time to the daily schedule
         RecurringTask<Void> recurringTaskNewSchedule = Tasks.recurring(RECURRING_A,
-            Schedules.daily(
-                LocalTime.of(12, 0),
-                LocalTime.of(23, 59)))
+            Schedules.daily(LocalTime.of(23, 59)))
             .execute(TestTasks.DO_NOTHING);
 
         ManualScheduler schedulerUpdatedTask = manualSchedulerFor(singletonList(recurringTaskNewSchedule));
@@ -116,7 +113,7 @@ public class RecurringTaskTest {
         schedulerUpdatedTask.start();
 
         // Should have unchanged execution-time
-        assertScheduled(schedulerUpdatedTask, RECURRING_A, LocalTime.of(12, 0));
+        assertScheduled(schedulerUpdatedTask, RECURRING_A, LocalTime.of(23, 59));
     }
 
     @Test
