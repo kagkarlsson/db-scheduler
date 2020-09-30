@@ -68,8 +68,8 @@ public abstract class CompatibilityTest {
         delayingHandlerRecurring = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
 
         oneTime = TestTasks.oneTimeWithType("oneTime", String.class, delayingHandlerOneTime);
-        recurring = TestTasks.recurring("recurring", FixedDelay.of(Duration.ofMillis(10)), delayingHandlerRecurring);
-        recurringWithData = TestTasks.recurringWithData("recurringWithData", Integer.class, 0, FixedDelay.of(Duration.ofMillis(10)), new DoNothingHandler<>());
+        recurring = TestTasks.recurring("recurring", FixedDelay.ofMillis(10), delayingHandlerRecurring);
+        recurringWithData = TestTasks.recurringWithData("recurringWithData", Integer.class, 0, FixedDelay.ofMillis(10), new DoNothingHandler<>());
 
         completed12Condition = new ExecutionCompletedCondition(12);
         testableRegistry = new TestableRegistry(false, singletonList(completed12Condition));
