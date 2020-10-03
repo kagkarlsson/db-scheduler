@@ -15,6 +15,9 @@ public class FixedDelayTest {
 
     @Test
     public void to_string() {
-        assertEquals("FixedDelay duration=PT2M", FixedDelay.of(Duration.ofMinutes(2)).toString());
+        assertEquals("FixedDelay duration=PT1.5S", FixedDelay.ofMillis(1500).toString());
+        assertEquals("FixedDelay duration=PT3S", FixedDelay.ofSeconds(3).toString());
+        assertEquals("FixedDelay duration=PT6M", FixedDelay.ofMinutes(6).toString());
+        assertEquals("FixedDelay duration=PT12H", FixedDelay.ofHours(12).toString());
     }
 }
