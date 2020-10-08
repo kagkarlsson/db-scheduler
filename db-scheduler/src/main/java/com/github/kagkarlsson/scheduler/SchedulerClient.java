@@ -1,12 +1,12 @@
 /**
  * Copyright (C) Gustav Karlsson
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,57 +40,71 @@ public interface SchedulerClient {
      * Schedule a new task based on a defined generic T type with a specific execution time
      *
      * @param taskInstance  Task instance with its data
-     * @param executionTime  Execution date time
-     *
+     * @param executionTime Execution date time
+     * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstance
-     *
-     * @return void
      */
     <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime);
 
     /**
      * Schedule a new execution date to a already existent task
      *
-     * @param taskInstanceId  Existent task id
-     * @param newExecutionTime  New execution date
-     *
+     * @param taskInstanceId   Existent task id
+     * @param newExecutionTime New execution date
+     * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
-     *
-     * @return void
      */
     void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
     /**
      * Schedule a new execution date and change the task data to a already existent task
      *
-     * @param taskInstanceId  Existent task id
-     * @param newExecutionTime  New execution date
-     * @param newData  Task instance data
-     *
+     * @param taskInstanceId   Existent task id
+     * @param newExecutionTime New execution date
+     * @param newData          Task instance data
+     * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
-     *
-     * @return void
      */
     <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
 
     /**
      * Cancels a task execution
      *
-     * @param taskInstanceId  Existent task id
-     *
-     * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
-     *
+     * @param taskInstanceId Existent task id
      * @return void
+     * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      */
     void cancel(TaskInstanceId taskInstanceId);
 
+    /**
+     * Get the execution details
+     *
+     * @param consumer A consumer with the schedule execution data
+     * @return void
+     */
     void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
 
+    /**
+     * Get the execution details for a specific task
+     *
+     * @param taskName  Task instance name
+     * @param dataClass Data class instance
+     * @param consumer  A consumer with the schedule execution data
+     * @return void
+     */
     <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
 
+    /**
+     * Get the execution details for a specific task
+     *
+     * @param taskInstanceId Task instance name
+     * @return an Optional with the schedule execution data
+     * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
+     * @see com.github.kagkarlsson.scheduler.ScheduledExecution
+     */
     Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
 
     class Builder {
@@ -106,7 +120,7 @@ public interface SchedulerClient {
             this.knownTasks = knownTasks;
         }
 
-        public static Builder create(DataSource dataSource, Task<?> ... knownTasks) {
+        public static Builder create(DataSource dataSource, Task<?>... knownTasks) {
             return new Builder(dataSource, Arrays.asList(knownTasks));
         }
 
@@ -172,8 +186,8 @@ public interface SchedulerClient {
             String taskName = taskInstanceId.getTaskName();
             String instanceId = taskInstanceId.getId();
             Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
-            if(execution.isPresent()) {
-                if(execution.get().isPicked()) {
+            if (execution.isPresent()) {
+                if (execution.get().isPicked()) {
                     throw new RuntimeException(String.format("Could not reschedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
                 }
 
@@ -188,7 +202,7 @@ public interface SchedulerClient {
                     notifyListeners(ClientEvent.EventType.RESCHEDULE, taskInstanceId, newExecutionTime);
                 }
             } else {
-                throw new RuntimeException(String.format("Could not reschedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
+                throw new RuntimeException(String.format("Could not reschedule - no task with name '%s' and id '%s' was found.", taskName, instanceId));
             }
         }
 
@@ -197,15 +211,15 @@ public interface SchedulerClient {
             String taskName = taskInstanceId.getTaskName();
             String instanceId = taskInstanceId.getId();
             Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
-            if(execution.isPresent()) {
-                if(execution.get().isPicked()) {
+            if (execution.isPresent()) {
+                if (execution.get().isPicked()) {
                     throw new RuntimeException(String.format("Could not cancel schedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
                 }
 
                 taskRepository.remove(execution.get());
                 notifyListeners(ClientEvent.EventType.CANCEL, taskInstanceId, execution.get().executionTime);
             } else {
-                throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found." , taskName, instanceId));
+                throw new RuntimeException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found.", taskName, instanceId));
             }
         }
 
