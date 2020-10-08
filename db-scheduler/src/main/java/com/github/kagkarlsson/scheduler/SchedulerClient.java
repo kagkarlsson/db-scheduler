@@ -36,12 +36,55 @@ import static java.util.Optional.ofNullable;
 
 public interface SchedulerClient {
 
+    /**
+     * Schedule a new task based on a defined generic T type with a specific execution time
+     *
+     * @param taskInstance  Task instance with its data
+     * @param executionTime  Execution date time
+     *
+     * @see java.time.Instant
+     * @see com.github.kagkarlsson.scheduler.task.TaskInstance
+     *
+     * @return void
+     */
     <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime);
 
+    /**
+     * Schedule a new execution date to a already existent task
+     *
+     * @param taskInstanceId  Existent task id
+     * @param newExecutionTime  New execution date
+     *
+     * @see java.time.Instant
+     * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
+     *
+     * @return void
+     */
     void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
+    /**
+     * Schedule a new execution date and change the task data to a already existent task
+     *
+     * @param taskInstanceId  Existent task id
+     * @param newExecutionTime  New execution date
+     * @param newData  Task instance data
+     *
+     * @see java.time.Instant
+     * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
+     *
+     * @return void
+     */
     <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
 
+    /**
+     * Cancels a task execution
+     *
+     * @param taskInstanceId  Existent task id
+     *
+     * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
+     *
+     * @return void
+     */
     void cancel(TaskInstanceId taskInstanceId);
 
     void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
