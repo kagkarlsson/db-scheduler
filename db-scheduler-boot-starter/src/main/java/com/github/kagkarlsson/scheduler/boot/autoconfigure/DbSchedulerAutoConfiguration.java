@@ -37,7 +37,7 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
-import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -58,7 +58,7 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 @AutoConfigurationPackage
 @AutoConfigureAfter({
     DataSourceAutoConfiguration.class,
-    HealthIndicatorAutoConfiguration.class,
+    HealthContributorAutoConfiguration.class,
     MetricsAutoConfiguration.class,
     CompositeMeterRegistryAutoConfiguration.class,
 })
@@ -161,6 +161,7 @@ public class DbSchedulerAutoConfiguration {
     @ConditionalOnBean(Scheduler.class)
     @Bean
     public HealthIndicator dbScheduler(Scheduler scheduler) {
+        log.debug("Exposing health indicator for db-scheduler");
         return new DbSchedulerHealthIndicator(scheduler);
     }
 

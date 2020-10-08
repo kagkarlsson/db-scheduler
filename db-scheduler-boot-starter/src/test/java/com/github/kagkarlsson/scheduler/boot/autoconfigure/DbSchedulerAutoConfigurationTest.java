@@ -28,7 +28,7 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.autoconfigure.health.HealthIndicatorAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -109,7 +109,7 @@ public class DbSchedulerAutoConfigurationTest {
     @Test
     public void it_should_autoconfigure_a_health_check() {
         ctxRunner
-            .withConfiguration(AutoConfigurations.of(HealthIndicatorAutoConfiguration.class))
+            .withConfiguration(AutoConfigurations.of(HealthContributorAutoConfiguration.class))
             .run((AssertableApplicationContext ctx) -> {
                 assertThat(ctx).hasSingleBean(DbSchedulerHealthIndicator.class);
             });
