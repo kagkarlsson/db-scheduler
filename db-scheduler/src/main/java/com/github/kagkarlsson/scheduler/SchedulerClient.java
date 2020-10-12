@@ -101,7 +101,7 @@ public interface SchedulerClient {
      * Get the execution details for a specific execution
      *
      * @param taskInstanceId Task instance id
-     * @return an Optional with the schedule execution data
+     * @return Optional.empty() if no matching execution found
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      * @see com.github.kagkarlsson.scheduler.ScheduledExecution
      */
