@@ -37,7 +37,7 @@ import static java.util.Optional.ofNullable;
 public interface SchedulerClient {
 
     /**
-     * Schedule a new task based on a defined generic T type with a specific execution time
+     * Schedule a new execution based on a defined generic T type with a specific execution-time.
      *
      * @param taskInstance  Task instance with its data
      * @param executionTime Execution date time
@@ -48,7 +48,7 @@ public interface SchedulerClient {
     <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime);
 
     /**
-     * Schedule a new execution date to a already existent task
+     * Schedule a new execution date to a already existent task.
      *
      * @param taskInstanceId   Existent task id
      * @param newExecutionTime New execution date
@@ -59,7 +59,7 @@ public interface SchedulerClient {
     void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
     /**
-     * Schedule a new execution date and change the task data to a already existent task
+     * Reschedule existing execution to a new time and update task-data.
      *
      * @param taskInstanceId   Existent task id
      * @param newExecutionTime New execution date
@@ -71,7 +71,7 @@ public interface SchedulerClient {
     <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
 
     /**
-     * Cancels a task execution
+     * Cancels an execution.
      *
      * @param taskInstanceId Existent task id
      * @return void
@@ -80,15 +80,15 @@ public interface SchedulerClient {
     void cancel(TaskInstanceId taskInstanceId);
 
     /**
-     * Get the execution details
+     * Get the execution details. Uses Consumer to avoid forcing the SchedulerClient to load all executions in memory.
      *
-     * @param consumer A consumer with the schedule execution data
+     * @param consumer Execution consumer
      * @return void
      */
     void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
 
     /**
-     * Get the execution details for a specific task
+     * Get the execution details for a specific execution
      *
      * @param taskName  Task instance name
      * @param dataClass Data class instance
@@ -98,9 +98,9 @@ public interface SchedulerClient {
     <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
 
     /**
-     * Get the execution details for a specific task
+     * Get the execution details for a specific execution
      *
-     * @param taskInstanceId Task instance name
+     * @param taskInstanceId Task instance id
      * @return an Optional with the schedule execution data
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      * @see com.github.kagkarlsson.scheduler.ScheduledExecution
