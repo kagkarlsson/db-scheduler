@@ -96,6 +96,16 @@ public class DbSchedulerProperties {
     @NotNull
     private Duration deleteUnresolvedAfter = SchedulerBuilder.DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
 
+
+    /**
+     * How long the scheduler will wait before interrupting executor-service threads.
+     * If you find yourself using this, consider if it is possible to instead regularly check
+     * <code>executionContext.getSchedulerState().isShuttingDown()</code> in the ExecutionHandler and abort long-running task.
+     */
+    @DurationUnit(SECONDS)
+    @NotNull
+    private Duration shutdownMaxWait = SchedulerBuilder.SHUTDOWN_MAX_WAIT;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -174,5 +184,13 @@ public class DbSchedulerProperties {
 
     public void setDeleteUnresolvedAfter(Duration deleteUnresolvedAfter) {
         this.deleteUnresolvedAfter = deleteUnresolvedAfter;
+    }
+
+    public Duration getShutdownMaxWait() {
+        return shutdownMaxWait;
+    }
+
+    public void setShutdownMaxWait(Duration shutdownMaxWait) {
+        this.shutdownMaxWait = shutdownMaxWait;
     }
 }
