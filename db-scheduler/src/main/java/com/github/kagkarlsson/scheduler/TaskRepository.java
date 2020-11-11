@@ -27,8 +27,8 @@ public interface TaskRepository {
 
     boolean createIfNotExists(Execution execution);
     List<Execution> getDue(Instant now, int limit);
-    void getScheduledExecutions(Consumer<Execution> consumer);
-    void getScheduledExecutions(String taskName, Consumer<Execution> consumer);
+    void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer);
+    void getScheduledExecutions(ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer);
 
     void remove(Execution execution);
     boolean reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure, int consecutiveFailures);

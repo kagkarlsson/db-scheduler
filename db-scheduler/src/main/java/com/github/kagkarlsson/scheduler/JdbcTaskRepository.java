@@ -108,13 +108,19 @@ public class JdbcTaskRepository implements TaskRepository {
     }
 
     @Override
-    public void getScheduledExecutions(Consumer<Execution> consumer) {
+    public void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer) {
         UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
         jdbcRunner.query(
-                "select * from " + tableName + " where picked = ? " + unresolvedFilter.andCondition() + " order by execution_time asc",
+                "select * from " + tableName
+                    + (filter.getIncludePicked() && unresolvedFilter.unresolved.isEmpty() ? "" : " where ")
+                    + (!filter.getIncludePicked() ? " picked = ? " : "")
+                    + unresolvedFilter.andCondition()
+                    + " order by execution_time asc",
                 (PreparedStatement p) -> {
                     int index = 1;
-                    p.setBoolean(index++, false);
+                    if (!filter.getIncludePicked()) {
+                        p.setBoolean(index++, false);
+                    }
                     unresolvedFilter.setParameters(p, index);
                 },
                 new ExecutionResultSetConsumer(consumer)
@@ -122,12 +128,17 @@ public class JdbcTaskRepository implements TaskRepository {
     }
 
     @Override
-    public void getScheduledExecutions(String taskName, Consumer<Execution> consumer) {
+    public void getScheduledExecutions(ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer) {
         jdbcRunner.query(
-                "select * from " + tableName + " where picked = ? and task_name = ? order by execution_time asc",
+                "select * from " + tableName + " where "
+                    + (!filter.getIncludePicked() ? " picked = ? and " : "")
+                    + " task_name = ? order by execution_time asc",
                 (PreparedStatement p) -> {
-                    p.setBoolean(1, false);
-                    p.setString(2, taskName);
+                    int index = 1;
+                    if (!filter.getIncludePicked()) {
+                        p.setBoolean(index++, false);
+                    }
+                    p.setString(index++, taskName);
                 },
                 new ExecutionResultSetConsumer(consumer)
         );

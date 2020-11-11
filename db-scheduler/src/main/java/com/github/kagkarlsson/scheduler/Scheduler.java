@@ -178,8 +178,18 @@ public class Scheduler implements SchedulerClient {
     }
 
     @Override
+    public void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer) {
+        this.delegate.getScheduledExecutions(filter, consumer);
+    }
+
+    @Override
     public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
         this.delegate.getScheduledExecutionsForTask(taskName, dataClass, consumer);
+    }
+
+    @Override
+    public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<T>> consumer) {
+        this.delegate.getScheduledExecutionsForTask(taskName, dataClass, filter, consumer);
     }
 
     @Override

@@ -1,7 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
-import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -15,6 +14,8 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.excludePicked;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
@@ -268,14 +269,19 @@ public class JdbcTaskRepositoryTest {
         IntStream.range(0, 100).forEach(i ->
                 taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + i)))
         );
-        List<Execution> beforePick = new ArrayList();
-        taskRepository.getScheduledExecutions(beforePick::add);
+        final List<Execution> beforePick = getScheduledExecutions(excludePicked());
         assertThat(beforePick, hasSize(100));
 
         taskRepository.pick(beforePick.get(0), Instant.now());
-        List<Execution> afterPick = new ArrayList<>();
-        taskRepository.getScheduledExecutions(afterPick::add);
-        assertThat(afterPick, hasSize(99));
+
+        assertThat(getScheduledExecutions(excludePicked()), hasSize(99));
+        assertThat(getScheduledExecutions(all()), hasSize(100));
+    }
+
+    private List<Execution> getScheduledExecutions(ScheduledExecutionsFilter filter) {
+        List<Execution> beforePick = new ArrayList<>();
+        taskRepository.getScheduledExecutions(filter, beforePick::add);
+        return beforePick;
     }
 
     @Test
@@ -286,16 +292,17 @@ public class JdbcTaskRepositoryTest {
         taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), alternativeOneTimeTask.instance("id" + 3)));
 
         List<Execution> scheduledByTaskName = new ArrayList<>();
-        taskRepository.getScheduledExecutions(oneTimeTask.getName(), scheduledByTaskName::add);
+        taskRepository.getScheduledExecutions(excludePicked(), oneTimeTask.getName(), scheduledByTaskName::add);
         assertThat(scheduledByTaskName, hasSize(2));
 
-        List<Execution> alternativeTasks = new ArrayList<>();
-        taskRepository.getScheduledExecutions(alternativeOneTimeTask.getName(), alternativeTasks::add);
-        assertThat(alternativeTasks, hasSize(1));
+        assertThat(getScheduledExecutions(excludePicked(), alternativeOneTimeTask.getName()), hasSize(1));
+        assertThat(getScheduledExecutions(excludePicked(), "non-existing"), empty());
+    }
 
-        List<Execution> empty = new ArrayList();
-        taskRepository.getScheduledExecutions("non-existing", empty::add);
-        assertThat(empty, empty());
+    private List<Execution> getScheduledExecutions(ScheduledExecutionsFilter filter, String taskName) {
+        List<Execution> alternativeTasks = new ArrayList<>();
+        taskRepository.getScheduledExecutions(filter, taskName, alternativeTasks::add);
+        return alternativeTasks;
     }
 
     @Test
@@ -336,7 +343,7 @@ public class JdbcTaskRepositoryTest {
 
     private Execution getSingleExecution() {
         List<Execution> executions = new ArrayList<>();
-        taskRepository.getScheduledExecutions(executions::add);
+        taskRepository.getScheduledExecutions(excludePicked(), executions::add);
         return executions.get(0);
     }
 }
