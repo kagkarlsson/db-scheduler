@@ -37,10 +37,10 @@ import static java.util.Optional.ofNullable;
 public interface SchedulerClient {
 
     /**
-     * Schedule a new execution based on a defined generic T type with a specific execution-time.
+     * Schedule a new execution.
      *
-     * @param taskInstance  Task instance with its data
-     * @param executionTime Execution date time
+     * @param taskInstance  Task-instance, optionally with data
+     * @param executionTime Instant it should run
      * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstance
@@ -48,10 +48,11 @@ public interface SchedulerClient {
     <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime);
 
     /**
-     * Schedule a new execution date to a already existent task.
+     * Update an existing execution to a new execution-time. If the execution does not exist or if it is currently
+     * running, an exception is thrown.
      *
-     * @param taskInstanceId   Existent task id
-     * @param newExecutionTime New execution date
+     * @param taskInstanceId
+     * @param newExecutionTime the new execution-time
      * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
@@ -59,11 +60,12 @@ public interface SchedulerClient {
     void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
     /**
-     * Reschedule existing execution to a new time and update task-data.
+     * Update an existing execution with a new execution-time and new task-data. If the execution does not exist or if
+     * it is currently running, an exception is thrown.
      *
-     * @param taskInstanceId   Existent task id
-     * @param newExecutionTime New execution date
-     * @param newData          Task instance data
+     * @param taskInstanceId
+     * @param newExecutionTime the new execution-time
+     * @param newData          the new task-data
      * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
@@ -71,36 +73,38 @@ public interface SchedulerClient {
     <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
 
     /**
-     * Cancels an execution.
+     * Removes/Cancels an execution.
      *
-     * @param taskInstanceId Existent task id
+     * @param taskInstanceId
      * @return void
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      */
     void cancel(TaskInstanceId taskInstanceId);
 
     /**
-     * Get the execution details. Uses Consumer to avoid forcing the SchedulerClient to load all executions in memory.
+     * Gets all scheduled executions and supplies them to the provided Consumer. A Consumer is used to
+     * avoid forcing the SchedulerClient to load all executions in memory. Currently running executions are not returned.
      *
-     * @param consumer Execution consumer
+     * @param consumer Consumer for the executions
      * @return void
      */
     void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
 
     /**
-     * Get the execution details for a specific execution
+     * Gets all scheduled executions for a task and supplies them to the provided Consumer. A Consumer is used to
+     * avoid forcing the SchedulerClient to load all executions in memory. Currently running executions are not returned.
      *
-     * @param taskName  Task instance name
-     * @param dataClass Data class instance
-     * @param consumer  A consumer with the schedule execution data
+     * @param taskName  the name of the task to get scheduled-executions for
+     * @param dataClass the task data-class the data will be serialized and cast to
+     * @param consumer  Consumer for the executions
      * @return void
      */
     <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
 
     /**
-     * Get the execution details for a specific execution
+     * Gets the details for a specific scheduled execution. Currently running executions are also returned.
      *
-     * @param taskInstanceId Task instance id
+     * @param taskInstanceId
      * @return Optional.empty() if no matching execution found
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      * @see com.github.kagkarlsson.scheduler.ScheduledExecution
