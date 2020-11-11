@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -91,6 +92,15 @@ public interface SchedulerClient {
     void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
 
     /**
+     * @see #getScheduledExecutions(Consumer)
+     */
+    default List<ScheduledExecution<Object>> getScheduledExecutionsAsList() {
+        List<ScheduledExecution<Object>> executions = new ArrayList<>();
+        getScheduledExecutions(executions::add);
+        return executions;
+    }
+
+    /**
      * Gets all scheduled executions for a task and supplies them to the provided Consumer. A Consumer is used to
      * avoid forcing the SchedulerClient to load all executions in memory. Currently running executions are not returned.
      *
@@ -100,6 +110,15 @@ public interface SchedulerClient {
      * @return void
      */
     <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
+
+    /**
+     * @see #getScheduledExecutionsForTask(String, Class, Consumer)
+     */
+    default <T> List<ScheduledExecution<T>> getScheduledExecutionsForTaskAsList(String taskName, Class<T> dataClass) {
+        List<ScheduledExecution<T>> executions = new ArrayList<>();
+        getScheduledExecutionsForTask(taskName, dataClass, executions::add);
+        return executions;
+    }
 
     /**
      * Gets the details for a specific scheduled execution. Currently running executions are also returned.

@@ -95,8 +95,10 @@ public class SchedulerClientTest {
         client.schedule(oneTimeTaskB.instance("12"), settableClock.now());
 
         assertThat(countAllExecutions(client), is(5));
+        assertThat(client.getScheduledExecutionsAsList().size(), is(5));
         assertThat(countExecutionsForTask(client, oneTimeTaskA.getName(), Void.class), is(2));
         assertThat(countExecutionsForTask(client, oneTimeTaskB.getName(), Void.class), is(3));
+        assertThat(client.getScheduledExecutionsForTaskAsList(oneTimeTaskB.getName(), Void.class).size(), is(3));
     }
 
     @Test
