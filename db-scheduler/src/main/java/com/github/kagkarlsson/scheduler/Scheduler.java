@@ -173,23 +173,23 @@ public class Scheduler implements SchedulerClient {
     }
 
     @Override
-    public void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
-        this.delegate.getScheduledExecutions(consumer);
+    public void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
+        this.delegate.fetchScheduledExecutions(consumer);
     }
 
     @Override
-    public void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer) {
-        this.delegate.getScheduledExecutions(filter, consumer);
+    public void fetchScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer) {
+        this.delegate.fetchScheduledExecutions(filter, consumer);
     }
 
     @Override
-    public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
-        this.delegate.getScheduledExecutionsForTask(taskName, dataClass, consumer);
+    public <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
+        this.delegate.fetchScheduledExecutionsForTask(taskName, dataClass, consumer);
     }
 
     @Override
-    public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<T>> consumer) {
-        this.delegate.getScheduledExecutionsForTask(taskName, dataClass, filter, consumer);
+    public <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<T>> consumer) {
+        this.delegate.fetchScheduledExecutionsForTask(taskName, dataClass, filter, consumer);
     }
 
     @Override

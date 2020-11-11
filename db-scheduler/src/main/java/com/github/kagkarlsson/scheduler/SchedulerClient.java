@@ -89,24 +89,24 @@ public interface SchedulerClient {
      * @param consumer Consumer for the executions
      * @return void
      */
-    void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
-    void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer);
+    void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
+    void fetchScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer);
 
     /**
-     * @see #getScheduledExecutions(Consumer)
+     * @see #fetchScheduledExecutions(Consumer)
      */
-    default List<ScheduledExecution<Object>> getScheduledExecutionsAsList() {
+    default List<ScheduledExecution<Object>> getScheduledExecutions() {
         List<ScheduledExecution<Object>> executions = new ArrayList<>();
-        getScheduledExecutions(executions::add);
+        fetchScheduledExecutions(executions::add);
         return executions;
     }
 
     /**
-     * @see #getScheduledExecutions(Consumer)
+     * @see #fetchScheduledExecutions(Consumer)
      */
-    default List<ScheduledExecution<Object>> getScheduledExecutionsAsList(ScheduledExecutionsFilter filter) {
+    default List<ScheduledExecution<Object>> getScheduledExecutions(ScheduledExecutionsFilter filter) {
         List<ScheduledExecution<Object>> executions = new ArrayList<>();
-        getScheduledExecutions(filter, executions::add);
+        fetchScheduledExecutions(filter, executions::add);
         return executions;
     }
 
@@ -119,24 +119,24 @@ public interface SchedulerClient {
      * @param consumer  Consumer for the executions
      * @return void
      */
-    <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
-    <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<T>> consumer);
+    <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
+    <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<T>> consumer);
 
     /**
-     * @see #getScheduledExecutionsForTask(String, Class, Consumer)
+     * @see #fetchScheduledExecutionsForTask(String, Class, Consumer)
      */
-    default <T> List<ScheduledExecution<T>> getScheduledExecutionsForTaskAsList(String taskName, Class<T> dataClass) {
+    default <T> List<ScheduledExecution<T>> getScheduledExecutionsForTask(String taskName, Class<T> dataClass) {
         List<ScheduledExecution<T>> executions = new ArrayList<>();
-        getScheduledExecutionsForTask(taskName, dataClass, executions::add);
+        fetchScheduledExecutionsForTask(taskName, dataClass, executions::add);
         return executions;
     }
 
     /**
-     * @see #getScheduledExecutionsForTask(String, Class, Consumer)
+     * @see #fetchScheduledExecutionsForTask(String, Class, Consumer)
      */
-    default <T> List<ScheduledExecution<T>> getScheduledExecutionsForTaskAsList(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter) {
+    default <T> List<ScheduledExecution<T>> getScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter) {
         List<ScheduledExecution<T>> executions = new ArrayList<>();
-        getScheduledExecutionsForTask(taskName, dataClass, filter, executions::add);
+        fetchScheduledExecutionsForTask(taskName, dataClass, filter, executions::add);
         return executions;
     }
 
@@ -267,24 +267,24 @@ public interface SchedulerClient {
         }
 
         @Override
-        public void getScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
-            getScheduledExecutions(ScheduledExecutionsFilter.excludePicked(), consumer);
+        public void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
+            fetchScheduledExecutions(ScheduledExecutionsFilter.excludePicked(), consumer);
         }
 
         @Override
-        public void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer) {
+        public void fetchScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer) {
             taskRepository.getScheduledExecutions(filter,
                 execution -> consumer.accept(new ScheduledExecution<>(Object.class, execution)));
         }
 
         @Override
-        public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
-            getScheduledExecutionsForTask(taskName, dataClass, ScheduledExecutionsFilter.excludePicked(), consumer);
+        public <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
+            fetchScheduledExecutionsForTask(taskName, dataClass, ScheduledExecutionsFilter.excludePicked(), consumer);
         }
 
         @Override
-        public <T> void getScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter,
-                                                      Consumer<ScheduledExecution<T>> consumer) {
+        public <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter,
+                                                        Consumer<ScheduledExecution<T>> consumer) {
             taskRepository.getScheduledExecutions(filter, taskName,
                 execution -> consumer.accept(new ScheduledExecution<>(dataClass, execution)));
         }

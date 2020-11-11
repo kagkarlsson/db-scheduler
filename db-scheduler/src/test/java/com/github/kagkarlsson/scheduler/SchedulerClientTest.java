@@ -95,10 +95,10 @@ public class SchedulerClientTest {
         client.schedule(oneTimeTaskB.instance("12"), settableClock.now());
 
         assertThat(countAllExecutions(client), is(5));
-        assertThat(client.getScheduledExecutionsAsList().size(), is(5));
+        assertThat(client.getScheduledExecutions().size(), is(5));
         assertThat(countExecutionsForTask(client, oneTimeTaskA.getName(), Void.class), is(2));
         assertThat(countExecutionsForTask(client, oneTimeTaskB.getName(), Void.class), is(3));
-        assertThat(client.getScheduledExecutionsForTaskAsList(oneTimeTaskB.getName(), Void.class).size(), is(3));
+        assertThat(client.getScheduledExecutionsForTask(oneTimeTaskB.getName(), Void.class).size(), is(3));
     }
 
     @Test
@@ -133,13 +133,13 @@ public class SchedulerClientTest {
 
     private int countAllExecutions(SchedulerClient client) {
         AtomicInteger counter = new AtomicInteger(0);
-        client.getScheduledExecutions((ScheduledExecution<Object> execution) -> {counter.incrementAndGet();});
+        client.fetchScheduledExecutions((ScheduledExecution<Object> execution) -> {counter.incrementAndGet();});
         return counter.get();
     }
 
     private <T> int countExecutionsForTask(SchedulerClient client, String taskName, Class<T> dataClass) {
         AtomicInteger counter = new AtomicInteger(0);
-        client.getScheduledExecutionsForTask(taskName, dataClass, (ScheduledExecution<T> execution) -> {counter.incrementAndGet();});
+        client.fetchScheduledExecutionsForTask(taskName, dataClass, (ScheduledExecution<T> execution) -> {counter.incrementAndGet();});
         return counter.get();
     }
 

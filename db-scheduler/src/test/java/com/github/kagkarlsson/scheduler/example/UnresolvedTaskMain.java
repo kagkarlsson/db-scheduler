@@ -47,7 +47,7 @@ public class UnresolvedTaskMain {
         scheduler.start();
 
         IntStream.range(0, 5).forEach(i -> {
-            scheduler.getScheduledExecutions(e -> {});
+            scheduler.fetchScheduledExecutions(e -> {});
             scheduler.getFailingExecutions(Duration.ZERO);
         });
     }

@@ -1,24 +1,18 @@
 package com.github.kagkarlsson.scheduler.functional;
 
-import ch.qos.logback.classic.Level;
 import co.unruly.matchers.TimeMatchers;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.TestTasks;
-import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension;
-import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension.LogLevelOverride;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +21,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -118,7 +111,7 @@ public class ExecutorPoolTest {
             .collect(Collectors.joining(","));
 
         List<String> scheduled = new ArrayList<>();
-        scheduler.getScheduledExecutions(se -> scheduled.add(se.getTaskInstance().getTaskName() + "_" + se.getTaskInstance().getId()));
+        scheduler.fetchScheduledExecutions(se -> scheduled.add(se.getTaskInstance().getTaskName() + "_" + se.getTaskInstance().getId()));
 
         return "Gave up waiting for condition. \n" +
             "Currently executing:\n" + currentlyExecuting +

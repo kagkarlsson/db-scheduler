@@ -63,7 +63,7 @@ public class DbSchedulerAutoConfigurationTest {
             assertThat(ctx).hasSingleBean(DataSource.class);
             assertThat(ctx).hasSingleBean(Scheduler.class);
 
-            ctx.getBean(Scheduler.class).getScheduledExecutions(execution -> {
+            ctx.getBean(Scheduler.class).fetchScheduledExecutions(execution -> {
                 fail("No scheduled executions should be present", execution);
             });
         });
