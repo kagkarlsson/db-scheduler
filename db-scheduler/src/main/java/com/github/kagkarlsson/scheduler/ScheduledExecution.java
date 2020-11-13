@@ -26,12 +26,15 @@ public class ScheduledExecution<DATA_TYPE> {
         this.dataClass = dataClass;
         this.execution = execution;
     }
+
     public TaskInstanceId getTaskInstance() {
         return execution.taskInstance;
     }
+
     public Instant getExecutionTime() {
         return execution.getExecutionTime();
     }
+
     @SuppressWarnings("unchecked")
     public DATA_TYPE getData() {
         if (dataClass.isInstance(this.execution.taskInstance.getData())) {
@@ -39,6 +42,27 @@ public class ScheduledExecution<DATA_TYPE> {
         }
         throw new DataClassMismatchException();
     }
+
+    public Instant getLastSuccess() {
+        return execution.lastSuccess;
+    }
+
+    public Instant getLastFailure() {
+        return execution.lastFailure;
+    }
+
+    public int getConsecutiveFailures() {
+        return execution.consecutiveFailures;
+    }
+
+    public boolean isPicked() {
+        return execution.picked;
+    }
+
+    public String getPickedBy() {
+        return execution.pickedBy;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
