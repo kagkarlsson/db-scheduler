@@ -63,6 +63,7 @@ public abstract class CompatibilityTest {
     private ExecutionCompletedCondition completed12Condition;
 
     public abstract DataSource getDataSource();
+    public abstract boolean commitWhenAutocommitDisabled();
 
     @BeforeEach
     public void setUp() {
@@ -132,7 +133,7 @@ public abstract class CompatibilityTest {
         taskResolver.addTask(oneTime);
 
         DataSource dataSource = getDataSource();
-        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
         final Instant now = TimeHelper.truncatedInstantNow();
 
@@ -171,7 +172,7 @@ public abstract class CompatibilityTest {
         taskResolver.addTask(recurringWithData);
 
         DataSource dataSource = getDataSource();
-        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
         final Instant now = Instant.now();
 

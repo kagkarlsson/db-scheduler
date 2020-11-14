@@ -61,7 +61,8 @@ public class SchedulerBuilder {
     protected ExecutorService executorService;
     protected Duration deleteUnresolvedAfter = DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
     protected JdbcCustomization jdbcCustomization = null;
-    private Duration shutdownMaxWait = SHUTDOWN_MAX_WAIT;
+    protected Duration shutdownMaxWait = SHUTDOWN_MAX_WAIT;
+    protected boolean commitWhenAutocommitDisabled = false;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -157,6 +158,11 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder commitWhenAutocommitDisabled(boolean commitWhenAutocommitDisabled) {
+        this.commitWhenAutocommitDisabled = commitWhenAutocommitDisabled;
+        return this;
+    }
+
     public Scheduler build() {
         if (pollingLimit < executorThreads) {
             LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
@@ -168,7 +174,8 @@ public class SchedulerBuilder {
 
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
         final JdbcCustomization jdbcCustomization = ofNullable(this.jdbcCustomization).orElseGet(() -> new AutodetectJdbcCustomization(dataSource));
-        final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, jdbcCustomization, tableName, taskResolver, schedulerName, serializer);
+        final JdbcTaskRepository schedulerTaskRepository = new JdbcTaskRepository(dataSource, true, jdbcCustomization, tableName, taskResolver, schedulerName, serializer);
+        final JdbcTaskRepository clientTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled, jdbcCustomization, tableName, taskResolver, schedulerName, serializer);
 
         ExecutorService candidateExecutorService = executorService;
         if (candidateExecutorService == null) {
@@ -182,7 +189,7 @@ public class SchedulerBuilder {
             enableImmediateExecution,
             tableName,
             schedulerName.getName());
-        return new Scheduler(clock, taskRepository, taskResolver, executorThreads, candidateExecutorService,
+        return new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
                 schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
             deleteUnresolvedAfter, shutdownMaxWait, startTasks);
     }

@@ -147,6 +147,7 @@ public interface SchedulerClient {
 
             TaskRepository taskRepository = new JdbcTaskRepository(
                 dataSource,
+                false,
                 ofNullable(jdbcCustomization).orElse(new DefaultJdbcCustomization()),
                 tableName,
                 taskResolver,
