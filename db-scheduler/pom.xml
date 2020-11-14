@@ -18,7 +18,7 @@
         <hikaricp.version>3.1.0</hikaricp.version>
         <hsqldb.version>2.3.3</hsqldb.version>
         <java8-matchers.version>1.6</java8-matchers.version>
-        <equals-verifier.version>3.1.12</equals-verifier.version>
+        <equals-verifier.version>3.5</equals-verifier.version>
         <micro-jdbc.version>0.3</micro-jdbc.version>
         <otj-pg-embedded.version>0.11.4</otj-pg-embedded.version>
         <postgresql.version>9.4.1207</postgresql.version>

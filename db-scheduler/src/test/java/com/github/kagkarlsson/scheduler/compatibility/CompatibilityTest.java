@@ -10,6 +10,7 @@ import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
 import com.github.kagkarlsson.scheduler.helper.ExecutionCompletedCondition;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -133,7 +135,7 @@ public abstract class CompatibilityTest {
         DataSource dataSource = getDataSource();
         final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
-        final Instant now = Instant.now();
+        final Instant now = TimeHelper.truncatedInstantNow();
 
         final TaskInstance<String> taskInstance = oneTime.instance("id1", data);
         final Execution newExecution = new Execution(now, taskInstance);
