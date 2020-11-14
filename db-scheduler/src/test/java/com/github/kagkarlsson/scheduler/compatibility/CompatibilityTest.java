@@ -43,6 +43,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 
 @SuppressWarnings("ConstantConditions")
@@ -82,6 +83,7 @@ public abstract class CompatibilityTest {
                 .heartbeatInterval(Duration.ofMillis(100))
                 .schedulerName(new SchedulerName.Fixed("test"))
                 .statsRegistry(testableRegistry)
+                .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
                 .build();
         stopScheduler.register(scheduler);
     }
@@ -95,7 +97,7 @@ public abstract class CompatibilityTest {
 
     @Test
     public void test_compatibility() {
-        assertTimeout(Duration.ofSeconds(10), () -> {
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
             scheduler.schedule(oneTime.instance("id1"), Instant.now());
             scheduler.schedule(oneTime.instance("id1"), Instant.now()); //duplicate
             scheduler.schedule(recurring.instance("id1"), Instant.now());
@@ -116,14 +118,14 @@ public abstract class CompatibilityTest {
 
     @Test
     public void test_jdbc_repository_compatibility() {
-        assertTimeout(Duration.ofSeconds(20), () -> {
+        assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
             doJDBCRepositoryCompatibilityTestUsingData(null);
         });
     }
 
     @Test
     public void test_jdbc_repository_compatibility_with_data() {
-        assertTimeout(Duration.ofSeconds(20), () -> {
+        assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
             doJDBCRepositoryCompatibilityTestUsingData("my data");
         });
     }
@@ -192,15 +194,4 @@ public abstract class CompatibilityTest {
         Execution round3 = jdbcTaskRepository.getExecution(taskInstance).get();
         assertNull(round3.taskInstance.getData());
     }
-
-
-    private void sleep(Duration duration) {
-        try {
-            Thread.sleep(duration.toMillis());
-        } catch (InterruptedException e) {
-            LoggerFactory.getLogger(CompatibilityTest.class).info("Interrupted");
-        }
-    }
-
-
 }
