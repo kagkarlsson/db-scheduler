@@ -167,7 +167,7 @@ public class SchedulerBuilder {
         }
 
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
-        final JdbcCustomization jdbcCustomization = ofNullable(this.jdbcCustomization).orElse(new AutodetectJdbcCustomization(dataSource));
+        final JdbcCustomization jdbcCustomization = ofNullable(this.jdbcCustomization).orElseGet(() -> new AutodetectJdbcCustomization(dataSource));
         final JdbcTaskRepository taskRepository = new JdbcTaskRepository(dataSource, jdbcCustomization, tableName, taskResolver, schedulerName, serializer);
 
         ExecutorService candidateExecutorService = executorService;

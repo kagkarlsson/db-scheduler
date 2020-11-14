@@ -1,6 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TimeHelper;
+import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -16,6 +18,7 @@ import java.util.stream.IntStream;
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.excludePicked;
+import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 
@@ -60,7 +63,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void test_createIfNotExists() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
 
         TaskInstance<Void> instance1 = oneTimeTask.instance("id1");
         TaskInstance<Void> instance2 = oneTimeTask.instance("id2");
@@ -73,7 +76,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void get_due_should_only_include_due_executions() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
 
         taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
         assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(1));
@@ -82,7 +85,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void get_due_should_honor_max_results_limit() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
 
         taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
         taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id2")));
@@ -92,7 +95,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void get_due_should_be_sorted() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         IntStream.range(0, 100).forEach(i ->
                         taskRepository.createIfNotExists(new Execution(now.minusSeconds(new Random().nextInt(10000)), oneTimeTask.instance("id" + i)))
         );
@@ -106,7 +109,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void get_due_should_not_include_previously_unresolved() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         final OneTimeTask<Void> unresolved1 = TestTasks.oneTime("unresolved1", Void.class, TestTasks.DO_NOTHING);
         final OneTimeTask<Void> unresolved2 = TestTasks.oneTime("unresolved2", Void.class, TestTasks.DO_NOTHING);
         final OneTimeTask<Void> unresolved3 = TestTasks.oneTime("unresolved3", Void.class, TestTasks.DO_NOTHING);
@@ -139,7 +142,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void picked_executions_should_not_be_returned_as_due() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
         List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
         assertThat(due, hasSize(1));
@@ -150,7 +153,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void picked_execution_should_have_information_about_which_scheduler_processes_it() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         final TaskInstance<Void> instance = oneTimeTask.instance("id1");
         taskRepository.createIfNotExists(new Execution(now, instance));
         List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
@@ -167,7 +170,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void should_not_be_able_to_pick_execution_that_has_been_rescheduled() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         final TaskInstance<Void> instance = oneTimeTask.instance("id1");
         taskRepository.createIfNotExists(new Execution(now, instance));
 
@@ -183,7 +186,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void reschedule_should_move_execution_in_time() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         final TaskInstance<Void> instance = oneTimeTask.instance("id1");
         taskRepository.createIfNotExists(new Execution(now, instance));
         List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
@@ -206,7 +209,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void reschedule_should_persist_consecutive_failures() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         final TaskInstance<Void> instance = oneTimeTask.instance("id1");
         taskRepository.createIfNotExists(new Execution(now, instance));
         List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
@@ -224,7 +227,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void reschedule_should_update_data_if_specified() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         final TaskInstance<Integer> instance = oneTimeTaskWithData.instance("id1", 1);
         taskRepository.createIfNotExists(new Execution(now, instance));
 
@@ -240,7 +243,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void test_get_failing_executions() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         final TaskInstance<Void> instance = oneTimeTask.instance("id1");
         taskRepository.createIfNotExists(new Execution(now, instance));
 
@@ -265,7 +268,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void get_scheduled_executions() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         IntStream.range(0, 100).forEach(i ->
                 taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + i)))
         );
@@ -286,7 +289,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void get_scheduled_by_task_name() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
         taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + 1)));
         taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + 2)));
         taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), alternativeOneTimeTask.instance("id" + 3)));
@@ -307,7 +310,7 @@ public class JdbcTaskRepositoryTest {
 
     @Test
     public void get_dead_executions_should_not_include_previously_unresolved() {
-        Instant now = Instant.now();
+        Instant now = TimeHelper.truncatedInstantNow();
 
         // 1
         final Instant timeDied = now.minus(Duration.ofDays(5));
