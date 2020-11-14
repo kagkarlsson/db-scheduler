@@ -27,4 +27,9 @@ public class PostgresqlCompatibilityTest extends CompatibilityTest {
         return postgres.getDataSource();
     }
 
+    @Override
+    public boolean commitWhenAutocommitDisabled() {
+        return false;
+    }
+
 }

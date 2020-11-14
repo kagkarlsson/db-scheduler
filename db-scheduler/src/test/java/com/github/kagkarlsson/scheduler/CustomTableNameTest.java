@@ -36,7 +36,7 @@ public class CustomTableNameTest {
         oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
         List<Task<?>> knownTasks = new ArrayList<>();
         knownTasks.add(oneTimeTask);
-        taskRepository = new JdbcTaskRepository(DB.getDataSource(), CUSTOM_TABLENAME, new TaskResolver(StatsRegistry.NOOP, knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
+        taskRepository = new JdbcTaskRepository(DB.getDataSource(), false, CUSTOM_TABLENAME, new TaskResolver(StatsRegistry.NOOP, knownTasks), new SchedulerName.Fixed(SCHEDULER_NAME));
 
         DbUtils.runSqlResource("postgresql_custom_tablename.sql").accept(DB.getDataSource());
     }

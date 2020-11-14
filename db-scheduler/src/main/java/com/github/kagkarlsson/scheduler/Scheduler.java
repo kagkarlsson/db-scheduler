@@ -41,7 +41,7 @@ public class Scheduler implements SchedulerClient {
     private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
     private final SchedulerClient delegate;
     private final Clock clock;
-    private final TaskRepository taskRepository;
+    private final TaskRepository schedulerTaskRepository;
     private final TaskResolver taskResolver;
     private int threadpoolSize;
     private final ExecutorService executorService;
@@ -61,10 +61,10 @@ public class Scheduler implements SchedulerClient {
     private final SettableSchedulerState schedulerState = new SettableSchedulerState();
     private int currentGenerationNumber = 1;
 
-    protected Scheduler(Clock clock, TaskRepository taskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
+    protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
                         Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, Duration shutdownMaxWait, List<OnStartup> onStartup) {
         this.clock = clock;
-        this.taskRepository = taskRepository;
+        this.schedulerTaskRepository = schedulerTaskRepository;
         this.taskResolver = taskResolver;
         this.threadpoolSize = threadpoolSize;
         this.executorService = executorService;
@@ -81,7 +81,7 @@ public class Scheduler implements SchedulerClient {
         this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
         this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
         SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
-        delegate = new StandardSchedulerClient(taskRepository, earlyExecutionListener);
+        delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener);
     }
 
     public void start() {
@@ -188,7 +188,7 @@ public class Scheduler implements SchedulerClient {
     }
 
     public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {
-        return taskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
+        return schedulerTaskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
     }
 
     public void triggerCheckForDueExecutions() {
@@ -201,7 +201,7 @@ public class Scheduler implements SchedulerClient {
 
     protected void executeDue() {
         Instant now = clock.now();
-        List<Execution> dueExecutions = taskRepository.getDue(now, pollingLimit);
+        List<Execution> dueExecutions = schedulerTaskRepository.getDue(now, pollingLimit);
         LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
 
         this.currentGenerationNumber = this.currentGenerationNumber + 1;
@@ -219,7 +219,7 @@ public class Scheduler implements SchedulerClient {
         taskResolver.getUnresolvedTaskNames(deleteUnresolvedAfter)
             .forEach(taskName -> {
                 LOG.warn("Deleting all executions for task with name '{}'. They have been unresolved for more than {}", taskName, deleteUnresolvedAfter);
-                int removed = taskRepository.removeExecutions(taskName);
+                int removed = schedulerTaskRepository.removeExecutions(taskName);
                 LOG.info("Removed {} executions", removed);
                 taskResolver.clearUnresolved(taskName);
             });
@@ -227,7 +227,7 @@ public class Scheduler implements SchedulerClient {
         LOG.debug("Checking for dead executions.");
         Instant now = clock.now();
         final Instant oldAgeLimit = now.minus(getMaxAgeBeforeConsideredDead());
-        List<Execution> oldExecutions = taskRepository.getDeadExecutions(oldAgeLimit);
+        List<Execution> oldExecutions = schedulerTaskRepository.getDeadExecutions(oldAgeLimit);
 
         if (!oldExecutions.isEmpty()) {
             oldExecutions.forEach(execution -> {
@@ -238,7 +238,7 @@ public class Scheduler implements SchedulerClient {
                     Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
                     if (task.isPresent()) {
                         statsRegistry.register(SchedulerStatsEvent.DEAD_EXECUTION);
-                        task.get().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(taskRepository, execution));
+                        task.get().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(schedulerTaskRepository, execution));
                     } else {
                         LOG.error("Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.", execution.taskInstance.getTaskName());
                     }
@@ -265,7 +265,7 @@ public class Scheduler implements SchedulerClient {
         new ArrayList<>(currentlyProcessing.keySet()).forEach(execution -> {
             LOG.trace("Updating heartbeat for execution: " + execution);
             try {
-                taskRepository.updateHeartbeat(execution, now);
+                schedulerTaskRepository.updateHeartbeat(execution, now);
             } catch (Throwable e) {
                 LOG.error("Failed while updating heartbeat for execution {}. Will try again later.", execution, e);
                 statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
@@ -303,7 +303,7 @@ public class Scheduler implements SchedulerClient {
                     return;
                 }
 
-                final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
+                final Optional<Execution> pickedExecution = schedulerTaskRepository.pick(candidate, clock.now());
 
                 if (!pickedExecution.isPresent()) {
                     // someone else picked id
@@ -360,7 +360,7 @@ public class Scheduler implements SchedulerClient {
         private void complete(CompletionHandler completion, Execution execution, Instant executionStarted) {
             ExecutionComplete completeEvent = ExecutionComplete.success(execution, executionStarted, clock.now());
             try {
-                completion.complete(completeEvent, new ExecutionOperations(taskRepository, execution));
+                completion.complete(completeEvent, new ExecutionOperations(schedulerTaskRepository, execution));
                 statsRegistry.registerSingleCompletedExecution(completeEvent);
             } catch (Throwable e) {
                 statsRegistry.register(SchedulerStatsEvent.COMPLETIONHANDLER_ERROR);
@@ -373,7 +373,7 @@ public class Scheduler implements SchedulerClient {
         private void failure(FailureHandler failureHandler, Execution execution, Throwable cause, Instant executionStarted) {
             ExecutionComplete completeEvent = ExecutionComplete.failure(execution, executionStarted, clock.now(), cause);
             try {
-                failureHandler.onFailure(completeEvent, new ExecutionOperations(taskRepository, execution));
+                failureHandler.onFailure(completeEvent, new ExecutionOperations(schedulerTaskRepository, execution));
                 statsRegistry.registerSingleCompletedExecution(completeEvent);
             } catch (Throwable e) {
                 statsRegistry.register(SchedulerStatsEvent.FAILUREHANDLER_ERROR);

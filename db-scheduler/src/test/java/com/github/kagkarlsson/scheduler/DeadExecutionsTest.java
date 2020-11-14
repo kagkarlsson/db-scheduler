@@ -56,9 +56,10 @@ public class DeadExecutionsTest {
 
         TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, oneTimeTask, nonCompleting);
 
-        jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
         scheduler = new Scheduler(settableClock,
+            jdbcTaskRepository,
             jdbcTaskRepository,
             taskResolver,
             1,

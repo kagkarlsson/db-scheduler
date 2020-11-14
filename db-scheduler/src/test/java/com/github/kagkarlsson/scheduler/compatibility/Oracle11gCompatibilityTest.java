@@ -44,4 +44,9 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
     public DataSource getDataSource() {
         return pooledDatasource;
     }
+
+    @Override
+    public boolean commitWhenAutocommitDisabled() {
+        return false;
+    }
 }

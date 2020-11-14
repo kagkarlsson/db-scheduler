@@ -45,4 +45,9 @@ public class NoAutoCommitPostgresqlCompatibilityTest extends CompatibilityTest {
         return pooledDatasource;
     }
 
+    @Override
+    public boolean commitWhenAutocommitDisabled() {
+        return true;
+    }
+
 }
