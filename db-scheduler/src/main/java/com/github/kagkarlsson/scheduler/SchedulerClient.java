@@ -131,6 +131,11 @@ public interface SchedulerClient {
         public static Builder create(DataSource dataSource, List<Task<?>> knownTasks) {
             return new Builder(dataSource, knownTasks);
         }
+        
+        public Builder serializer(Serializer serializer) {
+            this.serializer = serializer;
+            return this;
+        }
 
         public Builder tableName(String tableName) {
             this.tableName = tableName;
