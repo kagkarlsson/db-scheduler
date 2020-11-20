@@ -115,7 +115,7 @@ public interface SchedulerClient {
 
         private final DataSource dataSource;
         private List<Task<?>> knownTasks;
-        private final Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
+        private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
         private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
         private JdbcCustomization jdbcCustomization;
 
@@ -130,6 +130,11 @@ public interface SchedulerClient {
 
         public static Builder create(DataSource dataSource, List<Task<?>> knownTasks) {
             return new Builder(dataSource, knownTasks);
+        }
+        
+        public Builder serializer(Serializer serializer) {
+            this.serializer = serializer;
+            return this;
         }
 
         public Builder tableName(String tableName) {
