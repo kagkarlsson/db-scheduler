@@ -293,13 +293,15 @@ public class JdbcTaskRepositoryTest {
     @Test
     public void get_scheduled_by_task_name() {
         Instant now = TimeHelper.truncatedInstantNow();
-        taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + 1)));
+        final Execution execution1 = new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + 1));
+        taskRepository.createIfNotExists(execution1);
         taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), oneTimeTask.instance("id" + 2)));
         taskRepository.createIfNotExists(new Execution(now.plus(new Random().nextInt(10), ChronoUnit.HOURS), alternativeOneTimeTask.instance("id" + 3)));
 
-        List<Execution> scheduledByTaskName = new ArrayList<>();
-        taskRepository.getScheduledExecutions(all().withPicked(false), oneTimeTask.getName(), scheduledByTaskName::add);
-        assertThat(scheduledByTaskName, hasSize(2));
+        taskRepository.pick(execution1, Instant.now());
+        assertThat(getScheduledExecutions(all().withPicked(true), oneTimeTask.getName()), hasSize(1));
+        assertThat(getScheduledExecutions(all().withPicked(false), oneTimeTask.getName()), hasSize(1));
+        assertThat(getScheduledExecutions(all(), oneTimeTask.getName()), hasSize(2));
 
         assertThat(getScheduledExecutions(all().withPicked(false), alternativeOneTimeTask.getName()), hasSize(1));
         assertThat(getScheduledExecutions(all().withPicked(false), "non-existing"), empty());
