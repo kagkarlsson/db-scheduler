@@ -268,7 +268,7 @@ public interface SchedulerClient {
 
         @Override
         public void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
-            fetchScheduledExecutions(ScheduledExecutionsFilter.excludePicked(), consumer);
+            fetchScheduledExecutions(ScheduledExecutionsFilter.all().withPicked(false), consumer);
         }
 
         @Override
@@ -279,7 +279,7 @@ public interface SchedulerClient {
 
         @Override
         public <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
-            fetchScheduledExecutionsForTask(taskName, dataClass, ScheduledExecutionsFilter.excludePicked(), consumer);
+            fetchScheduledExecutionsForTask(taskName, dataClass, ScheduledExecutionsFilter.all().withPicked(false), consumer);
         }
 
         @Override

@@ -19,8 +19,10 @@ import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
+import com.github.kagkarlsson.scheduler.jdbc.AndCondition;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.QueryBuilder;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -110,36 +112,22 @@ public class JdbcTaskRepository implements TaskRepository {
     @Override
     public void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer) {
         UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
-        jdbcRunner.query(
-                "select * from " + tableName
-                    + (filter.getIncludePicked() && unresolvedFilter.unresolved.isEmpty() ? "" : " where ")
-                    + (!filter.getIncludePicked() ? " picked = ? " : "")
-                    + unresolvedFilter.andCondition()
-                    + " order by execution_time asc",
-                (PreparedStatement p) -> {
-                    int index = 1;
-                    if (!filter.getIncludePicked()) {
-                        p.setBoolean(index++, false);
-                    }
-                    unresolvedFilter.setParameters(p, index);
-                },
-                new ExecutionResultSetConsumer(consumer)
-        );
+
+        QueryBuilder q = queryForFilter(filter);
+        if (unresolvedFilter.isActive()) {
+            q.andCondition(unresolvedFilter);
+        }
+
+        jdbcRunner.query(q.getQuery(), q.getPreparedStatementSetter(), new ExecutionResultSetConsumer(consumer));
     }
 
     @Override
     public void getScheduledExecutions(ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer) {
-        jdbcRunner.query(
-                "select * from " + tableName + " where "
-                    + (!filter.getIncludePicked() ? " picked = ? and " : "")
-                    + " task_name = ? order by execution_time asc",
-                (PreparedStatement p) -> {
-                    int index = 1;
-                    if (!filter.getIncludePicked()) {
-                        p.setBoolean(index++, false);
-                    }
-                    p.setString(index++, taskName);
-                },
+        QueryBuilder q = queryForFilter(filter);
+        q.andCondition(new TaskCondition(taskName));
+
+        jdbcRunner.query(q.getQuery(),
+                q.getPreparedStatementSetter(),
                 new ExecutionResultSetConsumer(consumer)
         );
     }
@@ -346,6 +334,19 @@ public class JdbcTaskRepository implements TaskRepository {
             });
     }
 
+    private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
+        final QueryBuilder q = QueryBuilder.selectFromTable(tableName);
+
+        filter.getPickedValue().ifPresent(value -> {
+            q.andCondition(new PickedCondition(value));
+        });
+
+        q.orderBy("execution_time asc");
+        return q;
+    }
+
+
+
     private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
 
         private final ArrayList<Execution> executions;
@@ -431,16 +432,23 @@ public class JdbcTaskRepository implements TaskRepository {
         }
     }
 
-    private static class UnresolvedFilter {
+    private static class UnresolvedFilter implements AndCondition {
         private final List<UnresolvedTask> unresolved;
 
         public UnresolvedFilter(List<UnresolvedTask> unresolved) {
             this.unresolved = unresolved;
         }
 
+        public boolean isActive() {
+            return !unresolved.isEmpty();
+        }
+
         public String andCondition() {
-            return unresolved.isEmpty() ? "" :
-                "and task_name not in (" + unresolved.stream().map(ignored -> "?").collect(joining(",")) + ")";
+            return unresolved.isEmpty() ? "" : "and " + getQueryPart();
+        }
+
+        public String getQueryPart() {
+            return "task_name not in (" + unresolved.stream().map(ignored -> "?").collect(joining(",")) + ")";
         }
 
         public int setParameters(PreparedStatement p, int index) throws SQLException {
@@ -448,6 +456,44 @@ public class JdbcTaskRepository implements TaskRepository {
             for (String taskName : unresolvedTasknames) {
                 p.setString(index++, taskName);
             }
+            return index;
+        }
+    }
+
+    private static class PickedCondition implements AndCondition {
+        private final boolean value;
+
+        public PickedCondition(boolean value) {
+            this.value = value;
+        }
+
+        @Override
+        public String getQueryPart() {
+            return "picked = ?";
+        }
+
+        @Override
+        public int setParameters(PreparedStatement p, int index) throws SQLException {
+            p.setBoolean(index++, value);
+            return index;
+        }
+    }
+
+    private static class TaskCondition implements AndCondition {
+        private final String value;
+
+        public TaskCondition(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String getQueryPart() {
+            return "task_name = ?";
+        }
+
+        @Override
+        public int setParameters(PreparedStatement p, int index) throws SQLException {
+            p.setString(index++, value);
             return index;
         }
     }

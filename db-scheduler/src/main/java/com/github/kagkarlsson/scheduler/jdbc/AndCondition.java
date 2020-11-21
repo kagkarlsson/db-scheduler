@@ -13,28 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.jdbc;
 
-import java.util.Optional;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
-public class ScheduledExecutionsFilter {
+public interface AndCondition {
+    public String getQueryPart();
 
-    private Boolean pickedValue;
-
-    private ScheduledExecutionsFilter() {
-    }
-
-    public static ScheduledExecutionsFilter all() {
-        return new ScheduledExecutionsFilter();
-    }
-
-    public ScheduledExecutionsFilter withPicked(boolean pickedValue) {
-        this.pickedValue = pickedValue;
-        return this;
-    }
-
-    public Optional<Boolean> getPickedValue() {
-        return Optional.ofNullable(pickedValue);
-    }
-
+    public int setParameters(PreparedStatement p, int index) throws SQLException;
 }
