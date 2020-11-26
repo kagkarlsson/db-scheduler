@@ -13,7 +13,7 @@
     <properties>
         <license.dir>${project.parent.basedir}/.license</license.dir>
         <!-- Dependencies -->
-        <cron-utils.version>8.0.0</cron-utils.version>
+        <cron-utils.version>9.1.3</cron-utils.version>
         <hamcrest.version>1.3</hamcrest.version>
         <hikaricp.version>3.1.0</hikaricp.version>
         <hsqldb.version>2.3.3</hsqldb.version>
