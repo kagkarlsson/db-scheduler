@@ -138,6 +138,7 @@
 							<exclude>src/test/**</exclude>
 							<exclude>**/*.properties</exclude>
 							<exclude>**/*.sql</exclude>
+							<exclude>.github/**</exclude>
 						</excludes>
 						<failIfMissing>${failOnMissingHeader}</failIfMissing>
 					</configuration>
