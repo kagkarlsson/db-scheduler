@@ -46,7 +46,8 @@
 		<module>db-scheduler</module>
 		<module>db-scheduler-boot-starter</module>
         <module>examples</module>
-    </modules>
+    <module>db-scheduler-mongo</module>
+  </modules>
 
 	<dependencies>
 		<dependency>
