@@ -36,4 +36,13 @@ public class MssqlJdbcCustomization implements JdbcCustomization {
         return Optional.ofNullable(rs.getTimestamp(columnName)).map(Timestamp::toInstant).orElse(null);
     }
 
+    @Override
+    public boolean supportsExplicitQueryLimitPart() {
+        return false;
+    }
+
+    @Override
+    public String getQueryLimitPart(int limit) {
+        return "";
+    }
 }

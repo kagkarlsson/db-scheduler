@@ -25,11 +25,7 @@ public interface JdbcCustomization {
 
     Instant getInstant(ResultSet rs, String columnName) throws SQLException;
 
-    default boolean supportsExplicitQueryLimitPart() {
-        return false;
-    }
+    boolean supportsExplicitQueryLimitPart();
 
-    default String getQueryLimitPart(int limit) {
-        return "";
-    }
+    String getQueryLimitPart(int limit);
 }

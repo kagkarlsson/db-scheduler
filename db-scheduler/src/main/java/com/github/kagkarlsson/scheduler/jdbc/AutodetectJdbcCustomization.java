@@ -64,4 +64,14 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
         return jdbcCustomization.getInstant(rs, columnName);
     }
+
+    @Override
+    public boolean supportsExplicitQueryLimitPart() {
+        return jdbcCustomization.supportsExplicitQueryLimitPart();
+    }
+
+    @Override
+    public String getQueryLimitPart(int limit) {
+        return jdbcCustomization.getQueryLimitPart(limit);
+    }
 }
