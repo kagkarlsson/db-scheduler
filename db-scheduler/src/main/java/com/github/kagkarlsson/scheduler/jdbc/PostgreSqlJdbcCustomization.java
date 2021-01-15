@@ -15,21 +15,14 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.Instant;
-
-public interface JdbcCustomization {
-    void setInstant(PreparedStatement p, int index, Instant value) throws SQLException;
-
-    Instant getInstant(ResultSet rs, String columnName) throws SQLException;
-
-    default boolean supportsExplicitQueryLimitPart() {
-        return false;
+public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
+    @Override
+    public boolean supportsExplicitQueryLimitPart() {
+        return true;
     }
 
-    default String getQueryLimitPart(int limit) {
-        return "";
+    @Override
+    public String getQueryLimitPart(int limit) {
+        return " LIMIT " + limit;
     }
 }

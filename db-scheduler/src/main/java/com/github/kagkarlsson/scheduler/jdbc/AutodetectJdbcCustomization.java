@@ -29,6 +29,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
 
     private static final Logger LOG = LoggerFactory.getLogger(AutodetectJdbcCustomization.class);
     public static final String MICROSOFT_SQL_SERVER = "Microsoft SQL Server";
+    public static final String POSTGRESQL = "PostgreSQL";
     private final JdbcCustomization jdbcCustomization;
 
     public AutodetectJdbcCustomization(DataSource dataSource) {
@@ -42,6 +43,9 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
             if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
                 LOG.info("Using MSSQL jdbc-overrides.");
                 detectedCustomization = new MssqlJdbcCustomization();
+            } else if (databaseProductName.equals(POSTGRESQL)) {
+                LOG.info("Using PostgreSQL jdbc-overrides.");
+                detectedCustomization = new PostgreSqlJdbcCustomization();
             }
 
         } catch (SQLException e) {
