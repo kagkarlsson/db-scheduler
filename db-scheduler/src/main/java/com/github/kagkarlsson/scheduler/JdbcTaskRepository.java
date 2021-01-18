@@ -143,7 +143,9 @@ public class JdbcTaskRepository implements TaskRepository {
                     p.setBoolean(index++, false);
                     jdbcCustomization.setInstant(p, index++, now);
                     unresolvedFilter.setParameters(p, index);
-                    p.setMaxRows(limit);
+                    if (!jdbcCustomization.supportsExplicitQueryLimitPart()) {
+                        p.setMaxRows(limit);
+                    }
                 },
                 new ExecutionResultSetMapper()
         );
