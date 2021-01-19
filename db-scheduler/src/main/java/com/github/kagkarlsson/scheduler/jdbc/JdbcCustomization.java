@@ -24,4 +24,8 @@ public interface JdbcCustomization {
     void setInstant(PreparedStatement p, int index, Instant value) throws SQLException;
 
     Instant getInstant(ResultSet rs, String columnName) throws SQLException;
+
+    boolean supportsExplicitQueryLimitPart();
+
+    String getQueryLimitPart(int limit);
 }
