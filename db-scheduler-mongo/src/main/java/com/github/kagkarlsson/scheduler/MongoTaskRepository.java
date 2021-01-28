@@ -92,7 +92,7 @@ public class MongoTaskRepository implements TaskRepository {
         // Search criterion : taskName, taskInstance
         final Bson query = buildFilterFromExecution(execution, false);
         Optional<TaskEntity> taskEntityOpt = toEntity(execution);
-        if (taskEntityOpt.isEmpty()) {
+        if (!taskEntityOpt.isPresent()) {
             return false;
         }
         TaskEntity taskEntity = taskEntityOpt.get();
@@ -413,7 +413,7 @@ public class MongoTaskRepository implements TaskRepository {
     }
 
     private static <T> Supplier<T> memoize(Supplier<T> original) {
-        return new Supplier<>() {
+        return new Supplier<T>() {
             Supplier<T> delegate = this::firstTime;
             boolean initialized;
 
