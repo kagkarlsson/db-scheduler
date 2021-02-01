@@ -356,12 +356,12 @@ public class Scheduler implements SchedulerClient {
                 statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
 
             } catch (RuntimeException unhandledException) {
-                LOG.error("Unhandled exception during execution of task with name '{}'. Treating as failure.", task.get().getName(), unhandledException);
+                LOG.debug("Unhandled exception during execution of task with name '{}'. Treating as failure.", task.get().getName(), unhandledException);
                 failure(task.get().getFailureHandler(), execution, unhandledException, executionStarted);
                 statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
 
             } catch (Throwable unhandledError) {
-                LOG.error("Error during execution of task with name '{}'. Treating as failure.", task.get().getName(), unhandledError);
+                LOG.debug("Error during execution of task with name '{}'. Treating as failure.", task.get().getName(), unhandledError);
                 failure(task.get().getFailureHandler(), execution, unhandledError, executionStarted);
                 statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
             }
