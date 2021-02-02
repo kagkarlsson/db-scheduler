@@ -98,6 +98,16 @@ public class DbSchedulerProperties {
     @DurationUnit(SECONDS)
     private Duration shutdownMaxWait = SchedulerBuilder.SHUTDOWN_MAX_WAIT;
 
+    /**
+     * <p>Which log level to use when logging task failures. Defaults to {@link Level#DEBUG}.</p>
+     */
+    private Level failureLogLevel = Level.DEBUG;
+
+    /**
+     * <p>Whether or not to log the {@link Throwable} that caused a task to fail.</p>
+     */
+    private boolean logStackTraceOnFailure = false;
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -184,5 +194,21 @@ public class DbSchedulerProperties {
 
     public void setShutdownMaxWait(Duration shutdownMaxWait) {
         this.shutdownMaxWait = shutdownMaxWait;
+    }
+
+    public Level getFailureLogLevel() {
+        return failureLogLevel;
+    }
+
+    public void setFailureLogLevel(Level failureLogLevel) {
+        this.failureLogLevel = failureLogLevel;
+    }
+
+    public boolean isLogStackTraceOnFailure() {
+        return logStackTraceOnFailure;
+    }
+
+    public void setLogStackTraceOnFailure(boolean logStackTraceOnFailure) {
+        this.logStackTraceOnFailure = logStackTraceOnFailure;
     }
 }

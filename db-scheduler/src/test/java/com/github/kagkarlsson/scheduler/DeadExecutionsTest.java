@@ -16,6 +16,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -72,7 +73,9 @@ public class DeadExecutionsTest {
             POLLING_LIMIT,
             Duration.ofDays(14),
             Duration.ZERO,
-            new ArrayList<>());
+            new ArrayList<>(),
+            Level.DEBUG,
+            true);
 
     }
 

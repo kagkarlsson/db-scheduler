@@ -28,11 +28,13 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 public class SchedulerBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
@@ -63,6 +65,8 @@ public class SchedulerBuilder {
     protected JdbcCustomization jdbcCustomization = null;
     protected Duration shutdownMaxWait = SHUTDOWN_MAX_WAIT;
     protected boolean commitWhenAutocommitDisabled = false;
+    protected Level logLevel = Level.DEBUG;
+    protected boolean logStackTrace = true;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -163,6 +167,15 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder failureLogging(Level logLevel, boolean logStackTrace) {
+        if(logLevel == null) {
+            throw new IllegalArgumentException("Log level must not be null");
+        }
+        this.logLevel = logLevel;
+        this.logStackTrace = logStackTrace;
+        return this;
+    }
+
     public Scheduler build() {
         if (pollingLimit < executorThreads) {
             LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
@@ -190,7 +203,7 @@ public class SchedulerBuilder {
             tableName,
             schedulerName.getName());
         return new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
-                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
-            deleteUnresolvedAfter, shutdownMaxWait, startTasks);
+            schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
+            deleteUnresolvedAfter, shutdownMaxWait, startTasks, logLevel, logStackTrace);
     }
 }

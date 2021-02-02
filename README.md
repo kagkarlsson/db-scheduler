@@ -148,7 +148,7 @@ scheduler.start();
 
 ### Scheduler configuration
 
-The scheduler is created using the `Scheduler.create(...)` builder. The builder have sensible defaults, but the following options are configurable.
+The scheduler is created using the `Scheduler.create(...)` builder. The builder has sensible defaults, but the following options are configurable.
 
 | Option  | Default | Description |
 | ------------- | ---- | ------------- |
@@ -165,6 +165,7 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 | `.deleteUnresolvedAfter(Duration)`  | `14d`  | The time after which executions with unknown tasks are automatically deleted. These can typically be old recurring tasks that are not in use anymore. This is non-zero to prevent accidental removal of tasks through a configuration error (missing known-tasks) and problems during rolling upgrades. |
 | `.jdbcCustomization(JdbcCustomization)`  | auto  | db-scheduler tries to auto-detect the database used to see if any jdbc-interactions need to be customized. This method is an escape-hatch to allow for setting `JdbcCustomizations` explicitly. |
 | `.commitWhenAutocommitDisabled(boolean)`  | false  | By default no commit is issued on DataSource Connections. If auto-commit is disabled, it is assumed that transactions are handled by an external transaction-manager. Set this property to `true` to override this behavior and have the Scheduler always issue commits. |
+| `.failureLogging(Level, boolean)`  | DEBUG, true  | Configures how to log task failures, i.e. `Throwable`s thrown from a task execution handler. |
 
 
 

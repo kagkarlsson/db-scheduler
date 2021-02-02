@@ -13,6 +13,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.event.Level;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -48,7 +49,7 @@ public class SchedulerTest {
         final StatsRegistry statsRegistry = StatsRegistry.NOOP;
         TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, Arrays.asList(tasks));
         JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
-        return new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, statsRegistry, 10_000, Duration.ofDays(14), Duration.ZERO, new ArrayList<>());
+        return new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, statsRegistry, 10_000, Duration.ofDays(14), Duration.ZERO, new ArrayList<>(), Level.DEBUG, true);
     }
 
     @Test

@@ -153,6 +153,9 @@ public class DbSchedulerAutoConfiguration {
         // Expose metrics
         builder.statsRegistry(registry);
 
+        // Failure logging
+        builder.failureLogging(config.getFailureLogLevel(), config.isLogStackTraceOnFailure());
+
         return builder.build();
     }
 
