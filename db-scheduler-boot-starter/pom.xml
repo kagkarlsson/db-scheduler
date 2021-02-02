@@ -70,18 +70,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Validation -->
-        <dependency>
-            <groupId>javax.validation</groupId>
-            <artifactId>validation-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate.validator</groupId>
-            <artifactId>hibernate-validator</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- Annotations -->
         <dependency>
             <groupId>javax.annotation</groupId>

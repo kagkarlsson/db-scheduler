@@ -19,14 +19,11 @@ import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import java.time.Duration;
 import java.util.Optional;
-import javax.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
-import org.springframework.validation.annotation.Validated;
 
 import static java.time.temporal.ChronoUnit.*;
 
-@Validated
 @ConfigurationProperties("db-scheduler")
 public class DbSchedulerProperties {
     /**
@@ -43,7 +40,6 @@ public class DbSchedulerProperties {
      * How often to update the heartbeat timestamp for running executions.
      */
     @DurationUnit(MINUTES)
-    @NotNull
     private Duration heartbeatInterval = SchedulerBuilder.DEFAULT_HEARTBEAT_INTERVAL;
 
     /**
@@ -59,7 +55,6 @@ public class DbSchedulerProperties {
      * <p>Name of the table used to track task-executions. Must match the database. Change name in the
      * table definitions accordingly when creating or modifying the table.
      */
-    @NotNull
     private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 
     /**
@@ -75,7 +70,6 @@ public class DbSchedulerProperties {
      * <p>How often the scheduler checks the database for due executions.
      */
     @DurationUnit(SECONDS)
-    @NotNull
     private Duration pollingInterval = SchedulerBuilder.DEFAULT_POLLING_INTERVAL;
 
     /**
@@ -93,7 +87,6 @@ public class DbSchedulerProperties {
      * <p>The time after which executions with unknown tasks are automatically deleted.</p>
      */
     @DurationUnit(HOURS)
-    @NotNull
     private Duration deleteUnresolvedAfter = SchedulerBuilder.DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
 
 
@@ -103,7 +96,6 @@ public class DbSchedulerProperties {
      * <code>executionContext.getSchedulerState().isShuttingDown()</code> in the ExecutionHandler and abort long-running task.
      */
     @DurationUnit(SECONDS)
-    @NotNull
     private Duration shutdownMaxWait = SchedulerBuilder.SHUTDOWN_MAX_WAIT;
 
     public boolean isEnabled() {
