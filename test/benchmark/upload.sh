@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 
-for vm in "34.76.128.224" "34.76.98.79" "34.77.115.108" "35.205.163.153"
+for vm in "34.77.123.54" "35.241.217.7" "34.78.158.78" "104.199.29.131"
 do
   scp target/db-scheduler-benchmark-1.0-SNAPSHOT.jar "$vm:~/"
 done

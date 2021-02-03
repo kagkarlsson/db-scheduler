@@ -16,10 +16,10 @@ data "http" "myip" {
 resource "google_sql_database_instance" "master" {
   name = "db-scheduler-${random_id.db_name_suffix.hex}"
   region = local.region
-  database_version = "POSTGRES_11"
+  database_version = "POSTGRES_12"
 
   settings {
-    tier = "db-f1-micro"
+    tier = "db-custom-4-25600"
 
     ip_configuration {
       authorized_networks {

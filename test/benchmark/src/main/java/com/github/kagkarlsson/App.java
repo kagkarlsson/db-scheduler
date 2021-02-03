@@ -32,9 +32,11 @@ public class App {
         });
 
         Scheduler scheduler = Scheduler.create(ds, task1)
-            .pollUsingLockAndFetch(2, 4.0)
+            .pollUsingLockAndFetch(0.5, 4.0)
+//            .pollUsingFetchAndLockOnExecute(6, 40.0)
+//            .pollUsingFetchAndLockOnExecute(0.5, 4.0)
             .statsRegistry(new BenchmarkStatsRegistry(metrics))
-            .threads(100)
+            .threads(50)
             .build();
         Runtime.getRuntime().addShutdownHook(new Thread(scheduler::stop));
 

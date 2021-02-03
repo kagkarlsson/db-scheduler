@@ -2,7 +2,7 @@
 resource "google_compute_instance" "default" {
   count = 4
   name         = "test${count.index}"
-  machine_type = "n1-standard-2"
+  machine_type = "n1-standard-4"
   zone         = local.compute_zone
   allow_stopping_for_update = true
 

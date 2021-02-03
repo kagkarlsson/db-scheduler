@@ -5,3 +5,5 @@ target/
 .project
 .settings/
 dependency-reduced-pom.xml
+.terraform
+terraform.tfstate*
