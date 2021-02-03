@@ -116,7 +116,7 @@ public abstract class CompatibilityTest {
         Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
             .betaPollUsingLockAndFetch(0.5, 1.0)
-            .heartbeatInterval(Duration.ofMillis(100))
+            .heartbeatInterval(Duration.ofMillis(500))
             .schedulerName(new SchedulerName.Fixed("test"))
             .statsRegistry(testableRegistry)
             .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
@@ -198,7 +198,7 @@ public abstract class CompatibilityTest {
 
         final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
         assertThat(due, hasSize(1));
-        final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), Instant.now());
+        final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), now);
         assertThat(pickedExecution.isPresent(), is(true));
 
         assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));

@@ -17,7 +17,7 @@ import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_
 public class DbUtils {
 
     public static void clearTables(DataSource dataSource) {
-        new JdbcRunner(dataSource).execute("delete from " + DEFAULT_TABLE_NAME, NOOP);
+        new JdbcRunner(dataSource, true).execute("delete from " + DEFAULT_TABLE_NAME, NOOP);
     }
 
     public static Consumer<DataSource> runSqlResource(String resource) {
