@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 class DueExecutionsBatch {
@@ -26,16 +27,17 @@ class DueExecutionsBatch {
     private static final Logger LOG = LoggerFactory.getLogger(DueExecutionsBatch.class);
     private final int generationNumber;
     private final AtomicInteger executionsLeftInBatch;
-    private int threadpoolSize;
+    private final Predicate<Integer> whenToTriggerCheckForNewBatch;
     private boolean possiblyMoreExecutionsInDb;
     private boolean stale = false;
     private boolean triggeredExecuteDue;
 
-    public DueExecutionsBatch(int threadpoolSize, int generationNumber, int executionsAdded, boolean possiblyMoreExecutionsInDb) {
-        this.threadpoolSize = threadpoolSize;
+    public DueExecutionsBatch(int generationNumber, int executionsAdded, boolean possiblyMoreExecutionsInDb,
+                              Predicate<Integer> whenToTriggerCheckForNewBatch) {
         this.generationNumber = generationNumber;
         this.possiblyMoreExecutionsInDb = possiblyMoreExecutionsInDb;
         this.executionsLeftInBatch = new AtomicInteger(executionsAdded);
+        this.whenToTriggerCheckForNewBatch = whenToTriggerCheckForNewBatch;
     }
 
     public void markBatchAsStale() {
@@ -50,14 +52,14 @@ class DueExecutionsBatch {
         // May be called concurrently by multiple threads
         executionsLeftInBatch.decrementAndGet();
 
-        LOG.trace("Batch state: generationNumber:{}, stale:{}, triggeredExecuteDue:{}, possiblyMoreExecutionsInDb:{}, executionsLeftInBatch:{}, ratio-trigger:{}",
-                generationNumber, stale, triggeredExecuteDue, possiblyMoreExecutionsInDb, executionsLeftInBatch.get(), (threadpoolSize * Scheduler.TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO));
+        LOG.trace("Batch state: generationNumber:{}, stale:{}, triggeredExecuteDue:{}, possiblyMoreExecutionsInDb:{}, executionsLeftInBatch:{}",
+                generationNumber, stale, triggeredExecuteDue, possiblyMoreExecutionsInDb, executionsLeftInBatch.get());
         // Will not synchronize this method as it is not a big problem if two threads manage to call triggerCheckForNewBatch.run() at the same time.
         // There is synchronization further in, when waking the thread that will do the fetching.
         if (!stale
                 && !triggeredExecuteDue
                 && possiblyMoreExecutionsInDb
-                && executionsLeftInBatch.get() <= (threadpoolSize * Scheduler.TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO)) { // TODO: use lower limit here
+                && whenToTriggerCheckForNewBatch.test(executionsLeftInBatch.get())) {
             LOG.trace("Triggering check for new batch.");
             triggerCheckForNewBatch.run();
             triggeredExecuteDue = true;

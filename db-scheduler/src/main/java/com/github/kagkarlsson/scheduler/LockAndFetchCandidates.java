@@ -43,10 +43,10 @@ public class LockAndFetchCandidates implements PollStrategy {
     public void run() {
         Instant now = scheduler.clock.now();
 
-        int executionsToFetch = upperLimit - scheduler.currentlyProcessing.size(); // TODO: also check queue-length here
+        int executionsToFetch = upperLimit - scheduler.executor.getNumberInQueueOrProcessing();
 
         // Might happen if upperLimit == threads and all threads are busy
-        if (executionsToFetch == 0) {
+        if (executionsToFetch <= 0) {
             LOG.trace("No executions to fetch.");
             return;
         }
@@ -64,18 +64,14 @@ public class LockAndFetchCandidates implements PollStrategy {
         }
 
         for (Execution picked : pickedExecutions) {
-            // TODO: refactor scheudler.executorService to a ExecutePickedService: add, get processing, get queue
-            scheduler.executorService.execute(() -> {
-                new ExecutePicked(scheduler, picked).run();
-                if (moreExecutionsInDatabase.get()
-                    // TODO: handle special-case where upperlimit=threads and currentlyprocessing=threads, it will trigger check, but no executions found,
-                    // and next trigger might miss due to thread already awake
-                    && scheduler.currentlyProcessing.size() <= lowerLimit) { // TODO: we should compare to currentlyprocessing + queue-length here to allow for more prefetching
-                    // TODO: howto prevent double trigger if executorservice have not yet had time to run the executions?
-                    //       - maybe also checking queue length will fix it, because they will have been added to the queue..
-                    scheduler.triggerCheckForDueExecutions();
-                }
-            });
+            scheduler.executor.addToQueue(
+                new ExecutePicked(scheduler, picked),
+                () -> {
+                    if (moreExecutionsInDatabase.get()
+                        && scheduler.executor.getNumberInQueueOrProcessing() <= lowerLimit) {
+                        scheduler.triggerCheckForDueExecutions();
+                    }
+                });
         }
         scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }

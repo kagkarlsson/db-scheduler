@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 @SuppressWarnings("rawtypes")
 class ExecutePicked implements Runnable {
@@ -43,16 +44,13 @@ class ExecutePicked implements Runnable {
 
     @Override
     public void run() {
-        scheduler.currentlyProcessing.put(pickedExecution, new CurrentlyExecuting(pickedExecution, scheduler.clock));
+        // FIXLATER: need to cleanup all the references back to scheduler fields
+        final UUID executionId = scheduler.executor.addCurrentlyProcessing(new CurrentlyExecuting(pickedExecution, scheduler.clock));
         try {
             scheduler.statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
             executePickedExecution(pickedExecution);
         } finally {
-            if (scheduler.currentlyProcessing.remove(pickedExecution) == null) {
-                // May happen in rare circumstances (typically concurrency tests)
-                // TODO: generate a unique-id for this specific run, add information of what thread is executing if possible
-                LOG.warn("Released execution was not found in collection of executions currently being processed. Should never happen.");
-            }
+            scheduler.executor.removeCurrentlyProcessing(executionId);
         }
     }
 

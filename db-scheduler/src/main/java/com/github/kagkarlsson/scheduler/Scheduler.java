@@ -43,8 +43,8 @@ public class Scheduler implements SchedulerClient {
     final TaskRepository schedulerTaskRepository;
     final TaskResolver taskResolver;
     protected final PollStrategy executeDueStrategy;
+    protected final Executor executor;
     int threadpoolSize;
-    final ExecutorService executorService;
     private final Waiter executeDueWaiter;
     private final Duration deleteUnresolvedAfter;
     private final Duration shutdownMaxWait;
@@ -56,7 +56,6 @@ public class Scheduler implements SchedulerClient {
     private final ExecutorService dueExecutor;
     private final ExecutorService detectDeadExecutor;
     private final ExecutorService updateHeartbeatExecutor;
-    final Map<Execution, CurrentlyExecuting> currentlyProcessing = Collections.synchronizedMap(new HashMap<>());
     private final Waiter heartbeatWaiter;
     final SettableSchedulerState schedulerState = new SettableSchedulerState();
 
@@ -66,7 +65,7 @@ public class Scheduler implements SchedulerClient {
         this.schedulerTaskRepository = schedulerTaskRepository;
         this.taskResolver = taskResolver;
         this.threadpoolSize = threadpoolSize;
-        this.executorService = executorService;
+        this.executor = new Executor(executorService, clock);
         this.executeDueWaiter = executeDueWaiter;
         this.deleteUnresolvedAfter = deleteUnresolvedAfter;
         this.shutdownMaxWait = shutdownMaxWait;
@@ -141,22 +140,7 @@ public class Scheduler implements SchedulerClient {
             LOG.warn("Failed to shutdown update-heartbeat-executor properly.");
         }
 
-        LOG.info("Letting running executions finish. Will wait up to 2x{}.", shutdownMaxWait);
-        final Instant startShutdown = clock.now();
-        if (ExecutorUtils.shutdownAndAwaitTermination(executorService, shutdownMaxWait, shutdownMaxWait)) {
-            LOG.info("Scheduler stopped.");
-        } else {
-            LOG.warn("Scheduler stopped, but some tasks did not complete. Was currently running the following executions:\n{}",
-                    new ArrayList<>(currentlyProcessing.keySet()).stream().map(Execution::toString).collect(Collectors.joining("\n")));
-        }
-
-        final Duration shutdownTime = Duration.between(startShutdown, clock.now());
-        if (shutdownMaxWait.toMillis() > Duration.ofMinutes(1).toMillis()
-            && shutdownTime.toMillis() >= shutdownMaxWait.toMillis()) {
-            LOG.info("Shutdown of the scheduler executor service took {}. Consider regularly checking for " +
-                "'executionContext.getSchedulerState().isShuttingDown()' in task execution-handler and abort when " +
-                "scheduler is shutting down.", shutdownTime);
-        }
+        executor.stop(shutdownMaxWait);
     }
 
     public SchedulerState getSchedulerState() {
@@ -217,7 +201,7 @@ public class Scheduler implements SchedulerClient {
     }
 
     public List<CurrentlyExecuting> getCurrentlyExecuting() {
-        return new ArrayList<>(currentlyProcessing.values());
+        return executor.getCurrentlyExecuting();
     }
 
     @SuppressWarnings({"rawtypes","unchecked"})
@@ -262,6 +246,7 @@ public class Scheduler implements SchedulerClient {
     }
 
     void updateHeartbeats() {
+        final List<CurrentlyExecuting> currentlyProcessing = executor.getCurrentlyExecuting();
         if (currentlyProcessing.isEmpty()) {
             LOG.trace("No executions to update heartbeats for. Skipping.");
             return;
@@ -269,15 +254,17 @@ public class Scheduler implements SchedulerClient {
 
         LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
         Instant now = clock.now();
-        new ArrayList<>(currentlyProcessing.keySet()).forEach(execution -> {
-            LOG.trace("Updating heartbeat for execution: " + execution);
-            try {
-                schedulerTaskRepository.updateHeartbeat(execution, now);
-            } catch (Throwable e) {
-                LOG.error("Failed while updating heartbeat for execution {}. Will try again later.", execution, e);
-                statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
-            }
-        });
+        currentlyProcessing.stream()
+            .map(CurrentlyExecuting::getExecution)
+            .forEach(execution -> {
+                LOG.trace("Updating heartbeat for execution: " + execution);
+                try {
+                    schedulerTaskRepository.updateHeartbeat(execution, now);
+                } catch (Throwable e) {
+                    LOG.error("Failed while updating heartbeat for execution {}. Will try again later.", execution, e);
+                    statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
+                }
+            });
         statsRegistry.register(SchedulerStatsEvent.RAN_UPDATE_HEARTBEATS);
     }
 

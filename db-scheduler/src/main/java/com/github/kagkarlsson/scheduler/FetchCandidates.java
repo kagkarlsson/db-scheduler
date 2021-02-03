@@ -30,34 +30,42 @@ public class FetchCandidates implements PollStrategy {
     private final Scheduler scheduler;
     private final PollingStrategyConfig pollingStrategyConfig;
     int currentGenerationNumber = 1;
+    private final int lowerLimit;
+    private final int upperLimit;
 
     public FetchCandidates(Scheduler scheduler, PollingStrategyConfig pollingStrategyConfig) {
         this.scheduler = scheduler;
         this.pollingStrategyConfig = pollingStrategyConfig;
+        lowerLimit = pollingStrategyConfig.getLowerLimit(scheduler.threadpoolSize);
+        //FIXLATER: this is not "upper limit", but rather nr of executions to get. those already in queue will become stale
+        upperLimit = pollingStrategyConfig.getUpperLimit(scheduler.threadpoolSize);
     }
 
     @Override
     public void run() {
-        // TODO: lower+upper limit
         Instant now = scheduler.clock.now();
 
         // Fetch new candidates for execution. Old ones still in ExecutorService will become stale and be discarded
-        List<Execution> dueExecutions = scheduler.schedulerTaskRepository.getDue(now, scheduler.pollingLimit);
-        LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
+        final int executionsToFetch = upperLimit;
+        List<Execution> fetchedDueExecutions = scheduler.schedulerTaskRepository.getDue(now, executionsToFetch);
+        LOG.trace("Fetched {} taskinstances due for execution", fetchedDueExecutions.size());
 
         this.currentGenerationNumber = this.currentGenerationNumber + 1;
         DueExecutionsBatch newDueBatch = new DueExecutionsBatch(
-            scheduler.threadpoolSize,
             currentGenerationNumber,
-            dueExecutions.size(),
-            scheduler.pollingLimit == dueExecutions.size());
+            fetchedDueExecutions.size(),
+            executionsToFetch == fetchedDueExecutions.size(),
+            (Integer leftInBatch) -> leftInBatch <= lowerLimit);
 
-        for (Execution e : dueExecutions) {
-            scheduler.executorService.execute(() -> {
-                final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
-                candidate.ifPresent(picked -> new ExecutePicked(scheduler, picked).run());
-                newDueBatch.oneExecutionDone(scheduler::triggerCheckForDueExecutions);
-            });
+        for (Execution e : fetchedDueExecutions) {
+            scheduler.executor.addToQueue(
+                () -> {
+                    final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
+                    candidate.ifPresent(picked -> new ExecutePicked(scheduler, picked).run());
+                },
+                () -> {
+                    newDueBatch.oneExecutionDone(scheduler::triggerCheckForDueExecutions);
+                });
         }
         scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }

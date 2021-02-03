@@ -37,7 +37,7 @@ public class DueExecutionsBatchTest {
     }
 
     private DueExecutionsBatch newBatch(int schedulerThreadpoolSize, int numberAddedFromLastDbQuery, boolean likelyMoreDueInDb) {
-        DueExecutionsBatch batch = new DueExecutionsBatch(schedulerThreadpoolSize, HAPPY_GENERATION_NUMBER, numberAddedFromLastDbQuery, likelyMoreDueInDb);
+        DueExecutionsBatch batch = new DueExecutionsBatch(HAPPY_GENERATION_NUMBER, numberAddedFromLastDbQuery, likelyMoreDueInDb, leftInBatch -> leftInBatch <= schedulerThreadpoolSize*Scheduler.TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO);
         return batch;
     }
 
