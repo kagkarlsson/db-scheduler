@@ -156,7 +156,7 @@ public class JdbcTaskRepository implements TaskRepository {
         final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
 
         String selectForUpdateQuery =
-            " UPDATE "+tableName+" st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " + // TODO: see if this need refactoring
+            " UPDATE "+tableName+" st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
                 " WHERE (st1.task_name, st1.task_instance) IN (" +
                 "   SELECT st2.task_name, st2.task_instance FROM "+tableName+" st2 " +
                 "   WHERE picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() + " order by execution_time asc FOR UPDATE SKIP LOCKED LIMIT ?)" +
