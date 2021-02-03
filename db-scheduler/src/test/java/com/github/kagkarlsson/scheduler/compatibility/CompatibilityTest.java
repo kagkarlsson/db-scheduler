@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
-import static com.github.kagkarlsson.scheduler.SchedulerBuilder.POLLING_CONCURRENCY_MULTIPLIER;
+import static com.github.kagkarlsson.scheduler.SchedulerBuilder.UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -96,7 +96,7 @@ public abstract class CompatibilityTest {
     public void test_compatibility_fetch_and_lock_on_execute() {
         Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
-            .betaPollUsingFetchAndLockOnExecute(POLLING_CONCURRENCY_MULTIPLIER)
+            .pollUsingFetchAndLockOnExecute(0, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH)
             .heartbeatInterval(Duration.ofMillis(100))
             .schedulerName(new SchedulerName.Fixed("test"))
             .statsRegistry(testableRegistry)
@@ -115,7 +115,7 @@ public abstract class CompatibilityTest {
 
         Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
-            .betaPollUsingLockAndFetch(0.5, 1.0)
+            .pollUsingLockAndFetch(0.5, 1.0)
             .heartbeatInterval(Duration.ofMillis(500))
             .schedulerName(new SchedulerName.Fixed("test"))
             .statsRegistry(testableRegistry)

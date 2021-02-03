@@ -16,6 +16,12 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
 public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
+
+    @Override
+    public String getName() {
+        return "PostgreSQL";
+    }
+
     @Override
     public boolean supportsExplicitQueryLimitPart() {
         return true;
@@ -24,5 +30,10 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
     @Override
     public String getQueryLimitPart(int limit) {
         return " LIMIT " + limit;
+    }
+
+    @Override
+    public boolean supportsLockAndFetch() {
+        return true;
     }
 }

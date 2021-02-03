@@ -362,6 +362,13 @@ public class JdbcTaskRepository implements TaskRepository {
             });
     }
 
+    @Override
+    public void checkSupportsLockAndFetch() {
+        if (!jdbcCustomization.supportsLockAndFetch()) {
+            throw new IllegalArgumentException("Database using jdbc-customization '"+jdbcCustomization.getName()+"' does not support lock-and-fetch polling (i.e. Select-for-update)");
+        }
+    }
+
     private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
         final QueryBuilder q = QueryBuilder.selectFromTable(tableName);
 

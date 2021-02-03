@@ -52,7 +52,6 @@ public class Scheduler implements SchedulerClient {
     private final Waiter detectDeadWaiter;
     private final Duration heartbeatInterval;
     final StatsRegistry statsRegistry;
-    final int pollingLimit;
     private final ExecutorService dueExecutor;
     private final ExecutorService detectDeadExecutor;
     private final ExecutorService updateHeartbeatExecutor;
@@ -60,7 +59,7 @@ public class Scheduler implements SchedulerClient {
     final SettableSchedulerState schedulerState = new SettableSchedulerState();
 
     protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
-                        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, PollingStrategyConfig pollingStrategyConfig, Duration deleteUnresolvedAfter, Duration shutdownMaxWait, List<OnStartup> onStartup) {
+                        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, PollingStrategyConfig pollingStrategyConfig, Duration deleteUnresolvedAfter, Duration shutdownMaxWait, List<OnStartup> onStartup) {
         this.clock = clock;
         this.schedulerTaskRepository = schedulerTaskRepository;
         this.taskResolver = taskResolver;
@@ -74,7 +73,6 @@ public class Scheduler implements SchedulerClient {
         this.heartbeatInterval = heartbeatInterval;
         this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
         this.statsRegistry = statsRegistry;
-        this.pollingLimit = pollingLimit;
         this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
         this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
         this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
@@ -82,6 +80,7 @@ public class Scheduler implements SchedulerClient {
         delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener);
 
         if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
+            schedulerTaskRepository.checkSupportsLockAndFetch();
             executeDueStrategy = new LockAndFetchCandidates(this, pollingStrategyConfig);
         } else if (pollingStrategyConfig.type == PollingStrategyConfig.Type.FETCH) {
             executeDueStrategy = new FetchCandidates(this, pollingStrategyConfig);

@@ -36,12 +36,16 @@ import org.slf4j.LoggerFactory;
 
 public class SchedulerBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
-    public static final int POLLING_CONCURRENCY_MULTIPLIER = 3;
+    public static final double UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH = 3.0;
 
     public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(10);
     public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMinutes(5);
     public static final Duration DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION = Duration.ofDays(14);
     public static final Duration SHUTDOWN_MAX_WAIT = Duration.ofMinutes(30);
+    public static final PollingStrategyConfig DEFAULT_POLLING_STRATEGY = new PollingStrategyConfig(
+        PollingStrategyConfig.Type.FETCH,
+        0.5,
+        UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH);
 
     protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
 
@@ -51,8 +55,6 @@ public class SchedulerBuilder {
     protected final List<Task<?>> knownTasks = new ArrayList<>();
     protected final List<OnStartup> startTasks = new ArrayList<>();
     protected Waiter waiter = new Waiter(DEFAULT_POLLING_INTERVAL, clock);
-    protected int pollingLimit;
-    protected boolean useDefaultPollingLimit;
     protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
     protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
     protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
@@ -63,13 +65,11 @@ public class SchedulerBuilder {
     protected JdbcCustomization jdbcCustomization = null;
     protected Duration shutdownMaxWait = SHUTDOWN_MAX_WAIT;
     protected boolean commitWhenAutocommitDisabled = false;
-    protected PollingStrategyConfig pollingStrategyConfig;
+    protected PollingStrategyConfig pollingStrategyConfig = DEFAULT_POLLING_STRATEGY;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
         this.knownTasks.addAll(knownTasks);
-        this.pollingLimit = calculatePollingLimit();
-        this.useDefaultPollingLimit = true;
     }
 
     @SafeVarargs
@@ -88,19 +88,6 @@ public class SchedulerBuilder {
         return this;
     }
 
-    public SchedulerBuilder pollingLimit(int pollingLimit) {
-        if(pollingLimit <= 0) {
-            throw new IllegalArgumentException("pollingLimit must be a positive integer");
-        }
-        this.pollingLimit = pollingLimit;
-        this.useDefaultPollingLimit = false;
-        return this;
-    }
-
-    private int calculatePollingLimit() {
-        return executorThreads * POLLING_CONCURRENCY_MULTIPLIER;
-    }
-
     public SchedulerBuilder heartbeatInterval(Duration duration) {
         this.heartbeatInterval = duration;
         return this;
@@ -108,9 +95,6 @@ public class SchedulerBuilder {
 
     public SchedulerBuilder threads(int numberOfThreads) {
         this.executorThreads = numberOfThreads;
-        if(useDefaultPollingLimit) {
-            this.pollingLimit = calculatePollingLimit();
-        }
         return this;
     }
 
@@ -164,14 +148,14 @@ public class SchedulerBuilder {
         return this;
     }
 
-    public SchedulerBuilder betaPollUsingFetchAndLockOnExecute(double upperLimitFractionOfThreads) {
+    public SchedulerBuilder pollUsingFetchAndLockOnExecute(double lowerLimitFractionOfThreads, double executionsPerBatchFractionOfThreads) {
         this.pollingStrategyConfig = new PollingStrategyConfig(
             PollingStrategyConfig.Type.FETCH,
-            0, upperLimitFractionOfThreads);
+            lowerLimitFractionOfThreads, executionsPerBatchFractionOfThreads);
         return this;
     }
 
-    public SchedulerBuilder betaPollUsingLockAndFetch(double lowerLimitFractionOfThreads, double upperLimitFractionOfThreads) {
+    public SchedulerBuilder pollUsingLockAndFetch(double lowerLimitFractionOfThreads, double upperLimitFractionOfThreads) {
         this.pollingStrategyConfig = new PollingStrategyConfig(
             PollingStrategyConfig.Type.LOCK_AND_FETCH,
             lowerLimitFractionOfThreads, upperLimitFractionOfThreads);
@@ -179,20 +163,8 @@ public class SchedulerBuilder {
     }
 
     public Scheduler build() {
-        if (pollingLimit < executorThreads) {
-            LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
-        }
-
         if (schedulerName == null) {
              schedulerName = new SchedulerName.Hostname();
-        }
-
-        // TODO: deprecate pollingLimit (or remove..)
-        if (pollingStrategyConfig == null) {
-            pollingStrategyConfig = new PollingStrategyConfig(
-                PollingStrategyConfig.Type.FETCH,
-                0, // Not in use for FETCH
-                pollingLimit);
         }
 
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
@@ -213,7 +185,7 @@ public class SchedulerBuilder {
             tableName,
             schedulerName.getName());
         return new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
-                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, pollingStrategyConfig,
+                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingStrategyConfig,
             deleteUnresolvedAfter, shutdownMaxWait, startTasks);
     }
 }

@@ -24,7 +24,6 @@ public class CheckForNewBatchDirectlyMain {
         final Scheduler scheduler = Scheduler
                 .create(dataSource, onetimeTask)
                 .pollingInterval(Duration.ofSeconds(10))
-                .pollingLimit(4)
                 .build();
 
 

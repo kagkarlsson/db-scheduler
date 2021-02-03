@@ -49,7 +49,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
             }
 
         } catch (SQLException e) {
-            LOG.error("Failed to detect database via getDatabaseMetadata. Using default.");
+            LOG.error("Failed to detect database via getDatabaseMetadata. Using default.", e);
         }
 
         this.jdbcCustomization = detectedCustomization;
@@ -73,5 +73,15 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     @Override
     public String getQueryLimitPart(int limit) {
         return jdbcCustomization.getQueryLimitPart(limit);
+    }
+
+    @Override
+    public boolean supportsLockAndFetch() {
+        return jdbcCustomization.supportsLockAndFetch();
+    }
+
+    @Override
+    public String getName() {
+        return jdbcCustomization.getName();
     }
 }

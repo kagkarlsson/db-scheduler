@@ -69,7 +69,6 @@ public class DeadExecutionsTest {
             Duration.ofMinutes(1),
             false,
             StatsRegistry.NOOP,
-            POLLING_LIMIT,
             PollingStrategyConfig.DEFAULT_FETCH,
             Duration.ofDays(14),
             Duration.ZERO,

@@ -32,7 +32,7 @@ public class App {
         });
 
         Scheduler scheduler = Scheduler.create(ds, task1)
-            .betaPollUsingLockAndFetch(2, 4.0)
+            .pollUsingLockAndFetch(2, 4.0)
             .statsRegistry(new BenchmarkStatsRegistry(metrics))
             .threads(100)
             .build();

@@ -43,4 +43,14 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     public String getQueryLimitPart(int limit) {
         return "";
     }
+
+    @Override
+    public boolean supportsLockAndFetch() {
+        return false;
+    }
+
+    @Override
+    public String getName() {
+        return "Default";
+    }
 }

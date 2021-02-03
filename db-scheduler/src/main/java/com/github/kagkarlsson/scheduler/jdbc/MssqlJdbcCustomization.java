@@ -27,6 +27,11 @@ import java.util.TimeZone;
 public class MssqlJdbcCustomization implements JdbcCustomization {
 
     @Override
+    public String getName() {
+        return "MSSQL";
+    }
+
+    @Override
     public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
         p.setTimestamp(index, value != null ? Timestamp.from(value) : null, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
     }
@@ -44,5 +49,10 @@ public class MssqlJdbcCustomization implements JdbcCustomization {
     @Override
     public String getQueryLimitPart(int limit) {
         return "";
+    }
+
+    @Override
+    public boolean supportsLockAndFetch() {
+        return false;
     }
 }

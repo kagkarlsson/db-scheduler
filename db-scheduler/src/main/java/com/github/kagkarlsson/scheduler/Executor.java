@@ -30,7 +30,7 @@ public class Executor {
     }
 
     public void addToQueue(Runnable r, Runnable afterDone) {
-        currentlyInQueueOrProcessing.incrementAndGet();
+        currentlyInQueueOrProcessing.incrementAndGet(); // if we always had a ThreadPoolExecutor we could check queue-size using getQueue()
         executorService.execute(() -> {
             // Execute
             try {

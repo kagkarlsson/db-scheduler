@@ -78,7 +78,7 @@ public class TestHelper {
 
             return new ManualScheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads,
                 new DirectExecutorService(), schedulerName, waiter, heartbeatInterval, enableImmediateExecution,
-                statsRegistry, pollingLimit, Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
+                statsRegistry, Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
                 deleteUnresolvedAfter, startTasks);
         }
 

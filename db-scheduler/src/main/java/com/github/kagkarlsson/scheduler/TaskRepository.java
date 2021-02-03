@@ -47,4 +47,6 @@ public interface TaskRepository {
     Optional<Execution> getExecution(String taskName, String taskInstanceId);
 
     int removeExecutions(String taskName);
+
+    void checkSupportsLockAndFetch();
 }

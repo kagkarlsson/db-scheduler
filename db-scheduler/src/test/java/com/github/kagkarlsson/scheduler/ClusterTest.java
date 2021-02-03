@@ -40,13 +40,13 @@ public class ClusterTest {
     @Test
     public void test_concurrency_optimistic_locking() {
         testConcurrencyForPollingStrategy(
-            (SchedulerBuilder b) -> b.betaPollUsingFetchAndLockOnExecute(NUMBER_OF_THREADS*3));
+            (SchedulerBuilder b) -> b.pollUsingFetchAndLockOnExecute(0, NUMBER_OF_THREADS*3));
     }
 
     @Test
     public void test_concurrency_select_for_update() {
         testConcurrencyForPollingStrategy(
-            (SchedulerBuilder b) -> b.betaPollUsingLockAndFetch(((double)NUMBER_OF_THREADS)/2, NUMBER_OF_THREADS));
+            (SchedulerBuilder b) -> b.pollUsingLockAndFetch(((double)NUMBER_OF_THREADS)/2, NUMBER_OF_THREADS));
     }
 
     private void testConcurrencyForPollingStrategy(Consumer<SchedulerBuilder> schedulerCustomization) {

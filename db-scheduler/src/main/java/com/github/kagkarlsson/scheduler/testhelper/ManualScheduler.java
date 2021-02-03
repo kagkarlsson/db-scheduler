@@ -33,9 +33,9 @@ public class ManualScheduler extends Scheduler {
     ManualScheduler(SettableClock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository,
                     TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName,
                     Waiter waiter, Duration heartbeatInterval, boolean executeImmediately, StatsRegistry statsRegistry,
-                    int pollingLimit, PollingStrategyConfig pollingStrategyConfig, Duration deleteUnresolvedAfter,
+                    PollingStrategyConfig pollingStrategyConfig, Duration deleteUnresolvedAfter,
                     List<OnStartup> onStartup) {
-        super(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, maxThreads, executorService, schedulerName, waiter, heartbeatInterval, executeImmediately, statsRegistry, pollingLimit, pollingStrategyConfig, deleteUnresolvedAfter, Duration.ZERO, onStartup);
+        super(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, maxThreads, executorService, schedulerName, waiter, heartbeatInterval, executeImmediately, statsRegistry, pollingStrategyConfig, deleteUnresolvedAfter, Duration.ZERO, onStartup);
         this.clock = clock;
     }
 
