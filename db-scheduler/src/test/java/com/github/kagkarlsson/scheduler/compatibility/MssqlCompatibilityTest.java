@@ -22,6 +22,8 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
     private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer();
     private static HikariDataSource pooledDatasource;
 
+    public MssqlCompatibilityTest() { super(false);}
+
     @BeforeAll
     private static void initSchema() {
         final DriverDataSource datasource = new DriverDataSource(MSSQL.getJdbcUrl(), "com.microsoft.sqlserver.jdbc.SQLServerDriver",

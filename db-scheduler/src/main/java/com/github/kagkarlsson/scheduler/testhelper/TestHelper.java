@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler.testhelper;
 
+import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
@@ -28,6 +29,7 @@ import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -64,12 +66,20 @@ public class TestHelper {
             return this;
         }
 
+        public ManualSchedulerBuilder pollingStrategy(PollingStrategyConfig pollingStrategyConfig) {
+            super.pollingStrategyConfig = pollingStrategyConfig;
+            return this;
+        }
+
         public ManualScheduler build() {
             final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
             final JdbcTaskRepository schedulerTaskRepository = new JdbcTaskRepository(dataSource, true, new DefaultJdbcCustomization(), tableName, taskResolver, new SchedulerName.Fixed("manual"), serializer);
             final JdbcTaskRepository clientTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled, new DefaultJdbcCustomization(), tableName, taskResolver, new SchedulerName.Fixed("manual"), serializer);
 
-            return new ManualScheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, new DirectExecutorService(), schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, deleteUnresolvedAfter, startTasks);
+            return new ManualScheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads,
+                new DirectExecutorService(), schedulerName, waiter, heartbeatInterval, enableImmediateExecution,
+                statsRegistry, pollingLimit, Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
+                deleteUnresolvedAfter, startTasks);
         }
 
         public ManualScheduler start() {

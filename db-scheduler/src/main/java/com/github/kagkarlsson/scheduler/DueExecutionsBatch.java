@@ -52,10 +52,12 @@ class DueExecutionsBatch {
 
         LOG.trace("Batch state: generationNumber:{}, stale:{}, triggeredExecuteDue:{}, possiblyMoreExecutionsInDb:{}, executionsLeftInBatch:{}, ratio-trigger:{}",
                 generationNumber, stale, triggeredExecuteDue, possiblyMoreExecutionsInDb, executionsLeftInBatch.get(), (threadpoolSize * Scheduler.TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO));
+        // Will not synchronize this method as it is not a big problem if two threads manage to call triggerCheckForNewBatch.run() at the same time.
+        // There is synchronization further in, when waking the thread that will do the fetching.
         if (!stale
                 && !triggeredExecuteDue
                 && possiblyMoreExecutionsInDb
-                && executionsLeftInBatch.get() <= (threadpoolSize * Scheduler.TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO)) {
+                && executionsLeftInBatch.get() <= (threadpoolSize * Scheduler.TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO)) { // TODO: use lower limit here
             LOG.trace("Triggering check for new batch.");
             triggerCheckForNewBatch.run();
             triggeredExecuteDue = true;

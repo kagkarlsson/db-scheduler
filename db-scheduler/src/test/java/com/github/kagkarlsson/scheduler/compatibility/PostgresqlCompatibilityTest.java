@@ -21,6 +21,7 @@ public class PostgresqlCompatibilityTest extends CompatibilityTest {
 //        new ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson.scheduler.Scheduler", Level.DEBUG)
 //    );
 
+    public PostgresqlCompatibilityTest() { super(true);}
 
     @Override
     public DataSource getDataSource() {

@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
@@ -348,6 +349,18 @@ public class JdbcTaskRepositoryTest {
         taskRepository.getScheduledExecutions(ScheduledExecutionsFilter.all(), "sometask", e -> {});
     }
 
+    @Test
+    public void pickdue_should_pick_due() {
+        Instant now = Instant.now();
+        taskRepository.createIfNotExists(new Execution(now.plusSeconds(10), oneTimeTask.instance("future1")));
+        taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
+        List<Execution> picked = taskRepository.lockAndGetDue(now, POLLING_LIMIT);
+        assertThat(picked, hasSize(1));
+
+        // should not be able to pick the same execution twice
+        assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT), hasSize(0));
+        assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
+    }
 
     private void createDeadExecution(TaskInstance<Void> taskInstance, Instant timeDied) {
         taskRepository.createIfNotExists(new Execution(timeDied, taskInstance));

@@ -1,7 +1,9 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
+import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
@@ -18,6 +20,7 @@ import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.google.common.collect.Lists;
+import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
@@ -42,7 +45,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 
@@ -50,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 public abstract class CompatibilityTest {
 
     private static final int POLLING_LIMIT = 10_000;
+    private final boolean supportsSelectForUpdate;
 
     @RegisterExtension
     public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
@@ -59,11 +62,16 @@ public abstract class CompatibilityTest {
     private OneTimeTask<String> oneTime;
     private RecurringTask<Void> recurring;
     private RecurringTask<Integer> recurringWithData;
+
     private TestableRegistry testableRegistry;
-    private Scheduler scheduler;
     private ExecutionCompletedCondition completed12Condition;
 
+    public CompatibilityTest(boolean supportsSelectForUpdate) {
+        this.supportsSelectForUpdate = supportsSelectForUpdate;
+    }
+
     public abstract DataSource getDataSource();
+
     public abstract boolean commitWhenAutocommitDisabled();
 
     @BeforeEach
@@ -77,26 +85,50 @@ public abstract class CompatibilityTest {
 
         completed12Condition = new ExecutionCompletedCondition(12);
         testableRegistry = new TestableRegistry(false, singletonList(completed12Condition));
-
-        scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
-                .pollingInterval(Duration.ofMillis(10))
-                .heartbeatInterval(Duration.ofMillis(100))
-                .schedulerName(new SchedulerName.Fixed("test"))
-                .statsRegistry(testableRegistry)
-                .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
-                .build();
-        stopScheduler.register(scheduler);
     }
 
     @AfterEach
     public void clearTables() {
-        assertTimeout(Duration.ofSeconds(20), () ->
+        assertTimeoutPreemptively(Duration.ofSeconds(20), () ->
             DbUtils.clearTables(getDataSource())
         );
     }
 
     @Test
     public void test_compatibility() {
+        Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
+            .pollingInterval(Duration.ofMillis(10))
+            .pollingStrategy(PollingStrategyConfig.DEFAULT_FETCH)
+            .heartbeatInterval(Duration.ofMillis(100))
+            .schedulerName(new SchedulerName.Fixed("test"))
+            .statsRegistry(testableRegistry)
+            .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
+            .build();
+        stopScheduler.register(scheduler);
+
+        testCompatibilityForSchedulerConfiguration(scheduler);
+    }
+
+    @Test
+    public void test_select_for_update_compatibility() {
+        if (!supportsSelectForUpdate) {
+            return;
+        }
+
+        Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
+            .pollingInterval(Duration.ofMillis(10))
+            .pollingStrategy(PollingStrategyConfig.DEFAULT_SELECT_FOR_UPDATE)
+            .heartbeatInterval(Duration.ofMillis(100))
+            .schedulerName(new SchedulerName.Fixed("test"))
+            .statsRegistry(testableRegistry)
+            .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
+            .build();
+        stopScheduler.register(scheduler);
+
+        testCompatibilityForSchedulerConfiguration(scheduler);
+    }
+
+    private void testCompatibilityForSchedulerConfiguration(Scheduler scheduler) {
         assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
             scheduler.schedule(oneTime.instance("id1"), Instant.now());
             scheduler.schedule(oneTime.instance("id1"), Instant.now()); //duplicate
@@ -108,11 +140,10 @@ public abstract class CompatibilityTest {
             scheduler.start();
             completed12Condition.waitFor();
             scheduler.stop();
-
             testableRegistry.assertNoFailures();
+
             assertThat(delayingHandlerRecurring.timesExecuted.get(), greaterThan(10));
             assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
-
         });
     }
 
@@ -128,6 +159,28 @@ public abstract class CompatibilityTest {
         assertTimeoutPreemptively(Duration.ofSeconds(20), () -> {
             doJDBCRepositoryCompatibilityTestUsingData("my data");
         });
+    }
+
+    @Test
+    public void test_jdbc_repository_select_for_update_compatibility() {
+        if (!supportsSelectForUpdate) {
+            return;
+        }
+
+        TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+        taskResolver.addTask(oneTime);
+
+        DataSource dataSource = getDataSource();
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+
+        final Instant now = TimeHelper.truncatedInstantNow();
+
+        jdbcTaskRepository.createIfNotExists(new Execution(now.plusSeconds(10), oneTime.instance("future1")));
+        jdbcTaskRepository.createIfNotExists(new Execution(now, oneTime.instance("id1")));
+        List<Execution> picked = jdbcTaskRepository.lockAndGetDue(now, POLLING_LIMIT);
+        assertThat(picked, IsCollectionWithSize.hasSize(1));
+
+        assertThat(jdbcTaskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
     }
 
     private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
@@ -176,7 +229,7 @@ public abstract class CompatibilityTest {
         DataSource dataSource = getDataSource();
         final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
 
-        final Instant now = Instant.now();
+        final Instant now = TimeHelper.truncatedInstantNow();
 
         final TaskInstance<Integer> taskInstance = recurringWithData.instance("id1", 1);
         final Execution newExecution = new Execution(now, taskInstance);
@@ -194,4 +247,15 @@ public abstract class CompatibilityTest {
         Execution round3 = jdbcTaskRepository.getExecution(taskInstance).get();
         assertNull(round3.taskInstance.getData());
     }
+
+
+    private void sleep(Duration duration) {
+        try {
+            Thread.sleep(duration.toMillis());
+        } catch (InterruptedException e) {
+            LoggerFactory.getLogger(CompatibilityTest.class).info("Interrupted");
+        }
+    }
+
+
 }

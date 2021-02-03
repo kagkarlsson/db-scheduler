@@ -24,6 +24,8 @@ public class NoAutoCommitPostgresqlCompatibilityTest extends CompatibilityTest {
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer();
     private static HikariDataSource pooledDatasource;
 
+    public NoAutoCommitPostgresqlCompatibilityTest() { super(true);}
+
     @BeforeAll
     private static void initSchema() {
         final DriverDataSource datasource = new DriverDataSource(POSTGRES.getJdbcUrl(), "org.postgresql.Driver",

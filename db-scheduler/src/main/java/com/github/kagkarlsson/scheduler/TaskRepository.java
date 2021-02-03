@@ -30,6 +30,8 @@ public interface TaskRepository {
     void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer);
     void getScheduledExecutions(ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer);
 
+    List<Execution> lockAndGetDue(Instant now, int limit);
+
     void remove(Execution execution);
     boolean reschedule(Execution execution, Instant nextExecutionTime, Instant lastSuccess, Instant lastFailure, int consecutiveFailures);
     boolean reschedule(Execution execution, Instant nextExecutionTime, Object newData, Instant lastSuccess, Instant lastFailure, int consecutiveFailures);

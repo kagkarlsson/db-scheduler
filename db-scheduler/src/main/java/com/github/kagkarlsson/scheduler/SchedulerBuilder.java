@@ -63,6 +63,7 @@ public class SchedulerBuilder {
     protected JdbcCustomization jdbcCustomization = null;
     protected Duration shutdownMaxWait = SHUTDOWN_MAX_WAIT;
     protected boolean commitWhenAutocommitDisabled = false;
+    protected PollingStrategyConfig pollingStrategyConfig;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -163,6 +164,11 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder pollingStrategy(PollingStrategyConfig pollingStrategyConfig) {
+        this.pollingStrategyConfig = pollingStrategyConfig;
+        return this;
+    }
+
     public Scheduler build() {
         if (pollingLimit < executorThreads) {
             LOG.warn("Polling-limit is less than number of threads. Should be equal or higher.");
@@ -170,6 +176,14 @@ public class SchedulerBuilder {
 
         if (schedulerName == null) {
              schedulerName = new SchedulerName.Hostname();
+        }
+
+        // TODO: deprecate pollingLimit (or remove..)
+        if (pollingStrategyConfig == null) {
+            pollingStrategyConfig = new PollingStrategyConfig(
+                PollingStrategyConfig.Type.FETCH,
+                0, // Not in use for FETCH
+                pollingLimit);
         }
 
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
@@ -190,7 +204,7 @@ public class SchedulerBuilder {
             tableName,
             schedulerName.getName());
         return new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
-                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
+                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit, pollingStrategyConfig,
             deleteUnresolvedAfter, shutdownMaxWait, startTasks);
     }
 }
