@@ -3,7 +3,6 @@ package com.github.kagkarlsson.scheduler.compatibility;
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
@@ -23,7 +22,6 @@ import com.google.common.collect.Lists;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.LoggerFactory;
@@ -36,7 +34,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
-import static java.time.temporal.ChronoUnit.MILLIS;
+import static com.github.kagkarlsson.scheduler.SchedulerBuilder.POLLING_CONCURRENCY_MULTIPLIER;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -95,10 +93,10 @@ public abstract class CompatibilityTest {
     }
 
     @Test
-    public void test_compatibility() {
+    public void test_compatibility_fetch_and_lock_on_execute() {
         Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
-            .pollingStrategy(PollingStrategyConfig.DEFAULT_FETCH)
+            .betaPollUsingFetchAndLockOnExecute(POLLING_CONCURRENCY_MULTIPLIER)
             .heartbeatInterval(Duration.ofMillis(100))
             .schedulerName(new SchedulerName.Fixed("test"))
             .statsRegistry(testableRegistry)
@@ -110,14 +108,14 @@ public abstract class CompatibilityTest {
     }
 
     @Test
-    public void test_select_for_update_compatibility() {
+    public void test_compatibility_lock_and_fetch() {
         if (!supportsSelectForUpdate) {
             return;
         }
 
         Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
-            .pollingStrategy(PollingStrategyConfig.DEFAULT_SELECT_FOR_UPDATE)
+            .betaPollUsingLockAndFetch(0.5, 1.0)
             .heartbeatInterval(Duration.ofMillis(100))
             .schedulerName(new SchedulerName.Fixed("test"))
             .statsRegistry(testableRegistry)

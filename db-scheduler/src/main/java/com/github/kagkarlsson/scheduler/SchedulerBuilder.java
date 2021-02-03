@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 public class SchedulerBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
-    private static final int POLLING_CONCURRENCY_MULTIPLIER = 3;
+    public static final int POLLING_CONCURRENCY_MULTIPLIER = 3;
 
     public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(10);
     public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMinutes(5);
@@ -164,8 +164,17 @@ public class SchedulerBuilder {
         return this;
     }
 
-    public SchedulerBuilder pollingStrategy(PollingStrategyConfig pollingStrategyConfig) {
-        this.pollingStrategyConfig = pollingStrategyConfig;
+    public SchedulerBuilder betaPollUsingFetchAndLockOnExecute(double upperLimitFractionOfThreads) {
+        this.pollingStrategyConfig = new PollingStrategyConfig(
+            PollingStrategyConfig.Type.FETCH,
+            0, upperLimitFractionOfThreads);
+        return this;
+    }
+
+    public SchedulerBuilder betaPollUsingLockAndFetch(double lowerLimitFractionOfThreads, double upperLimitFractionOfThreads) {
+        this.pollingStrategyConfig = new PollingStrategyConfig(
+            PollingStrategyConfig.Type.LOCK_AND_FETCH,
+            lowerLimitFractionOfThreads, upperLimitFractionOfThreads);
         return this;
     }
 

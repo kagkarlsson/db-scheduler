@@ -2,7 +2,6 @@ package com.github.kagkarlsson;
 
 import com.codahale.metrics.ConsoleReporter;
 import com.codahale.metrics.MetricRegistry;
-import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -33,7 +32,7 @@ public class App {
         });
 
         Scheduler scheduler = Scheduler.create(ds, task1)
-            .pollingStrategy(PollingStrategyConfig.DEFAULT_SELECT_FOR_UPDATE)
+            .betaPollUsingLockAndFetch(2, 4.0)
             .statsRegistry(new BenchmarkStatsRegistry(metrics))
             .threads(100)
             .build();

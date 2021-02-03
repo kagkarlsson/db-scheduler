@@ -1,6 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.PollingStrategyConfig.Type;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
@@ -39,20 +38,18 @@ public class ClusterTest {
     public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
     @Test
-    public void test_concurrency_optimistic_locking() throws InterruptedException {
+    public void test_concurrency_optimistic_locking() {
         testConcurrencyForPollingStrategy(
-                new PollingStrategyConfig(Type.FETCH, 0, NUMBER_OF_THREADS*3));
-
+            (SchedulerBuilder b) -> b.betaPollUsingFetchAndLockOnExecute(NUMBER_OF_THREADS*3));
     }
 
     @Test
-    public void test_concurrency_select_for_update() throws InterruptedException {
+    public void test_concurrency_select_for_update() {
         testConcurrencyForPollingStrategy(
-                new PollingStrategyConfig(Type.LOCK_AND_FETCH, ((double)NUMBER_OF_THREADS)/2, NUMBER_OF_THREADS));
-
+            (SchedulerBuilder b) -> b.betaPollUsingLockAndFetch(((double)NUMBER_OF_THREADS)/2, NUMBER_OF_THREADS));
     }
 
-    private void testConcurrencyForPollingStrategy(PollingStrategyConfig pollingStrategyConfig) {
+    private void testConcurrencyForPollingStrategy(Consumer<SchedulerBuilder> schedulerCustomization) {
         Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
 
             final List<String> ids = IntStream.range(1, 10001).mapToObj(String::valueOf).collect(toList());
@@ -63,8 +60,8 @@ public class ClusterTest {
             final Task<Void> task = ComposableTask.customTask("Custom", Void.class, completed, new TestTasks.SleepingHandler<>(0));
 
             final TestTasks.SimpleStatsRegistry stats = new TestTasks.SimpleStatsRegistry();
-            final Scheduler scheduler1 = createScheduler("scheduler1", pollingStrategyConfig, task, stats);
-            final Scheduler scheduler2 = createScheduler("scheduler2", pollingStrategyConfig, task, stats);
+            final Scheduler scheduler1 = createScheduler("scheduler1", schedulerCustomization, task, stats);
+            final Scheduler scheduler2 = createScheduler("scheduler2", schedulerCustomization, task, stats);
 
             stopScheduler.register(scheduler1, scheduler2);
             scheduler1.start();
@@ -114,15 +111,15 @@ public class ClusterTest {
         });
     }
 
-    private Scheduler createScheduler(String name, PollingStrategyConfig pollingStrategyConfig, Task<?> task, TestTasks.SimpleStatsRegistry stats) {
-        return Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
-                .schedulerName(new SchedulerName.Fixed(name))
-                .threads(NUMBER_OF_THREADS)
-                .pollingInterval(Duration.ofMillis(0))
-                .pollingStrategy(pollingStrategyConfig)
-                .heartbeatInterval(Duration.ofMillis(100))
-                .statsRegistry(stats)
-                .build();
+    private Scheduler createScheduler(String name, Consumer<SchedulerBuilder> schedulerCustomization, Task<?> task, TestTasks.SimpleStatsRegistry stats) {
+        final SchedulerBuilder builder = Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
+            .schedulerName(new SchedulerName.Fixed(name))
+            .threads(NUMBER_OF_THREADS)
+            .pollingInterval(Duration.ofMillis(0))
+            .heartbeatInterval(Duration.ofMillis(100))
+            .statsRegistry(stats);
+        schedulerCustomization.accept(builder);
+        return builder.build();
     }
 
     private Scheduler createSchedulerRecurring(String name, RecurringTask<?> task, TestTasks.SimpleStatsRegistry stats) {
