@@ -19,6 +19,8 @@ import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import java.time.Duration;
 import java.util.Optional;
+
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
 
@@ -99,14 +101,14 @@ public class DbSchedulerProperties {
     private Duration shutdownMaxWait = SchedulerBuilder.SHUTDOWN_MAX_WAIT;
 
     /**
-     * <p>Which log level to use when logging task failures. Defaults to {@link Level#DEBUG}.</p>
+     * <p>Which log level to use when logging task failures. Defaults to {@link LogLevel#DEBUG}.</p>
      */
-    private Level failureLogLevel = Level.DEBUG;
+    private LogLevel failureLogLevel = SchedulerBuilder.DEFAULT_FAILURE_LOG_LEVEL;
 
     /**
      * <p>Whether or not to log the {@link Throwable} that caused a task to fail.</p>
      */
-    private boolean logStackTraceOnFailure = false;
+    private boolean logStackTraceOnFailure = SchedulerBuilder.LOG_STACK_TRACE_ON_FAILURE;
 
     public boolean isEnabled() {
         return enabled;
@@ -196,11 +198,11 @@ public class DbSchedulerProperties {
         this.shutdownMaxWait = shutdownMaxWait;
     }
 
-    public Level getFailureLogLevel() {
+    public LogLevel getFailureLogLevel() {
         return failureLogLevel;
     }
 
-    public void setFailureLogLevel(Level failureLogLevel) {
+    public void setFailureLogLevel(LogLevel failureLogLevel) {
         this.failureLogLevel = failureLogLevel;
     }
 

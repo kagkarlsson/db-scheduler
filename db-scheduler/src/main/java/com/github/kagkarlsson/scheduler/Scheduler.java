@@ -17,13 +17,12 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
 import com.github.kagkarlsson.scheduler.concurrent.LoggingRunnable;
-import com.github.kagkarlsson.scheduler.logging.LogHelper;
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 
 import javax.sql.DataSource;
 import java.time.Duration;
@@ -62,12 +61,11 @@ public class Scheduler implements SchedulerClient {
     private final Waiter heartbeatWaiter;
     private final SettableSchedulerState schedulerState = new SettableSchedulerState();
     private int currentGenerationNumber = 1;
-    private final LogHelper.LogMethod failureLogMethod;
-    private final boolean logStackTrace;
+    private final FailureLogger failureLogger;
 
     protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
-                        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, Duration shutdownMaxWait, List<OnStartup> onStartup,
-                        Level logLevel, boolean logStackTrace) {
+                        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, Duration shutdownMaxWait,
+                        LogLevel logLevel, boolean logStackTrace, List<OnStartup> onStartup) {
         this.clock = clock;
         this.schedulerTaskRepository = schedulerTaskRepository;
         this.taskResolver = taskResolver;
@@ -87,8 +85,7 @@ public class Scheduler implements SchedulerClient {
         this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
         SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
         delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener);
-        this.failureLogMethod = LogHelper.getLogMethod(LOG, logLevel);
-        this.logStackTrace = logStackTrace;
+        this.failureLogger = new FailureLogger(LOG, logLevel, logStackTrace);
     }
 
     public void start() {
@@ -387,11 +384,7 @@ public class Scheduler implements SchedulerClient {
 
         private void failure(Task task, Execution execution, Throwable cause, Instant executionStarted, String errorMessagePrefix) {
             String logMessage = errorMessagePrefix + " during execution of task with name '{}'. Treating as failure.";
-            if(logStackTrace) {
-                failureLogMethod.log(logMessage, task.getName(), cause);
-            } else {
-                failureLogMethod.log(logMessage, task.getName());
-            }
+            failureLogger.log(logMessage, cause, task.getName());
 
             ExecutionComplete completeEvent = ExecutionComplete.failure(execution, executionStarted, clock.now(), cause);
             try {

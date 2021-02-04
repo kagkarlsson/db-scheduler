@@ -13,18 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.logging;
+package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import org.slf4j.Logger;
-import org.slf4j.event.Level;
 
-public class LogHelper {
+class FailureLogger {
 
-    public interface LogMethod {
+    private interface LogMethod {
         void log(String format, Object... arguments);
     }
 
-    public static LogMethod getLogMethod(Logger logger, Level logLevel) {
+    private final LogMethod logMethod;
+    private final boolean logStackTrace;
+
+    FailureLogger(Logger logger, LogLevel logLevel, boolean logStackTrace) {
+        this.logMethod = getLogMethod(logger, logLevel);
+        this.logStackTrace = logStackTrace;
+    }
+
+    protected void log(String format, Throwable cause, Object... arguments) {
+        if(logStackTrace) {
+            // to log stack trace, throwable must be the very last parameter passed to the log method
+            Object[] newArguments = new Object[arguments.length + 1];
+            System.arraycopy(arguments, 0, newArguments, 0, arguments.length);
+            newArguments[newArguments.length - 1] = cause;
+
+            logMethod.log(format, newArguments);
+        } else {
+            logMethod.log(format, arguments);
+        }
+    }
+
+    private static LogMethod getLogMethod(Logger logger, LogLevel logLevel) {
         LogMethod logMethod = logger::debug;
 
         switch (logLevel) {

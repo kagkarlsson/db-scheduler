@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
@@ -16,7 +17,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.event.Level;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -73,9 +73,9 @@ public class DeadExecutionsTest {
             POLLING_LIMIT,
             Duration.ofDays(14),
             Duration.ZERO,
-            new ArrayList<>(),
-            Level.DEBUG,
-            true);
+            LogLevel.DEBUG,
+            true,
+            new ArrayList<>());
 
     }
 

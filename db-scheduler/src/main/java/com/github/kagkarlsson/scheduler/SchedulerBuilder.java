@@ -21,6 +21,7 @@ import static java.util.Optional.ofNullable;
 
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -28,13 +29,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 
 public class SchedulerBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
@@ -44,6 +43,8 @@ public class SchedulerBuilder {
     public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMinutes(5);
     public static final Duration DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION = Duration.ofDays(14);
     public static final Duration SHUTDOWN_MAX_WAIT = Duration.ofMinutes(30);
+    public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.DEBUG;
+    public static final boolean LOG_STACK_TRACE_ON_FAILURE = true;
 
     protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
 
@@ -65,8 +66,8 @@ public class SchedulerBuilder {
     protected JdbcCustomization jdbcCustomization = null;
     protected Duration shutdownMaxWait = SHUTDOWN_MAX_WAIT;
     protected boolean commitWhenAutocommitDisabled = false;
-    protected Level logLevel = Level.DEBUG;
-    protected boolean logStackTrace = true;
+    protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
+    protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -167,7 +168,7 @@ public class SchedulerBuilder {
         return this;
     }
 
-    public SchedulerBuilder failureLogging(Level logLevel, boolean logStackTrace) {
+    public SchedulerBuilder failureLogging(LogLevel logLevel, boolean logStackTrace) {
         if(logLevel == null) {
             throw new IllegalArgumentException("Log level must not be null");
         }
@@ -204,6 +205,6 @@ public class SchedulerBuilder {
             schedulerName.getName());
         return new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
             schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
-            deleteUnresolvedAfter, shutdownMaxWait, startTasks, logLevel, logStackTrace);
+            deleteUnresolvedAfter, shutdownMaxWait, logLevel, logStackTrace, startTasks);
     }
 }
