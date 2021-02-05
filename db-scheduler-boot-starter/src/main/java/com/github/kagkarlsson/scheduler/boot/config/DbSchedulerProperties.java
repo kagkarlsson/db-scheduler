@@ -103,12 +103,12 @@ public class DbSchedulerProperties {
     /**
      * <p>Which log level to use when logging task failures. Defaults to {@link LogLevel#DEBUG}.</p>
      */
-    private LogLevel failureLogLevel = SchedulerBuilder.DEFAULT_FAILURE_LOG_LEVEL;
+    private LogLevel failureLoggerLevel = SchedulerBuilder.DEFAULT_FAILURE_LOG_LEVEL;
 
     /**
      * <p>Whether or not to log the {@link Throwable} that caused a task to fail.</p>
      */
-    private boolean logStackTraceOnFailure = SchedulerBuilder.LOG_STACK_TRACE_ON_FAILURE;
+    private boolean failureLoggerLogStackTrace = SchedulerBuilder.LOG_STACK_TRACE_ON_FAILURE;
 
     public boolean isEnabled() {
         return enabled;
@@ -198,19 +198,19 @@ public class DbSchedulerProperties {
         this.shutdownMaxWait = shutdownMaxWait;
     }
 
-    public LogLevel getFailureLogLevel() {
-        return failureLogLevel;
+    public LogLevel getFailureLoggerLevel() {
+        return failureLoggerLevel;
     }
 
-    public void setFailureLogLevel(LogLevel failureLogLevel) {
-        this.failureLogLevel = failureLogLevel;
+    public void setFailureLoggerLevel(LogLevel failureLoggerLevel) {
+        this.failureLoggerLevel = failureLoggerLevel;
     }
 
-    public boolean isLogStackTraceOnFailure() {
-        return logStackTraceOnFailure;
+    public boolean isFailureLoggerLogStackTrace() {
+        return failureLoggerLogStackTrace;
     }
 
-    public void setLogStackTraceOnFailure(boolean logStackTraceOnFailure) {
-        this.logStackTraceOnFailure = logStackTraceOnFailure;
+    public void setFailureLoggerLogStackTrace(boolean failureLoggerLogStackTrace) {
+        this.failureLoggerLogStackTrace = failureLoggerLogStackTrace;
     }
 }

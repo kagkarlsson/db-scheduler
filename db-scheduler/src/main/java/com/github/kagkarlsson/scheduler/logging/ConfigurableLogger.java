@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.logging;
 
-import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import org.slf4j.Logger;
 
-class FailureLogger {
+public class ConfigurableLogger {
 
     private interface LogMethod {
         void log(String format, Object... arguments);
@@ -27,12 +26,12 @@ class FailureLogger {
     private final LogMethod logMethod;
     private final boolean logStackTrace;
 
-    FailureLogger(Logger logger, LogLevel logLevel, boolean logStackTrace) {
+    public ConfigurableLogger(Logger logger, LogLevel logLevel, boolean logStackTrace) {
         this.logMethod = getLogMethod(logger, logLevel);
         this.logStackTrace = logStackTrace;
     }
 
-    protected void log(String format, Throwable cause, Object... arguments) {
+    public void log(String format, Throwable cause, Object... arguments) {
         if(logStackTrace) {
             // to log stack trace, throwable must be the very last parameter passed to the log method
             Object[] newArguments = new Object[arguments.length + 1];

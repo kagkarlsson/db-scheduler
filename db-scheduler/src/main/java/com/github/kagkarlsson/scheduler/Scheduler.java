@@ -17,6 +17,7 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
 import com.github.kagkarlsson.scheduler.concurrent.LoggingRunnable;
+import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
@@ -61,7 +62,7 @@ public class Scheduler implements SchedulerClient {
     private final Waiter heartbeatWaiter;
     private final SettableSchedulerState schedulerState = new SettableSchedulerState();
     private int currentGenerationNumber = 1;
-    private final FailureLogger failureLogger;
+    private final ConfigurableLogger failureLogger;
 
     protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
                         Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, Duration shutdownMaxWait,
@@ -85,7 +86,7 @@ public class Scheduler implements SchedulerClient {
         this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
         SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
         delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener);
-        this.failureLogger = new FailureLogger(LOG, logLevel, logStackTrace);
+        this.failureLogger = new ConfigurableLogger(LOG, logLevel, logStackTrace);
     }
 
     public void start() {
