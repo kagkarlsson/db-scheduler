@@ -71,6 +71,8 @@ Feel free to open a PR to add your organization to the list.
 
 ## Examples
 
+See also [runnable examples](https://github.com/kagkarlsson/db-scheduler/tree/master/examples/features/src/main/java/com/github/kagkarlsson/examples).
+
 ### Recurring task
 
 Define a _recurring_ task and schedule the task's first execution on start-up using the `startTasks` builder-method. Upon completion, the task will be re-scheduled according to the defined schedule (see [pre-defined schedule-types](#schedules)).
