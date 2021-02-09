@@ -43,7 +43,7 @@ public class SchedulerBuilder {
     public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMinutes(5);
     public static final Duration DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION = Duration.ofDays(14);
     public static final Duration SHUTDOWN_MAX_WAIT = Duration.ofMinutes(30);
-    public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.DEBUG;
+    public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.WARN;
     public static final boolean LOG_STACK_TRACE_ON_FAILURE = true;
 
     protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
