@@ -86,7 +86,7 @@ public class Scheduler implements SchedulerClient {
         this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
         SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
         delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener);
-        this.failureLogger = new ConfigurableLogger(LOG, logLevel, logStackTrace);
+        this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
     }
 
     public void start() {

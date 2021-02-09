@@ -16,5 +16,5 @@
 package com.github.kagkarlsson.scheduler.logging;
 
 public enum LogLevel {
-    TRACE, DEBUG, INFO, WARN, ERROR
+    OFF, TRACE, DEBUG, INFO, WARN, ERROR
 }

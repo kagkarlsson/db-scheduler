@@ -23,12 +23,28 @@ public class ConfigurableLogger {
         void log(String format, Object... arguments);
     }
 
+    private static class NoOpLogger extends ConfigurableLogger {
+        private NoOpLogger() {
+            super(null, false);
+        }
+
+        @Override
+        public void log(String format, Throwable cause, Object... arguments) { }
+    }
+
     private final LogMethod logMethod;
     private final boolean logStackTrace;
 
-    public ConfigurableLogger(Logger logger, LogLevel logLevel, boolean logStackTrace) {
-        this.logMethod = getLogMethod(logger, logLevel);
+    private static final ConfigurableLogger NO_OP_LOGGER = new NoOpLogger();
+
+    private ConfigurableLogger(LogMethod logMethod, boolean logStackTrace) {
+        this.logMethod = logMethod;
         this.logStackTrace = logStackTrace;
+    }
+
+    public static ConfigurableLogger create(Logger logger, LogLevel logLevel, boolean logStackTrace) {
+        return logLevel == LogLevel.OFF ?
+            NO_OP_LOGGER : new ConfigurableLogger(getLogMethod(logger, logLevel), logStackTrace);
     }
 
     public void log(String format, Throwable cause, Object... arguments) {
