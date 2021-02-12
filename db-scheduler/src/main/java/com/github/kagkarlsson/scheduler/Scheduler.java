@@ -17,6 +17,8 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
 import com.github.kagkarlsson.scheduler.concurrent.LoggingRunnable;
+import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.*;
@@ -60,9 +62,11 @@ public class Scheduler implements SchedulerClient {
     private final Waiter heartbeatWaiter;
     private final SettableSchedulerState schedulerState = new SettableSchedulerState();
     private int currentGenerationNumber = 1;
+    private final ConfigurableLogger failureLogger;
 
     protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
-                        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, Duration shutdownMaxWait, List<OnStartup> onStartup) {
+                        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, Duration shutdownMaxWait,
+                        LogLevel logLevel, boolean logStackTrace, List<OnStartup> onStartup) {
         this.clock = clock;
         this.schedulerTaskRepository = schedulerTaskRepository;
         this.taskResolver = taskResolver;
@@ -82,6 +86,7 @@ public class Scheduler implements SchedulerClient {
         this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
         SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
         delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener);
+        this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
     }
 
     public void start() {
@@ -212,7 +217,7 @@ public class Scheduler implements SchedulerClient {
     protected void executeDue() {
         Instant now = clock.now();
         List<Execution> dueExecutions = schedulerTaskRepository.getDue(now, pollingLimit);
-        LOG.trace("Found {} taskinstances due for execution", dueExecutions.size());
+        LOG.trace("Found {} task instances due for execution", dueExecutions.size());
 
         this.currentGenerationNumber = this.currentGenerationNumber + 1;
         DueExecutionsBatch newDueBatch = new DueExecutionsBatch(Scheduler.this.threadpoolSize, currentGenerationNumber, dueExecutions.size(), pollingLimit == dueExecutions.size());
@@ -356,13 +361,11 @@ public class Scheduler implements SchedulerClient {
                 statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
 
             } catch (RuntimeException unhandledException) {
-                LOG.error("Unhandled exception during execution of task with name '{}'. Treating as failure.", task.get().getName(), unhandledException);
-                failure(task.get().getFailureHandler(), execution, unhandledException, executionStarted);
+                failure(task.get(), execution, unhandledException, executionStarted, "Unhandled exception");
                 statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
 
             } catch (Throwable unhandledError) {
-                LOG.error("Error during execution of task with name '{}'. Treating as failure.", task.get().getName(), unhandledError);
-                failure(task.get().getFailureHandler(), execution, unhandledError, executionStarted);
+                failure(task.get(), execution, unhandledError, executionStarted, "Error");
                 statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
             }
         }
@@ -380,10 +383,13 @@ public class Scheduler implements SchedulerClient {
             }
         }
 
-        private void failure(FailureHandler failureHandler, Execution execution, Throwable cause, Instant executionStarted) {
+        private void failure(Task task, Execution execution, Throwable cause, Instant executionStarted, String errorMessagePrefix) {
+            String logMessage = errorMessagePrefix + " during execution of task with name '{}'. Treating as failure.";
+            failureLogger.log(logMessage, cause, task.getName());
+
             ExecutionComplete completeEvent = ExecutionComplete.failure(execution, executionStarted, clock.now(), cause);
             try {
-                failureHandler.onFailure(completeEvent, new ExecutionOperations(schedulerTaskRepository, execution));
+                task.getFailureHandler().onFailure(completeEvent, new ExecutionOperations(schedulerTaskRepository, execution));
                 statsRegistry.registerSingleCompletedExecution(completeEvent);
             } catch (Throwable e) {
                 statsRegistry.register(SchedulerStatsEvent.FAILUREHANDLER_ERROR);
