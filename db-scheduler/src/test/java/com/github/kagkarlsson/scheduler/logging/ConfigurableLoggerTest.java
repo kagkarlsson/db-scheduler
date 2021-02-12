@@ -8,8 +8,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.LoggerFactory;
+
+import java.util.EnumSet;
+import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -39,7 +42,7 @@ public class ConfigurableLoggerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(LogLevel.class)
+    @MethodSource("logLevelsWithoutOffProvider")
     public void should_log_using_correct_log_level(LogLevel level) {
         ConfigurableLogger configurableLogger = ConfigurableLogger.create(logger, level, false);
         configurableLogger.log("test {}", null, "test");
@@ -50,7 +53,7 @@ public class ConfigurableLoggerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(LogLevel.class)
+    @MethodSource("logLevelsWithoutOffProvider")
     public void should_log_stack_trace_if_configured(LogLevel level) {
         TestException cause = new TestException();
 
@@ -73,6 +76,13 @@ public class ConfigurableLoggerTest {
         configurableLogger.log("test {}", null, "test");
 
         assertThat(appender.list, is(empty()));
+    }
+
+    private static Set<LogLevel> logLevelsWithoutOffProvider() {
+        Set<LogLevel> logLevels = EnumSet.allOf(LogLevel.class);
+        logLevels.remove(LogLevel.OFF);
+
+        return logLevels;
     }
 
 }
