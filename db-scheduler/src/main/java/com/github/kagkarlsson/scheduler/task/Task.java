@@ -56,7 +56,7 @@ public abstract class Task<T> implements ExecutionHandler<T> {
 
     @Override
     public String toString() {
-        return "Task " + "task=" + getName();
+        return "Task " + "name=" + getName();
     }
 
 }

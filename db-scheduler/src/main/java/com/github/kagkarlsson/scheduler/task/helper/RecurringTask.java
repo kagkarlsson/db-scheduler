@@ -57,4 +57,9 @@ public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 
     public abstract void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
+    @Override
+    public String toString() {
+        return "RecurringTask name=" + getName() + ", scheduled using " + onComplete;
+    }
+
 }

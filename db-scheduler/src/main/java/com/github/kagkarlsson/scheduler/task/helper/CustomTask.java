@@ -36,4 +36,9 @@ public abstract class CustomTask<T> extends Task<T> implements OnStartup {
                 scheduleOnStartup.apply(scheduler, clock, this);
         }
     }
+
+    @Override
+    public String toString() {
+        return "CustomTask name=" + getName();
+    }
 }

@@ -40,4 +40,9 @@ public abstract class OneTimeTask<T> extends Task<T> {
 
     public abstract void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
+    @Override
+    public String toString() {
+        return "OneTimeTask name=" + getName();
+    }
+
 }

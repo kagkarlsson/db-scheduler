@@ -49,6 +49,12 @@ public interface CompletionHandler<T> {
             LOG.debug("Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
             executionOperations.reschedule(executionComplete, nextExecution);
         }
+
+        @Override
+        public String toString() {
+            return "OnCompleteReschedule with " + schedule;
+        }
+
     }
 
 
