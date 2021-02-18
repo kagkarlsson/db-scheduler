@@ -59,7 +59,7 @@ public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
 
     @Override
     public String toString() {
-        return "RecurringTask name=" + getName() + ", scheduled using " + onComplete;
+        return "RecurringTask name=" + getName() + ", onComplete=" + onComplete;
     }
 
 }
