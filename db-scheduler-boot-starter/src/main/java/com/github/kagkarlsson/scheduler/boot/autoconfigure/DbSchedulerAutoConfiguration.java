@@ -18,6 +18,7 @@ package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
+import com.github.kagkarlsson.scheduler.Serializer;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
@@ -29,6 +30,12 @@ import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
 import io.micrometer.core.instrument.MeterRegistry;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -51,6 +58,7 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.ConfigurableObjectInputStream;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 
 @Configuration
@@ -135,8 +143,8 @@ public class DbSchedulerAutoConfiguration {
 
         builder.tableName(config.getTableName());
 
-        // Use custom serializer if provided
-        customizer.serializer().ifPresent(builder::serializer);
+        // Use custom serializer if provided. Otherwise use devtools friendly serializer.
+        builder.serializer(customizer.serializer().orElse(SPRING_JAVA_SERIALIZER));
 
         if (config.isImmediateExecutionEnabled()) {
             builder.enableImmediateExecution();
@@ -203,4 +211,38 @@ public class DbSchedulerAutoConfiguration {
             .filter(shouldBeStarted.negate())
             .collect(Collectors.toList());
     }
+
+    /**
+     * {@link Serializer} compatible with Spring Boot Devtools.
+     *
+     * @see <a href=
+     *      "https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/#using-boot-devtools-known-restart-limitations">
+     *      Devtools known limitations</a>
+     */
+    private static final Serializer SPRING_JAVA_SERIALIZER = new Serializer() {
+
+        public byte[] serialize(Object data) {
+            if (data == null)
+                return null;
+            try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                 ObjectOutput out = new ObjectOutputStream(bos)) {
+                out.writeObject(data);
+                return bos.toByteArray();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to serialize object", e);
+            }
+        }
+
+        public <T> T deserialize(Class<T> clazz, byte[] serializedData) {
+            if (serializedData == null)
+                return null;
+            try (ByteArrayInputStream bis = new ByteArrayInputStream(serializedData);
+                 ObjectInput in = new ConfigurableObjectInputStream(bis, Thread.currentThread().getContextClassLoader())) {
+                return clazz.cast(in.readObject());
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to deserialize object", e);
+            }
+        }
+    };
+
 }
