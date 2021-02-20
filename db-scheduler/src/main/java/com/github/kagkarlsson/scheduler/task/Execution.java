@@ -29,13 +29,14 @@ public final class Execution {
     public final long version;
     public final Instant lastFailure;
     public final Instant lastSuccess;
+    private final int priority;
 
     public Execution(Instant executionTime, TaskInstance taskInstance) {
-        this(executionTime, taskInstance, false, null, null, null, 0, null, 1L);
+        this(executionTime, taskInstance, false, null, null, null, 0, null, 1L,taskInstance.getPriority());
     }
 
     public Execution(Instant executionTime, TaskInstance taskInstance, boolean picked, String pickedBy,
-                     Instant lastSuccess, Instant lastFailure, int consecutiveFailures, Instant lastHeartbeat, long version) {
+                     Instant lastSuccess, Instant lastFailure, int consecutiveFailures, Instant lastHeartbeat, long version, int priority) {
         this.executionTime = executionTime;
         this.taskInstance = taskInstance;
         this.picked = picked;
@@ -45,6 +46,7 @@ public final class Execution {
         this.consecutiveFailures = consecutiveFailures;
         this.lastHeartbeat = lastHeartbeat;
         this.version = version;
+        this.priority = priority;
     }
 
     public Instant getExecutionTime() {
@@ -80,6 +82,7 @@ public final class Execution {
                 ", picked=" + picked +
                 ", pickedBy=" + pickedBy +
                 ", lastHeartbeat=" + lastHeartbeat +
-                ", version=" + version;
+                ", version=" + version +
+                ", priority=" + priority;
     }
 }

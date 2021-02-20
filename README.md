@@ -291,6 +291,17 @@ During execution, the scheduler regularly updates a heartbeat-time for the task-
 When a dead execution is found, the `Task`is consulted to see what should be done. A dead `RecurringTask` is typically rescheduled to `now()`.
 
 
+### Priority
+
+When creating a task, a `priority` can be specified. An executor will always run the tasks with the highest priority first even if the `execution_time` is greater than other tasks.
+Priority can be specified through task
+
+```java
+scheduler.schedule(onetimeTask.instanceBuilder("1").setPriority(100), Instant.now());
+scheduler.schedule(onetimeTask.instanceBuilder("2").setPriority(200), Instant.now());
+```
+
+
 ### Things to note / gotchas
 
 * There are no guarantees that all instants in a schedule for a `RecurringTask` will be executed. The `Schedule` is consulted after the previous task-execution finishes, and the closest time in the future will be selected for next execution-time. A new type of task may be added in the future to provide such functionality.
@@ -303,6 +314,10 @@ When a dead execution is found, the `Task`is consulted to see what should be don
 ## Versions / upgrading
 
 See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
+
+
+**Upgrading to 10.x**
+* Add column `priority` to the database schema. See table definitions for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](https://github.com/kagkarlsson/db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](https://github.com/kagkarlsson/db-scheduler/src/test/resources/mysql_tables.sql). `null` is handled as 0, so no need to update existing records.
 
 **Upgrading to 8.x**
 * Custom Schedules must implement a method `boolean isDeterministic()` to indicate whether they will always produce the same instants or not.

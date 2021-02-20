@@ -50,7 +50,7 @@ public class ExecutionComplete {
      */
     public static ExecutionComplete simulatedSuccess(Instant timeDone) {
         TaskInstance nonExistingTaskInstance = new TaskInstance("non-existing-task", "non-existing-id");
-        Execution nonExistingExecution = new Execution(timeDone, nonExistingTaskInstance, false, "simulated-picked-by", timeDone, null, 0, null, 1);
+        Execution nonExistingExecution = new Execution(timeDone, nonExistingTaskInstance, false, "simulated-picked-by", timeDone, null, 0, null, 1, 0);
         return new ExecutionComplete(nonExistingExecution, timeDone.minus(Duration.ofSeconds(1)), timeDone, Result.OK, null);
     }
 
