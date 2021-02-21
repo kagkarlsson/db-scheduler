@@ -51,7 +51,7 @@ public class RecurringTaskTest {
             .execute(TestTasks.DO_NOTHING);
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(recurringTask));
-        scheduler.start();
+        scheduler.startConsumer();
 
         assertScheduled(scheduler, RECURRING_A, LocalTime.of(23, 59));
     }
@@ -63,7 +63,7 @@ public class RecurringTaskTest {
             .execute(TestTasks.DO_NOTHING);
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(recurringTask));
-        scheduler.start();
+        scheduler.startConsumer();
 
         assertScheduled(scheduler, RECURRING_A, TIME);
     }
@@ -75,7 +75,7 @@ public class RecurringTaskTest {
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(recurringTask));
 
-        scheduler.start();
+        scheduler.startConsumer();
         assertScheduled(scheduler, RECURRING_A, LocalTime.of(23, 59));
 
         // Add an additional execution-time to the daily schedule
@@ -88,7 +88,7 @@ public class RecurringTaskTest {
         ManualScheduler schedulerUpdatedTask = manualSchedulerFor(singletonList(recurringTaskNewSchedule));
 
         // Simulate restart with updated schedule for task, execution now already exists
-        schedulerUpdatedTask.start();
+        schedulerUpdatedTask.startConsumer();
 
         assertScheduled(schedulerUpdatedTask, RECURRING_A, LocalTime.of(12, 0));
     }
@@ -100,7 +100,7 @@ public class RecurringTaskTest {
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(recurringTask));
 
-        scheduler.start();
+        scheduler.startConsumer();
         assertScheduled(scheduler, RECURRING_A, LocalTime.of(12, 0));
 
         RecurringTask<Void> recurringTaskNewSchedule = Tasks.recurring(RECURRING_A,
@@ -110,7 +110,7 @@ public class RecurringTaskTest {
         ManualScheduler schedulerUpdatedTask = manualSchedulerFor(singletonList(recurringTaskNewSchedule));
 
         // Simulate restart with updated schedule for task, execution now already exists
-        schedulerUpdatedTask.start();
+        schedulerUpdatedTask.startConsumer();
 
         // Should have unchanged execution-time
         assertScheduled(schedulerUpdatedTask, RECURRING_A, LocalTime.of(23, 59));
@@ -124,7 +124,7 @@ public class RecurringTaskTest {
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(recurringTask));
 
-        scheduler.start();
+        scheduler.startConsumer();
         assertScheduled(scheduler, RECURRING_A, LocalTime.of(23, 59), 1);
 
         // Add an additional execution-time to the daily schedule
@@ -138,7 +138,7 @@ public class RecurringTaskTest {
         ManualScheduler schedulerUpdatedTask = manualSchedulerFor(singletonList(recurringTaskNewSchedule));
 
         // Simulate restart with updated schedule for task, execution now already exists
-        schedulerUpdatedTask.start();
+        schedulerUpdatedTask.startConsumer();
 
         assertScheduled(schedulerUpdatedTask, RECURRING_A, LocalTime.of(12, 0), 1); // unchanged data
     }

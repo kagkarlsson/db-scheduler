@@ -68,6 +68,7 @@ public class SchedulerBuilder {
     protected boolean commitWhenAutocommitDisabled = false;
     protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
     protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
+    private boolean startConsumingTasksOnStart = true;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -148,6 +149,11 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder disableStartConsumingTasksOnStart(){
+        this.startConsumingTasksOnStart = false;
+        return this;
+    }
+
     public SchedulerBuilder deleteUnresolvedAfter(Duration deleteAfter) {
         this.deleteUnresolvedAfter = deleteAfter;
         return this;
@@ -205,6 +211,6 @@ public class SchedulerBuilder {
             schedulerName.getName());
         return new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
             schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingLimit,
-            deleteUnresolvedAfter, shutdownMaxWait, logLevel, logStackTrace, startTasks);
+            deleteUnresolvedAfter, shutdownMaxWait, logLevel, logStackTrace, startTasks, startConsumingTasksOnStart);
     }
 }

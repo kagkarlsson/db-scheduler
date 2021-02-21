@@ -1,5 +1,7 @@
 package com.github.kagkarlsson.scheduler;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,7 +18,7 @@ public class DueExecutionsBatchTest {
 
 
     @Test
-    public void test_trigger_check_for_more_due() {
+    public void test_trigger_check_for_more_due() throws ExecutionException, InterruptedException {
         assertTrigger(0, 0, newBatch(HAPPY_THREADPOOL_SIZE, HAPPY_NUMBER_ADDED_LAST_TIME, HAPPY_LIKELY_MORE_IN_DB));
         assertTrigger(0, 10, newBatch(HAPPY_THREADPOOL_SIZE, HAPPY_NUMBER_ADDED_LAST_TIME, HAPPY_LIKELY_MORE_IN_DB));
         assertTrigger(0, 14, newBatch(HAPPY_THREADPOOL_SIZE, HAPPY_NUMBER_ADDED_LAST_TIME, HAPPY_LIKELY_MORE_IN_DB));
@@ -27,7 +29,8 @@ public class DueExecutionsBatchTest {
         assertTrigger(0, HAPPY_NUMBER_ADDED_LAST_TIME, newBatch(HAPPY_THREADPOOL_SIZE, HAPPY_NUMBER_ADDED_LAST_TIME, false));
 
         // Stale batch, Scheduler has already triggered a new executeDue
-        assertTrigger(0, HAPPY_NUMBER_ADDED_LAST_TIME, staleBatch(HAPPY_THREADPOOL_SIZE, HAPPY_NUMBER_ADDED_LAST_TIME, HAPPY_LIKELY_MORE_IN_DB));
+        assertTrigger(0, HAPPY_NUMBER_ADDED_LAST_TIME,
+            staleBatch(HAPPY_THREADPOOL_SIZE, HAPPY_NUMBER_ADDED_LAST_TIME, HAPPY_LIKELY_MORE_IN_DB));
     }
 
     private void assertTrigger(int timesTriggered, int afterExeutionsHandled, DueExecutionsBatch batch) {
@@ -36,15 +39,21 @@ public class DueExecutionsBatchTest {
         assertEquals(timesTriggered, triggered.get());
     }
 
-    private DueExecutionsBatch newBatch(int schedulerThreadpoolSize, int numberAddedFromLastDbQuery, boolean likelyMoreDueInDb) {
-        DueExecutionsBatch batch = new DueExecutionsBatch(schedulerThreadpoolSize, HAPPY_GENERATION_NUMBER, numberAddedFromLastDbQuery, likelyMoreDueInDb);
+    private DueExecutionsBatch newBatch(int schedulerThreadpoolSize, int numberAddedFromLastDbQuery,
+        boolean likelyMoreDueInDb) throws ExecutionException, InterruptedException {
+
+        CompletableFuture<DueExecutionsBatch.BatchCompletionResult> onBatchComplete = new CompletableFuture<>();
+        DueExecutionsBatch batch =
+            new DueExecutionsBatch(schedulerThreadpoolSize, HAPPY_GENERATION_NUMBER, numberAddedFromLastDbQuery,
+                likelyMoreDueInDb, onBatchComplete);
+        assertEquals(onBatchComplete.get().possiblyMoreExecutionsInDb(), likelyMoreDueInDb);
         return batch;
     }
 
-    private DueExecutionsBatch staleBatch(int schedulerThreadpoolSize, int numberAddedFromLastDbQuery, boolean likelyMoreDueInDb) {
+    private DueExecutionsBatch staleBatch(int schedulerThreadpoolSize, int numberAddedFromLastDbQuery,
+        boolean likelyMoreDueInDb) throws ExecutionException, InterruptedException {
         DueExecutionsBatch batch = newBatch(schedulerThreadpoolSize, numberAddedFromLastDbQuery, likelyMoreDueInDb);
         batch.markBatchAsStale();
         return batch;
     }
-
 }
