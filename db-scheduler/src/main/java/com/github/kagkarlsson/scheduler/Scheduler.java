@@ -22,6 +22,7 @@ import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.*;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +46,7 @@ public class Scheduler implements SchedulerClient {
     private final Clock clock;
     private final TaskRepository schedulerTaskRepository;
     private final TaskResolver taskResolver;
+    private final boolean startConsumingTasksOnStart;
     private int threadpoolSize;
     private final ExecutorService executorService;
     private final Waiter executeDueWaiter;
@@ -64,9 +66,10 @@ public class Scheduler implements SchedulerClient {
     private int currentGenerationNumber = 1;
     private final ConfigurableLogger failureLogger;
 
-    protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
-                        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, Duration shutdownMaxWait,
-                        LogLevel logLevel, boolean logStackTrace, List<OnStartup> onStartup) {
+    protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository,
+        TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
+        Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, Duration shutdownMaxWait,
+        LogLevel logLevel, boolean logStackTrace, List<OnStartup> onStartup, boolean startConsumingTasksOnStart) {
         this.clock = clock;
         this.schedulerTaskRepository = schedulerTaskRepository;
         this.taskResolver = taskResolver;
@@ -87,18 +90,34 @@ public class Scheduler implements SchedulerClient {
         SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
         delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener);
         this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
+        this.startConsumingTasksOnStart = startConsumingTasksOnStart;
     }
 
-    public void start() {
+    /**
+     * Starts consuming the tasks from the queue.
+     * If the scheduler is not run with {@link #startConsumer()}, can still be used in `producer-only` mode.
+     */
+    public void startConsumer() {
         LOG.info("Starting scheduler.");
 
         executeOnStartup();
 
-        dueExecutor.submit(new RunUntilShutdown(this::executeDue, executeDueWaiter, schedulerState, statsRegistry));
+        if(startConsumingTasksOnStart) {
+            dueExecutor.submit(
+                new RunUntilShutdown(this::executeDueTasks, executeDueWaiter, schedulerState, statsRegistry));
+        }
         detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter, schedulerState, statsRegistry));
         updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter, schedulerState, statsRegistry));
 
         schedulerState.setStarted();
+    }
+
+    /**
+     * @deprecated use {@link #startConsumer()}
+     */
+    @Deprecated
+    public void start() {
+        this.startConsumer();
     }
 
     protected void executeOnStartup() {
@@ -214,18 +233,35 @@ public class Scheduler implements SchedulerClient {
         return new ArrayList<>(currentlyProcessing.values());
     }
 
+    /**
+     * @deprecated Use {@link #executeDueTasks()}
+     */
+    @Deprecated
     protected void executeDue() {
+        executeDueTasks();
+    }
+
+    public CompletableFuture<DueExecutionsBatch.BatchCompletionResult> executeDueTasks() {
         Instant now = clock.now();
         List<Execution> dueExecutions = schedulerTaskRepository.getDue(now, pollingLimit);
         LOG.trace("Found {} task instances due for execution", dueExecutions.size());
 
+        boolean possiblyMoreExecutionsInDb = pollingLimit == dueExecutions.size();
+
+        CompletableFuture<DueExecutionsBatch.BatchCompletionResult> onBatchComplete =
+            new CompletableFuture<>();
+
         this.currentGenerationNumber = this.currentGenerationNumber + 1;
-        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(Scheduler.this.threadpoolSize, currentGenerationNumber, dueExecutions.size(), pollingLimit == dueExecutions.size());
+        DueExecutionsBatch newDueBatch =
+            new DueExecutionsBatch(Scheduler.this.threadpoolSize, currentGenerationNumber, dueExecutions.size(),
+                possiblyMoreExecutionsInDb, onBatchComplete);
 
         for (Execution e : dueExecutions) {
             executorService.execute(new PickAndExecute(e, newDueBatch));
         }
         statsRegistry.register(SchedulerStatsEvent.RAN_EXECUTE_DUE);
+
+        return onBatchComplete;
     }
 
     @SuppressWarnings({"rawtypes","unchecked"})

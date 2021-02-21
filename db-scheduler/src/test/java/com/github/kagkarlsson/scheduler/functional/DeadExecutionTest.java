@@ -1,6 +1,5 @@
 package com.github.kagkarlsson.scheduler.functional;
 
-import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -52,7 +51,7 @@ public class DeadExecutionTest {
             stopScheduler.register(scheduler);
 
             scheduler.schedule(customTask.instance("1"), Instant.now());
-            scheduler.start();
+            scheduler.startConsumer();
             completedCondition.waitFor();
 
             assertEquals(registry.getCount(SchedulerStatsEvent.DEAD_EXECUTION), 1);

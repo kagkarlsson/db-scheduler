@@ -31,8 +31,13 @@ public class ManualScheduler extends Scheduler {
     private static final Logger LOG = LoggerFactory.getLogger(ManualScheduler.class);
     private final SettableClock clock;
 
-    ManualScheduler(SettableClock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName, Waiter waiter, Duration heartbeatInterval, boolean executeImmediately, StatsRegistry statsRegistry, int pollingLimit, Duration deleteUnresolvedAfter, LogLevel logLevel, boolean logStackTrace, List<OnStartup> onStartup) {
-        super(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, maxThreads, executorService, schedulerName, waiter, heartbeatInterval, executeImmediately, statsRegistry, pollingLimit, deleteUnresolvedAfter, Duration.ZERO, logLevel, logStackTrace, onStartup);
+    ManualScheduler(SettableClock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository,
+        TaskResolver taskResolver, int maxThreads, ExecutorService executorService, SchedulerName schedulerName, Waiter waiter, Duration heartbeatInterval, boolean executeImmediately, StatsRegistry statsRegistry,
+        int pollingLimit, Duration deleteUnresolvedAfter, LogLevel logLevel, boolean logStackTrace,
+        List<OnStartup> onStartup, boolean startConsumingTasksOnStart) {
+
+        super(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, maxThreads, executorService, schedulerName, waiter, heartbeatInterval, executeImmediately, statsRegistry, pollingLimit, deleteUnresolvedAfter, Duration.ZERO, logLevel, logStackTrace, onStartup,
+            startConsumingTasksOnStart);
         this.clock = clock;
     }
 
@@ -49,7 +54,7 @@ public class ManualScheduler extends Scheduler {
     }
 
     public void runAnyDueExecutions() {
-        super.executeDue();
+        super.executeDueTasks();
     }
 
     public void runDeadExecutionDetection() {
@@ -57,7 +62,7 @@ public class ManualScheduler extends Scheduler {
     }
 
 
-    public void start() {
+    public void startConsumer() {
         LOG.info("Starting manual scheduler. Executing on-startup tasks.");
         executeOnStartup();
     }

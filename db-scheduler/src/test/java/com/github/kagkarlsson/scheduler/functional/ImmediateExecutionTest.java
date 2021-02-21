@@ -1,7 +1,6 @@
 package com.github.kagkarlsson.scheduler.functional;
 
 import co.unruly.matchers.TimeMatchers;
-import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -14,7 +13,6 @@ import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
@@ -59,7 +57,7 @@ public class ImmediateExecutionTest {
                 .build();
             stopScheduler.register(scheduler);
 
-            scheduler.start();
+            scheduler.startConsumer();
             executeDueCondition.waitFor();
 
             scheduler.schedule(task.instance("1"), clock.now());

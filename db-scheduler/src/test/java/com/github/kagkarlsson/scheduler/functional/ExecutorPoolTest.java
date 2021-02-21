@@ -91,7 +91,7 @@ public class ExecutorPoolTest {
         IntStream.range(0, executionsToRun).forEach(i -> scheduler.schedule(task.instance(String.valueOf(i)), clock.now()));
 
         Assertions.assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
-            scheduler.start();
+            scheduler.startConsumer();
             condition.waitFor();
 
             List<ExecutionComplete> completed = registry.getCompleted();

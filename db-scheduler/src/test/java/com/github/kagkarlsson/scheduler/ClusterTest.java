@@ -52,8 +52,8 @@ public class ClusterTest {
             final Scheduler scheduler2 = createScheduler("scheduler2", task, stats);
 
             stopScheduler.register(scheduler1, scheduler2);
-            scheduler1.start();
-            scheduler2.start();
+            scheduler1.startConsumer();
+            scheduler2.startConsumer();
 
             ids.forEach(id -> {
                 scheduler1.schedule(task.instance(id), Instant.now());
@@ -88,8 +88,8 @@ public class ClusterTest {
             final Scheduler scheduler2 = createSchedulerRecurring("scheduler2", task1, stats);
 
             stopScheduler.register(scheduler1, scheduler2);
-            scheduler1.start();
-            scheduler2.start();
+            scheduler1.startConsumer();
+            scheduler2.startConsumer();
 
             Thread.sleep(5_000);
             scheduler1.stop();

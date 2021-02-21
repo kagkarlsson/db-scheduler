@@ -20,10 +20,8 @@ import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Duration;
@@ -33,7 +31,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
-import static java.time.temporal.ChronoUnit.MILLIS;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -105,7 +102,7 @@ public abstract class CompatibilityTest {
             scheduler.schedule(recurring.instance("id3"), Instant.now());
             scheduler.schedule(recurring.instance("id4"), Instant.now());
 
-            scheduler.start();
+            scheduler.startConsumer();
             completed12Condition.waitFor();
             scheduler.stop();
 

@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -11,6 +12,11 @@ import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.google.common.util.concurrent.MoreExecutors;
+import java.time.temporal.ChronoUnit;
+import java.util.Random;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,6 +35,7 @@ import static org.hamcrest.core.Is.is;
 
 public class SchedulerTest {
 
+    public static final int POLLING_LIMIT = 10;
     private TestTasks.CountingHandler<Void> handler;
     private SettableClock clock;
 
@@ -48,8 +55,12 @@ public class SchedulerTest {
     private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
         final StatsRegistry statsRegistry = StatsRegistry.NOOP;
         TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, Arrays.asList(tasks));
-        JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
-        return new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor, new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, statsRegistry, 10_000, Duration.ofDays(14), Duration.ZERO, LogLevel.DEBUG, true, new ArrayList<>());
+        JdbcTaskRepository taskRepository =
+            new JdbcTaskRepository(postgres.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver,
+                new SchedulerName.Fixed("scheduler1"));
+        return new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor,
+            new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false, statsRegistry,
+            POLLING_LIMIT, Duration.ofDays(14), Duration.ZERO, LogLevel.DEBUG, true, new ArrayList<>(), true);
     }
 
     @Test
@@ -60,11 +71,11 @@ public class SchedulerTest {
         Instant executionTime = clock.now().plus(Duration.ofMinutes(1));
         scheduler.schedule(oneTimeTask.instance("1"), executionTime);
 
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(handler.timesExecuted.get(), is(0));
 
         clock.set(executionTime);
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(handler.timesExecuted.get(), is(1));
     }
 
@@ -79,15 +90,15 @@ public class SchedulerTest {
         scheduler.schedule(oneTimeTaskInstance, executionTime);
         Instant reScheduledExecutionTime = clock.now().plus(Duration.ofMinutes(2));
         scheduler.reschedule(oneTimeTaskInstance, reScheduledExecutionTime);
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(handler.timesExecuted.get(), is(0));
 
         clock.set(executionTime);
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(handler.timesExecuted.get(), is(0));
 
         clock.set(reScheduledExecutionTime);
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(handler.timesExecuted.get(), is(1));
     }
 
@@ -101,11 +112,11 @@ public class SchedulerTest {
         TaskInstance<Void> oneTimeTaskInstance = oneTimeTask.instance(instanceId);
         scheduler.schedule(oneTimeTaskInstance, executionTime);
         scheduler.cancel(oneTimeTaskInstance);
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(handler.timesExecuted.get(), is(0));
 
         clock.set(executionTime);
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(handler.timesExecuted.get(), is(0));
     }
 
@@ -115,13 +126,13 @@ public class SchedulerTest {
         Scheduler scheduler = schedulerFor(recurringTask);
 
         scheduler.schedule(recurringTask.instance("single"), clock.now());
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
 
         assertThat(handler.timesExecuted.get(), is(1));
 
         Instant nextExecutionTime = clock.now().plus(Duration.ofHours(1));
         clock.set(nextExecutionTime);
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(handler.timesExecuted.get(), is(2));
     }
 
@@ -132,7 +143,7 @@ public class SchedulerTest {
         Scheduler scheduler = schedulerFor(Executors.newSingleThreadExecutor(), oneTimeTask);
 
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         pausingHandler.waitForExecute.await();
 
         assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));
@@ -157,7 +168,30 @@ public class SchedulerTest {
 
         assertThat(failureHandler.result, is(ExecutionComplete.Result.FAILED));
         assertThat(failureHandler.cause.get().getMessage(), is("Failed!"));
-
     }
 
+    @Test
+    public void scheduler_should_return_if_still_tasks_due() throws ExecutionException, InterruptedException {
+        OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
+        Scheduler scheduler = schedulerFor(oneTimeTask);
+
+        // Since no tasks have been inserted, there should be no extra executions
+        assertThat(scheduler.executeDueTasks().get().possiblyMoreExecutionsInDb(), is(false));
+
+        // Inserting one task in the future --> no tasks to execute
+        scheduler.schedule(oneTimeTask.instance("in future"), clock.now().plus(Duration.ofMinutes(1)));
+        assertThat(scheduler.executeDueTasks().get().possiblyMoreExecutionsInDb(), is(false));
+
+        // Inserting exactly POLLING_LIMIT -1, therefore we know that there are no more tasks
+        IntStream.range(0, POLLING_LIMIT - 1)
+            .forEach(i -> scheduler.schedule(oneTimeTask.instance("-1 of limit" + i), clock.now()));
+        assertThat(scheduler.executeDueTasks().get().possiblyMoreExecutionsInDb(), is(false));
+
+        // Inserting exactly POLLING_LIMIT, therefore we DON'T know if there are any more tasks
+        IntStream.range(0, POLLING_LIMIT)
+            .forEach(i -> scheduler.schedule(oneTimeTask.instance("exact-limit" + i), clock.now()));
+        assertThat(scheduler.executeDueTasks().get().possiblyMoreExecutionsInDb(), is(true));
+        // once we run all of them, we there should be 0 tasks in it, and therefore we know we ran them all
+        assertThat(scheduler.executeDueTasks().get().possiblyMoreExecutionsInDb(), is(false));
+    }
 }

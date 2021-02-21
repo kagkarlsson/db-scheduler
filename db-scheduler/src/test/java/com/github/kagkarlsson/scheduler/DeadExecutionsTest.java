@@ -75,7 +75,8 @@ public class DeadExecutionsTest {
             Duration.ZERO,
             LogLevel.DEBUG,
             true,
-            new ArrayList<>());
+            new ArrayList<>(),
+            true);
 
     }
 
@@ -113,10 +114,10 @@ public class DeadExecutionsTest {
         final Execution execution1 = new Execution(oneHourAgo, taskInstance);
         jdbcTaskRepository.createIfNotExists(execution1);
 
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(1));
 
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(1));
 
         settableClock.set(Instant.now());
@@ -126,7 +127,7 @@ public class DeadExecutionsTest {
 
         settableClock.set(Instant.now());
 
-        scheduler.executeDue();
+        scheduler.executeDueTasks();
         assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(2));
     }
 
