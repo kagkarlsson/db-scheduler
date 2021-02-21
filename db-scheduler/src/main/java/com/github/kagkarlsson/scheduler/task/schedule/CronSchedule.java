@@ -36,10 +36,12 @@ import java.util.Optional;
 public class CronSchedule implements Schedule {
 
     private static final Logger LOG = LoggerFactory.getLogger(CronSchedule.class);
-    private final ExecutionTime cronExecutionTime;
+    private final String pattern;
     private final ZoneId zoneId;
+    private final ExecutionTime cronExecutionTime;
 
     public CronSchedule(String pattern, ZoneId zoneId) {
+        this.pattern = pattern;
         CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING));
         Cron cron = parser.parse(pattern);
         this.cronExecutionTime = ExecutionTime.forCron(cron);
@@ -70,5 +72,10 @@ public class CronSchedule implements Schedule {
     @Override
     public boolean isDeterministic() {
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "CronSchedule pattern=" + pattern + ", zone=" + zoneId;
     }
 }
