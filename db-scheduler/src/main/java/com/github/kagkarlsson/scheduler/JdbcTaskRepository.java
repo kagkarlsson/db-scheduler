@@ -87,7 +87,7 @@ public class JdbcTaskRepository implements TaskRepository {
             }
 
             jdbcRunner.execute(
-                    "insert into " + tableName + "(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
+                    "insert into " + tableName + "(task_name, task_instance, task_data, execution_time, picked, version, priority) values(?, ?, ?, ?, ?, ?, ?)",
                     (PreparedStatement p) -> {
                         p.setString(1, execution.taskInstance.getTaskName());
                         p.setString(2, execution.taskInstance.getId());
@@ -95,6 +95,7 @@ public class JdbcTaskRepository implements TaskRepository {
                         jdbcCustomization.setInstant(p, 4, execution.executionTime);
                         p.setBoolean(5, false);
                         p.setLong(6, 1L);
+                        p.setInt(7, execution.taskInstance.getPriority());
                     });
             return true;
 
@@ -137,7 +138,7 @@ public class JdbcTaskRepository implements TaskRepository {
         final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
         final String explicitLimit = jdbcCustomization.supportsExplicitQueryLimitPart() ? jdbcCustomization.getQueryLimitPart(limit) : "";
         return jdbcRunner.query(
-                "select * from " + tableName + " where picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() + " order by execution_time asc" + explicitLimit,
+                "select * from " + tableName + " where picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() + " order by priority desc, execution_time asc" + explicitLimit,
                 (PreparedStatement p) -> {
                     int index = 1;
                     p.setBoolean(index++, false);
@@ -191,7 +192,8 @@ public class JdbcTaskRepository implements TaskRepository {
                         "version = version + 1 " +
                         "where task_name = ? " +
                         "and task_instance = ? " +
-                        "and version = ?",
+                        "and version = ? " +
+                        "and priority = ? ",
                 ps -> {
                     int index = 1;
                     ps.setBoolean(index++, false);
@@ -208,6 +210,7 @@ public class JdbcTaskRepository implements TaskRepository {
                     ps.setString(index++, execution.taskInstance.getTaskName());
                     ps.setString(index++, execution.taskInstance.getId());
                     ps.setLong(index++, execution.version);
+                    ps.setLong(index++, execution.taskInstance.getPriority());
                 });
 
         if (updated != 1) {
@@ -224,7 +227,8 @@ public class JdbcTaskRepository implements TaskRepository {
                         "where picked = ? " +
                         "and task_name = ? " +
                         "and task_instance = ? " +
-                        "and version = ?",
+                        "and version = ? "+
+                        "and priority = ? ",
                 ps -> {
                     ps.setBoolean(1, true);
                     ps.setString(2, truncate(schedulerSchedulerName.getName(), 50));
@@ -233,6 +237,7 @@ public class JdbcTaskRepository implements TaskRepository {
                     ps.setString(5, e.taskInstance.getTaskName());
                     ps.setString(6, e.taskInstance.getId());
                     ps.setLong(7, e.version);
+                    ps.setInt(8, e.taskInstance.getPriority());
                 });
 
         if (updated == 0) {
@@ -400,9 +405,11 @@ public class JdbcTaskRepository implements TaskRepository {
                 int consecutiveFailures = rs.getInt("consecutive_failures"); // null-value is returned as 0 which is the preferred default
                 Instant lastHeartbeat = jdbcCustomization.getInstant(rs,"last_heartbeat");
                 long version = rs.getLong("version");
+                int priority = rs.getInt("priority");
 
                 Supplier dataSupplier = memoize(() -> serializer.deserialize(task.get().getDataClass(), data));
-                this.consumer.accept(new Execution(executionTime, new TaskInstance(taskName, instanceId, dataSupplier), picked, pickedBy, lastSuccess, lastFailure, consecutiveFailures, lastHeartbeat, version));
+                this.consumer.accept(new Execution(executionTime, new TaskInstance.Builder<>(taskName, instanceId).setDataSupplier(dataSupplier).setPriority(priority).build(),
+                    picked, pickedBy, lastSuccess, lastFailure, consecutiveFailures, lastHeartbeat, version, priority));
             }
 
             return null;

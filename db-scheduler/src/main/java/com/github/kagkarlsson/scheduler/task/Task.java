@@ -37,11 +37,15 @@ public abstract class Task<T> implements ExecutionHandler<T> {
     }
 
     public TaskInstance<T> instance(String id) {
-        return new TaskInstance<>(this.name, id);
+        return instanceBuilder(id).build();
     }
 
     public TaskInstance<T> instance(String id, T data) {
-        return new TaskInstance<>(this.name, id, data);
+        return instanceBuilder(id).setData(data).build();
+    }
+
+    public TaskInstance.Builder<T> instanceBuilder(String id) {
+        return new TaskInstance.Builder<>(this.name, id);
     }
 
     public abstract CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);

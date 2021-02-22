@@ -10,5 +10,6 @@ create table if not exists scheduled_tasks (
 	consecutive_failures INT,
 	last_heartbeat TIMESTAMP WITH TIME ZONE,
 	version BIGINT,
+	priority INT,
 	PRIMARY KEY (task_name, task_instance)
 );

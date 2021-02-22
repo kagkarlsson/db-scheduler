@@ -10,5 +10,6 @@ create table scheduled_tasks (
   consecutive_failures INT,
   last_heartbeat datetimeoffset ,
   [version] BIGINT not null,
+  priority INT,
   PRIMARY KEY (task_name, task_instance)
 )
