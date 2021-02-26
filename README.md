@@ -19,6 +19,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * **Cluster-friendly**. Guarantees execution by single scheduler instance.
 * **Persistent** tasks. Requires _single_ database-table for persistence.
 * **Embeddable**. Built to be embedded in existing applications.
+* **High throughput**. Tested to handle 2k - 10k executions / second. [Link](#benchmark-test)
 * **Simple**.
 * **Minimal dependencies**. (slf4j)
 
