@@ -66,7 +66,7 @@ public class Scheduler implements SchedulerClient {
     private final Waiter heartbeatWaiter;
     final SettableSchedulerState schedulerState = new SettableSchedulerState();
     private int currentGenerationNumber = 1;
-    private final ConfigurableLogger failureLogger;
+    final ConfigurableLogger failureLogger;
 
     protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
                         Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, PollingStrategyConfig pollingStrategyConfig, Duration deleteUnresolvedAfter, Duration shutdownMaxWait,
@@ -98,6 +98,7 @@ public class Scheduler implements SchedulerClient {
         } else {
             throw new IllegalArgumentException("Unknown polling-strategy type: " + pollingStrategyConfig.type);
         }
+        LOG.info("Using polling-strategy: " + pollingStrategyConfig.describe());
 
         this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
     }

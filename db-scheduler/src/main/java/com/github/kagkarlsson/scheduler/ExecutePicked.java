@@ -72,13 +72,11 @@ class ExecutePicked implements Runnable {
             scheduler.statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
 
         } catch (RuntimeException unhandledException) {
-            LOG.error("Unhandled exception during execution of task with name '{}'. Treating as failure.", task.get().getName(), unhandledException);
-            failure(task.get().getFailureHandler(), execution, unhandledException, executionStarted);
+            failure(task.get(), execution, unhandledException, executionStarted, "Unhandled exception");
             scheduler.statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
 
         } catch (Throwable unhandledError) {
-            LOG.error("Error during execution of task with name '{}'. Treating as failure.", task.get().getName(), unhandledError);
-            failure(task.get().getFailureHandler(), execution, unhandledError, executionStarted);
+            failure(task.get(), execution, unhandledError, executionStarted, "Error");
             scheduler.statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
         }
     }
@@ -96,10 +94,13 @@ class ExecutePicked implements Runnable {
         }
     }
 
-    private void failure(FailureHandler failureHandler, Execution execution, Throwable cause, Instant executionStarted) {
+    private void failure(Task task, Execution execution, Throwable cause, Instant executionStarted, String errorMessagePrefix) {
+        String logMessage = errorMessagePrefix + " during execution of task with name '{}'. Treating as failure.";
+        scheduler.failureLogger.log(logMessage, cause, task.getName());
+
         ExecutionComplete completeEvent = ExecutionComplete.failure(execution, executionStarted, scheduler.clock.now(), cause);
         try {
-            failureHandler.onFailure(completeEvent, new ExecutionOperations(scheduler.schedulerTaskRepository, execution));
+            task.getFailureHandler().onFailure(completeEvent, new ExecutionOperations(scheduler.schedulerTaskRepository, execution));
             scheduler.statsRegistry.registerSingleCompletedExecution(completeEvent);
         } catch (Throwable e) {
             scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.FAILUREHANDLER_ERROR);

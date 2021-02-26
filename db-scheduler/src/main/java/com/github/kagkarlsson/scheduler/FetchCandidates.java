@@ -49,7 +49,7 @@ public class FetchCandidates implements PollStrategy {
         // Fetch new candidates for execution. Old ones still in ExecutorService will become stale and be discarded
         final int executionsToFetch = upperLimit;
         List<Execution> fetchedDueExecutions = scheduler.schedulerTaskRepository.getDue(now, executionsToFetch);
-        LOG.trace("Fetched {} taskinstances due for execution", fetchedDueExecutions.size());
+        LOG.trace("Fetched {} task instances due for execution", fetchedDueExecutions.size());
 
         this.currentGenerationNumber = this.currentGenerationNumber + 1;
         DueExecutionsBatch newDueBatch = new DueExecutionsBatch(

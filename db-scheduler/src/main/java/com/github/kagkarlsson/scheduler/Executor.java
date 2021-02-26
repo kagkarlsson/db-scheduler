@@ -52,10 +52,9 @@ public class Executor {
                 r.run();
             } finally {
                 currentlyInQueueOrProcessing.decrementAndGet();
+                // Run callbacks after decrementing currentlyInQueueOrProcessing
+                afterDone.run();
             }
-
-            // Run callbacks after decrementing currentlyInQueueOrProcessing
-            afterDone.run();
         });
     }
 

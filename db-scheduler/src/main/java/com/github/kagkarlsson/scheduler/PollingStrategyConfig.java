@@ -56,4 +56,8 @@ public class PollingStrategyConfig {
             throw new IllegalArgumentException("upperLimit should be equals to number of threads or higher, i.e. fraction higher than 1");
         }
     }
+
+    public String describe() {
+        return "type=" + type.name() + ", lowerLimit=" + lowerLimitFractionOfThreads + ", upperLimit=" + upperLimitFractionOfThreads;
+    }
 }
