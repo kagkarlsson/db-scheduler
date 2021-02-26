@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -50,7 +51,7 @@ public class SchedulerTest {
         JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
         return new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor,
             new SchedulerName.Fixed("name"), new Waiter(Duration.ZERO), Duration.ofSeconds(1), false,
-            statsRegistry, PollingStrategyConfig.DEFAULT_FETCH, Duration.ofDays(14), Duration.ZERO, new ArrayList<>());
+            statsRegistry, PollingStrategyConfig.DEFAULT_FETCH, Duration.ofDays(14), Duration.ZERO, LogLevel.DEBUG, true, new ArrayList<>());
     }
 
     @Test

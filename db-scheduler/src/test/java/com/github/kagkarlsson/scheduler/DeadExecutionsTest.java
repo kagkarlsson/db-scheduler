@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
@@ -72,6 +73,8 @@ public class DeadExecutionsTest {
             PollingStrategyConfig.DEFAULT_FETCH,
             Duration.ofDays(14),
             Duration.ZERO,
+            LogLevel.DEBUG,
+            true,
             new ArrayList<>());
 
     }

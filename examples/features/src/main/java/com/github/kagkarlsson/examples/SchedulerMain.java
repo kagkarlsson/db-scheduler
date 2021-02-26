@@ -1,6 +1,7 @@
-package com.github.kagkarlsson.scheduler.example;
+package com.github.kagkarlsson.examples;
 
-import com.github.kagkarlsson.scheduler.HsqlTestDatabaseExtension;
+import com.github.kagkarlsson.examples.helpers.Example;
+import com.github.kagkarlsson.examples.helpers.ExampleHelpers;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -10,17 +11,21 @@ import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
 
-public class SchedulerMain {
-    private static final Logger LOG = LoggerFactory.getLogger(SchedulerMain.class);
+import static com.github.kagkarlsson.examples.helpers.ExampleHelpers.sleep;
 
-    private static void example(DataSource dataSource) {
+public class SchedulerMain extends Example {
+
+    public static void main(String[] args) {
+        new SchedulerMain().runWithDatasource();
+    }
+
+    @Override
+    public void run(DataSource dataSource) {
 
         // recurring with no data
         RecurringTask<Void> recurring1 = Tasks.recurring("recurring_no_data", FixedDelay.of(Duration.ofSeconds(5)))
@@ -81,14 +86,7 @@ public class SchedulerMain {
                 .startTasks(recurring1, recurring2, custom1)
                 .build();
 
-
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                LOG.info("Received shutdown signal.");
-                scheduler.stop();
-            }
-        });
+        ExampleHelpers.registerShutdownHook(scheduler);
 
         scheduler.start();
 
@@ -98,27 +96,6 @@ public class SchedulerMain {
         scheduler.schedule(onetime2.instance("onetime2", 100), Instant.now().plusSeconds(3));
 
         scheduler.schedule(onetime2.instance("onetime3", 100), Instant.now());
-    }
-
-    private static void sleep(int ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (InterruptedException e) {
-        }
-    }
-
-    public static void main(String[] args) throws Throwable {
-        try {
-            final HsqlTestDatabaseExtension hsqlRule = new HsqlTestDatabaseExtension();
-            hsqlRule.beforeEach(null);
-
-            final DataSource dataSource = hsqlRule.getDataSource();
-
-            example(dataSource);
-        } catch (Exception e) {
-            LOG.error("Error", e);
-        }
-
     }
 
 }

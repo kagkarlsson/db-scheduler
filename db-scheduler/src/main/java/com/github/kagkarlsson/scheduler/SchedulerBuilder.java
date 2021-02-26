@@ -21,6 +21,7 @@ import static java.util.Optional.ofNullable;
 
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -46,6 +47,8 @@ public class SchedulerBuilder {
         PollingStrategyConfig.Type.FETCH,
         0.5,
         UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH);
+    public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.WARN;
+    public static final boolean LOG_STACK_TRACE_ON_FAILURE = true;
 
     protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
 
@@ -66,6 +69,8 @@ public class SchedulerBuilder {
     protected Duration shutdownMaxWait = SHUTDOWN_MAX_WAIT;
     protected boolean commitWhenAutocommitDisabled = false;
     protected PollingStrategyConfig pollingStrategyConfig = DEFAULT_POLLING_STRATEGY;
+    protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
+    protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -162,6 +167,15 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder failureLogging(LogLevel logLevel, boolean logStackTrace) {
+        if(logLevel == null) {
+            throw new IllegalArgumentException("Log level must not be null");
+        }
+        this.logLevel = logLevel;
+        this.logStackTrace = logStackTrace;
+        return this;
+    }
+
     public Scheduler build() {
         if (schedulerName == null) {
              schedulerName = new SchedulerName.Hostname();
@@ -185,7 +199,7 @@ public class SchedulerBuilder {
             tableName,
             schedulerName.getName());
         return new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
-                schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingStrategyConfig,
-            deleteUnresolvedAfter, shutdownMaxWait, startTasks);
+            schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingStrategyConfig, pollingLimit,
+            deleteUnresolvedAfter, shutdownMaxWait, logLevel, logStackTrace, startTasks);
     }
 }

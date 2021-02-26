@@ -18,6 +18,7 @@
     </properties>
 
     <modules>
+        <module>features</module>
         <module>spring-boot-example</module>
     </modules>
 

@@ -21,6 +21,7 @@ import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -79,7 +80,7 @@ public class TestHelper {
             return new ManualScheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads,
                 new DirectExecutorService(), schedulerName, waiter, heartbeatInterval, enableImmediateExecution,
                 statsRegistry, Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
-                deleteUnresolvedAfter, startTasks);
+                deleteUnresolvedAfter, LogLevel.DEBUG, true, startTasks);
         }
 
         public ManualScheduler start() {
