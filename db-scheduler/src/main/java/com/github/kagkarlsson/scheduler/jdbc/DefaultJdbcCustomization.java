@@ -15,7 +15,6 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import com.github.kagkarlsson.scheduler.JdbcTaskRepository.JdbcTaskRepositoryContext;
 import com.github.kagkarlsson.scheduler.task.Execution;
 
 import java.sql.PreparedStatement;

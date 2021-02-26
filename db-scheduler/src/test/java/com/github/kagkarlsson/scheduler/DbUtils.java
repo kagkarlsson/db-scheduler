@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 import java.util.function.Consumer;
 
 import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
-import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 
 public class DbUtils {
 

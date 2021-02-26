@@ -15,7 +15,6 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.task.Execution;
 
 import java.time.Instant;
@@ -46,7 +45,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
     }
 
     @Override
-    public List<Execution> lockAndFetch(JdbcTaskRepository.JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+    public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
         final JdbcTaskRepository.UnresolvedFilter unresolvedFilter = new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
 
         String selectForUpdateQuery =

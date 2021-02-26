@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -23,7 +24,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.IntStream;
 
-import static com.github.kagkarlsson.scheduler.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;

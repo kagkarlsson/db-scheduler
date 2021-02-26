@@ -15,11 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler.boot.config;
 
-import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import java.time.Duration;
-import java.util.Optional;
 
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
