@@ -180,6 +180,7 @@ public class SchedulerBuilder {
         if (schedulerName == null) {
              schedulerName = new SchedulerName.Hostname();
         }
+        // TODO: reintroduce pollingLimit since many uses it...
 
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
         final JdbcCustomization jdbcCustomization = ofNullable(this.jdbcCustomization).orElseGet(() -> new AutodetectJdbcCustomization(dataSource));
@@ -199,7 +200,7 @@ public class SchedulerBuilder {
             tableName,
             schedulerName.getName());
         return new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
-            schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingStrategyConfig, pollingLimit,
+            schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingStrategyConfig,
             deleteUnresolvedAfter, shutdownMaxWait, logLevel, logStackTrace, startTasks);
     }
 }

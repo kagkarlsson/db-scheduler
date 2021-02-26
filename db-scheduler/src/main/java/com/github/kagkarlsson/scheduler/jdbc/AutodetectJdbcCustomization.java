@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import com.github.kagkarlsson.scheduler.JdbcTaskRepository.JdbcTaskRepositoryContext;
+import com.github.kagkarlsson.scheduler.task.Execution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +26,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 
 public class AutodetectJdbcCustomization implements JdbcCustomization {
 
@@ -78,6 +81,11 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     @Override
     public boolean supportsLockAndFetch() {
         return jdbcCustomization.supportsLockAndFetch();
+    }
+
+    @Override
+    public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+        return jdbcCustomization.lockAndFetch(ctx, now, limit);
     }
 
     @Override

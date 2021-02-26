@@ -15,6 +15,14 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.task.Execution;
+
+import java.time.Instant;
+import java.util.List;
+
+import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
+
 public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
 
     @Override
@@ -35,5 +43,30 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
     @Override
     public boolean supportsLockAndFetch() {
         return true;
+    }
+
+    @Override
+    public List<Execution> lockAndFetch(JdbcTaskRepository.JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+        final JdbcTaskRepository.UnresolvedFilter unresolvedFilter = new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
+
+        String selectForUpdateQuery =
+            " UPDATE "+ctx.tableName+" st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
+                " WHERE (st1.task_name, st1.task_instance) IN (" +
+                "   SELECT st2.task_name, st2.task_instance FROM "+ctx.tableName+" st2 " +
+                "   WHERE picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() + " order by execution_time asc FOR UPDATE SKIP LOCKED LIMIT ?)" +
+                " RETURNING st1.*";
+
+        return ctx.jdbcRunner.query(selectForUpdateQuery,
+            ps -> {
+                // Update
+                ps.setBoolean(1, true); // picked (new)
+                ps.setString(2, truncate(ctx.schedulerName.getName(), 50)); // picked_by
+                setInstant(ps, 3, now); // last_heartbeat
+                // Inner select
+                ps.setBoolean(4, false); // picked (old)
+                setInstant(ps, 5, now); // execution_time
+                ps.setInt(6, limit); // limit
+            },
+            ctx.resultSetMapper.get());
     }
 }

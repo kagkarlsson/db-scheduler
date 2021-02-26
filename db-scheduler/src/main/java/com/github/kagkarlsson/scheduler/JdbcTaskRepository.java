@@ -153,29 +153,8 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     public List<Execution> lockAndGetDue(Instant now, int limit) {
-        final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
-
-        String selectForUpdateQuery =
-            " UPDATE "+tableName+" st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 " +
-                " WHERE (st1.task_name, st1.task_instance) IN (" +
-                "   SELECT st2.task_name, st2.task_instance FROM "+tableName+" st2 " +
-                "   WHERE picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() + " order by execution_time asc FOR UPDATE SKIP LOCKED LIMIT ?)" +
-                " RETURNING st1.*";
-
-        return jdbcRunner.query(selectForUpdateQuery,
-            ps -> {
-                // Update
-                ps.setBoolean(1, true); // picked (new)
-                ps.setString(2, truncate(schedulerSchedulerName.getName(), 50)); // picked_by
-                jdbcCustomization.setInstant(ps, 3, now); // last_heartbeat
-                // Inner select
-                ps.setBoolean(4, false); // picked (old)
-                jdbcCustomization.setInstant(ps, 5, now); // execution_time
-                ps.setInt(6, limit); // limit
-            },
-            new ExecutionResultSetMapper());
+        return jdbcCustomization.lockAndFetch(getTaskRespositoryContext(), now, limit);
     }
-
 
     @Override
     public void remove(Execution execution) {
@@ -369,6 +348,10 @@ public class JdbcTaskRepository implements TaskRepository {
         }
     }
 
+    private JdbcTaskRepositoryContext getTaskRespositoryContext() {
+        return new JdbcTaskRepositoryContext(taskResolver, tableName, schedulerSchedulerName, jdbcRunner, ExecutionResultSetMapper::new);
+    }
+
     private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
         final QueryBuilder q = QueryBuilder.selectFromTable(tableName);
 
@@ -467,7 +450,7 @@ public class JdbcTaskRepository implements TaskRepository {
         }
     }
 
-    private static class UnresolvedFilter implements AndCondition {
+    public static class UnresolvedFilter implements AndCondition {
         private final List<UnresolvedTask> unresolved;
 
         public UnresolvedFilter(List<UnresolvedTask> unresolved) {
@@ -530,6 +513,26 @@ public class JdbcTaskRepository implements TaskRepository {
         public int setParameters(PreparedStatement p, int index) throws SQLException {
             p.setString(index++, value);
             return index;
+        }
+    }
+
+    public static class JdbcTaskRepositoryContext {
+        public final TaskResolver taskResolver;
+        public final String tableName;
+        public final SchedulerName schedulerName;
+        public final JdbcRunner jdbcRunner;
+        public final Supplier<ResultSetMapper<List<Execution>>> resultSetMapper;
+
+        public JdbcTaskRepositoryContext(TaskResolver taskResolver,
+                                         String tableName,
+                                         SchedulerName schedulerName,
+                                         JdbcRunner jdbcRunner,
+                                         Supplier<ResultSetMapper<List<Execution>>> resultSetMapper) {
+            this.taskResolver = taskResolver;
+            this.tableName = tableName;
+            this.schedulerName = schedulerName;
+            this.jdbcRunner = jdbcRunner;
+            this.resultSetMapper = resultSetMapper;
         }
     }
 }

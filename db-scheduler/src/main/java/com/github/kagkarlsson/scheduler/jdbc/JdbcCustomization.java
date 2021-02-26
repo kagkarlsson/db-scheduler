@@ -15,10 +15,15 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.JdbcTaskRepository.JdbcTaskRepositoryContext;
+import com.github.kagkarlsson.scheduler.task.Execution;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 
 public interface JdbcCustomization {
 
@@ -30,4 +35,6 @@ public interface JdbcCustomization {
     String getQueryLimitPart(int limit);
 
     boolean supportsLockAndFetch();
+    List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit);
+
 }

@@ -15,11 +15,15 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import com.github.kagkarlsson.scheduler.JdbcTaskRepository.JdbcTaskRepositoryContext;
+import com.github.kagkarlsson.scheduler.task.Execution;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public class DefaultJdbcCustomization implements JdbcCustomization {
@@ -47,6 +51,11 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     @Override
     public boolean supportsLockAndFetch() {
         return false;
+    }
+
+    @Override
+    public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+        throw new UnsupportedOperationException("lockAndFetch not supported for " + this.getClass().getName());
     }
 
     @Override
