@@ -17,7 +17,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 ## Features
 
 * **Cluster-friendly**. Guarantees execution by single scheduler instance.
-* **Persistent** tasks. Requires single database-table for persistence.
+* **Persistent** tasks. Requires _single_ database-table for persistence.
 * **Embeddable**. Built to be embedded in existing applications.
 * **Simple**.
 * **Minimal dependencies**. (slf4j)
@@ -150,24 +150,23 @@ scheduler.start();
 
 The scheduler is created using the `Scheduler.create(...)` builder. The builder has sensible defaults, but the following options are configurable.
 
-| Option  | Default | Description |
-| ------------- | ---- | ------------- |
-| `.threads(int)`  | 10  | Number of threads |
-| `.pollingInterval(Duration)`  |  30s  | How often the scheduler checks the database for due executions. |
-| `.pollingLimit(int)`  |  3 * `<nr-of-threads>`  | Maximum number of executions to fetch on a check for due executions. |
-| `.heartbeatInterval(Duration)`  | 5m | How often to update the heartbeat timestamp for running executions. |
-| `.schedulerName(SchedulerName)`  | hostname  | Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. |
-| `.tableName(String)`  | `scheduled_tasks` | Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. |
-| `.serializer(Serializer)`  | standard Java | Serializer implementation to use when serializing task data. |
-| `.enableImmediateExecution()`  | false | If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled to `now()`, or a time in the past. For this to work, the call to `schedule(..)` must not occur from within a transaction, because the record will not yet be visible to the scheduler (if this is a requirement, see the method `scheduler.triggerCheckForDueExecutions()`) |
-| `.executorService(ExecutorService)`  | `null`  | If specified, use this externally managed executor service to run executions. Ideally the number of threads it will use should still be supplied (for scheduler polling optimizations). |
-| `shutdownMaxWait(Duration)`  | `30min`  | How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this, consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()` in the ExecutionHandler and abort long-running task. |
-| `.deleteUnresolvedAfter(Duration)`  | `14d`  | The time after which executions with unknown tasks are automatically deleted. These can typically be old recurring tasks that are not in use anymore. This is non-zero to prevent accidental removal of tasks through a configuration error (missing known-tasks) and problems during rolling upgrades. |
-| `.jdbcCustomization(JdbcCustomization)`  | auto  | db-scheduler tries to auto-detect the database used to see if any jdbc-interactions need to be customized. This method is an escape-hatch to allow for setting `JdbcCustomizations` explicitly. |
-| `.commitWhenAutocommitDisabled(boolean)`  | false  | By default no commit is issued on DataSource Connections. If auto-commit is disabled, it is assumed that transactions are handled by an external transaction-manager. Set this property to `true` to override this behavior and have the Scheduler always issue commits. |
-| `.failureLogging(Level, boolean)`  | WARN, true  | Configures how to log task failures, i.e. `Throwable`s thrown from a task execution handler. Use log level `OFF` to disable this kind of logging completely. |
-
-
+| Option                                   | Description                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.threads(int)`                          | Number of threads. Default `10`.                                                                                                                                                                                                                                                                                                                                                       |
+| `.pollingInterval(Duration)`             | How often the scheduler checks the database for due executions. Default `30s`.                                                                                                                                                                                                                                                                                                         |
+| `.pollUsingFetchAndLockOnExecute(double, double)`             | Use default polling strategy `fetch-and-lock-on-execute`. `lowerLimitFractionOfThreads`: threshold for when new executions are fetched from the database (given that last batch was full). Default `0.5`. `executionsPerBatchFractionOfThreads`: how many executions to fetch in each batch. Defualt `3.0`. These executions will not be pre-locked, so the scheduler will compete with other instances for the lock when it is executed. Supported by all databases.                                         |
+| `.pollUsingLockAndFetch(double, double)`             | Use polling strategy `lock-and-fetch` which uses `select for update .. skip locked` for less overhead. `lowerLimitFractionOfThreads`: threshold for when new executions are fetched from the database (given that last batch was full). `upperLimitFractionOfThreads`: how many executions to lock and fetch. For high throughput (i.e. keep threads busy), set to for example `1.0, 4.0`  Currently supported by **postgres**.                                         |
+| `.heartbeatInterval(Duration)`           | How often to update the heartbeat timestamp for running executions. Default `5m`.                                                                                                                                                                                                                                                                                                     |
+| `.schedulerName(SchedulerName)`          | Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. Default `<hostname>`.                                                                                                                                                                                                                                                         |
+| `.tableName(String)`                     | Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. Default `scheduled_tasks`.                                                                                                                                                                                                                                             |
+| `.serializer(Serializer)`                | Serializer implementation to use when serializing task data. Default standard Java serialization.                                                                                                                                                                                                                                                                                                           |
+| `.enableImmediateExecution()`            | If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled to `now()`, or a time in the past. For this to work, the call to `schedule(..)` must not occur from within a transaction, because the record will not yet be visible to the scheduler (if this is a requirement, see the method `scheduler.triggerCheckForDueExecutions()`). Default `false`. |
+| `.executorService(ExecutorService)`      | If specified, use this externally managed executor service to run executions. Ideally the number of threads it will use should still be supplied (for scheduler polling optimizations). Default `null`.                                                                                                                                                                                |
+| `shutdownMaxWait(Duration)`              | How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this, consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()` in the ExecutionHandler and abort long-running task. Default `30min`.                                                                                      |
+| `.deleteUnresolvedAfter(Duration)`       | The time after which executions with unknown tasks are automatically deleted. These can typically be old recurring tasks that are not in use anymore. This is non-zero to prevent accidental removal of tasks through a configuration error (missing known-tasks) and problems during rolling upgrades. Default `14d`.                                                                 |
+| `.jdbcCustomization(JdbcCustomization)`  | db-scheduler tries to auto-detect the database used to see if any jdbc-interactions need to be customized. This method is an escape-hatch to allow for setting `JdbcCustomizations` explicitly. Default auto-detect.                                                                                                                                                                         |
+| `.commitWhenAutocommitDisabled(boolean)` | By default no commit is issued on DataSource Connections. If auto-commit is disabled, it is assumed that transactions are handled by an external transaction-manager. Set this property to `true` to override this behavior and have the Scheduler always issue commits. Default `false`.                                                                                               |
+| `.failureLogging(Level, boolean)`        | Configures how to log task failures, i.e. `Throwable`s thrown from a task execution handler. Use log level `OFF` to disable this kind of logging completely. Default `WARN, true`.                                                                                                                                                                                                            |
 
 ### Task configuration
 
@@ -289,6 +288,60 @@ Use-cases might be:
 During execution, the scheduler regularly updates a heartbeat-time for the task-execution. If an execution is marked as executing, but is not receiving updates to the heartbeat-time, it will be considered a _dead execution_ after time X. That may for example happen if the JVM running the scheduler suddenly exits.
 
 When a dead execution is found, the `Task`is consulted to see what should be done. A dead `RecurringTask` is typically rescheduled to `now()`.
+
+## Performance
+
+While db-scheduler initially was targeted at low-to-medium throughput use-cases, it handles high-throughput use-cases (1000+ executions/second) quite well
+due to the fact that its data-model is very simple, consisting of a single table of executions.
+To understand how it will perform, it is useful to consider the SQL statements it runs per batch of executions.
+
+### Polling strategy fetch-and-lock-on-execute
+
+The original and default polling strategy, `fetch-and-lock-on-execute`, will do the following:
+1. `select` a batch of due executions
+2. For every execution, on execute, try to `update` the execution to `picked=true` for this scheduler-instance. May miss due to competing schedulers.
+3. If execution was picked, when execution is done, `update` or `delete` the record according to handlers.
+
+In sum per batch: 1 select, 2*<batch-size> updates   (excluding misses)
+
+### Polling strategy lock-and-fetch
+
+In v9.x (TODO), a new polling strategy (`lock-and-fetch`) was added. It utilizes the fact that most databases now have support for `SKIP LOCKED` in `SELECT FOR UPDATE` statements (see [2ndquadrant blog](https://www.2ndquadrant.com/en/blog/what-is-select-skip-locked-for-in-postgresql-9-5/)).
+Using such a strategy, it is possible to fetch executions pre-locked, and thus getting one statement less:
+
+1. `select for update .. skip locked` a batch of due executions. These will already be picked by the scheduler-instance.
+3. When execution is done, `update` or `delete` the record according to handlers.
+
+Per batch: 1 select-and-update, 1*<batch-size> updates   (no misses)
+
+
+### Benchmark test
+
+To get an idea of what to expect from db-scheduler, see results from the test run in GCP below (`fetch-and-lock-on-execute` shortened to `fetch`).
+Tests were run with a few different configurations, but each using 4 competing scheduler-instances running on separate VMs.
+TPS is the approx. transactions per second as shown in GCP.
+
+|                                        | Throughput fetch | TPS fetch (estimates) | Throughput lock-and-fetch | TPS lock-and-fetch (estimates) |
+|----------------------------------------|------------------|--------------------------|---------------------------|-----------------------------------|
+| Postgres 4core 25gb ram, 4xVMs(2-core) |                  |                          |                           |                                   |
+| 20 threads, lower 4.0, upper 20.0      | 2000             | 9000                     | 10600                     | 11500                             |
+| 100 threads, lower 2.0, upper 6.0      | 2560             | 11000                    | 11200                     | 11200                             |
+|                                        |                  |                          |                           |                                   |
+| Postgres 8core 50gb ram, 4xVMs(4-core) |                  |                          |                           |                                   |
+| 50 threads, lower: 0.5, upper: 4.0     | 4000             | 22000                    | 11840                     | 10300                             |
+|                                        |                  |                          |                           |                                   |
+
+Observations for these tests:
+
+* For `fetch-and-lock-on-execute`
+  * TPS ≈ 4-5 * execution-throughput. A bit higher than the best-case 2 * execution-throughput, likely due the inefficiency of missed executions.
+  * throughput did scale with postgres instance-size, from 2000 executions/s on 4core to 4000 executions/s on 8core
+* For `lock-and-fetch`
+  * TPS ≈ 1 * execution-throughput. As expected.
+  * seem to consistently handle 10k executions/s for these configurations
+  * throughput did not scale with postgres instance-size (4-8 core), so bottleneck is somewhere else
+
+Currently, polling strategy `lock-and-fetch` is implemented only for Postgres. Contributions adding support for more databases are welcome.
 
 
 ### Things to note / gotchas
