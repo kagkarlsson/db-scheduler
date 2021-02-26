@@ -19,7 +19,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * **Cluster-friendly**. Guarantees execution by single scheduler instance.
 * **Persistent** tasks. Requires _single_ database-table for persistence.
 * **Embeddable**. Built to be embedded in existing applications.
-* **High throughput**. Tested to handle 2k - 10k executions / second. [Link](#benchmark-test)
+* **High throughput**. Tested to handle 2k - 10k executions / second. [Link](#benchmark-test).
 * **Simple**.
 * **Minimal dependencies**. (slf4j)
 
@@ -318,7 +318,7 @@ Per batch: 1 select-and-update, 1*<batch-size> updates   (no misses)
 
 ### Benchmark test
 
-To get an idea of what to expect from db-scheduler, see results from the test run in GCP below (`fetch-and-lock-on-execute` shortened to `fetch`).
+To get an idea of what to expect from db-scheduler, see results from the tests run in GCP below.
 Tests were run with a few different configurations, but each using 4 competing scheduler-instances running on separate VMs.
 TPS is the approx. transactions per second as shown in GCP.
 
