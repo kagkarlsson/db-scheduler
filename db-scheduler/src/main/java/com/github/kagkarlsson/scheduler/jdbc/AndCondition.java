@@ -19,7 +19,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 public interface AndCondition {
-    public String getQueryPart();
+    String getQueryPart();
 
-    public int setParameters(PreparedStatement p, int index) throws SQLException;
+    int setParameters(PreparedStatement p, int index) throws SQLException;
 }

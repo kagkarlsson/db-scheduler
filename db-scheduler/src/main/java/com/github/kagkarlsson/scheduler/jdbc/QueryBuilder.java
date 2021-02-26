@@ -24,30 +24,30 @@ import java.util.Optional;
 import static java.util.Optional.empty;
 import static java.util.stream.Collectors.joining;
 
-public class QueryBuilder {
+class QueryBuilder {
     private final String tableName;
     private final List<AndCondition> andConditions = new ArrayList<>();
     private Optional<String> orderBy = empty();
 
-    public QueryBuilder(String tableName) {
+    QueryBuilder(String tableName) {
         this.tableName = tableName;
     }
 
-    public static QueryBuilder selectFromTable(String tableName) {
+    static QueryBuilder selectFromTable(String tableName) {
         return new QueryBuilder(tableName);
     }
 
-    public QueryBuilder andCondition(AndCondition andCondition) {
+    QueryBuilder andCondition(AndCondition andCondition) {
         andConditions.add(andCondition);
         return this;
     }
 
-    public QueryBuilder orderBy(String orderBy) {
+    QueryBuilder orderBy(String orderBy) {
         this.orderBy = Optional.of(orderBy);
         return this;
     }
 
-    public String getQuery() {
+    String getQuery() {
         StringBuilder s = new StringBuilder();
         s.append("select * from ").append(tableName);
 
@@ -61,7 +61,7 @@ public class QueryBuilder {
         return s.toString();
     }
 
-    public PreparedStatementSetter getPreparedStatementSetter() {
+    PreparedStatementSetter getPreparedStatementSetter() {
         return p -> {
             int parameterIndex = 1;
             for (AndCondition andCondition : andConditions) {
