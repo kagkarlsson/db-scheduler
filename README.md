@@ -303,7 +303,7 @@ The original and default polling strategy, `fetch-and-lock-on-execute`, will do 
 2. For every execution, on execute, try to `update` the execution to `picked=true` for this scheduler-instance. May miss due to competing schedulers.
 3. If execution was picked, when execution is done, `update` or `delete` the record according to handlers.
 
-In sum per batch: 1 select, 2 * <batch-size> updates   (excluding misses)
+In sum per batch: 1 select, 2 * batch-size updates   (excluding misses)
 
 ### Polling strategy lock-and-fetch
 
@@ -313,7 +313,7 @@ Using such a strategy, it is possible to fetch executions pre-locked, and thus g
 1. `select for update .. skip locked` a batch of due executions. These will already be picked by the scheduler-instance.
 3. When execution is done, `update` or `delete` the record according to handlers.
 
-Per batch: 1 select-and-update, 1 * <batch-size> updates   (no misses)
+Per batch: 1 select-and-update, 1 * batch-size updates   (no misses)
 
 
 ### Benchmark test
