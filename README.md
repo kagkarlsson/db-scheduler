@@ -313,7 +313,7 @@ Using such a strategy, it is possible to fetch executions pre-locked, and thus g
 1. `select for update .. skip locked` a batch of due executions. These will already be picked by the scheduler-instance.
 3. When execution is done, `update` or `delete` the record according to handlers.
 
-Per batch: 1 select-and-update, 1 * batch-size updates   (no misses)
+In sum per batch: 1 select-and-update, 1 * batch-size updates   (no misses)
 
 
 ### Benchmark test
@@ -322,7 +322,7 @@ To get an idea of what to expect from db-scheduler, see results from the tests r
 Tests were run with a few different configurations, but each using 4 competing scheduler-instances running on separate VMs.
 TPS is the approx. transactions per second as shown in GCP.
 
-|                                        | Throughput fetch | TPS fetch (estimates) | Throughput lock-and-fetch | TPS lock-and-fetch (estimates) |
+|                                        | Throughput fetch (ex/s) | TPS fetch (estimates) | Throughput lock-and-fetch (ex/s) | TPS lock-and-fetch (estimates) |
 |----------------------------------------|------------------|--------------------------|---------------------------|-----------------------------------|
 | Postgres 4core 25gb ram, 4xVMs(2-core) |                  |                          |                           |                                   |
 | 20 threads, lower 4.0, upper 20.0      | 2000             | 9000                     | 10600                     | 11500                             |
