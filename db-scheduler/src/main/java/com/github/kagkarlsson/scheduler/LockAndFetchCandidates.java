@@ -55,6 +55,8 @@ public class LockAndFetchCandidates implements PollStrategy {
         List<Execution> pickedExecutions = scheduler.schedulerTaskRepository.lockAndGetDue(now, executionsToFetch);
         LOG.trace("Picked {} taskinstances due for execution", pickedExecutions.size());
 
+        // Shared indicator for if there are more due executions in the database.
+        // As soon as we know there are not more executions in the database, we can stop triggering checks for more (and vice versa)
         moreExecutionsInDatabase.set(pickedExecutions.size() == executionsToFetch);
 
         if (pickedExecutions.size() == 0) {

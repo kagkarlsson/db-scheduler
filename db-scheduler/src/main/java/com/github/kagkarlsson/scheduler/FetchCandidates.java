@@ -24,12 +24,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class FetchCandidates implements PollStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(FetchCandidates.class);
     private final Scheduler scheduler;
     private final PollingStrategyConfig pollingStrategyConfig;
-    int currentGenerationNumber = 1;
+    AtomicInteger currentGenerationNumber = new AtomicInteger(0);
     private final int lowerLimit;
     private final int upperLimit;
 
@@ -50,9 +51,9 @@ public class FetchCandidates implements PollStrategy {
         List<Execution> fetchedDueExecutions = scheduler.schedulerTaskRepository.getDue(now, executionsToFetch);
         LOG.trace("Fetched {} task instances due for execution", fetchedDueExecutions.size());
 
-        this.currentGenerationNumber = this.currentGenerationNumber + 1;
+        currentGenerationNumber.incrementAndGet();
         DueExecutionsBatch newDueBatch = new DueExecutionsBatch(
-            currentGenerationNumber,
+            currentGenerationNumber.get(),
             fetchedDueExecutions.size(),
             executionsToFetch == fetchedDueExecutions.size(),
             (Integer leftInBatch) -> leftInBatch <= lowerLimit);
@@ -86,7 +87,7 @@ public class FetchCandidates implements PollStrategy {
                 return Optional.empty();
             }
 
-            if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber)) {
+            if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber.get())) {
                 // skipping execution due to it being stale
                 addedDueExecutionsBatch.markBatchAsStale();
                 scheduler.statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);

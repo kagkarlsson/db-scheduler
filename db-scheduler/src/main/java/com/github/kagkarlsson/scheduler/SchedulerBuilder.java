@@ -181,7 +181,6 @@ public class SchedulerBuilder {
         if (schedulerName == null) {
              schedulerName = new SchedulerName.Hostname();
         }
-        // TODO: reintroduce pollingLimit since many uses it...
 
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
         final JdbcCustomization jdbcCustomization = ofNullable(this.jdbcCustomization).orElseGet(() -> new AutodetectJdbcCustomization(dataSource));
