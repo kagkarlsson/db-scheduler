@@ -42,7 +42,6 @@ public class FetchCandidates implements PollStrategy {
     }
 
     @Override
-    // TODO: introduce changes from PickAndExecute master
     public void run() {
         Instant now = scheduler.clock.now();
 
