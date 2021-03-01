@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import org.slf4j.Logger;
@@ -28,27 +29,46 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class FetchCandidates implements PollStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(FetchCandidates.class);
-    private final Scheduler scheduler;
+    private final Executor executor;
+    private final TaskRepository taskRepository;
+    private final SchedulerClient schedulerClient;
+    private final StatsRegistry statsRegistry;
+    private final SchedulerState schedulerState;
+    private final ConfigurableLogger failureLogger;
+    private final TaskResolver taskResolver;
+    private final Clock clock;
     private final PollingStrategyConfig pollingStrategyConfig;
+    private final Runnable triggerCheckForNewExecutions;
     AtomicInteger currentGenerationNumber = new AtomicInteger(0);
     private final int lowerLimit;
     private final int upperLimit;
 
-    public FetchCandidates(Scheduler scheduler, PollingStrategyConfig pollingStrategyConfig) {
-        this.scheduler = scheduler;
+    public FetchCandidates(Executor executor, TaskRepository taskRepository, SchedulerClient schedulerClient,
+                           int threadpoolSize, StatsRegistry statsRegistry, SchedulerState schedulerState,
+                           ConfigurableLogger failureLogger, TaskResolver taskResolver, Clock clock,
+                           PollingStrategyConfig pollingStrategyConfig, Runnable triggerCheckForNewExecutions) {
+        this.executor = executor;
+        this.taskRepository = taskRepository;
+        this.schedulerClient = schedulerClient;
+        this.statsRegistry = statsRegistry;
+        this.schedulerState = schedulerState;
+        this.failureLogger = failureLogger;
+        this.taskResolver = taskResolver;
+        this.clock = clock;
         this.pollingStrategyConfig = pollingStrategyConfig;
-        lowerLimit = pollingStrategyConfig.getLowerLimit(scheduler.threadpoolSize);
+        this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
+        lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
         //FIXLATER: this is not "upper limit", but rather nr of executions to get. those already in queue will become stale
-        upperLimit = pollingStrategyConfig.getUpperLimit(scheduler.threadpoolSize);
+        upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
     }
 
     @Override
     public void run() {
-        Instant now = scheduler.clock.now();
+        Instant now = clock.now();
 
         // Fetch new candidates for execution. Old ones still in ExecutorService will become stale and be discarded
         final int executionsToFetch = upperLimit;
-        List<Execution> fetchedDueExecutions = scheduler.schedulerTaskRepository.getDue(now, executionsToFetch);
+        List<Execution> fetchedDueExecutions = taskRepository.getDue(now, executionsToFetch);
         LOG.trace("Fetched {} task instances due for execution", fetchedDueExecutions.size());
 
         currentGenerationNumber.incrementAndGet();
@@ -59,16 +79,18 @@ public class FetchCandidates implements PollStrategy {
             (Integer leftInBatch) -> leftInBatch <= lowerLimit);
 
         for (Execution e : fetchedDueExecutions) {
-            scheduler.executor.addToQueue(
+            executor.addToQueue(
                 () -> {
                     final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
-                    candidate.ifPresent(picked -> new ExecutePicked(scheduler, picked).run());
+                    candidate.ifPresent(picked -> new ExecutePicked(executor, taskRepository, schedulerClient, statsRegistry,
+                        taskResolver, schedulerState, failureLogger,
+                        clock, picked).run());
                 },
                 () -> {
-                    newDueBatch.oneExecutionDone(scheduler::triggerCheckForDueExecutions);
+                    newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);
                 });
         }
-        scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
+        statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }
 
     private class PickDue implements Callable<Optional<Execution>> {
@@ -82,7 +104,7 @@ public class FetchCandidates implements PollStrategy {
 
         @Override
         public Optional<Execution> call() {
-            if (scheduler.schedulerState.isShuttingDown()) {
+            if (schedulerState.isShuttingDown()) {
                 LOG.info("Scheduler has been shutdown. Skipping fetched due execution: " + candidate.taskInstance.getTaskAndInstance());
                 return Optional.empty();
             }
@@ -90,17 +112,17 @@ public class FetchCandidates implements PollStrategy {
             if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber.get())) {
                 // skipping execution due to it being stale
                 addedDueExecutionsBatch.markBatchAsStale();
-                scheduler.statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
+                statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
                 LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
                 return Optional.empty();
             }
 
-            final Optional<Execution> pickedExecution = scheduler.schedulerTaskRepository.pick(candidate, scheduler.clock.now());
+            final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
 
             if (!pickedExecution.isPresent()) {
                 // someone else picked id
                 LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
-                scheduler.statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
+                statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
                 return Optional.empty();
             }
 

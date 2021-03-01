@@ -15,13 +15,13 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
-import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,81 +32,96 @@ import java.util.UUID;
 
 @SuppressWarnings("rawtypes")
 class ExecutePicked implements Runnable {
-
     private static final Logger LOG = LoggerFactory.getLogger(ExecutePicked.class);
-    private final Scheduler scheduler;
+    private final Executor executor;
+    private final TaskRepository taskRepository;
+    private final SchedulerClient schedulerClient;
+    private final StatsRegistry statsRegistry;
+    private final TaskResolver taskResolver;
+    private final SchedulerState schedulerState;
+    private final ConfigurableLogger failureLogger;
+    private final Clock clock;
     private final Execution pickedExecution;
 
-    public ExecutePicked(Scheduler scheduler, Execution pickedExecution) {
-        this.scheduler = scheduler;
+    public ExecutePicked(Executor executor, TaskRepository taskRepository, SchedulerClient schedulerClient, StatsRegistry statsRegistry,
+                         TaskResolver taskResolver, SchedulerState schedulerState, ConfigurableLogger failureLogger,
+                         Clock clock, Execution pickedExecution) {
+        this.executor = executor;
+        this.taskRepository = taskRepository;
+        this.schedulerClient = schedulerClient;
+        this.statsRegistry = statsRegistry;
+        this.taskResolver = taskResolver;
+        this.schedulerState = schedulerState;
+        this.failureLogger = failureLogger;
+        this.clock = clock;
         this.pickedExecution = pickedExecution;
     }
 
     @Override
     public void run() {
         // FIXLATER: need to cleanup all the references back to scheduler fields
-        final UUID executionId = scheduler.executor.addCurrentlyProcessing(new CurrentlyExecuting(pickedExecution, scheduler.clock));
+        final UUID executionId = executor.addCurrentlyProcessing(new CurrentlyExecuting(pickedExecution, clock));
         try {
-            scheduler.statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
+            statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
             executePickedExecution(pickedExecution);
         } finally {
-            scheduler.executor.removeCurrentlyProcessing(executionId);
+            executor.removeCurrentlyProcessing(executionId);
         }
     }
 
     private void executePickedExecution(Execution execution) {
-        final Optional<Task> task = scheduler.taskResolver.resolve(execution.taskInstance.getTaskName());
+        final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
         if (!task.isPresent()) {
             LOG.error("Failed to find implementation for task with name '{}'. Should have been excluded in JdbcRepository.", execution.taskInstance.getTaskName());
-            scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+            statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
             return;
         }
 
-        Instant executionStarted = scheduler.clock.now();
+        Instant executionStarted = clock.now();
         try {
             LOG.debug("Executing " + execution);
-            CompletionHandler completion = task.get().execute(execution.taskInstance, new ExecutionContext(scheduler.schedulerState, execution, scheduler));
+            CompletionHandler completion = task.get().execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, schedulerClient));
             LOG.debug("Execution done");
 
             complete(completion, execution, executionStarted);
-            scheduler.statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
+            statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
 
         } catch (RuntimeException unhandledException) {
             failure(task.get(), execution, unhandledException, executionStarted, "Unhandled exception");
-            scheduler.statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
+            statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
 
         } catch (Throwable unhandledError) {
             failure(task.get(), execution, unhandledError, executionStarted, "Error");
-            scheduler.statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
+            statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
         }
     }
 
     private void complete(CompletionHandler completion, Execution execution, Instant executionStarted) {
-        ExecutionComplete completeEvent = ExecutionComplete.success(execution, executionStarted, scheduler.clock.now());
+        ExecutionComplete completeEvent = ExecutionComplete.success(execution, executionStarted, clock.now());
         try {
-            completion.complete(completeEvent, new ExecutionOperations(scheduler.schedulerTaskRepository, execution));
-            scheduler.statsRegistry.registerSingleCompletedExecution(completeEvent);
+            completion.complete(completeEvent, new ExecutionOperations(taskRepository, execution));
+            statsRegistry.registerSingleCompletedExecution(completeEvent);
         } catch (Throwable e) {
-            scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.COMPLETIONHANDLER_ERROR);
-            scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+            statsRegistry.register(StatsRegistry.SchedulerStatsEvent.COMPLETIONHANDLER_ERROR);
+            statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
             LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +
-                "The execution should be detected as dead in {}, and handled according to the tasks DeadExecutionHandler.", execution, scheduler.getMaxAgeBeforeConsideredDead(), e);
+                "The execution should be detected as dead after a while, and handled according to the tasks DeadExecutionHandler.", execution, e);
         }
     }
 
     private void failure(Task task, Execution execution, Throwable cause, Instant executionStarted, String errorMessagePrefix) {
         String logMessage = errorMessagePrefix + " during execution of task with name '{}'. Treating as failure.";
-        scheduler.failureLogger.log(logMessage, cause, task.getName());
+        failureLogger.log(logMessage, cause, task.getName());
 
-        ExecutionComplete completeEvent = ExecutionComplete.failure(execution, executionStarted, scheduler.clock.now(), cause);
+        ExecutionComplete completeEvent = ExecutionComplete.failure(execution, executionStarted, clock.now(), cause);
         try {
-            task.getFailureHandler().onFailure(completeEvent, new ExecutionOperations(scheduler.schedulerTaskRepository, execution));
-            scheduler.statsRegistry.registerSingleCompletedExecution(completeEvent);
+            task.getFailureHandler().onFailure(completeEvent, new ExecutionOperations(taskRepository, execution));
+            statsRegistry.registerSingleCompletedExecution(completeEvent);
         } catch (Throwable e) {
-            scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.FAILUREHANDLER_ERROR);
-            scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+            statsRegistry.register(StatsRegistry.SchedulerStatsEvent.FAILUREHANDLER_ERROR);
+            statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
             LOG.error("Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. " +
-                "The execution should be detected as dead in {}, and handled according to the tasks DeadExecutionHandler.", execution, scheduler.getMaxAgeBeforeConsideredDead(), e);
+                "The execution should be detected as dead after a while, and handled according to the tasks DeadExecutionHandler.", execution, e);
         }
     }
 }

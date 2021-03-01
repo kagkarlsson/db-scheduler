@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import org.slf4j.Logger;
@@ -26,24 +27,43 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class LockAndFetchCandidates implements PollStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(LockAndFetchCandidates.class);
-    private final Scheduler scheduler;
+    private final Executor executor;
+    private final TaskRepository taskRepository;
+    private final SchedulerClient schedulerClient;
+    private final StatsRegistry statsRegistry;
+    private final TaskResolver taskResolver;
+    private final SchedulerState schedulerState;
+    private final ConfigurableLogger failureLogger;
+    private final Clock clock;
     private final PollingStrategyConfig pollingStrategyConfig;
+    private final Runnable triggerCheckForNewExecutions;
     private final int lowerLimit;
     private final int upperLimit;
     private AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
 
-    public LockAndFetchCandidates(Scheduler scheduler, PollingStrategyConfig pollingStrategyConfig) {
-        this.scheduler = scheduler;
+    public LockAndFetchCandidates(Executor executor, TaskRepository taskRepository, SchedulerClient schedulerClient,
+                                  int threadpoolSize, StatsRegistry statsRegistry, SchedulerState schedulerState,
+                                  ConfigurableLogger failureLogger, TaskResolver taskResolver, Clock clock,
+                                  PollingStrategyConfig pollingStrategyConfig, Runnable triggerCheckForNewExecutions) {
+        this.executor = executor;
+        this.taskRepository = taskRepository;
+        this.schedulerClient = schedulerClient;
+        this.statsRegistry = statsRegistry;
+        this.taskResolver = taskResolver;
+        this.schedulerState = schedulerState;
+        this.failureLogger = failureLogger;
+        this.clock = clock;
         this.pollingStrategyConfig = pollingStrategyConfig;
-        lowerLimit = pollingStrategyConfig.getLowerLimit(scheduler.threadpoolSize);
-        upperLimit = pollingStrategyConfig.getUpperLimit(scheduler.threadpoolSize);
+        this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
+        lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
+        upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
     }
 
     @Override
     public void run() {
-        Instant now = scheduler.clock.now();
+        Instant now = clock.now();
 
-        int executionsToFetch = upperLimit - scheduler.executor.getNumberInQueueOrProcessing();
+        int executionsToFetch = upperLimit - executor.getNumberInQueueOrProcessing();
 
         // Might happen if upperLimit == threads and all threads are busy
         if (executionsToFetch <= 0) {
@@ -52,7 +72,7 @@ public class LockAndFetchCandidates implements PollStrategy {
         }
 
         // FIXLATER: should it fetch here if not under lowerLimit? probably
-        List<Execution> pickedExecutions = scheduler.schedulerTaskRepository.lockAndGetDue(now, executionsToFetch);
+        List<Execution> pickedExecutions = taskRepository.lockAndGetDue(now, executionsToFetch);
         LOG.trace("Picked {} taskinstances due for execution", pickedExecutions.size());
 
         // Shared indicator for if there are more due executions in the database.
@@ -66,15 +86,17 @@ public class LockAndFetchCandidates implements PollStrategy {
         }
 
         for (Execution picked : pickedExecutions) {
-            scheduler.executor.addToQueue(
-                new ExecutePicked(scheduler, picked),
+            executor.addToQueue(
+                new ExecutePicked(executor, taskRepository, schedulerClient, statsRegistry,
+                    taskResolver, schedulerState, failureLogger,
+                    clock, picked),
                 () -> {
                     if (moreExecutionsInDatabase.get()
-                        && scheduler.executor.getNumberInQueueOrProcessing() <= lowerLimit) {
-                        scheduler.triggerCheckForDueExecutions();
+                        && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
+                        triggerCheckForNewExecutions.run();
                     }
                 });
         }
-        scheduler.statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
+        statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }
 }

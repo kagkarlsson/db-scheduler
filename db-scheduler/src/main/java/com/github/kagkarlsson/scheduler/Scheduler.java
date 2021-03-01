@@ -65,7 +65,6 @@ public class Scheduler implements SchedulerClient {
     private final ExecutorService updateHeartbeatExecutor;
     private final Waiter heartbeatWaiter;
     final SettableSchedulerState schedulerState = new SettableSchedulerState();
-    private int currentGenerationNumber = 1;
     final ConfigurableLogger failureLogger;
 
     protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
@@ -89,18 +88,17 @@ public class Scheduler implements SchedulerClient {
         this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
         SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
         delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener);
+        this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 
         if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
             schedulerTaskRepository.checkSupportsLockAndFetch();
-            executeDueStrategy = new LockAndFetchCandidates(this, pollingStrategyConfig);
+            executeDueStrategy = new LockAndFetchCandidates(executor, schedulerTaskRepository, this, threadpoolSize, statsRegistry, schedulerState, failureLogger, taskResolver, clock, pollingStrategyConfig, this::triggerCheckForDueExecutions);
         } else if (pollingStrategyConfig.type == PollingStrategyConfig.Type.FETCH) {
-            executeDueStrategy = new FetchCandidates(this, pollingStrategyConfig);
+            executeDueStrategy = new FetchCandidates(executor, schedulerTaskRepository, this, threadpoolSize, statsRegistry, schedulerState, failureLogger, taskResolver, clock, pollingStrategyConfig, this::triggerCheckForDueExecutions);
         } else {
             throw new IllegalArgumentException("Unknown polling-strategy type: " + pollingStrategyConfig.type);
         }
         LOG.info("Using polling-strategy: " + pollingStrategyConfig.describe());
-
-        this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
     }
 
     public void start() {
