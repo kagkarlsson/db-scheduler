@@ -46,10 +46,13 @@ public class ClusterTest {
     public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
     //    Enable if test gets flaky!
-    @RegisterExtension
-    public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
-        new LogLevelOverride("com.github.kagkarlsson.scheduler.Scheduler", Level.DEBUG)
-    );
+//    @RegisterExtension
+//    public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.Scheduler", Level.DEBUG),
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.ExecutePicked", Level.DEBUG),
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.Executor", Level.DEBUG),
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.FetchCandidates", Level.DEBUG)
+//    );
 
 
     @Test
@@ -68,8 +71,6 @@ public class ClusterTest {
     }
 
     private void testConcurrencyForPollingStrategy(Consumer<SchedulerBuilder> schedulerCustomization) throws InterruptedException {
-//        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
-
             final List<String> ids = IntStream.range(1, 10001).mapToObj(String::valueOf).collect(toList());
 
             final CountDownLatch completeAllIds = new CountDownLatch(ids.size());
@@ -89,7 +90,7 @@ public class ClusterTest {
                 scheduler1.schedule(task.instance(id), Instant.now());
             });
 
-            final boolean waitSuccessful = completeAllIds.await(10, TimeUnit.SECONDS);
+            final boolean waitSuccessful = completeAllIds.await(30, TimeUnit.SECONDS);
             if (!waitSuccessful) {
                 DEBUG_LOG.info("Failed to execute all for 10s. ok={}, failed={}, errors={}", completed.ok.size(), completed.failed.size(), stats.unexpectedErrors.get());
             }
@@ -102,7 +103,6 @@ public class ClusterTest {
             assertThat(stats.unexpectedErrors.get(), is(0));
             assertThat(scheduler1.getCurrentlyExecuting(), hasSize(0));
             assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
-//        });
     }
 
     @Test
@@ -136,8 +136,8 @@ public class ClusterTest {
         final SchedulerBuilder builder = Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
             .schedulerName(new SchedulerName.Fixed(name))
             .threads(NUMBER_OF_THREADS)
-            .pollingInterval(Duration.ofMillis(0))
-            .heartbeatInterval(Duration.ofMillis(100))
+            .pollingInterval(Duration.ofMillis(50))
+            .heartbeatInterval(Duration.ofMillis(500))
             .statsRegistry(stats);
         schedulerCustomization.accept(builder);
         return builder.build();
@@ -148,8 +148,8 @@ public class ClusterTest {
                 .startTasks(task)
                 .schedulerName(new SchedulerName.Fixed(name))
                 .threads(NUMBER_OF_THREADS)
-                .pollingInterval(Duration.ofMillis(0))
-                .heartbeatInterval(Duration.ofMillis(100))
+                .pollingInterval(Duration.ofMillis(50))
+                .heartbeatInterval(Duration.ofMillis(500))
                 .statsRegistry(stats)
                 .build();
     }
