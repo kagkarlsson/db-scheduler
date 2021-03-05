@@ -92,7 +92,7 @@ public class ClusterTest {
                 scheduler1.schedule(task.instance(id), Instant.now());
             });
 
-            final boolean waitSuccessful = completeAllIds.await(10, TimeUnit.SECONDS);
+            final boolean waitSuccessful = completeAllIds.await(30, TimeUnit.SECONDS);
             if (!waitSuccessful) {
                 DEBUG_LOG.info("Failed to execute all for 10s. ok={}, failed={}, errors={}", completed.ok.size(), completed.failed.size(), stats.unexpectedErrors.get());
             }
