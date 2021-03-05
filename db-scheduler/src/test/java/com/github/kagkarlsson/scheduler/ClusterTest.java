@@ -48,7 +48,10 @@ public class ClusterTest {
     //    Enable if test gets flaky!
     @RegisterExtension
     public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
-        new LogLevelOverride("com.github.kagkarlsson.scheduler.Scheduler", Level.DEBUG)
+        new LogLevelOverride("com.github.kagkarlsson.scheduler.Scheduler", Level.DEBUG),
+        new LogLevelOverride("com.github.kagkarlsson.scheduler.ExecutePicked", Level.DEBUG),
+        new LogLevelOverride("com.github.kagkarlsson.scheduler.Executor", Level.DEBUG),
+        new LogLevelOverride("com.github.kagkarlsson.scheduler.FetchCandidates", Level.DEBUG)
     );
 
 
