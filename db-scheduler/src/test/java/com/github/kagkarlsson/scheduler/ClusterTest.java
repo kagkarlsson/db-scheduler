@@ -139,8 +139,8 @@ public class ClusterTest {
         final SchedulerBuilder builder = Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
             .schedulerName(new SchedulerName.Fixed(name))
             .threads(NUMBER_OF_THREADS)
-            .pollingInterval(Duration.ofMillis(0))
-            .heartbeatInterval(Duration.ofMillis(100))
+            .pollingInterval(Duration.ofMillis(50))
+            .heartbeatInterval(Duration.ofMillis(500))
             .statsRegistry(stats);
         schedulerCustomization.accept(builder);
         return builder.build();
@@ -151,8 +151,8 @@ public class ClusterTest {
                 .startTasks(task)
                 .schedulerName(new SchedulerName.Fixed(name))
                 .threads(NUMBER_OF_THREADS)
-                .pollingInterval(Duration.ofMillis(0))
-                .heartbeatInterval(Duration.ofMillis(100))
+                .pollingInterval(Duration.ofMillis(50))
+                .heartbeatInterval(Duration.ofMillis(500))
                 .statsRegistry(stats)
                 .build();
     }
