@@ -123,6 +123,11 @@ scheduler.start();
 scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.now().plusSeconds(5));
 ```
 
+### More examples
+
+* [EnableImmediateExecutionMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/EnableImmediateExecutionMain.java)
+* [MaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/MaxRetriesMain.java)
+
 
 ## Configuration
 
