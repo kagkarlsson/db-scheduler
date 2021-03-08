@@ -72,6 +72,7 @@ public class SchedulerBuilder {
     protected PollingStrategyConfig pollingStrategyConfig = DEFAULT_POLLING_STRATEGY;
     protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
     protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
+    private boolean registerShutdownHook = false;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -177,6 +178,11 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder registerShutdownHook() {
+        this.registerShutdownHook = true;
+        return this;
+    }
+
     public Scheduler build() {
         if (schedulerName == null) {
              schedulerName = new SchedulerName.Hostname();
@@ -199,8 +205,18 @@ public class SchedulerBuilder {
             enableImmediateExecution,
             tableName,
             schedulerName.getName());
-        return new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
+
+        final Scheduler scheduler = new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
             schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingStrategyConfig,
             deleteUnresolvedAfter, shutdownMaxWait, logLevel, logStackTrace, startTasks);
+
+        if (registerShutdownHook) {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                LOG.info("Received shutdown signal.");
+                scheduler.stop();
+            }));
+        }
+
+        return scheduler;
     }
 }

@@ -87,7 +87,7 @@ RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.of
 final Scheduler scheduler = Scheduler
         .create(dataSource)
         .startTasks(hourlyTask)
-        .threads(5)
+        .registerShutdownHook()
         .build();
 
 // hourlyTask is automatically scheduled on startup if not already started (i.e. exists in the db)
@@ -109,7 +109,7 @@ OneTimeTask<MyTaskData> myAdhocTask = Tasks.oneTime("my-typed-adhoc-task", MyTas
 
 final Scheduler scheduler = Scheduler
         .create(dataSource, myAdhocTask)
-        .threads(5)
+        .registerShutdownHook()
         .build();
 
 scheduler.start();
@@ -123,27 +123,6 @@ scheduler.start();
 scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.now().plusSeconds(5));
 ```
 
-
-### Proper shutdown of the scheduler
-
-To avoid unnecessary [dead exexutions](#dead-executions), it is important to shutdown the scheduler properly, i.e. calling the `shutdown` method.
-
-```java
-
-final Scheduler scheduler = Scheduler
-        .create(dataSource, myAdhocTask)
-        .build();
-
-Runtime.getRuntime().addShutdownHook(new Thread() {
-    @Override
-    public void run() {
-        LOG.info("Received shutdown signal.");
-        scheduler.stop();
-    }
-});
-
-scheduler.start();
-```
 
 ## Configuration
 
@@ -168,6 +147,7 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 | `.jdbcCustomization(JdbcCustomization)`  | db-scheduler tries to auto-detect the database used to see if any jdbc-interactions need to be customized. This method is an escape-hatch to allow for setting `JdbcCustomizations` explicitly. Default auto-detect.                                                                                                                                                                         |
 | `.commitWhenAutocommitDisabled(boolean)` | By default no commit is issued on DataSource Connections. If auto-commit is disabled, it is assumed that transactions are handled by an external transaction-manager. Set this property to `true` to override this behavior and have the Scheduler always issue commits. Default `false`.                                                                                               |
 | `.failureLogging(Level, boolean)`        | Configures how to log task failures, i.e. `Throwable`s thrown from a task execution handler. Use log level `OFF` to disable this kind of logging completely. Default `WARN, true`.                                                                                                                                                                                                            |
+| `.registerShutdownHook()`                | Registers a shutdown-hook that will call `Scheduler.stop()` on shutdown. Stop should always be called for a graceful shutdown and to avoid dead executions.                                                                                                                                                                                                            |
 
 ### Task configuration
 
