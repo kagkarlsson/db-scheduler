@@ -1,0 +1,41 @@
+
+
+# infra
+
+1. t apply
+
+# Init postgres
+
+```
+export PGPASSWORD="<password>"
+export PGHOST="<ip>"
+
+# create tables
+cd benchmark/
+psql bench gustavkarlsson < ../../db-scheduler/src/test/resources/postgresql_tables.sql
+
+# create index for efficiency
+psql bench gustavkarlsson <<EOF
+        create index on scheduled_tasks(execution_time asc);
+EOF
+
+# create test-data
+psql bench gustavkarlsson <<EOF
+        INSERT INTO scheduled_tasks (task_name, task_instance, execution_time, picked, version)
+            SELECT 'task1', 'instance'||i::text, now(), false, 1
+            FROM generate_series(1, 1000000) s(i)
+EOF
+```
+
+
+# Run in vms
+
+1. Replace ips in `upload.sh` for new ones. Run to upload code.
+
+2. For each vm
+
+```
+export PGPASSWORD="<password>"
+export PGHOST="<ip>"
+java -jar db-scheduler-benchmark-1.0-SNAPSHOT.jar
+```

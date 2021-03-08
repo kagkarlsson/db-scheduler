@@ -1,0 +1,186 @@
+
+Observations
+-------------
+* select-for-update lower tps, but higher throughput
+* maxing out pg 4core: 7-10k tps, ~2k iops, 60% cpu
+
+
+---------------------
+14.06.2020
+-----------------------
+
+Experiment 1.1
+1vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Default?
+10 threads
+
+Total: 1911 events/s  (1-minute rate)
+
+vm1
+             count = 226044
+         mean rate = 2000.17 events/second
+     1-minute rate = 1911.33 events/second
+
+---------
+Experiment 1.2
+2vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Default?
+10 threads
+
+Total: 2217 events/s  (1-minute rate)
+
+vm1
+             count = 144703
+         mean rate = 1327.41 events/second
+     1-minute rate = 1271.40 events/second
+
+vm2
+             count = 116941
+         mean rate = 1092.77 events/second
+     1-minute rate = 946.06 events/second
+
+---------
+Experiment 1.3
+2vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Default?
+10 threads
+
+Total: 2233 events/s  (1-minute rate)
+
+vm1
+             count = 79266
+         mean rate = 566.14 events/second
+     1-minute rate = 538.86 events/second
+
+vm2
+             count = 83730
+         mean rate = 598.01 events/second
+     1-minute rate = 570.11 events/second
+
+vm3
+             count = 82078
+         mean rate = 586.23 events/second
+     1-minute rate = 562.41 events/second
+
+vm4
+             count = 82210
+         mean rate = 587.17 events/second
+     1-minute rate = 563.84 events/second
+
+-----------------------------
+
+Experiment 2.1
+1vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Select-for-update  (int limit = freeThreads + (threadpoolSize *2) )
+10 threads
+
+vm1
+             count = 263399
+         mean rate = 2862.70 events/second
+     1-minute rate = 2795.37 events/second
+
+---------
+Experiment 2.2
+2vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Select-for-update  (int limit = freeThreads + (threadpoolSize *2) )
+10 threads
+
+Total: 4110 events/s  (1-minute rate)
+
+vm1
+             count = 290539
+         mean rate = 2168.02 events/second
+     1-minute rate = 2091.72 events/second
+
+vm2
+             count = 265703
+         mean rate = 2108.57 events/second
+     1-minute rate = 2019.65 events/second
+
+---------
+Experiment 2.3
+
+4vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Select-for-update  (int limit = freeThreads + (threadpoolSize *2) )
+10 threads
+
+Total: 6192 events/s  (1-minute rate)
+
+vm1
+             count = 375145
+         mean rate = 1556.53 events/second
+     1-minute rate = 1527.23 events/second
+
+vm2
+             count = 368505
+         mean rate = 1529.00 events/second
+     1-minute rate = 1500.47 events/second
+
+vm3
+             count = 375232
+         mean rate = 1556.91 events/second
+     1-minute rate = 1527.36 events/second
+
+vm4
+             count = 373956
+         mean rate = 1551.60 events/second
+     1-minute rate = 1520.83 events/second
+
+---------
+Experiment 3.1
+4vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Select-for-update  (int limit = freeThreads + (threadpoolSize *2) )
+50 threads
+
+Total: 8386 events/s
+
+---------
+Experiment 3.2
+4vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Select-for-update  (int limit = freeThreads + (threadpoolSize *2) )
+100 threads
+
+Total: 9526 events/s
+
+---------
+Experiment 3.3
+4vm 1core (n1-standard-1)
+--> pg11 8core 30gb mem 500gb disk
+Select-for-update  (int limit = freeThreads + (threadpoolSize *2) )
+100 threads
+
+Total: 9276 events/s
+
+---------
+Experiment 4.1
+1vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Default, pollinglimit=200
+50 threads
+
+Total: 2413 events/s
+---------
+Experiment 4.2
+4vm 1core (n1-standard-1)
+pg11 4core 15gb mem 100gb disk
+Default, pollinglimit=200
+50 threads
+
+Total: 3154 events/s
+
+---------
+Experiment 5.1
+4vm 1core (n1-standard-1)
+--> pg11 2core 7.5gb mem 500gb disk
+Select-for-update  (int limit = freeThreads + (threadpoolSize *2) )
+100 threads
+
+Total: 5411 events/s

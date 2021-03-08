@@ -22,6 +22,8 @@ public class MysqlCompatibilityTest extends CompatibilityTest {
     private static final MySQLContainer MY_SQL = new MySQLContainer();
     private static HikariDataSource pooledDatasource;
 
+    public MysqlCompatibilityTest() { super(false);}
+
     @BeforeAll
     private static void initSchema() {
         final DriverDataSource datasource = new DriverDataSource(MY_SQL.getJdbcUrl(), "com.mysql.cj.jdbc.Driver", new Properties(), MY_SQL.getUsername(), MY_SQL.getPassword());

@@ -1,0 +1,93 @@
+pg12, 4core, 25gb ram
+
+
+---------
+fetch
+1
+----
+4 vm (2 core)
+threads: 20
+fetch: 4.0, 20.0
+Throughput: ca 2k/s
+TPS: ca 9k/s
+
+2
+----
+4 vm (2 core)
+threads: 100
+fetch: 2.0, 6.0
+Throughput: ca 2560/s (640 per node)
+TPS: ca 11k/s
+
+3
+----
+1 vm (4 core)
+threads: 20
+fetch: 6.0, 40.0
+Throughput: 2100/s   (single node)
+TPS: ca 6k/s
+
+4
+----
+pg12, 8core, 50gb ram
+4 vm (4 core)
+threads: 20
+fetch: 6.0, 40.0
+Throughput: 2380/s  (595 per node)
+TPS: 14k/s
+
+5
+----
+pg12, 8core, 50gb ram
+4 vm (4 core)
+threads: 50
+fetch: 0.5, 4.0
+Throughput: 4000/s  (1000 per node)
+TPS: 22k/s
+
+
+
+---------
+lock-and-fetch
+
+1
+-----------
+4 vm (2 core)
+threads: 20
+fetch: 4.0, 20.0
+Throughput: 10600/s (2670 per node)
+TPS: ca 11.5k
+
+2
+-----------
+4 vm (2 core)
+threads: 100
+fetch: 2.0, 6.0
+Throughput: 11200/s  (2800 per node)
+TPS: 11.2k
+
+3
+----
+1 vm (4 core)
+threads: 20
+fetch: 6.0, 40.0
+Throughput:  4400/s   (single node)
+TPS: 4400/s
+
+4
+----
+pg12, 8core, 50gb ram
+4 vm (4 core)
+threads: 20
+fetch: 6.0, 40.0
+Throughput: 12640/s (3160 per node)
+TPS: 12.2k/s
+
+5
+----
+pg12, 8core, 50gb ram
+4 vm (4 core)
+threads: 50
+fetch: 0.5, 4.0
+Throughput: 11840/s (2960 per node)
+TPS: ca 10.3k/s

@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 
+import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -129,7 +130,19 @@ public class DbSchedulerAutoConfiguration {
 
         // Polling
         builder.pollingInterval(config.getPollingInterval());
-        config.getPollingLimit().ifPresent(builder::pollingLimit);
+
+        // Polling strategy
+        if (config.getPollingStrategy() == PollingStrategyConfig.Type.FETCH) {
+            builder.pollUsingFetchAndLockOnExecute(
+                config.getPollingStrategyLowerLimitFractionOfThreads(),
+                config.getPollingStrategyUpperLimitFractionOfThreads());
+        } else if (config.getPollingStrategy() == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
+            builder.pollUsingLockAndFetch(
+                config.getPollingStrategyLowerLimitFractionOfThreads(),
+                config.getPollingStrategyUpperLimitFractionOfThreads());
+        } else {
+            throw new IllegalArgumentException("Unknown polling-strategy: " + config.getPollingStrategy());
+        }
 
         builder.heartbeatInterval(config.getHeartbeatInterval());
 

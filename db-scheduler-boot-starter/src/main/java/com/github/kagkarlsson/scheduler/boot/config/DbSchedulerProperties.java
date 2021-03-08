@@ -15,10 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler.boot.config;
 
-import com.github.kagkarlsson.scheduler.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import java.time.Duration;
-import java.util.Optional;
 
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -75,9 +75,18 @@ public class DbSchedulerProperties {
     private Duration pollingInterval = SchedulerBuilder.DEFAULT_POLLING_INTERVAL;
 
     /**
-     * <p>Maximum number of executions to fetch on a check for due executions.
+     * <p> What polling-strategy to use. Valid values are: FETCH,LOCK_AND_FETCH
      */
-    private Optional<Integer> pollingLimit = Optional.empty();
+    private PollingStrategyConfig.Type pollingStrategy = SchedulerBuilder.DEFAULT_POLLING_STRATEGY.type;
+    /**
+     * <p> The limit at which more executions are fetched from the database after fetching a full batch.</p>
+     */
+    private double pollingStrategyLowerLimitFractionOfThreads = SchedulerBuilder.DEFAULT_POLLING_STRATEGY.lowerLimitFractionOfThreads;
+    /**
+     * <p> For Type=FETCH, the number of due executions fetched from the database in each batch.</p>
+     * <p> For Type=LOCK_AND_FETCH, the maximum number of executions to pick and queue for execution.</p>
+     */
+    private double pollingStrategyUpperLimitFractionOfThreads = SchedulerBuilder.DEFAULT_POLLING_STRATEGY.upperLimitFractionOfThreads;
 
     /**
      * <p>Whether to start the scheduler when the application context has been loaded or as soon as
@@ -166,14 +175,6 @@ public class DbSchedulerProperties {
         this.pollingInterval = pollingInterval;
     }
 
-    public Optional<Integer> getPollingLimit() {
-        return pollingLimit;
-    }
-
-    public void setPollingLimit(final Optional<Integer> pollingLimit) {
-        this.pollingLimit = pollingLimit;
-    }
-
     public boolean isDelayStartupUntilContextReady() {
         return delayStartupUntilContextReady;
     }
@@ -212,5 +213,29 @@ public class DbSchedulerProperties {
 
     public void setFailureLoggerLogStackTrace(boolean failureLoggerLogStackTrace) {
         this.failureLoggerLogStackTrace = failureLoggerLogStackTrace;
+    }
+
+    public PollingStrategyConfig.Type getPollingStrategy() {
+        return pollingStrategy;
+    }
+
+    public void setPollingStrategy(PollingStrategyConfig.Type pollingStrategy) {
+        this.pollingStrategy = pollingStrategy;
+    }
+
+    public double getPollingStrategyLowerLimitFractionOfThreads() {
+        return pollingStrategyLowerLimitFractionOfThreads;
+    }
+
+    public void setPollingStrategyLowerLimitFractionOfThreads(double pollingStrategyLowerLimitFractionOfThreads) {
+        this.pollingStrategyLowerLimitFractionOfThreads = pollingStrategyLowerLimitFractionOfThreads;
+    }
+
+    public double getPollingStrategyUpperLimitFractionOfThreads() {
+        return pollingStrategyUpperLimitFractionOfThreads;
+    }
+
+    public void setPollingStrategyUpperLimitFractionOfThreads(double pollingStrategyUpperLimitFractionOfThreads) {
+        this.pollingStrategyUpperLimitFractionOfThreads = pollingStrategyUpperLimitFractionOfThreads;
     }
 }

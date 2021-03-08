@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.jdbc;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
+import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
+import com.github.kagkarlsson.scheduler.SchedulerName;
+import com.github.kagkarlsson.scheduler.Serializer;
+import com.github.kagkarlsson.scheduler.TaskRepository;
+import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
-import com.github.kagkarlsson.scheduler.jdbc.AndCondition;
-import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
-import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
-import com.github.kagkarlsson.scheduler.jdbc.QueryBuilder;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -149,6 +150,11 @@ public class JdbcTaskRepository implements TaskRepository {
                 },
                 new ExecutionResultSetMapper()
         );
+    }
+
+    @Override
+    public List<Execution> lockAndGetDue(Instant now, int limit) {
+        return jdbcCustomization.lockAndFetch(getTaskRespositoryContext(), now, limit);
     }
 
     @Override
@@ -336,6 +342,17 @@ public class JdbcTaskRepository implements TaskRepository {
             });
     }
 
+    @Override
+    public void checkSupportsLockAndFetch() {
+        if (!jdbcCustomization.supportsLockAndFetch()) {
+            throw new IllegalArgumentException("Database using jdbc-customization '"+jdbcCustomization.getName()+"' does not support lock-and-fetch polling (i.e. Select-for-update)");
+        }
+    }
+
+    private JdbcTaskRepositoryContext getTaskRespositoryContext() {
+        return new JdbcTaskRepositoryContext(taskResolver, tableName, schedulerSchedulerName, jdbcRunner, ExecutionResultSetMapper::new);
+    }
+
     private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
         final QueryBuilder q = QueryBuilder.selectFromTable(tableName);
 
@@ -434,7 +451,7 @@ public class JdbcTaskRepository implements TaskRepository {
         }
     }
 
-    private static class UnresolvedFilter implements AndCondition {
+    static class UnresolvedFilter implements AndCondition {
         private final List<UnresolvedTask> unresolved;
 
         public UnresolvedFilter(List<UnresolvedTask> unresolved) {
@@ -499,4 +516,5 @@ public class JdbcTaskRepository implements TaskRepository {
             return index;
         }
     }
+
 }

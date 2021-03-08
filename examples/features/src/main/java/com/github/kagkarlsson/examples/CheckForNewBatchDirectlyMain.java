@@ -28,7 +28,7 @@ public class CheckForNewBatchDirectlyMain extends Example {
         final Scheduler scheduler = Scheduler
             .create(dataSource, onetimeTask)
             .pollingInterval(Duration.ofSeconds(10))
-            .pollingLimit(4)
+            .threads(2)
             .build();
 
         ExampleHelpers.registerShutdownHook(scheduler);

@@ -42,4 +42,7 @@ public class CurrentlyExecuting {
         return execution.taskInstance;
     }
 
+    public Execution getExecution() {
+        return execution;
+    }
 }

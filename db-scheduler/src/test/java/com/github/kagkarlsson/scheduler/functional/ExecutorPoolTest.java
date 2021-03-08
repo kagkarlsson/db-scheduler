@@ -80,7 +80,6 @@ public class ExecutorPoolTest {
         TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
 
         Scheduler scheduler = Scheduler.create(postgres.getDataSource(), task)
-            .pollingLimit(pollingLimit)
             .threads(threads)
             .pollingInterval(Duration.ofMinutes(1))
             .schedulerName(new SchedulerName.Fixed("test"))

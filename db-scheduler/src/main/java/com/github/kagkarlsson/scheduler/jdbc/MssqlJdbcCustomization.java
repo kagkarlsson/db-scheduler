@@ -15,16 +15,24 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import com.github.kagkarlsson.scheduler.task.Execution;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Calendar;
+import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
 
 public class MssqlJdbcCustomization implements JdbcCustomization {
+
+    @Override
+    public String getName() {
+        return "MSSQL";
+    }
 
     @Override
     public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
@@ -44,5 +52,15 @@ public class MssqlJdbcCustomization implements JdbcCustomization {
     @Override
     public String getQueryLimitPart(int limit) {
         return "";
+    }
+
+    @Override
+    public boolean supportsLockAndFetch() {
+        return false;
+    }
+
+    @Override
+    public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+        throw new UnsupportedOperationException("lockAndFetch not supported for " + this.getClass().getName());
     }
 }
