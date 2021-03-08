@@ -24,6 +24,7 @@ public class RecurringTaskMain extends Example {
         final Scheduler scheduler = Scheduler
             .create(dataSource)
             .startTasks(hourlyTask)
+            .registerShutdownHook()
             .threads(5)
             .build();
 
