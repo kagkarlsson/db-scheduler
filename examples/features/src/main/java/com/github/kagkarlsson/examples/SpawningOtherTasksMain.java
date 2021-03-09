@@ -47,7 +47,6 @@ public class SpawningOtherTasksMain extends Example {
             .registerShutdownHook()
             .build();
 
-        // hourlyTask is automatically scheduled on startup if not already started (i.e. exists in the db)
         scheduler.start();
     }
 
