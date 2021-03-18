@@ -194,7 +194,7 @@ If the last fetch from the database was a full batch, a new fetch will be trigge
 when the number of executions left are less than or equal to `lowerLimitFractionOfThreads * nr-of-threads`.
 The number of executions fetched each time is equal to `(upperLimitFractionOfThreads * nr-of-threads) - nr-executions-left`.
 Fetched executions are already locked/picked for this scheduler-instance thus saving one `UPDATE` statement.
-<br/>For normal usage, set to for example `0.5, 1.0`.<br/>
+<br/>For normal usage, set to for example `0.5, 1.0`.
 <br/>For high throughput
 (i.e. keep threads busy), set to for example `1.0, 4.0`. Currently hearbeats are not updated for picked executions
 in queue (applicable if `upperLimitFractionOfThreads > 1.0`). If they stay there for more than
