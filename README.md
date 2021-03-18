@@ -196,12 +196,15 @@ If you are running >1000 executions/s you might want to use the `lock-and-fetch`
 * [ ] `.schedulerName(SchedulerName)`<br/>
   Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler.
   Default `<hostname>`.
-* `.tableName(String)`<br/>
+
+:gear: `.tableName(String)`<br/>
   Name of the table used to track task-executions. Change name in the table definitions accordingly when creating
   the table. Default `scheduled_tasks`.
-* `.serializer(Serializer)`<br/>
+
+:gear: `.serializer(Serializer)`<br/>
   Serializer implementation to use when serializing task data. Default standard Java serialization.
-* `.executorService(ExecutorService)`<br/>
+
+:gear: `.executorService(ExecutorService)`<br/>
   If specified, use this externally managed executor service to run executions. Ideally the number of threads it
   will use should still be supplied (for scheduler polling optimizations). Default `null`.
 * `.deleteUnresolvedAfter(Duration)`<br/>
