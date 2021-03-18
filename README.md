@@ -138,52 +138,48 @@ scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.
 
 The scheduler is created using the `Scheduler.create(...)` builder. The builder has sensible defaults, but the following options are configurable.
 
+#### Commonly tuned/used
+
 * `.threads(int)`<br/>
-  Number of threads. Default `10`.<br/>
+  Number of threads. Default `10`.
 * `.pollingInterval(Duration)`<br/>
   How often the scheduler checks the database for due executions. Default `30s`.<br/>
-* `.pollUsingFetchAndLockOnExecute(double, double)`<br/>
+* `.enableImmediateExecution()`<br/>
+  If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled to `now()`, or a time in the past. For this to work, the call to `schedule(..)` must not occur from within a transaction, because the record will not yet be visible to the scheduler (if this is a requirement, see the method `scheduler.triggerCheckForDueExecutions()`). Default `false`.
+* `.registerShutdownHook()`<br/>
+  Registers a shutdown-hook that will call `Scheduler.stop()` on shutdown. Stop should always be called for a graceful shutdown and to avoid dead executions.
+* `.shutdownMaxWait(Duration)`<br/>
+  How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this, consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()` in the ExecutionHandler and abort long-running task. Default `30min`.
+
+#### Polling strategy
+
+If you are running >1000 executions/s you might want to use the `lock-and-fetch` polling-strategy for lower overhead and higher througput ([read more](#polling-strategy-lock-and-fetch)). If not, the default will be fine.
+
+* `.pollUsingFetchAndLockOnExecute(double, double)`
   Use default polling strategy `fetch-and-lock-on-execute`. `lowerLimitFractionOfThreads`: threshold for when new executions are fetched from the database (given that last batch was full). Default `0.5`. `executionsPerBatchFractionOfThreads`: how many executions to fetch in each batch. Defualt `3.0`. These executions will not be pre-locked, so the scheduler will compete with other instances for the lock when it is executed. Supported by all databases.
+* `.pollUsingLockAndFetch(double, double)`<br/>
+  Use polling strategy `lock-and-fetch` which uses `select for update .. skip locked` for less overhead. `lowerLimitFractionOfThreads`: threshold for when new executions are fetched from the database (given that last batch was full). `upperLimitFractionOfThreads`: how many executions to lock and fetch. For high throughput (i.e. keep threads busy), set to for example `1.0, 4.0`. Currently hearbeats are not updated for picked executions in queue. If they stay there for more than 4 * <hearbeat-interval>, they will be marked as dead and likely be unlocked again (determined by `DeadExecutionHandler`).  Currently supported by **postgres**.
 
+#### Less commonly tuned/used
 
-`.pollUsingLockAndFetch(double, double)`<br/>
-Use polling strategy `lock-and-fetch` which uses `select for update .. skip locked` for less overhead. `lowerLimitFractionOfThreads`: threshold for when new executions are fetched from the database (given that last batch was full). `upperLimitFractionOfThreads`: how many executions to lock and fetch. For high throughput (i.e. keep threads busy), set to for example `1.0, 4.0`. Currently hearbeats are not updated for picked executions in queue. If they stay there for more than 4 * <hearbeat-interval>, they will be marked as dead and likely be unlocked again (determined by `DeadExecutionHandler`).  Currently supported by **postgres**.
-
-`.heartbeatInterval(Duration)`<br/>
-How often to update the heartbeat timestamp for running executions. Default `5m`.
-
-`.schedulerName(SchedulerName)`<br/>
-Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. Default `<hostname>`.
-
-`.tableName(String)`<br/>
-Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. Default `scheduled_tasks`.
-
-`.serializer(Serializer)`<br/>
-Serializer implementation to use when serializing task data. Default standard Java serialization.
-
-`.enableImmediateExecution()`<br/>
-If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled to `now()`, or a time in the past. For this to work, the call to `schedule(..)` must not occur from within a transaction, because the record will not yet be visible to the scheduler (if this is a requirement, see the method `scheduler.triggerCheckForDueExecutions()`). Default `false`.
-
-`.executorService(ExecutorService)`<br/>
-If specified, use this externally managed executor service to run executions. Ideally the number of threads it will use should still be supplied (for scheduler polling optimizations). Default `null`.
-
-`.shutdownMaxWait(Duration)`<br/>
-How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this, consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()` in the ExecutionHandler and abort long-running task. Default `30min`.
-
-`.deleteUnresolvedAfter(Duration)`<br/>
-The time after which executions with unknown tasks are automatically deleted. These can typically be old recurring tasks that are not in use anymore. This is non-zero to prevent accidental removal of tasks through a configuration error (missing known-tasks) and problems during rolling upgrades. Default `14d`.
-
-`.jdbcCustomization(JdbcCustomization)`<br/>
-db-scheduler tries to auto-detect the database used to see if any jdbc-interactions need to be customized. This method is an escape-hatch to allow for setting `JdbcCustomizations` explicitly. Default auto-detect.
-
-`.commitWhenAutocommitDisabled(boolean)`<br/>
-By default no commit is issued on DataSource Connections. If auto-commit is disabled, it is assumed that transactions are handled by an external transaction-manager. Set this property to `true` to override this behavior and have the Scheduler always issue commits. Default `false`.
-
-`.failureLogging(Level, boolean)`<br/>
-Configures how to log task failures, i.e. `Throwable`s thrown from a task execution handler. Use log level `OFF` to disable this kind of logging completely. Default `WARN, true`.
-
-`.registerShutdownHook()`<br/>
-Registers a shutdown-hook that will call `Scheduler.stop()` on shutdown. Stop should always be called for a graceful shutdown and to avoid dead executions.
+* `.heartbeatInterval(Duration)`<br/>
+  How often to update the heartbeat timestamp for running executions. Default `5m`.
+* `.schedulerName(SchedulerName)`<br/>
+  Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. Default `<hostname>`.
+* `.tableName(String)`<br/>
+  Name of the table used to track task-executions. Change name in the table definitions accordingly when creating the table. Default `scheduled_tasks`.
+* `.serializer(Serializer)`<br/>
+  Serializer implementation to use when serializing task data. Default standard Java serialization.
+* `.executorService(ExecutorService)`<br/>
+  If specified, use this externally managed executor service to run executions. Ideally the number of threads it will use should still be supplied (for scheduler polling optimizations). Default `null`.
+* `.deleteUnresolvedAfter(Duration)`<br/>
+  The time after which executions with unknown tasks are automatically deleted. These can typically be old recurring tasks that are not in use anymore. This is non-zero to prevent accidental removal of tasks through a configuration error (missing known-tasks) and problems during rolling upgrades. Default `14d`.
+* `.jdbcCustomization(JdbcCustomization)`<br/>
+  db-scheduler tries to auto-detect the database used to see if any jdbc-interactions need to be customized. This method is an escape-hatch to allow for setting `JdbcCustomizations` explicitly. Default auto-detect.
+* `.commitWhenAutocommitDisabled(boolean)`<br/>
+  By default no commit is issued on DataSource Connections. If auto-commit is disabled, it is assumed that transactions are handled by an external transaction-manager. Set this property to `true` to override this behavior and have the Scheduler always issue commits. Default `false`.
+* `.failureLogging(Level, boolean)`<br/>
+  Configures how to log task failures, i.e. `Throwable`s thrown from a task execution handler. Use log level `OFF` to disable this kind of logging completely. Default `WARN, true`.
 
 ### Task configuration
 
