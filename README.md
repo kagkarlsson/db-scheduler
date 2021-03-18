@@ -235,8 +235,8 @@ db-scheduler.delay-startup-until-context-ready=false
 ## Interacting with scheduled executions using the SchedulerClient
 
 It is possible to use a [SchedulerClient](./src/main/java/com/github/kagkarlsson/scheduler/SchedulerClient.java)
-to interact with the persisted future executions. The client can be instantiated without the full scheduler-instance, i.e. without the
-executing part.
+to interact with the persisted future executions. While the `Scheduler` implements this interface, it is also possible to
+instantiate the client without the full scheduler-instance, i.e. without the executing part.
 
 ```java
 SchedulerClient.Builder.create(dataSource, taskDefinitions).build()
