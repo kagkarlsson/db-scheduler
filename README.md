@@ -138,14 +138,12 @@ scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.
 
 The scheduler is created using the `Scheduler.create(...)` builder. The builder has sensible defaults, but the following options are configurable.
 
-`.threads(int)`<br/>
-Number of threads. Default `10`.
-
-`.pollingInterval(Duration)`<br/>
-How often the scheduler checks the database for due executions. Default `30s`.
-
-`.pollUsingFetchAndLockOnExecute(double, double)`<br/>
-Use default polling strategy `fetch-and-lock-on-execute`. `lowerLimitFractionOfThreads`: threshold for when new executions are fetched from the database (given that last batch was full). Default `0.5`. `executionsPerBatchFractionOfThreads`: how many executions to fetch in each batch. Defualt `3.0`. These executions will not be pre-locked, so the scheduler will compete with other instances for the lock when it is executed. Supported by all databases.
+* `.threads(int)`<br/>
+  Number of threads. Default `10`.
+* `.pollingInterval(Duration)`<br/>
+  How often the scheduler checks the database for due executions. Default `30s`.
+* `.pollUsingFetchAndLockOnExecute(double, double)`<br/>
+  Use default polling strategy `fetch-and-lock-on-execute`. `lowerLimitFractionOfThreads`: threshold for when new executions are fetched from the database (given that last batch was full). Default `0.5`. `executionsPerBatchFractionOfThreads`: how many executions to fetch in each batch. Defualt `3.0`. These executions will not be pre-locked, so the scheduler will compete with other instances for the lock when it is executed. Supported by all databases.
 
 
 `.pollUsingLockAndFetch(double, double)`<br/>
