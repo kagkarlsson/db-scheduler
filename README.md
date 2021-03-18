@@ -150,7 +150,7 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 | `.serializer(Serializer)`                | Serializer implementation to use when serializing task data. Default standard Java serialization.                                                                                                                                                                                                                                                                                                           |
 | `.enableImmediateExecution()`            | If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled to `now()`, or a time in the past. For this to work, the call to `schedule(..)` must not occur from within a transaction, because the record will not yet be visible to the scheduler (if this is a requirement, see the method `scheduler.triggerCheckForDueExecutions()`). Default `false`. |
 | `.executorService(ExecutorService)`      | If specified, use this externally managed executor service to run executions. Ideally the number of threads it will use should still be supplied (for scheduler polling optimizations). Default `null`.                                                                                                                                                                                |
-| `shutdownMaxWait(Duration)`              | How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this, consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()` in the ExecutionHandler and abort long-running task. Default `30min`.                                                                                      |
+| `.shutdownMaxWait(Duration)`              | How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this, consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()` in the ExecutionHandler and abort long-running task. Default `30min`.                                                                                      |
 | `.deleteUnresolvedAfter(Duration)`       | The time after which executions with unknown tasks are automatically deleted. These can typically be old recurring tasks that are not in use anymore. This is non-zero to prevent accidental removal of tasks through a configuration error (missing known-tasks) and problems during rolling upgrades. Default `14d`.                                                                 |
 | `.jdbcCustomization(JdbcCustomization)`  | db-scheduler tries to auto-detect the database used to see if any jdbc-interactions need to be customized. This method is an escape-hatch to allow for setting `JdbcCustomizations` explicitly. Default auto-detect.                                                                                                                                                                         |
 | `.commitWhenAutocommitDisabled(boolean)` | By default no commit is issued on DataSource Connections. If auto-commit is disabled, it is assumed that transactions are handled by an external transaction-manager. Set this property to `true` to override this behavior and have the Scheduler always issue commits. Default `false`.                                                                                               |
@@ -234,7 +234,21 @@ db-scheduler.delay-startup-until-context-ready=false
 
 ## Interacting with scheduled executions using the SchedulerClient
 
-TODO
+It is possible to use a [SchedulerClient](./src/main/java/com/github/kagkarlsson/scheduler/SchedulerClient.java)
+to interact with the persisted future executions. The client can be instantiated without the full scheduler-instance, i.e. without the
+executing part.
+
+```java
+SchedulerClient.Builder.create(dataSource, taskDefinitions).build()
+```
+
+It will allow for operations such as:
+
+* List scheduled executions
+* Reschedule a specific execution
+* Remove an old executions that have been retrying for too long
+* ...
+
 
 ## How it works
 
