@@ -17,7 +17,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 ## Features
 
 * **Cluster-friendly**. Guarantees execution by single scheduler instance.
-* **Persistent** tasks. Requires _single_ database-table for persistence.
+* **Persistent** tasks. Requires a _single_ database-table for persistence.
 * **Embeddable**. Built to be embedded in existing applications.
 * **High throughput**. Tested to handle 2k - 10k executions / second. [Link](#benchmark-test).
 * **Simple**.
@@ -157,7 +157,7 @@ The scheduler is created using the `Scheduler.create(...)` builder. The builder 
 Number of threads. Default `10`.
 
 :gear: `.pollingInterval(Duration)`<br/>
-How often the scheduler checks the database for due executions. Default `30s`.<br/>
+How often the scheduler checks the database for due executions. Default `10s`.<br/>
 
 :gear: `.enableImmediateExecution()`<br/>
 If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled to `now()`, or a time in
@@ -177,22 +177,30 @@ in the ExecutionHandler and abort long-running task. Default `30min`.
 #### Polling strategy
 
 If you are running >1000 executions/s you might want to use the `lock-and-fetch` polling-strategy for lower overhead
- and higher througput ([read more](#polling-strategy-lock-and-fetch)). If not, the default will be fine.
+ and higher througput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` will be fine.
 
 :gear: `.pollUsingFetchAndLockOnExecute(double, double)`<br/>
-Use default polling strategy `fetch-and-lock-on-execute`. `lowerLimitFractionOfThreads`: threshold for when new
-executions are fetched from the database (given that last batch was full). Default `0.5`.
-`executionsPerBatchFractionOfThreads`: how many executions to fetch in each batch. Defualt `3.0`.
-These executions will not be pre-locked, so the scheduler will compete with other instances for the lock
+Use default polling strategy `fetch-and-lock-on-execute`.<br/>
+If the last fetch from the database was a full batch (`executionsPerBatchFractionOfThreads`), a new fetch will be triggered
+when the number of executions left are less than or equal to `lowerLimitFractionOfThreads * nr-of-threads`.
+Fetched executions are not locked/picked, so the scheduler will compete with other instances for the lock
 when it is executed. Supported by all databases.
+Defaults: `0,5, 3.0`
+
 
 :gear: `.pollUsingLockAndFetch(double, double)`<br/>
-Use polling strategy `lock-and-fetch` which uses `select for update .. skip locked` for less overhead.
-`lowerLimitFractionOfThreads`: threshold for when new executions are fetched from the database (given that
-last batch was full). `upperLimitFractionOfThreads`: how many executions to lock and fetch. For high throughput
+Use polling strategy `lock-and-fetch` which uses `select for update .. skip locked` for less overhead.<br/>
+If the last fetch from the database was a full batch, a new fetch will be triggered
+when the number of executions left are less than or equal to `lowerLimitFractionOfThreads * nr-of-threads`.
+The number of executions fetched each time is equal to `(upperLimitFractionOfThreads * nr-of-threads) - nr-executions-left`.
+Fetched executions are already locked/picked for this scheduler-instance thus saving one `UPDATE` statement.
+For normal usage, set to for example `0.5, 1.0`.<br/>
+For high throughput
 (i.e. keep threads busy), set to for example `1.0, 4.0`. Currently hearbeats are not updated for picked executions
-in queue. If they stay there for more than 4 * <hearbeat-interval>, they will be marked as dead and likely be
+in queue (applicable if `upperLimitFractionOfThreads > 1.0`). If they stay there for more than
+`4 * hearbeat-interval` (default `20m`), not starting execution, they will be detected as _dead_ and likely be
 unlocked again (determined by `DeadExecutionHandler`).  Currently supported by **postgres**.
+
 
 #### Less commonly tuned
 
