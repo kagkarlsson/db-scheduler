@@ -29,6 +29,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * [Who uses db-scheduler?](#who-uses-db-scheduler)
 * [Examples](#examples)
 * [Configuration](#configuration)
+* [Third-party task repositories](#third-party-task-repositories)
 * [Spring Boot usage](#spring-boot-usage)
 * [Interacting with scheduled executions using the SchedulerClient](#interacting-with-scheduled-executions-using-the-schedulerclient)
 * [How it works](#how-it-works)
@@ -271,6 +272,13 @@ The currently available patterns are:
 | `DAILY\|12:30,15:30...(\|time_zone)`  | Same as `.daily(LocalTime)` with optional time zone (e.g. Europe/Rome, UTC)|
 
 More details on the time zone formats can be found [here](https://docs.oracle.com/javase/8/docs/api/java/time/ZoneId.html#of-java.lang.String-).
+
+## Third-party task repositories
+
+Out of the box db-scheduler supports jdbc-compliant databases. There have however been efforts to implement support for more databases via custom task repositories. It is currently a bit cumbersome plugging in a custom repository, but there are plans for making it easier.
+This is a list of known third-party task repositories:
+
+* [db-scheduler-mongo](https://github.com/piemjean/db-scheduler-mongo)
 
 ## Spring Boot usage
 
