@@ -57,14 +57,16 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
 
         return ctx.jdbcRunner.query(selectForUpdateQuery,
             ps -> {
+                int index = 1;
                 // Update
-                ps.setBoolean(1, true); // picked (new)
-                ps.setString(2, truncate(ctx.schedulerName.getName(), 50)); // picked_by
-                setInstant(ps, 3, now); // last_heartbeat
+                ps.setBoolean(index++, true); // picked (new)
+                ps.setString(index++, truncate(ctx.schedulerName.getName(), 50)); // picked_by
+                setInstant(ps, index++, now); // last_heartbeat
                 // Inner select
-                ps.setBoolean(4, false); // picked (old)
-                setInstant(ps, 5, now); // execution_time
-                ps.setInt(6, limit); // limit
+                ps.setBoolean(index++, false); // picked (old)
+                setInstant(ps, index++, now); // execution_time
+                ps.setInt(index++, limit); // limit
+                unresolvedFilter.setParameters(ps, index);
             },
             ctx.resultSetMapper.get());
     }
