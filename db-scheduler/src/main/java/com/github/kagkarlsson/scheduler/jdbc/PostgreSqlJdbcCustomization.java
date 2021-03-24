@@ -65,8 +65,8 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
                 // Inner select
                 ps.setBoolean(index++, false); // picked (old)
                 setInstant(ps, index++, now); // execution_time
+                index = unresolvedFilter.setParameters(ps, index);
                 ps.setInt(index++, limit); // limit
-                unresolvedFilter.setParameters(ps, index);
             },
             ctx.resultSetMapper.get());
     }

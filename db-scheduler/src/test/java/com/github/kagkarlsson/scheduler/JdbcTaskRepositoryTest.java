@@ -351,7 +351,7 @@ public class JdbcTaskRepositoryTest {
     }
 
     @Test
-    public void pickdue_should_pick_due() {
+    public void lockAndGetDue_should_pick_due() {
         Instant now = Instant.now();
         taskRepository.createIfNotExists(new Execution(now.plusSeconds(10), oneTimeTask.instance("future1")));
         taskRepository.createIfNotExists(new Execution(now, oneTimeTask.instance("id1")));
@@ -362,6 +362,21 @@ public class JdbcTaskRepositoryTest {
         assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT), hasSize(0));
         assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
     }
+
+    @Test
+    public void lockAndGetDue_should_not_include_previously_unresolved() {
+        Instant now = TimeHelper.truncatedInstantNow();
+        final OneTimeTask<Void> unresolved1 = TestTasks.oneTime("unresolved1", Void.class, TestTasks.DO_NOTHING);
+
+        assertThat(taskResolver.getUnresolved(), hasSize(0));
+
+        taskRepository.createIfNotExists(new Execution(now, unresolved1.instance("id")));
+        assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT), hasSize(0));
+        assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT), hasSize(0));
+        assertThat(taskResolver.getUnresolved(), hasSize(1));
+        assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    }
+
 
     private void createDeadExecution(TaskInstance<Void> taskInstance, Instant timeDied) {
         taskRepository.createIfNotExists(new Execution(timeDied, taskInstance));
