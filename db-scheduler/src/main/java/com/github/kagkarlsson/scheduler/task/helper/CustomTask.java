@@ -17,12 +17,12 @@ package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.AbstractTask;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
-import com.github.kagkarlsson.scheduler.task.Task;
 
-public abstract class CustomTask<T> extends Task<T> implements OnStartup {
+public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup {
     private ScheduleOnStartup<T> scheduleOnStartup;
 
     public CustomTask(String name, Class<T> dataClass, ScheduleOnStartup<T> scheduleOnStartup, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {

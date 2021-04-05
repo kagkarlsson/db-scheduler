@@ -22,7 +22,7 @@ import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteResched
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
-public abstract class RecurringTask<T> extends Task<T> implements OnStartup {
+public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStartup {
 
     public static final String INSTANCE = "recurring";
     private final OnCompleteReschedule<T> onComplete;

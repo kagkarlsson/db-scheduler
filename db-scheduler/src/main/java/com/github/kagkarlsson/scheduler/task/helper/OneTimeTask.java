@@ -22,7 +22,7 @@ import com.github.kagkarlsson.scheduler.task.FailureHandler.OnFailureRetryLater;
 
 import java.time.Duration;
 
-public abstract class OneTimeTask<T> extends Task<T> {
+public abstract class OneTimeTask<T> extends AbstractTask<T> {
 
     public OneTimeTask(String name, Class<T> dataClass) {
         this(name, dataClass, new OnFailureRetryLater<>(Duration.ofMinutes(5)), new ReviveDeadExecution<>());
