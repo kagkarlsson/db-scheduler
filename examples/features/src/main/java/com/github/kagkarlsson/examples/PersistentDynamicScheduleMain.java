@@ -1,10 +1,12 @@
 package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
+import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -17,6 +19,7 @@ import javax.sql.DataSource;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 import static java.util.function.Function.identity;
 
@@ -55,6 +58,24 @@ public class PersistentDynamicScheduleMain extends Example {
             .build();
 
         scheduler.start();
+
+        sleep(5_000);
+
+        final SerializableCronSchedule newSchedule = new SerializableCronSchedule("*/15 * * * * ?");
+        final TaskInstanceId scheduledExecution = TaskInstanceId.of("dynamic-recurring-task", RecurringTask.INSTANCE);
+        final Instant newNextExecutionTime = newSchedule.getNextExecutionTime(ExecutionComplete.simulatedSuccess(Instant.now()));
+
+        // reschedule updating both next execution time and the persistent schedule
+        System.out.println("Simulating dynamic reschedule of recurring task");
+        scheduler.reschedule(scheduledExecution, newNextExecutionTime, newSchedule);
+    }
+
+    private void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static class SerializableCronSchedule implements Serializable, Schedule {
