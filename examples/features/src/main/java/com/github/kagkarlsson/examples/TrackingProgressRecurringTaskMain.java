@@ -23,22 +23,14 @@ public class TrackingProgressRecurringTaskMain extends Example {
     public void run(DataSource dataSource) {
         final FixedDelay schedule = FixedDelay.ofSeconds(2);
 
-        // In the future RecurringTaskBuilder will be adapted to fit this particular use-case better
-        // but for now, custom-task builder must be used
-        final CustomTask<Counter> statefulTask = Tasks.custom("counting-task", Counter.class)
-            .scheduleOnStartup(RecurringTask.INSTANCE, new Counter(0), identity())
-            .onFailureReschedule(schedule)
-            .execute((taskInstance, executionContext) -> {
+        final RecurringTask<Counter> statefulTask = Tasks.recurring("counting-task", schedule, Counter.class)
+            .initialData(new Counter(0))
+            .executeStateful((taskInstance, executionContext) -> {
                 final Counter startingCounter = taskInstance.getData();
                 for (int i = 0; i < 10; i++) {
                     System.out.println("Counting " + (startingCounter.value + i));
                 }
-                return (executionComplete, executionOperations) -> {
-                    executionOperations.reschedule(
-                        executionComplete,
-                        schedule.getNextExecutionTime(executionComplete),
-                        new Counter(startingCounter.value + 10));    // new value to be persisted as task_data for the next run
-                };
+                return new Counter(startingCounter.value + 10);    // new value to be persisted as task_data for the next run
             });
 
         final Scheduler scheduler = Scheduler

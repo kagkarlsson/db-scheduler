@@ -97,6 +97,22 @@ public class Tasks {
                 }
             };
         }
+
+        public RecurringTask<T> executeStateful(StateReturningExecutionHandler<T> executionHandler) {
+            return new RecurringTask<T>(name, schedule, dataClass, scheduleOnStartup, onFailure, onDeadExecution) {
+
+                @Override
+                public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    final T nextData = executionHandler.execute(taskInstance, executionContext);
+                    return new CompletionHandler.OnCompleteReschedule<>(schedule, nextData);
+                }
+
+                @Override
+                public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    // never called
+                }
+            };
+        }
     }
 
     public static class OneTimeTaskBuilder<T> {
