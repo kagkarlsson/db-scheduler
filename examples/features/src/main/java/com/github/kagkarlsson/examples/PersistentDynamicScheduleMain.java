@@ -32,8 +32,9 @@ public class PersistentDynamicScheduleMain extends Example {
     @Override
     public void run(DataSource dataSource) {
 
+        final SerializableCronSchedule initialSchedule = new SerializableCronSchedule("*/10 * * * * ?");
         final CustomTask<SerializableCronSchedule> task = Tasks.custom("dynamic-recurring-task", SerializableCronSchedule.class)
-            .scheduleOnStartup(RecurringTask.INSTANCE, new SerializableCronSchedule("*/10 * * * * ?"), identity())
+            .scheduleOnStartup(RecurringTask.INSTANCE, initialSchedule, initialSchedule)
             .onFailure((executionComplete, executionOperations) -> {
                 final SerializableCronSchedule persistedSchedule = (SerializableCronSchedule) (executionComplete.getExecution().taskInstance.getData());
                 executionOperations.reschedule(executionComplete, persistedSchedule.getNextExecutionTime(executionComplete));
@@ -59,7 +60,7 @@ public class PersistentDynamicScheduleMain extends Example {
 
         scheduler.start();
 
-        sleep(5_000);
+        sleep(7_000);
 
         final SerializableCronSchedule newSchedule = new SerializableCronSchedule("*/15 * * * * ?");
         final TaskInstanceId scheduledExecution = TaskInstanceId.of("dynamic-recurring-task", RecurringTask.INSTANCE);
