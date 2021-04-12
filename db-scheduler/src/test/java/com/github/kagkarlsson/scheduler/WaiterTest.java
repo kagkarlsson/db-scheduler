@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
@@ -65,7 +66,7 @@ public class WaiterTest {
         waiter.wakeOrSkipNextWait(); //set skip
         Future<Long> waitTime = executor.submit(new WaitForWaiter(waiter));
 
-        assertTrue(waitTime.get() < 10L, "Waited: " + waitTime.get());
+        assertTrue(waitTime.get() < 100L, "Waited: " + waitTime.get());
     }
 
     private void sleep(int millis) {
