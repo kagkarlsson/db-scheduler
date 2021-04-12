@@ -42,7 +42,7 @@ public class ComposableTask {
     }
 
     public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler<T> completionHandler, VoidExecutionHandler<T> executionHandler) {
-        return new Task<T>(name, dataClass, new FailureHandler.OnFailureRetryLater<>(Duration.ofMinutes(5)), new DeadExecutionHandler.ReviveDeadExecution<>()) {
+        return new AbstractTask<T>(name, dataClass, new FailureHandler.OnFailureRetryLater<>(Duration.ofMinutes(5)), new DeadExecutionHandler.ReviveDeadExecution<>()) {
             @Override
             public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                 executionHandler.execute(taskInstance, executionContext);
@@ -52,7 +52,7 @@ public class ComposableTask {
     }
 
     public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler<T> completionHandler, FailureHandler<T> failureHandler, VoidExecutionHandler<T> executionHandler) {
-        return new Task<T>(name, dataClass, failureHandler, new DeadExecutionHandler.ReviveDeadExecution<>()) {
+        return new AbstractTask<T>(name, dataClass, failureHandler, new DeadExecutionHandler.ReviveDeadExecution<>()) {
             @Override
             public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                 executionHandler.execute(taskInstance, executionContext);

@@ -11,6 +11,7 @@ import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,14 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Status;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.assertj.AssertableWebApplicationContext;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.ConfigurableWebApplicationContext;
-
-import java.time.Duration;
-import java.time.Instant;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest

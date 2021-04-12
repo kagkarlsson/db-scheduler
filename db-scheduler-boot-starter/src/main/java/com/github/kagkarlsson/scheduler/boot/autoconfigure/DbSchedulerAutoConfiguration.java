@@ -31,7 +31,6 @@ import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
 import io.micrometer.core.instrument.MeterRegistry;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInput;

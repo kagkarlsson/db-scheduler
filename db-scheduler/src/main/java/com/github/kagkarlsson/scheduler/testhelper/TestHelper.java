@@ -16,23 +16,22 @@
 package com.github.kagkarlsson.scheduler.testhelper;
 
 import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
-import com.github.kagkarlsson.scheduler.SchedulerName;
-import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
-import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
-
-import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
+import javax.sql.DataSource;
 
 public class TestHelper {
 
