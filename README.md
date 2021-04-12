@@ -144,6 +144,7 @@ scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.
 * [TrackingProgressRecurringTaskMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/TrackingProgressRecurringTaskMain.java)
 * [SpawningOtherTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SpawningOtherTasksMain.java)
 * [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)
+* [PersistentDynamicScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/PersistentDynamicScheduleMain.java)
 
 
 ## Configuration

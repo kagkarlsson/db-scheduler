@@ -197,6 +197,14 @@ public class Tasks {
             return this;
         }
 
+        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData, Schedule schedule) {
+            this.onStartup = new ScheduleOnceOnStartup<T>(
+                instance,
+                initialData,
+                now -> schedule.getNextExecutionTime(ExecutionComplete.simulatedSuccess(now)));
+            return this;
+        }
+
         public CustomTask<T> execute(ExecutionHandler<T> executionHandler) {
             return new CustomTask<T>(name, dataClass, onStartup, onFailure, onDeadExecution) {
                 @Override
