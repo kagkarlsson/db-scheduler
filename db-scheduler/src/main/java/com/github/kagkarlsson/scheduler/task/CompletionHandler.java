@@ -38,16 +38,29 @@ public interface CompletionHandler<T> {
 
         private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReschedule.class);
         private final Schedule schedule;
+        private final boolean setNewData;
+        private T newData;
 
         public OnCompleteReschedule(Schedule schedule) {
             this.schedule = schedule;
+            this.setNewData = false;
+        }
+
+        public OnCompleteReschedule(Schedule schedule, T newData) {
+            this.schedule = schedule;
+            this.newData = newData;
+            this.setNewData = true;
         }
 
         @Override
         public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
             Instant nextExecution = schedule.getNextExecutionTime(executionComplete);
             LOG.debug("Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
-            executionOperations.reschedule(executionComplete, nextExecution);
+            if (setNewData) {
+                executionOperations.reschedule(executionComplete, nextExecution, newData);
+            } else {
+                executionOperations.reschedule(executionComplete, nextExecution);
+            }
         }
 
         @Override
