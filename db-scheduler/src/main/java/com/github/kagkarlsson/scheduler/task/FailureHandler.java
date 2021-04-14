@@ -75,7 +75,6 @@ public interface FailureHandler<T> {
         }
     }
 
-    // TODO: Failure handler with backoff: if (isFailing(.)) then nextTry = 2* duration_from_first_failure (minimum 1m, max 1d)
     class OnFailureRetryLater<T> implements FailureHandler<T> {
 
         private static final Logger LOG = LoggerFactory.getLogger(CompletionHandler.OnCompleteReschedule.class);
