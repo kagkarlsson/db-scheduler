@@ -26,6 +26,27 @@ public interface FailureHandler<T> {
 
     void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);
 
+    class MaxRetriesFailureHandler<T> implements FailureHandler<T> {
+        private static final Logger LOG = LoggerFactory.getLogger(MaxRetriesFailureHandler.class);
+        private final int maxRetries;
+        private final FailureHandler<T> failureHandler;
+
+        public MaxRetriesFailureHandler(int maxRetries, FailureHandler<T> failureHandler){
+            this.maxRetries = maxRetries;
+            this.failureHandler = failureHandler;
+        }
+
+        @Override
+        public void onFailure(final ExecutionComplete executionComplete, final ExecutionOperations<T> executionOperations) {
+            if(executionComplete.getExecution().consecutiveFailures >= maxRetries){
+                LOG.error("Max execution attempts exceeded, task instance {} will no longer be handled.", executionComplete.getExecution().taskInstance);
+                executionOperations.stop();
+            }else{
+                this.failureHandler.onFailure(executionComplete, executionOperations);
+            }
+        }
+    }
+
     // TODO: Failure handler with backoff: if (isFailing(.)) then nextTry = 2* duration_from_first_failure (minimum 1m, max 1d)
     class OnFailureRetryLater<T> implements FailureHandler<T> {
 
