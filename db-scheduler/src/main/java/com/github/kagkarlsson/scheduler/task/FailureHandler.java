@@ -22,9 +22,37 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 
+import static java.lang.Math.pow;
+import static java.lang.Math.round;
+
 public interface FailureHandler<T> {
 
     void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);
+
+    class ExponentialBackoffFailureHandler<T> implements FailureHandler<T> {
+        private static final Logger LOG = LoggerFactory.getLogger(ExponentialBackoffFailureHandler.class);
+        private static final double DEFAULT_MULTIPLIER = 1.5;
+        private final Duration sleepDuration;
+        private final double exponentialRate;
+
+        public ExponentialBackoffFailureHandler(Duration sleepDuration){
+            this.sleepDuration = sleepDuration;
+            this.exponentialRate = DEFAULT_MULTIPLIER;
+        }
+
+        public ExponentialBackoffFailureHandler(Duration sleepDuration, double exponentialRate){
+            this.sleepDuration = sleepDuration;
+            this.exponentialRate = exponentialRate;
+        }
+
+        @Override
+        public void onFailure(final ExecutionComplete executionComplete, final ExecutionOperations<T> executionOperations) {
+            long retryDurationMs = round(sleepDuration.toMillis() * pow(exponentialRate, executionComplete.getExecution().consecutiveFailures));
+            Instant nextTry = Instant.now().plusMillis(retryDurationMs);
+            LOG.debug("Execution failed. Retrying task {} at {}", executionComplete.getExecution().taskInstance, nextTry);
+            executionOperations.reschedule(executionComplete, nextTry);
+        }
+    }
 
     class MaxRetriesFailureHandler<T> implements FailureHandler<T> {
         private static final Logger LOG = LoggerFactory.getLogger(MaxRetriesFailureHandler.class);

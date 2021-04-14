@@ -16,6 +16,8 @@ import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.commons.lang3.time.DateUtils;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,6 +26,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,6 +34,7 @@ import java.util.concurrent.Executors;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.time.Duration.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 
@@ -194,6 +198,85 @@ public class SchedulerTest {
 
         //will always be maxRetries + 1 due to the first call always being required.
         assertThat(handler.timesExecuted.get(), is(maxRetries + 1));
+    }
+
+    @Test
+    public void should_reschedule_failure_on_exponential_backoff_with_default_rate() throws InterruptedException {
+        List<Instant> executionTimes = new ArrayList<>();
+
+        Duration expectedSleepDuration = ofMinutes(1);
+        OneTimeTask<Void> oneTimeTask = Tasks.oneTime("exponential-defaults-task")
+            .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration))
+            .execute((inst, ctx) -> {
+                executionTimes.add(ctx.getExecution().executionTime);
+                if(executionTimes.size() < 10){
+                    throw new RuntimeException("Failed!");
+                }
+            });
+
+        Scheduler scheduler = schedulerFor(oneTimeTask);
+
+        Instant firstExecution = clock.now();
+        scheduler.schedule(oneTimeTask.instance("1"), firstExecution);
+        scheduler.executeDue();
+
+        //Simulate 15 minutes worth of time to validate we did not process more than we should
+        for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 15; minuteWorthOfTime ++) {
+            clock.set(clock.now().plus(ofMinutes(minuteWorthOfTime)));
+            scheduler.executeDue();
+        }
+
+        assertThat(executionTimes.size(), is(10));
+        //Skip first execution of this b/c it was not using the exponential backoff but the first attempted call before failure
+        for (int i = 1, executionTimesSize = executionTimes.size(); i < executionTimesSize; i++) {
+            final Instant executionTime = executionTimes.get(i);
+            long retryDurationMs = Math.round(expectedSleepDuration.toMillis() * Math.pow(1.5, i - 1));
+
+            Duration scheduleTimeDifferenceFromFirstCall = between(firstExecution, executionTime);
+            Duration actualExponentialBackoffDuration = ofMillis(retryDurationMs);
+            assertThat(scheduleTimeDifferenceFromFirstCall.getSeconds(), greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
+            assertThat(scheduleTimeDifferenceFromFirstCall.getSeconds(), is(actualExponentialBackoffDuration.getSeconds()));
+        }
+    }
+
+    @Test
+    public void should_reschedule_failure_on_exponential_backoff_with_defined_rate() throws InterruptedException {
+        double customRate = RandomUtils.nextDouble(1.1, 1.5);
+        List<Instant> executionTimes = new ArrayList<>();
+
+        Duration expectedSleepDuration = ofMinutes(1);
+        OneTimeTask<Void> oneTimeTask = Tasks.oneTime("exponential-custom-rate-task")
+            .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration, customRate))
+            .execute((inst, ctx) -> {
+                executionTimes.add(ctx.getExecution().executionTime);
+                if(executionTimes.size() < 10){
+                    throw new RuntimeException("Failed!");
+                }
+            });
+
+        Scheduler scheduler = schedulerFor(oneTimeTask);
+
+        Instant firstExecution = clock.now();
+        scheduler.schedule(oneTimeTask.instance("1"), firstExecution);
+        scheduler.executeDue();
+
+        //Simulate 15 minutes worth of time to validate we did not process more than we should
+        for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 15; minuteWorthOfTime ++) {
+            clock.set(clock.now().plus(ofMinutes(minuteWorthOfTime)));
+            scheduler.executeDue();
+        }
+
+        assertThat(executionTimes.size(), is(10));
+        //Skip first execution of this b/c it was not using the exponential backoff but the first attempted call before failure
+        for (int i = 1, executionTimesSize = executionTimes.size(); i < executionTimesSize; i++) {
+            final Instant executionTime = executionTimes.get(i);
+            long retryDurationMs = Math.round(expectedSleepDuration.toMillis() * Math.pow(customRate, i - 1));
+
+            Duration scheduleTimeDifferenceFromFirstCall = between(firstExecution, executionTime);
+            Duration actualExponentialBackoffDuration = ofMillis(retryDurationMs);
+            assertThat(scheduleTimeDifferenceFromFirstCall.getSeconds(), greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
+            assertThat(scheduleTimeDifferenceFromFirstCall.getSeconds(), is(actualExponentialBackoffDuration.getSeconds()));
+        }
     }
 
 }
