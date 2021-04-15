@@ -66,8 +66,9 @@ public interface FailureHandler<T> {
 
         @Override
         public void onFailure(final ExecutionComplete executionComplete, final ExecutionOperations<T> executionOperations) {
-            if(executionComplete.getExecution().consecutiveFailures >= maxRetries){
-                LOG.error("Max execution attempts exceeded, task instance {} will no longer be handled.", executionComplete.getExecution().taskInstance);
+            int consecutiveFailures = executionComplete.getExecution().consecutiveFailures;
+            if(consecutiveFailures >= maxRetries){
+                LOG.error("Execution has failed {} times for task instance {}. Cancelling execution.", consecutiveFailures, executionComplete.getExecution().taskInstance);
                 executionOperations.stop();
             }else{
                 this.failureHandler.onFailure(executionComplete, executionOperations);
