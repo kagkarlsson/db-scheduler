@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ public class ScheduledExecutionTest {
 
     @Test
     public void test_data_class_type_not_equals() {
-        assertThrows(ScheduledExecution.DataClassMismatchException.class, () -> {
+        assertThrows(DataClassMismatchException.class, () -> {
 
             Instant now = Instant.now();
             OneTimeTask<Integer> task = TestTasks.oneTime("OneTime", Integer.class, (instance, executionContext) -> {});

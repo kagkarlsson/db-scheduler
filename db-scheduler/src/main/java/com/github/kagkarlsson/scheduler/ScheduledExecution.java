@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 package com.github.kagkarlsson.scheduler;
+import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
 import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Instant;
 import java.util.Objects;
@@ -73,7 +73,5 @@ public class ScheduledExecution<DATA_TYPE> {
     @Override
     public int hashCode() {
         return Objects.hash(execution);
-    }
-    public static class DataClassMismatchException extends RuntimeException {
     }
 }
