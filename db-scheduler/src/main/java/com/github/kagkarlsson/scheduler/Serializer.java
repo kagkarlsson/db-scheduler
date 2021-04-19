@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import org.apache.commons.lang3.SerializationException;
+
 import java.io.*;
 
 public interface Serializer {
@@ -33,7 +35,7 @@ public interface Serializer {
                 out.writeObject(data);
                 return bos.toByteArray();
             } catch (Exception e) {
-                throw new RuntimeException("Failed to serialize object", e);
+                throw new SerializationException("Failed to serialize object", e);
             }
         }
 
@@ -44,7 +46,7 @@ public interface Serializer {
                  ObjectInput in = new ObjectInputStream(bis)) {
                 return clazz.cast(in.readObject());
             } catch (Exception e) {
-                throw new RuntimeException("Failed to deserialize object", e);
+                throw new SerializationException("Failed to deserialize object", e);
             }
         }
     };
