@@ -77,7 +77,7 @@ public class JdbcTaskRepositoryExceptionsTest {
         TaskException actualException = assertThrows(TaskException.class, () -> {
             jdbcTaskRepository.getExecution(expectedTaskInstance);
         });
-        assertEquals("Found more than one matching execution for task name/id combination.(task name: " + expectedTaskInstance.getTaskName() + ", instance id: " + expectedTaskInstance.getId() + ")",
+        assertEquals("Found more than one matching execution for task name/id combination. (task name: " + expectedTaskInstance.getTaskName() + ", instance id: " + expectedTaskInstance.getId() + ")",
             actualException.getMessage());
     }
 
@@ -92,7 +92,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             jdbcTaskRepository.remove(new Execution(Instant.now(), taskInstance));
         });
         assertEquals(
-            "Expected one execution to be removed, but removed " + removalCount + ". Indicates a bug.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            "Expected one execution to be removed, but removed " + removalCount + ". Indicates a bug. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
             actualException.getMessage());
     }
 
@@ -125,7 +125,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             );
         });
         assertEquals(
-            "Expected one execution to be updated, but updated " + updateCount + ". Indicates a bug.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            "Expected one execution to be updated, but updated " + updateCount + ". Indicates a bug. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
             actualException.getMessage());
     }
 
@@ -160,7 +160,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             );
         });
         assertEquals(
-            "Expected one execution to be updated, but updated " + updateCount + ". Indicates a bug.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            "Expected one execution to be updated, but updated " + updateCount + ". Indicates a bug. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
             actualException.getMessage());
     }
 

@@ -28,7 +28,7 @@ public class TaskException extends DbSchedulerException {
     }
 
     public TaskException(String message, String taskName, String instanceId){
-        super(message + String.format("(task name: %s, instance id: %s)", taskName, instanceId));
+        super(message + String.format(" (task name: %s, instance id: %s)", taskName, instanceId));
         this.taskName = taskName;
         this.instanceId = instanceId;
     }

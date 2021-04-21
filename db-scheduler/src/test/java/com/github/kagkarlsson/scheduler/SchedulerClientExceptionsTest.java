@@ -37,7 +37,7 @@ public class SchedulerClientExceptionsTest {
         TaskInstanceNotFoundException actualException = assertThrows(TaskInstanceNotFoundException.class, () -> {
             schedulerClient.reschedule(taskInstance, Instant.now(), null);
         });
-        assertEquals("Failed to perform action on task because it was not found.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+        assertEquals("Failed to perform action on task because it was not found. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
             actualException.getMessage());
     }
 
@@ -61,7 +61,7 @@ public class SchedulerClientExceptionsTest {
         TaskInstanceCurrentlyRunningException actualException = assertThrows(TaskInstanceCurrentlyRunningException.class, () -> {
             schedulerClient.reschedule(taskInstance, Instant.now(), null);
         });
-        assertEquals("Failed to perform action on task since it's currently running.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+        assertEquals("Failed to perform action on task since it's currently running. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
             actualException.getMessage());
     }
 
@@ -73,7 +73,7 @@ public class SchedulerClientExceptionsTest {
         TaskInstanceNotFoundException actualException = assertThrows(TaskInstanceNotFoundException.class, () -> {
             schedulerClient.cancel(taskInstance);
         });
-        assertEquals("Failed to perform action on task because it was not found.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+        assertEquals("Failed to perform action on task because it was not found. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
             actualException.getMessage());
     }
 
@@ -97,7 +97,7 @@ public class SchedulerClientExceptionsTest {
         TaskInstanceCurrentlyRunningException actualException = assertThrows(TaskInstanceCurrentlyRunningException.class, () -> {
             schedulerClient.cancel(taskInstance);
         });
-        assertEquals("Failed to perform action on task since it's currently running.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+        assertEquals("Failed to perform action on task since it's currently running. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
             actualException.getMessage());
     }
 }
