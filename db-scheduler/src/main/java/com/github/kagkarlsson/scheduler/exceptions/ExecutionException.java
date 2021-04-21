@@ -19,19 +19,19 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 
 public class ExecutionException extends TaskException {
     private static final long serialVersionUID = -4732028463501966553L;
-    private Execution execution;
+    private final long version;
 
     public ExecutionException(String message, Execution execution){
         super(message, execution.taskInstance.getTaskName(), execution.taskInstance.getId());
-        this.execution = execution;
+        this.version = execution.version;
     }
 
     public ExecutionException(String message, Execution execution, Exception ex){
         super(message, execution.taskInstance.getTaskName(), execution.taskInstance.getId(), ex);
-        this.execution = execution;
+        this.version = execution.version;
     }
 
-    public Execution getExecution() {
-        return execution;
+    public long getVersion() {
+        return version;
     }
 }

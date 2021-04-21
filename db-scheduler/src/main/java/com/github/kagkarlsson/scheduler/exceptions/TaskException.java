@@ -18,8 +18,8 @@ package com.github.kagkarlsson.scheduler.exceptions;
 public class TaskException extends DbSchedulerException {
     static final long serialVersionUID = -2132850112553296790L;
 
-    private String taskName;
-    private String instanceId;
+    private final String taskName;
+    private final String instanceId;
 
     public TaskException(String message, String taskName, String instanceId, Exception ex){
         super(message, ex);
