@@ -15,8 +15,9 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
-public class TaskInstanceNotFoundException extends RuntimeException{
-    public TaskInstanceNotFoundException(String message){
-        super(message);
+public class TaskInstanceNotFoundException extends TaskException{
+    private static final long serialVersionUID = -3604591431614052358L;
+    public TaskInstanceNotFoundException(String taskName, String instanceId){
+        super("Failed to perform action on task because it was not found.", taskName, instanceId);
     }
 }

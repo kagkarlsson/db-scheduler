@@ -1,12 +1,10 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.jdbc.*;
-import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
-import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.google.common.collect.Lists;
-import org.apache.commons.lang3.RandomUtils;
+import java.lang.reflect.Field;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,14 +15,19 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.lang.reflect.Field;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
+import com.github.kagkarlsson.jdbc.JdbcRunner;
+import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
+import com.github.kagkarlsson.jdbc.ResultSetMapper;
+import com.github.kagkarlsson.jdbc.SQLRuntimeException;
+import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskException;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.google.common.collect.Lists;
 
-import static java.util.Collections.*;
-import static org.apache.commons.lang3.RandomStringUtils.*;
+import static java.util.Collections.emptyList;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,10 +74,11 @@ public class JdbcTaskRepositoryExceptionsTest {
         when(mockJdbcRunner.query(ArgumentMatchers.eq("select * from " + expectedTableName + " where task_name = ? and task_instance = ?"), any(PreparedStatementSetter.class), (ResultSetMapper<List<Execution>>) any(ResultSetMapper.class)))
             .thenReturn(Lists.newArrayList(new Execution(Instant.now(), expectedTaskInstance), new Execution(Instant.now(), expectedTaskInstance)));
 
-        ExecutionException actualException = assertThrows(ExecutionException.class, () -> {
+        TaskException actualException = assertThrows(TaskException.class, () -> {
             jdbcTaskRepository.getExecution(expectedTaskInstance);
         });
-        assertEquals("Found more than one matching execution for task name/id combination: '" + expectedTaskInstance.getTaskName() + "'/'" + expectedTaskInstance.getId() + "'", actualException.getMessage());
+        assertEquals("Found more than one matching execution for task name/id combination.(task name: " + expectedTaskInstance.getTaskName() + ", instance id: " + expectedTaskInstance.getId() + ")",
+            actualException.getMessage());
     }
 
     @ParameterizedTest(name = "Remove ends up removing {0} records")
@@ -83,10 +87,13 @@ public class JdbcTaskRepositoryExceptionsTest {
         when(mockJdbcRunner.execute(ArgumentMatchers.eq("delete from " + expectedTableName + " where task_name = ? and task_instance = ? and version = ?"), any(PreparedStatementSetter.class)))
             .thenReturn(removalCount);
 
+        TaskInstance taskInstance = new TaskInstance(randomAlphanumeric(10), randomAlphanumeric(10));
         ExecutionException actualException = assertThrows(ExecutionException.class, () -> {
-            jdbcTaskRepository.remove(new Execution(Instant.now(), new TaskInstance(randomAlphanumeric(10), randomAlphanumeric(10))));
+            jdbcTaskRepository.remove(new Execution(Instant.now(), taskInstance));
         });
-        assertEquals("Expected one execution to be removed, but removed " + removalCount + ". Indicates a bug.", actualException.getMessage());
+        assertEquals(
+            "Expected one execution to be removed, but removed " + removalCount + ". Indicates a bug.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            actualException.getMessage());
     }
 
     @ParameterizedTest(name = "Reschedule without new data ends up modifying {0} records")
@@ -107,16 +114,19 @@ public class JdbcTaskRepositoryExceptionsTest {
             any(PreparedStatementSetter.class)))
             .thenReturn(updateCount);
 
+        TaskInstance taskInstance = new TaskInstance(randomAlphanumeric(10), randomAlphanumeric(10));
         ExecutionException actualException = assertThrows(ExecutionException.class, () -> {
             jdbcTaskRepository.reschedule(
-                new Execution(Instant.now(), new TaskInstance(randomAlphanumeric(10), randomAlphanumeric(10))),
+                new Execution(Instant.now(), taskInstance),
                 Instant.now(),
                 null,
                 null,
                 0
             );
         });
-        assertEquals("Expected one execution to be updated, but updated " + updateCount + ". Indicates a bug.", actualException.getMessage());
+        assertEquals(
+            "Expected one execution to be updated, but updated " + updateCount + ". Indicates a bug.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            actualException.getMessage());
     }
 
     @ParameterizedTest(name = "Reschedule with new data ends up modifying {0} records")
@@ -138,9 +148,10 @@ public class JdbcTaskRepositoryExceptionsTest {
             any(PreparedStatementSetter.class)))
             .thenReturn(updateCount);
 
+        TaskInstance taskInstance = new TaskInstance(randomAlphanumeric(10), randomAlphanumeric(10));
         ExecutionException actualException = assertThrows(ExecutionException.class, () -> {
             jdbcTaskRepository.reschedule(
-                new Execution(Instant.now(), new TaskInstance(randomAlphanumeric(10), randomAlphanumeric(10))),
+                new Execution(Instant.now(), taskInstance),
                 Instant.now(),
                 new HashMap(),
                 null,
@@ -148,7 +159,9 @@ public class JdbcTaskRepositoryExceptionsTest {
                 0
             );
         });
-        assertEquals("Expected one execution to be updated, but updated " + updateCount + ". Indicates a bug.", actualException.getMessage());
+        assertEquals(
+            "Expected one execution to be updated, but updated " + updateCount + ". Indicates a bug.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            actualException.getMessage());
     }
 
 }

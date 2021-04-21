@@ -15,11 +15,23 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
-public class ExecutionException extends RuntimeException {
-    public ExecutionException(String message){
-        super(message);
+import com.github.kagkarlsson.scheduler.task.Execution;
+
+public class ExecutionException extends TaskException {
+    private static final long serialVersionUID = -4732028463501966553L;
+    private Execution execution;
+
+    public ExecutionException(String message, Execution execution){
+        super(message, execution.taskInstance.getTaskName(), execution.taskInstance.getId());
+        this.execution = execution;
     }
-    public ExecutionException(String message, Exception e){
-        super(message, e);
+
+    public ExecutionException(String message, Execution execution, Exception ex){
+        super(message, execution.taskInstance.getTaskName(), execution.taskInstance.getId(), ex);
+        this.execution = execution;
+    }
+
+    public Execution getExecution() {
+        return execution;
     }
 }

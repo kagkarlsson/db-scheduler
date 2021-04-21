@@ -1,17 +1,18 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyRunningException;
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import java.time.Instant;
+import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.Optional;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyRunningException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
 import static com.github.kagkarlsson.scheduler.task.TaskInstanceId.StandardTaskInstanceId;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
@@ -30,21 +31,22 @@ public class SchedulerClientExceptionsTest {
 
     @Test
     public void failsToRescheduleWhenTaskIsNotFound() {
-        StandardTaskInstanceId taskId = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
-        when(taskRepository.getExecution(taskId.getTaskName(), taskId.getId())).thenReturn(Optional.empty());
+        StandardTaskInstanceId taskInstance = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
+        when(taskRepository.getExecution(taskInstance.getTaskName(), taskInstance.getId())).thenReturn(Optional.empty());
 
         TaskInstanceNotFoundException actualException = assertThrows(TaskInstanceNotFoundException.class, () -> {
-            schedulerClient.reschedule(taskId, Instant.now(), null);
+            schedulerClient.reschedule(taskInstance, Instant.now(), null);
         });
-        assertEquals("Could not reschedule - no task with name '" + taskId.getTaskName() + "' and id '" + taskId.getId() + "' was found.", actualException.getMessage());
+        assertEquals("Failed to perform action on task because it was not found.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            actualException.getMessage());
     }
 
     @Test
     public void failsToRescheduleWhenATaskIsPickedAndExecuting() {
-        StandardTaskInstanceId taskId = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
+        StandardTaskInstanceId taskInstance = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
         Execution expectedExecution = new Execution(
             Instant.now(),
-            new TaskInstance(taskId.getTaskName(), taskId.getId()),
+            new TaskInstance(taskInstance.getTaskName(), taskInstance.getId()),
             true,
             randomAlphanumeric(5),
             null,
@@ -54,31 +56,33 @@ public class SchedulerClientExceptionsTest {
             1
         );
 
-        when(taskRepository.getExecution(taskId.getTaskName(), taskId.getId())).thenReturn(Optional.of(expectedExecution));
+        when(taskRepository.getExecution(taskInstance.getTaskName(), taskInstance.getId())).thenReturn(Optional.of(expectedExecution));
 
         TaskInstanceCurrentlyRunningException actualException = assertThrows(TaskInstanceCurrentlyRunningException.class, () -> {
-            schedulerClient.reschedule(taskId, Instant.now(), null);
+            schedulerClient.reschedule(taskInstance, Instant.now(), null);
         });
-        assertEquals("Could not reschedule, the execution with name '" + taskId.getTaskName() + "' and id '" + taskId.getId() + "' is currently executing", actualException.getMessage());
+        assertEquals("Failed to perform action on task since it's currently running.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            actualException.getMessage());
     }
 
     @Test
     public void failsToCancelWhenTaskIsNotFound() {
-        StandardTaskInstanceId taskId = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
-        when(taskRepository.getExecution(taskId.getTaskName(), taskId.getId())).thenReturn(Optional.empty());
+        StandardTaskInstanceId taskInstance = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
+        when(taskRepository.getExecution(taskInstance.getTaskName(), taskInstance.getId())).thenReturn(Optional.empty());
 
         TaskInstanceNotFoundException actualException = assertThrows(TaskInstanceNotFoundException.class, () -> {
-            schedulerClient.cancel(taskId);
+            schedulerClient.cancel(taskInstance);
         });
-        assertEquals("Could not cancel schedule - no task with name '" + taskId.getTaskName() + "' and id '" + taskId.getId() + "' was found.", actualException.getMessage());
+        assertEquals("Failed to perform action on task because it was not found.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            actualException.getMessage());
     }
 
     @Test
     public void failsToCancelWhenATaskIsPickedAndExecuting() {
-        StandardTaskInstanceId taskId = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
+        StandardTaskInstanceId taskInstance = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
         Execution expectedExecution = new Execution(
             Instant.now(),
-            new TaskInstance(taskId.getTaskName(), taskId.getId()),
+            new TaskInstance(taskInstance.getTaskName(), taskInstance.getId()),
             true,
             randomAlphanumeric(5),
             null,
@@ -88,11 +92,12 @@ public class SchedulerClientExceptionsTest {
             1
         );
 
-        when(taskRepository.getExecution(taskId.getTaskName(), taskId.getId())).thenReturn(Optional.of(expectedExecution));
+        when(taskRepository.getExecution(taskInstance.getTaskName(), taskInstance.getId())).thenReturn(Optional.of(expectedExecution));
 
         TaskInstanceCurrentlyRunningException actualException = assertThrows(TaskInstanceCurrentlyRunningException.class, () -> {
-            schedulerClient.cancel(taskId);
+            schedulerClient.cancel(taskInstance);
         });
-        assertEquals("Could not cancel schedule, the execution with name '" + taskId.getTaskName() + "' and id '" + taskId.getId() + "' is currently executing", actualException.getMessage());
+        assertEquals("Failed to perform action on task since it's currently running.(task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            actualException.getMessage());
     }
 }

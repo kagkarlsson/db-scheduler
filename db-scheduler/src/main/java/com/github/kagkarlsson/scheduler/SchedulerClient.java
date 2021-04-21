@@ -240,7 +240,7 @@ public interface SchedulerClient {
             Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
             if (execution.isPresent()) {
                 if (execution.get().isPicked()) {
-                    throw new TaskInstanceCurrentlyRunningException(String.format("Could not reschedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
+                    throw new TaskInstanceCurrentlyRunningException(taskName, instanceId);
                 }
 
                 boolean success;
@@ -254,7 +254,7 @@ public interface SchedulerClient {
                     notifyListeners(ClientEvent.EventType.RESCHEDULE, taskInstanceId, newExecutionTime);
                 }
             } else {
-                throw new TaskInstanceNotFoundException(String.format("Could not reschedule - no task with name '%s' and id '%s' was found.", taskName, instanceId));
+                throw new TaskInstanceNotFoundException(taskName, instanceId);
             }
         }
 
@@ -265,13 +265,13 @@ public interface SchedulerClient {
             Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
             if (execution.isPresent()) {
                 if (execution.get().isPicked()) {
-                    throw new TaskInstanceCurrentlyRunningException(String.format("Could not cancel schedule, the execution with name '%s' and id '%s' is currently executing", taskName, instanceId));
+                    throw new TaskInstanceCurrentlyRunningException(taskName, instanceId);
                 }
 
                 taskRepository.remove(execution.get());
                 notifyListeners(ClientEvent.EventType.CANCEL, taskInstanceId, execution.get().executionTime);
             } else {
-                throw new TaskInstanceNotFoundException(String.format("Could not cancel schedule - no task with name '%s' and id '%s' was found.", taskName, instanceId));
+                throw new TaskInstanceNotFoundException(taskName, instanceId);
             }
         }
 

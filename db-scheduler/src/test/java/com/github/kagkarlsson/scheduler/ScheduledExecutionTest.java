@@ -39,13 +39,16 @@ public class ScheduledExecutionTest {
 
     @Test
     public void test_data_class_type_not_equals() {
-        assertThrows(DataClassMismatchException.class, () -> {
+        DataClassMismatchException dataClassMismatchException = assertThrows(DataClassMismatchException.class, () -> {
 
             Instant now = Instant.now();
-            OneTimeTask<Integer> task = TestTasks.oneTime("OneTime", Integer.class, (instance, executionContext) -> {});
+            OneTimeTask<Integer> task = TestTasks.oneTime("OneTime", Integer.class, (instance, executionContext) -> {
+            });
             Execution execution = new Execution(now, task.instance("id1", new Integer(1))); // Data class is an integer
 
             new ScheduledExecution<>(String.class, execution).getData(); // Instantiate with incorrect type
         });
+
+        assertEquals("Task data mismatch. Expected class : class java.lang.String, actual : class java.lang.Integer", dataClassMismatchException.getMessage());
     }
 }

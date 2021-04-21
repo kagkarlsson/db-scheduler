@@ -40,7 +40,7 @@ public class ScheduledExecution<DATA_TYPE> {
         if (dataClass.isInstance(this.execution.taskInstance.getData())) {
             return (DATA_TYPE) this.execution.taskInstance.getData();
         }
-        throw new DataClassMismatchException();
+        throw new DataClassMismatchException(dataClass, this.execution.taskInstance.getData().getClass());
     }
 
     public Instant getLastSuccess() {

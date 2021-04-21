@@ -15,9 +15,9 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import org.apache.commons.lang3.SerializationException;
-
 import java.io.*;
+
+import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
 
 public interface Serializer {
 

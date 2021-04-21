@@ -15,10 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
-public class TaskInstanceCurrentlyRunningException extends TaskException{
-    private static final long serialVersionUID = 6016933189040296444L;
+public class SerializationException extends DbSchedulerException {
+    private static final long serialVersionUID = -5209721067354085350L;
 
-    public TaskInstanceCurrentlyRunningException(String taskName, String instanceId) {
-        super("Failed to perform action on task since it's currently running.", taskName, instanceId);
+    public SerializationException(String msg, Exception cause) {
+        super(msg, cause);
     }
 }

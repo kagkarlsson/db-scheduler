@@ -15,5 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
-public class DataClassMismatchException extends RuntimeException {
+public class DataClassMismatchException extends DbSchedulerException {
+    private static final long serialVersionUID = 6333316294241471977L;
+
+    public DataClassMismatchException(Class expectedClass, Class actualClass) {
+        super(String.format("Task data mismatch. Expected class : %s, actual : %s", expectedClass, actualClass));
+    }
 }
