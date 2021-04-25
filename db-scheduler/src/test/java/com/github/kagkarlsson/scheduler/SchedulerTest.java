@@ -192,7 +192,7 @@ public class SchedulerTest {
 
         //Simulate 15 minutes worth of time to validate we did not process more than we should
         for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 15; minuteWorthOfTime ++) {
-            clock.set(clock.now().plus(ofMinutes(minuteWorthOfTime)));
+            clock.set(clock.now().plus(ofMinutes(1)));
             scheduler.executeDue();
         }
 
@@ -220,9 +220,9 @@ public class SchedulerTest {
         scheduler.schedule(oneTimeTask.instance("1"), firstExecution);
         scheduler.executeDue();
 
-        //Simulate 15 minutes worth of time to validate we did not process more than we should
-        for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 15; minuteWorthOfTime ++) {
-            clock.set(clock.now().plus(ofMinutes(minuteWorthOfTime)));
+        //Simulate 30 minutes worth of time to validate we did not process more than we should
+        for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 30; minuteWorthOfTime ++) {
+            clock.set(clock.now().plus(ofMinutes(1)));
             scheduler.executeDue();
         }
 
@@ -262,7 +262,7 @@ public class SchedulerTest {
 
         //Simulate 15 minutes worth of time to validate we did not process more than we should
         for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 15; minuteWorthOfTime ++) {
-            clock.set(clock.now().plus(ofMinutes(minuteWorthOfTime)));
+            clock.set(clock.now().plus(ofMinutes(1)));
             scheduler.executeDue();
         }
 
