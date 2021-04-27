@@ -9,7 +9,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyRunningException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -58,7 +58,7 @@ public class SchedulerClientExceptionsTest {
 
         when(taskRepository.getExecution(taskInstance.getTaskName(), taskInstance.getId())).thenReturn(Optional.of(expectedExecution));
 
-        TaskInstanceCurrentlyRunningException actualException = assertThrows(TaskInstanceCurrentlyRunningException.class, () -> {
+        TaskInstanceCurrentlyExecutingException actualException = assertThrows(TaskInstanceCurrentlyExecutingException.class, () -> {
             schedulerClient.reschedule(taskInstance, Instant.now(), null);
         });
         assertEquals("Failed to perform action on task since it's currently running. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
@@ -94,7 +94,7 @@ public class SchedulerClientExceptionsTest {
 
         when(taskRepository.getExecution(taskInstance.getTaskName(), taskInstance.getId())).thenReturn(Optional.of(expectedExecution));
 
-        TaskInstanceCurrentlyRunningException actualException = assertThrows(TaskInstanceCurrentlyRunningException.class, () -> {
+        TaskInstanceCurrentlyExecutingException actualException = assertThrows(TaskInstanceCurrentlyExecutingException.class, () -> {
             schedulerClient.cancel(taskInstance);
         });
         assertEquals("Failed to perform action on task since it's currently running. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",

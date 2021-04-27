@@ -16,7 +16,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyRunningException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
@@ -240,7 +240,7 @@ public interface SchedulerClient {
             Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
             if (execution.isPresent()) {
                 if (execution.get().isPicked()) {
-                    throw new TaskInstanceCurrentlyRunningException(taskName, instanceId);
+                    throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
                 }
 
                 boolean success;
@@ -265,7 +265,7 @@ public interface SchedulerClient {
             Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
             if (execution.isPresent()) {
                 if (execution.get().isPicked()) {
-                    throw new TaskInstanceCurrentlyRunningException(taskName, instanceId);
+                    throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
                 }
 
                 taskRepository.remove(execution.get());
