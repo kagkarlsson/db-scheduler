@@ -71,10 +71,14 @@ public class JdbcTaskRepository implements TaskRepository {
     }
 
     public JdbcTaskRepository(DataSource dataSource, boolean commitWhenAutocommitDisabled, JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer) {
+        this(jdbcCustomization, tableName, taskResolver, schedulerSchedulerName, serializer, new JdbcRunner(dataSource, commitWhenAutocommitDisabled));
+    }
+
+    protected JdbcTaskRepository(JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer, JdbcRunner jdbcRunner) {
         this.tableName = tableName;
         this.taskResolver = taskResolver;
         this.schedulerSchedulerName = schedulerSchedulerName;
-        this.jdbcRunner = new JdbcRunner(dataSource, commitWhenAutocommitDisabled);
+        this.jdbcRunner = jdbcRunner;
         this.serializer = serializer;
         this.jdbcCustomization = jdbcCustomization;
     }

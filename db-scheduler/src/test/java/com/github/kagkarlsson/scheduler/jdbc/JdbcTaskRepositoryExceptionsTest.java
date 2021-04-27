@@ -1,10 +1,11 @@
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.jdbc;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,11 +46,7 @@ public class JdbcTaskRepositoryExceptionsTest {
     @BeforeEach
     public void setup() throws NoSuchFieldException, IllegalAccessException {
         expectedTableName = randomAlphanumeric(5);
-        jdbcTaskRepository = new JdbcTaskRepository(null, true, null, expectedTableName, null, null);
-
-        Field jdbcRunnerField = JdbcTaskRepository.class.getDeclaredField("jdbcRunner");
-        ReflectionUtils.makeAccessible(jdbcRunnerField);
-        jdbcRunnerField.set(jdbcTaskRepository, mockJdbcRunner);
+        jdbcTaskRepository = new JdbcTaskRepository(   null,  expectedTableName, null, null, null, mockJdbcRunner);
     }
 
     @Test
