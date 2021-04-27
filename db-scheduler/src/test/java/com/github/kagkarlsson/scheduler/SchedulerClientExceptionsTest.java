@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import java.time.Instant;
 import java.util.Optional;
 
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -44,17 +45,7 @@ public class SchedulerClientExceptionsTest {
     @Test
     public void failsToRescheduleWhenATaskIsPickedAndExecuting() {
         StandardTaskInstanceId taskInstance = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
-        Execution expectedExecution = new Execution(
-            Instant.now(),
-            new TaskInstance(taskInstance.getTaskName(), taskInstance.getId()),
-            true,
-            randomAlphanumeric(5),
-            null,
-            null,
-            0,
-            null,
-            1
-        );
+        Execution expectedExecution = createExecutingExecution(taskInstance);
 
         when(taskRepository.getExecution(taskInstance.getTaskName(), taskInstance.getId())).thenReturn(Optional.of(expectedExecution));
 
@@ -80,7 +71,19 @@ public class SchedulerClientExceptionsTest {
     @Test
     public void failsToCancelWhenATaskIsPickedAndExecuting() {
         StandardTaskInstanceId taskInstance = new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
-        Execution expectedExecution = new Execution(
+        Execution expectedExecution = createExecutingExecution(taskInstance);
+
+        when(taskRepository.getExecution(taskInstance.getTaskName(), taskInstance.getId())).thenReturn(Optional.of(expectedExecution));
+
+        TaskInstanceCurrentlyExecutingException actualException = assertThrows(TaskInstanceCurrentlyExecutingException.class, () -> {
+            schedulerClient.cancel(taskInstance);
+        });
+        assertEquals("Failed to perform action on task since it's currently running. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+            actualException.getMessage());
+    }
+
+    private Execution createExecutingExecution(StandardTaskInstanceId taskInstance) {
+        return new Execution(
             Instant.now(),
             new TaskInstance(taskInstance.getTaskName(), taskInstance.getId()),
             true,
@@ -91,13 +94,5 @@ public class SchedulerClientExceptionsTest {
             null,
             1
         );
-
-        when(taskRepository.getExecution(taskInstance.getTaskName(), taskInstance.getId())).thenReturn(Optional.of(expectedExecution));
-
-        TaskInstanceCurrentlyExecutingException actualException = assertThrows(TaskInstanceCurrentlyExecutingException.class, () -> {
-            schedulerClient.cancel(taskInstance);
-        });
-        assertEquals("Failed to perform action on task since it's currently running. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
-            actualException.getMessage());
     }
 }
