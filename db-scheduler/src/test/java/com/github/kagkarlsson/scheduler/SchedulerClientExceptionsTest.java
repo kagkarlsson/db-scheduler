@@ -52,7 +52,7 @@ public class SchedulerClientExceptionsTest {
         TaskInstanceCurrentlyExecutingException actualException = assertThrows(TaskInstanceCurrentlyExecutingException.class, () -> {
             schedulerClient.reschedule(taskInstance, Instant.now(), null);
         });
-        assertEquals("Failed to perform action on task since it's currently running. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+        assertEquals("Cannot use SchedulerClient to modify a task-instance that is currently executing. If this occurs often, consider only modifying executions not picked that has the next execution-time a certain time into the future. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
             actualException.getMessage());
     }
 
@@ -78,7 +78,7 @@ public class SchedulerClientExceptionsTest {
         TaskInstanceCurrentlyExecutingException actualException = assertThrows(TaskInstanceCurrentlyExecutingException.class, () -> {
             schedulerClient.cancel(taskInstance);
         });
-        assertEquals("Failed to perform action on task since it's currently running. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
+        assertEquals("Cannot use SchedulerClient to modify a task-instance that is currently executing. If this occurs often, consider only modifying executions not picked that has the next execution-time a certain time into the future. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")",
             actualException.getMessage());
     }
 
