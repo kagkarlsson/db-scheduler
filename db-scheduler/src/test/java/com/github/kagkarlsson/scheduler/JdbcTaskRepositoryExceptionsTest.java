@@ -4,7 +4,6 @@ import java.lang.reflect.Field;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Random;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,7 @@ import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
-import com.github.kagkarlsson.scheduler.exceptions.TaskException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -79,7 +78,7 @@ public class JdbcTaskRepositoryExceptionsTest {
         when(mockJdbcRunner.query(ArgumentMatchers.eq("select * from " + expectedTableName + " where task_name = ? and task_instance = ?"), any(PreparedStatementSetter.class), (ResultSetMapper<List<Execution>>) any(ResultSetMapper.class)))
             .thenReturn(Lists.newArrayList(new Execution(Instant.now(), expectedTaskInstance), new Execution(Instant.now(), expectedTaskInstance)));
 
-        TaskException actualException = assertThrows(TaskException.class, () -> {
+        TaskInstanceException actualException = assertThrows(TaskInstanceException.class, () -> {
             jdbcTaskRepository.getExecution(expectedTaskInstance);
         });
         assertEquals("Found more than one matching execution for task name/id combination. (task name: " + expectedTaskInstance.getTaskName() + ", instance id: " + expectedTaskInstance.getId() + ")",

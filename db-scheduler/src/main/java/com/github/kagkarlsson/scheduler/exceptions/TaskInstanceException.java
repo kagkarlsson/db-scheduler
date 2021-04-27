@@ -15,19 +15,19 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
-public class TaskException extends DbSchedulerException {
+public class TaskInstanceException extends DbSchedulerException {
     static final long serialVersionUID = -2132850112553296790L;
 
     private final String taskName;
     private final String instanceId;
 
-    public TaskException(String message, String taskName, String instanceId, Throwable ex){
+    public TaskInstanceException(String message, String taskName, String instanceId, Throwable ex){
         super(message, ex);
         this.taskName = taskName;
         this.instanceId = instanceId;
     }
 
-    public TaskException(String message, String taskName, String instanceId){
+    public TaskInstanceException(String message, String taskName, String instanceId){
         super(message + String.format(" (task name: %s, instance id: %s)", taskName, instanceId));
         this.taskName = taskName;
         this.instanceId = instanceId;

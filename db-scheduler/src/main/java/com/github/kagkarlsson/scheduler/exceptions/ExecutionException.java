@@ -17,7 +17,7 @@ package com.github.kagkarlsson.scheduler.exceptions;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
 
-public class ExecutionException extends TaskException {
+public class ExecutionException extends TaskInstanceException {
     private static final long serialVersionUID = -4732028463501966553L;
     private final long version;
 

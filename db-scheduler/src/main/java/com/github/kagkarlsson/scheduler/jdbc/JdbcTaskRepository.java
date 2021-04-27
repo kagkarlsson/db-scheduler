@@ -25,7 +25,7 @@ import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
-import com.github.kagkarlsson.scheduler.exceptions.TaskException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -330,7 +330,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 new ExecutionResultSetMapper()
         );
         if (executions.size() > 1) {
-            throw new TaskException("Found more than one matching execution for task name/id combination.", taskName, taskInstanceId);
+            throw new TaskInstanceException("Found more than one matching execution for task name/id combination.", taskName, taskInstanceId);
         }
 
         return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.empty();

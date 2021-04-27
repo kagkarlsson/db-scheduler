@@ -15,7 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
-public class TaskInstanceCurrentlyRunningException extends TaskException{
+public class TaskInstanceCurrentlyRunningException extends TaskInstanceException {
     private static final long serialVersionUID = 6016933189040296444L;
 
     public TaskInstanceCurrentlyRunningException(String taskName, String instanceId) {
