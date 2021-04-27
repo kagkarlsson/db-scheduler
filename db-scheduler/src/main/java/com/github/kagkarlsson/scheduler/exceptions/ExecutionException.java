@@ -26,7 +26,7 @@ public class ExecutionException extends TaskException {
         this.version = execution.version;
     }
 
-    public ExecutionException(String message, Execution execution, Exception ex){
+    public ExecutionException(String message, Execution execution, Throwable ex){
         super(message, execution.taskInstance.getTaskName(), execution.taskInstance.getId(), ex);
         this.version = execution.version;
     }

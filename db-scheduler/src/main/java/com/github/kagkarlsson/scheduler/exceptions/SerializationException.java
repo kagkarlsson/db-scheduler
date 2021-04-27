@@ -18,7 +18,7 @@ package com.github.kagkarlsson.scheduler.exceptions;
 public class SerializationException extends DbSchedulerException {
     private static final long serialVersionUID = -5209721067354085350L;
 
-    public SerializationException(String msg, Exception cause) {
+    public SerializationException(String msg, Throwable cause) {
         super(msg, cause);
     }
 }

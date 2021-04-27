@@ -22,7 +22,7 @@ public abstract class DbSchedulerException extends RuntimeException {
         super(message);
     }
 
-    public DbSchedulerException(String message, Exception e){
+    public DbSchedulerException(String message, Throwable e){
         super(message, e);
     }
 }
