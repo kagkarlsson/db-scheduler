@@ -57,11 +57,12 @@ public class JdbcTaskRepositoryExceptionsTest {
         when(mockJdbcRunner.execute(ArgumentMatchers.eq("insert into " + expectedTableName + "(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)"), any(PreparedStatementSetter.class)))
             .thenThrow(rootCause);
 
-        Execution execution = new Execution(Instant.now(), new TaskInstance(randomAlphanumeric(10), randomAlphanumeric(10)));
+        TaskInstance taskInstance = new TaskInstance(randomAlphanumeric(10), randomAlphanumeric(10));
+        Execution execution = new Execution(Instant.now(), taskInstance);
         ExecutionException actualException = assertThrows(ExecutionException.class, () -> {
             jdbcTaskRepository.createIfNotExists(execution);
         });
-        assertEquals("Failed to add new execution.", actualException.getMessage());
+        assertEquals("Failed to add new execution. (task name: " + taskInstance.getTaskName() + ", instance id: " + taskInstance.getId() + ")", actualException.getMessage());
         assertEquals(rootCause, actualException.getCause());
         assertEquals(execution.version, actualException.getVersion());
         assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
