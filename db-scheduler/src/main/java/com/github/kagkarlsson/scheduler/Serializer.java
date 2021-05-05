@@ -17,6 +17,8 @@ package com.github.kagkarlsson.scheduler;
 
 import java.io.*;
 
+import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
+
 public interface Serializer {
 
     byte[] serialize(Object data);
@@ -33,7 +35,7 @@ public interface Serializer {
                 out.writeObject(data);
                 return bos.toByteArray();
             } catch (Exception e) {
-                throw new RuntimeException("Failed to serialize object", e);
+                throw new SerializationException("Failed to serialize object", e);
             }
         }
 
@@ -44,7 +46,7 @@ public interface Serializer {
                  ObjectInput in = new ObjectInputStream(bis)) {
                 return clazz.cast(in.readObject());
             } catch (Exception e) {
-                throw new RuntimeException("Failed to deserialize object", e);
+                throw new SerializationException("Failed to deserialize object", e);
             }
         }
     };

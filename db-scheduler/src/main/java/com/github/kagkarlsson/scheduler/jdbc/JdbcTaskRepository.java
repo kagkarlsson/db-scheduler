@@ -24,6 +24,8 @@ import com.github.kagkarlsson.scheduler.Serializer;
 import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
+import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -69,10 +71,14 @@ public class JdbcTaskRepository implements TaskRepository {
     }
 
     public JdbcTaskRepository(DataSource dataSource, boolean commitWhenAutocommitDisabled, JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer) {
+        this(jdbcCustomization, tableName, taskResolver, schedulerSchedulerName, serializer, new JdbcRunner(dataSource, commitWhenAutocommitDisabled));
+    }
+
+    protected JdbcTaskRepository(JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer, JdbcRunner jdbcRunner) {
         this.tableName = tableName;
         this.taskResolver = taskResolver;
         this.schedulerSchedulerName = schedulerSchedulerName;
-        this.jdbcRunner = new JdbcRunner(dataSource, commitWhenAutocommitDisabled);
+        this.jdbcRunner = jdbcRunner;
         this.serializer = serializer;
         this.jdbcCustomization = jdbcCustomization;
     }
@@ -103,7 +109,7 @@ public class JdbcTaskRepository implements TaskRepository {
             LOG.debug("Exception when inserting execution. Assuming it to be a constraint violation.", e);
             Optional<Execution> existingExecution = getExecution(execution.taskInstance);
             if (!existingExecution.isPresent()) {
-                throw new RuntimeException("Failed to add new execution.", e);
+                throw new ExecutionException("Failed to add new execution.", execution, e);
             }
             LOG.debug("Execution not created, another thread created it.");
             return false;
@@ -169,7 +175,7 @@ public class JdbcTaskRepository implements TaskRepository {
         );
 
         if (removed != 1) {
-            throw new RuntimeException("Expected one execution to be removed, but removed " + removed + ". Indicates a bug.");
+            throw new ExecutionException("Expected one execution to be removed, but removed " + removed + ". Indicates a bug.", execution);
         }
     }
 
@@ -217,7 +223,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 });
 
         if (updated != 1) {
-            throw new RuntimeException("Expected one execution to be updated, but updated " + updated + ". Indicates a bug.");
+            throw new ExecutionException("Expected one execution to be updated, but updated " + updated + ". Indicates a bug.", execution);
         }
         return updated > 0;
     }
@@ -328,7 +334,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 new ExecutionResultSetMapper()
         );
         if (executions.size() > 1) {
-            throw new RuntimeException(String.format("Found more than one matching execution for task name/id combination: '%s'/'%s'", taskName, taskInstanceId));
+            throw new TaskInstanceException("Found more than one matching execution for task name/id combination.", taskName, taskInstanceId);
         }
 
         return executions.size() == 1 ? ofNullable(executions.get(0)) : Optional.empty();
