@@ -26,6 +26,7 @@ import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
+import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
 import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
@@ -41,6 +42,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
@@ -241,7 +243,7 @@ public class DbSchedulerAutoConfiguration {
                 out.writeObject(data);
                 return bos.toByteArray();
             } catch (Exception e) {
-                throw new RuntimeException("Failed to serialize object", e);
+                throw new SerializationException("Failed to serialize object", e);
             }
         }
 
@@ -252,7 +254,7 @@ public class DbSchedulerAutoConfiguration {
                  ObjectInput in = new ConfigurableObjectInputStream(bis, Thread.currentThread().getContextClassLoader())) {
                 return clazz.cast(in.readObject());
             } catch (Exception e) {
-                throw new RuntimeException("Failed to deserialize object", e);
+                throw new SerializationException("Failed to deserialize object", e);
             }
         }
     };

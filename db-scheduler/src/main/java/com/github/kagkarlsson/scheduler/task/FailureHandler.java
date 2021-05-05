@@ -22,11 +22,61 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 
+import static java.lang.Math.pow;
+import static java.lang.Math.round;
+
 public interface FailureHandler<T> {
 
     void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);
 
-    // TODO: Failure handler with backoff: if (isFailing(.)) then nextTry = 2* duration_from_first_failure (minimum 1m, max 1d)
+    class ExponentialBackoffFailureHandler<T> implements FailureHandler<T> {
+        private static final Logger LOG = LoggerFactory.getLogger(ExponentialBackoffFailureHandler.class);
+        private static final double DEFAULT_MULTIPLIER = 1.5;
+        private final Duration sleepDuration;
+        private final double exponentialRate;
+
+        public ExponentialBackoffFailureHandler(Duration sleepDuration){
+            this.sleepDuration = sleepDuration;
+            this.exponentialRate = DEFAULT_MULTIPLIER;
+        }
+
+        public ExponentialBackoffFailureHandler(Duration sleepDuration, double exponentialRate){
+            this.sleepDuration = sleepDuration;
+            this.exponentialRate = exponentialRate;
+        }
+
+        @Override
+        public void onFailure(final ExecutionComplete executionComplete, final ExecutionOperations<T> executionOperations) {
+            long retryDurationMs = round(sleepDuration.toMillis() * pow(exponentialRate, executionComplete.getExecution().consecutiveFailures));
+            Instant nextTry = Instant.now().plusMillis(retryDurationMs);
+            LOG.debug("Execution failed. Retrying task {} at {}", executionComplete.getExecution().taskInstance, nextTry);
+            executionOperations.reschedule(executionComplete, nextTry);
+        }
+    }
+
+    class MaxRetriesFailureHandler<T> implements FailureHandler<T> {
+        private static final Logger LOG = LoggerFactory.getLogger(MaxRetriesFailureHandler.class);
+        private final int maxRetries;
+        private final FailureHandler<T> failureHandler;
+
+        public MaxRetriesFailureHandler(int maxRetries, FailureHandler<T> failureHandler){
+            this.maxRetries = maxRetries;
+            this.failureHandler = failureHandler;
+        }
+
+        @Override
+        public void onFailure(final ExecutionComplete executionComplete, final ExecutionOperations<T> executionOperations) {
+            int consecutiveFailures = executionComplete.getExecution().consecutiveFailures;
+            int totalNumberOfFailures = consecutiveFailures + 1;
+            if(totalNumberOfFailures > maxRetries){
+                LOG.error("Execution has failed {} times for task instance {}. Cancelling execution.", totalNumberOfFailures, executionComplete.getExecution().taskInstance);
+                executionOperations.stop();
+            }else{
+                this.failureHandler.onFailure(executionComplete, executionOperations);
+            }
+        }
+    }
+
     class OnFailureRetryLater<T> implements FailureHandler<T> {
 
         private static final Logger LOG = LoggerFactory.getLogger(CompletionHandler.OnCompleteReschedule.class);
