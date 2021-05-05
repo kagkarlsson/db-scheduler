@@ -74,6 +74,14 @@ public class ScheduledExecution<DATA_TYPE> {
     public int hashCode() {
         return Objects.hash(execution);
     }
+
+    @Override
+    public String toString() {
+        return "ScheduledExecution{" +
+            "execution=" + execution +
+            '}';
+    }
+
     public static class DataClassMismatchException extends RuntimeException {
     }
 }

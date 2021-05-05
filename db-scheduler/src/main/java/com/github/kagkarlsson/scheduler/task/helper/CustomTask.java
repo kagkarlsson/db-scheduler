@@ -16,7 +16,7 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.Clock;
-import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.AbstractTask;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
@@ -31,7 +31,7 @@ public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup
     }
 
     @Override
-    public void onStartup(Scheduler scheduler, Clock clock) {
+    public void onStartup(SchedulerClient scheduler, Clock clock) {
         if (scheduleOnStartup != null) {
                 scheduleOnStartup.apply(scheduler, clock, this);
         }

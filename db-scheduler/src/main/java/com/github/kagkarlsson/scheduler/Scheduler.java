@@ -118,9 +118,11 @@ public class Scheduler implements SchedulerClient {
     }
 
     protected void executeOnStartup() {
+        // Client used for OnStartup always commits
+        final StandardSchedulerClient onStartupClient = new StandardSchedulerClient(schedulerTaskRepository);
         onStartup.forEach(os -> {
             try {
-                os.onStartup(this, this.clock);
+                os.onStartup(onStartupClient, this.clock);
             } catch (Exception e) {
                 LOG.error("Unexpected error while executing OnStartup tasks. Continuing.", e);
                 statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
