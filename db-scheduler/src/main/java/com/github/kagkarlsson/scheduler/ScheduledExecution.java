@@ -70,8 +70,16 @@ public class ScheduledExecution<DATA_TYPE> {
         ScheduledExecution<?> that = (ScheduledExecution<?>) o;
         return Objects.equals(execution, that.execution);
     }
+
     @Override
     public int hashCode() {
         return Objects.hash(execution);
+    }
+
+    @Override
+    public String toString() {
+        return "ScheduledExecution{" +
+            "execution=" + execution +
+            '}';
     }
 }

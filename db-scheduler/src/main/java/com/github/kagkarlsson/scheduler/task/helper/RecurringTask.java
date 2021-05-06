@@ -16,7 +16,7 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.Clock;
-import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteReschedule;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
@@ -43,7 +43,7 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
     }
 
     @Override
-    public void onStartup(Scheduler scheduler, Clock clock) {
+    public void onStartup(SchedulerClient scheduler, Clock clock) {
         if (scheduleOnStartup != null) {
             scheduleOnStartup.apply(scheduler, clock, this);
         }
@@ -56,6 +56,10 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
     }
 
     public abstract void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+
+    public TaskInstanceId getDefaultTaskInstance() {
+        return TaskInstanceId.of(name, INSTANCE);
+    }
 
     @Override
     public String toString() {

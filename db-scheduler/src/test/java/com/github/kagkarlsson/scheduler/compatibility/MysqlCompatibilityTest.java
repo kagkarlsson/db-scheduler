@@ -6,6 +6,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -16,6 +17,7 @@ import java.util.Properties;
 
 @Tag("compatibility")
 @Testcontainers
+@Disabled
 public class MysqlCompatibilityTest extends CompatibilityTest {
 
     @Container

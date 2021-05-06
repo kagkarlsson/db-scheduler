@@ -17,7 +17,7 @@ package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
-import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -42,7 +42,7 @@ class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
     }
 
     @Override
-    public void apply(Scheduler scheduler, Clock clock, Task<T> task) {
+    public void apply(SchedulerClient scheduler, Clock clock, Task<T> task) {
         final TaskInstance<T> instanceWithoutData = task.instance(this.instance);
         final Optional<ScheduledExecution<Object>> preexistingExecution = scheduler.getScheduledExecution(instanceWithoutData);
 

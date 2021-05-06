@@ -16,8 +16,8 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.Clock;
-import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 
 public interface OnStartup {
-    void onStartup(Scheduler scheduler, Clock clock);
+    void onStartup(SchedulerClient scheduler, Clock clock);
 }

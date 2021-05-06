@@ -20,6 +20,7 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
     private static DataSource dataSource;
     private final Consumer<DataSource> initializeSchema;
     private final Consumer<DataSource> cleanupAfter;
+    private DataSource nonPooledDatasource;
 
     public EmbeddedPostgresqlExtension() {
         this(DbUtils.runSqlResource("/postgresql_tables.sql"), DbUtils::clearTables);
@@ -35,7 +36,8 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
                     embeddedPostgresql = initPostgres();
 
                     HikariConfig config = new HikariConfig();
-                    config.setDataSource(embeddedPostgresql.getDatabase("test", "test"));
+                    nonPooledDatasource = embeddedPostgresql.getDatabase("test", "test");
+                    config.setDataSource(nonPooledDatasource);
 
                     dataSource = new HikariDataSource(config);
 
@@ -49,6 +51,10 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
 
     public DataSource getDataSource() {
         return dataSource;
+    }
+
+    public DataSource getNonPooledDatasource() {
+        return nonPooledDatasource;
     }
 
     private EmbeddedPostgres initPostgres() throws IOException {

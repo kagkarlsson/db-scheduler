@@ -16,7 +16,7 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.Clock;
-import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
@@ -42,7 +42,7 @@ class ScheduleOnceOnStartup<T> implements ScheduleOnStartup<T> {
         this.data = data;
     }
 
-    public void apply(Scheduler scheduler, Clock clock, Task<T> task) {
+    public void apply(SchedulerClient scheduler, Clock clock, Task<T> task) {
         scheduler.schedule(getSchedulableInstance(task), firstExecutionTime.apply(clock.now()));
     }
 
