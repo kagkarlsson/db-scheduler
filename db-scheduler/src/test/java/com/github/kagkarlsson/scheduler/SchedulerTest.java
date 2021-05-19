@@ -19,6 +19,7 @@ import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -241,7 +242,7 @@ public class SchedulerTest {
 
     @Test
     public void should_reschedule_failure_on_exponential_backoff_with_defined_rate() throws InterruptedException {
-        double customRate = RandomUtils.nextDouble(1.1, 1.5);
+        double customRate = 1.4;
         List<Instant> executionTimes = new ArrayList<>();
 
         Duration expectedSleepDuration = ofMinutes(1);
