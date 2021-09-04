@@ -79,9 +79,12 @@ class ExecutePicked implements Runnable {
 
         Instant executionStarted = clock.now();
         try {
-            LOG.debug("Executing " + execution);
+            String executionString = execution.toString();
+            String decapitalizedExecutionString = Character.toLowerCase(executionString.charAt(0)) + executionString.substring(1);
+            
+            LOG.debug("Starting " + decapitalizedExecutionString);
             CompletionHandler completion = task.get().execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, schedulerClient));
-            LOG.debug("Execution done");
+            LOG.debug("Finished " + decapitalizedExecutionString);
 
             complete(completion, execution, executionStarted);
             statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
