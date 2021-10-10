@@ -37,9 +37,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class Scheduler implements SchedulerClient {
 
@@ -52,6 +55,7 @@ public class Scheduler implements SchedulerClient {
     final TaskResolver taskResolver;
     protected final PollStrategy executeDueStrategy;
     protected final Executor executor;
+    private final ScheduledExecutorService housekeeperExecutor;
     int threadpoolSize;
     private final Waiter executeDueWaiter;
     private final Duration deleteUnresolvedAfter;
@@ -61,8 +65,6 @@ public class Scheduler implements SchedulerClient {
     private final Duration heartbeatInterval;
     final StatsRegistry statsRegistry;
     private final ExecutorService dueExecutor;
-    private final ExecutorService detectDeadExecutor;
-    private final ExecutorService updateHeartbeatExecutor;
     private final Waiter heartbeatWaiter;
     final SettableSchedulerState schedulerState = new SettableSchedulerState();
     final ConfigurableLogger failureLogger;
@@ -84,8 +86,7 @@ public class Scheduler implements SchedulerClient {
         this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
         this.statsRegistry = statsRegistry;
         this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
-        this.detectDeadExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-detect-dead-"));
-        this.updateHeartbeatExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-update-heartbeat-"));
+        this.housekeeperExecutor = Executors.newScheduledThreadPool(3, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-housekeeper-"));
         SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
         delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener);
         this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
@@ -107,8 +108,13 @@ public class Scheduler implements SchedulerClient {
         executeOnStartup();
 
         dueExecutor.submit(new RunUntilShutdown(executeDueStrategy, executeDueWaiter, schedulerState, statsRegistry));
-        detectDeadExecutor.submit(new RunUntilShutdown(this::detectDeadExecutions, detectDeadWaiter, schedulerState, statsRegistry));
-        updateHeartbeatExecutor.submit(new RunUntilShutdown(this::updateHeartbeats, heartbeatWaiter, schedulerState, statsRegistry));
+
+        housekeeperExecutor.scheduleWithFixedDelay(
+            new RunAndLogErrors(this::detectDeadExecutions, statsRegistry),
+            0, detectDeadWaiter.getWaitDuration().toMillis(), MILLISECONDS);
+        housekeeperExecutor.scheduleWithFixedDelay(
+            new RunAndLogErrors(this::updateHeartbeats, statsRegistry),
+            0, heartbeatWaiter.getWaitDuration().toMillis(), MILLISECONDS);
 
         schedulerState.setStarted();
     }
@@ -141,16 +147,23 @@ public class Scheduler implements SchedulerClient {
         }
 
         schedulerState.setIsShuttingDown();
-
         LOG.info("Shutting down Scheduler.");
-        if (!ExecutorUtils.shutdownAndAwaitTermination(dueExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
-            LOG.warn("Failed to shutdown due-executor properly.");
+
+        if (executeDueWaiter.isWaiting()) {
+            // Sleeping => interrupt
+            dueExecutor.shutdownNow();
+            if (!ExecutorUtils.awaitTermination(dueExecutor, utilExecutorsWaitAfterInterrupt)) {
+                LOG.warn("Failed to shutdown due-executor properly.");
+            }
+        } else {
+            // If currently running, i.e. checking for due, do not interrupt (try normal shutdown first)
+            if (!ExecutorUtils.shutdownAndAwaitTermination(dueExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
+                LOG.warn("Failed to shutdown due-executor properly.");
+            }
         }
-        if (!ExecutorUtils.shutdownAndAwaitTermination(detectDeadExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
-            LOG.warn("Failed to shutdown detect-dead-executor properly.");
-        }
-        if (!ExecutorUtils.shutdownAndAwaitTermination(updateHeartbeatExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
-            LOG.warn("Failed to shutdown update-heartbeat-executor properly.");
+
+        if (!ExecutorUtils.shutdownAndAwaitTermination(housekeeperExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
+            LOG.warn("Failed to shutdown housekeeper-executor properly.");
         }
 
         executor.stop(shutdownMaxWait);

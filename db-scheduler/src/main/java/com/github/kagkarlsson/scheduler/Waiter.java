@@ -100,4 +100,7 @@ public class Waiter {
         return duration;
     }
 
+    public boolean isWaiting() {
+        return isWaiting;
+    }
 }
