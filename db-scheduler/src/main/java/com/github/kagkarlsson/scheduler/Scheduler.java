@@ -147,10 +147,19 @@ public class Scheduler implements SchedulerClient {
         }
 
         schedulerState.setIsShuttingDown();
-
         LOG.info("Shutting down Scheduler.");
-        if (!ExecutorUtils.shutdownAndAwaitTermination(dueExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
-            LOG.warn("Failed to shutdown due-executor properly.");
+
+        if (executeDueWaiter.isWaiting()) {
+            // Sleeping => interrupt
+            dueExecutor.shutdownNow();
+            if (!ExecutorUtils.awaitTermination(dueExecutor, utilExecutorsWaitAfterInterrupt)) {
+                LOG.warn("Failed to shutdown due-executor properly.");
+            }
+        } else {
+            // If currently running, i.e. checking for due, do not interrupt (try normal shutdown first)
+            if (!ExecutorUtils.shutdownAndAwaitTermination(dueExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
+                LOG.warn("Failed to shutdown due-executor properly.");
+            }
         }
 
         if (!ExecutorUtils.shutdownAndAwaitTermination(housekeeperExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
