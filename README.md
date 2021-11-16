@@ -323,15 +323,22 @@ db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=
 db-scheduler.threads=10
+
 # Ignored if a custom DbSchedulerStarter bean is defined
 db-scheduler.delay-startup-until-context-ready=false
+
+db-scheduler.polling-strategy=fetch
+db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
+db-scheduler.polling-strategy-upper-limit-fraction-of-threads=3.0
+
+db-scheduler.shutdown-max-wait=30m
 ```
 
 ## Interacting with scheduled executions using the SchedulerClient
 
-It is possible to use a [SchedulerClient](./src/main/java/com/github/kagkarlsson/scheduler/SchedulerClient.java)
-to interact with the persisted future executions. While the `Scheduler` implements this interface, it is also possible to
-instantiate the client without the full scheduler-instance, i.e. without the executing part.
+It is possible to use the `Scheduler` to interact with the persisted future executions. For situations where a full
+`Scheduler`-instance is not needed, a simpler [SchedulerClient](./src/main/java/com/github/kagkarlsson/scheduler/SchedulerClient.java)
+can be created using its builder:
 
 ```java
 SchedulerClient.Builder.create(dataSource, taskDefinitions).build()
