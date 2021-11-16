@@ -20,18 +20,15 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.Serializer;
-import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
-import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
-import io.micrometer.core.instrument.MeterRegistry;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInput;
@@ -42,18 +39,11 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
-import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
-import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
-import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
@@ -68,9 +58,6 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 @AutoConfigurationPackage
 @AutoConfigureAfter({
     DataSourceAutoConfiguration.class,
-    HealthContributorAutoConfiguration.class,
-    MetricsAutoConfiguration.class,
-    CompositeMeterRegistryAutoConfiguration.class,
 })
 @ConditionalOnBean(DataSource.class)
 @ConditionalOnProperty(value = "db-scheduler.enabled", matchIfMissing = true)
@@ -99,15 +86,9 @@ public class DbSchedulerAutoConfiguration {
         };
     }
 
-    @ConditionalOnClass(MeterRegistry.class)
-    @ConditionalOnBean(MeterRegistry.class)
-    @ConditionalOnMissingBean(StatsRegistry.class)
-    @Bean
-    StatsRegistry micrometerStatsRegistry(MeterRegistry registry) {
-        log.debug("Missing StatsRegistry bean in context but Micrometer detected. Will use: {}", registry.getClass().getName());
-        return new MicrometerStatsRegistry(registry, configuredTasks);
-    }
-
+    /**
+     * Will typically be created if Spring Boot Actuator is not on the classpath.
+     */
     @ConditionalOnMissingBean(StatsRegistry.class)
     @Bean
     StatsRegistry noopStatsRegistry() {
@@ -179,15 +160,6 @@ public class DbSchedulerAutoConfiguration {
         builder.failureLogging(config.getFailureLoggerLevel(), config.isFailureLoggerLogStackTrace());
 
         return builder.build();
-    }
-
-    @ConditionalOnEnabledHealthIndicator("db-scheduler")
-    @ConditionalOnClass(HealthIndicator.class)
-    @ConditionalOnBean(Scheduler.class)
-    @Bean
-    public HealthIndicator dbScheduler(Scheduler scheduler) {
-        log.debug("Exposing health indicator for db-scheduler");
-        return new DbSchedulerHealthIndicator(scheduler);
     }
 
     @ConditionalOnBean(Scheduler.class)
