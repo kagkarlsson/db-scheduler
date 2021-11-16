@@ -159,6 +159,9 @@ public class DbSchedulerAutoConfiguration {
         // Failure logging
         builder.failureLogging(config.getFailureLoggerLevel(), config.isFailureLoggerLogStackTrace());
 
+        // Shutdown max wait
+        builder.shutdownMaxWait(config.getShutdownMaxWait());
+
         return builder.build();
     }
 
