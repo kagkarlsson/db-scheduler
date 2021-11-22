@@ -82,6 +82,7 @@ List of organizations known to be running db-scheduler in production:
 | Becker Professional Education             |                                                              |
 | [Monitoria](https://monitoria.ca)         | Website monitoring service.                                  |
 | [Loadster](https://loadster.app)          | Load testing for web applications.                           |
+| [Statens vegvesen](https://www.vegvesen.no/)| The Norwegian Public Roads Administration                  |
 
 Feel free to open a PR to add your organization to the list.
 
