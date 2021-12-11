@@ -44,7 +44,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>10.3</version>
+    <version>10.5</version>
 </dependency>
 ```
 
