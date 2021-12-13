@@ -301,7 +301,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>10.3</version>
+        <version>10.5</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
