@@ -130,7 +130,7 @@ public class DeadExecutionsTest {
         assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(2));
     }
 
-    public static class NonCompletingTask<T> extends AbstractTask<T> {
+    public static class NonCompletingTask<T> extends OneTimeTask<T> {
         private final VoidExecutionHandler<T> handler;
 
         public NonCompletingTask(String name, Class<T> dataClass, VoidExecutionHandler<T> handler, DeadExecutionHandler<T> deadExecutionHandler) {
@@ -139,7 +139,7 @@ public class DeadExecutionsTest {
         }
 
         @Override
-        public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+        public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             handler.execute(taskInstance, executionContext);
             throw new RuntimeException("simulated unexpected exception");
         }

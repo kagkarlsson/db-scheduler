@@ -85,7 +85,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public boolean createIfNotExists(Execution execution) {
+    public boolean createIfNotExists(Execution execution) { // TODO: SchedulableExecution interface (make possible to work with TaskInstanceId)
         try {
             Optional<Execution> existingExecution = getExecution(execution.taskInstance);
             if (existingExecution.isPresent()) {

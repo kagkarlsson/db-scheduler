@@ -23,6 +23,7 @@ import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
@@ -174,6 +175,11 @@ public class Scheduler implements SchedulerClient {
     }
 
     @Override
+    public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
+        this.delegate.schedule(schedulableInstance);
+    }
+
+    @Override
     public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
         this.delegate.schedule(taskInstance, executionTime);
     }
@@ -181,6 +187,11 @@ public class Scheduler implements SchedulerClient {
     @Override
     public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
         this.delegate.reschedule(taskInstanceId, newExecutionTime);
+    }
+
+    @Override
+    public <T> void reschedule(SchedulableInstance<T> schedulableInstance) {
+        this.delegate.reschedule(schedulableInstance);
     }
 
     @Override

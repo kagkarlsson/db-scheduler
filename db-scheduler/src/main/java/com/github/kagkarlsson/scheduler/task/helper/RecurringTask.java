@@ -22,10 +22,14 @@ import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteResched
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
+import java.time.Instant;
+import java.util.Optional;
+
 public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStartup {
 
     public static final String INSTANCE = "recurring";
     private final OnCompleteReschedule<T> onComplete;
+    private final Schedule schedule;
     private ScheduleOnStartup<T> scheduleOnStartup;
 
     public RecurringTask(String name, Schedule schedule, Class<T> dataClass) {
@@ -39,7 +43,18 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
     public RecurringTask(String name, Schedule schedule, Class<T> dataClass, ScheduleRecurringOnStartup<T> scheduleOnStartup, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
         super(name, dataClass, failureHandler, deadExecutionHandler);
         onComplete = new OnCompleteReschedule<>(schedule);
+        this.schedule = schedule;
         this.scheduleOnStartup = scheduleOnStartup;
+    }
+
+    @Override
+    public SchedulableInstance<T> schedulableInstance(String id) {
+        return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), () -> schedule.getInitialExecutionTime(Instant.now()));
+    }
+
+    @Override
+    public SchedulableInstance<T> schedulableInstance(String id, T data) {
+        return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), () -> schedule.getInitialExecutionTime(Instant.now()));
     }
 
     @Override

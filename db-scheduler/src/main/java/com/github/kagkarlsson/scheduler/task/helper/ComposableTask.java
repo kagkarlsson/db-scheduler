@@ -19,6 +19,7 @@ import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Duration;
+import java.time.Instant;
 
 @Deprecated
 public class ComposableTask {
@@ -44,6 +45,16 @@ public class ComposableTask {
     public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler<T> completionHandler, VoidExecutionHandler<T> executionHandler) {
         return new AbstractTask<T>(name, dataClass, new FailureHandler.OnFailureRetryLater<>(Duration.ofMinutes(5)), new DeadExecutionHandler.ReviveDeadExecution<>()) {
             @Override
+            public SchedulableInstance<T> schedulableInstance(String id) {
+                return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), Instant::now);  // TODO: remove composable task instead of implementing this
+            }
+
+            @Override
+            public SchedulableInstance<T> schedulableInstance(String id, T data) {
+                return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), Instant::now);  // TODO: remove composable task instead of implementing this
+            }
+
+            @Override
             public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                 executionHandler.execute(taskInstance, executionContext);
                 return completionHandler;
@@ -53,6 +64,16 @@ public class ComposableTask {
 
     public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler<T> completionHandler, FailureHandler<T> failureHandler, VoidExecutionHandler<T> executionHandler) {
         return new AbstractTask<T>(name, dataClass, failureHandler, new DeadExecutionHandler.ReviveDeadExecution<>()) {
+            @Override
+            public SchedulableInstance<T> schedulableInstance(String id) {
+                return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), Instant::now);  // TODO: remove composable task instead of implementing this
+            }
+
+            @Override
+            public SchedulableInstance<T> schedulableInstance(String id, T data) {
+                return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), Instant::now);  // TODO: remove composable task instead of implementing this
+            }
+
             @Override
             public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                 executionHandler.execute(taskInstance, executionContext);

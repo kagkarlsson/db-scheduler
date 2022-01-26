@@ -21,13 +21,31 @@ import com.github.kagkarlsson.scheduler.task.AbstractTask;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+
+import java.time.Instant;
+import java.util.function.Function;
 
 public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup {
     private ScheduleOnStartup<T> scheduleOnStartup;
+    private final Function<Instant,Instant> defaultExecutionTime;
 
-    public CustomTask(String name, Class<T> dataClass, ScheduleOnStartup<T> scheduleOnStartup, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
+    public CustomTask(String name, Class<T> dataClass, ScheduleOnStartup<T> scheduleOnStartup, Function<Instant,Instant> defaultExecutionTime,
+                      FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
         super(name, dataClass, failureHandler, deadExecutionHandler);
         this.scheduleOnStartup = scheduleOnStartup;
+        this.defaultExecutionTime = defaultExecutionTime;
+    }
+
+    @Override
+    public SchedulableInstance<T> schedulableInstance(String id) {
+        return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), () -> defaultExecutionTime.apply(Instant.now())); // TODO: supply instant from clock
+    }
+
+    @Override
+    public SchedulableInstance<T> schedulableInstance(String id, T data) {
+        return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), () -> defaultExecutionTime.apply(Instant.now())); // TODO: supply instant from clock
     }
 
     @Override

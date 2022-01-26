@@ -22,6 +22,7 @@ import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
@@ -51,6 +52,8 @@ public interface SchedulerClient {
      */
     <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime);
 
+    <T> void schedule(SchedulableInstance<T> schedulableInstance);
+
     /**
      * Update an existing execution to a new execution-time. If the execution does not exist or if it is currently
      * running, an exception is thrown.
@@ -75,6 +78,9 @@ public interface SchedulerClient {
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      */
     <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
+
+    // TODO: doc
+    <T> void reschedule(SchedulableInstance<T> schedulableInstance);
 
     /**
      * Removes/Cancels an execution.
@@ -227,10 +233,19 @@ public interface SchedulerClient {
                 notifyListeners(ClientEvent.EventType.SCHEDULE, taskInstance, executionTime);
             }
         }
+        @Override
+        public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
+            schedule(schedulableInstance.getTaskInstance(), schedulableInstance.getExecutionTime());
+        }
 
         @Override
         public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
             reschedule(taskInstanceId, newExecutionTime, null);
+        }
+
+        @Override
+        public <T> void reschedule(SchedulableInstance<T> schedulableInstance) {
+            reschedule(schedulableInstance, schedulableInstance.getExecutionTime(), schedulableInstance.getTaskInstance().getData());
         }
 
         @Override

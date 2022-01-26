@@ -14,4 +14,12 @@ public abstract class Example {
     protected void runWithDatasource() {
         run(HsqlDatasource.initDatabase());
     }
+
+    protected void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

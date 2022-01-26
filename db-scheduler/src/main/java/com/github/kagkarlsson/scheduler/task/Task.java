@@ -15,14 +15,18 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import java.time.Instant;
+
 public interface Task<T> extends ExecutionHandler<T> {
     String getName();
 
     Class<T> getDataClass();
 
     TaskInstance<T> instance(String id);
-
     TaskInstance<T> instance(String id, T data);
+
+    SchedulableInstance<T> schedulableInstance(String id);
+    SchedulableInstance<T> schedulableInstance(String id, T data);
 
     FailureHandler<T> getFailureHandler();
 

@@ -18,6 +18,7 @@ package com.github.kagkarlsson.scheduler.task.helper;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Function;
@@ -31,6 +32,10 @@ public class Tasks {
 
     public static <T> RecurringTaskBuilder<T> recurring(String name, Schedule schedule, Class<T> dataClass) {
         return new RecurringTaskBuilder<>(name, schedule, dataClass);
+    }
+
+    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(String name, Class<T> dataClass) {
+        return new RecurringTaskWithPersistentScheduleBuilder<T>(name, dataClass);
     }
 
     public static OneTimeTaskBuilder<Void> oneTime(String name) {
@@ -115,6 +120,39 @@ public class Tasks {
         }
     }
 
+    public interface ScheduleAndData extends Serializable {
+        Schedule getSchedule();
+        Object getData();
+    }
+
+    public static class RecurringTaskWithPersistentScheduleBuilder<T extends ScheduleAndData> {
+        private final String name;
+        private final Class<T> dataClass;
+
+        public RecurringTaskWithPersistentScheduleBuilder(String name, Class<T> dataClass) {
+            this.name = name;
+            this.dataClass = dataClass;
+        }
+
+        public RecurringTaskWithPersistentSchedule<T> execute(VoidExecutionHandler<T> executionHandler) {
+            return new RecurringTaskWithPersistentSchedule<T>(name, dataClass) {
+                @Override
+                public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    executionHandler.execute(taskInstance, executionContext);
+
+                    return (executionComplete, executionOperations) -> {
+                        executionOperations.reschedule(
+                            executionComplete,
+                            taskInstance.getData().getSchedule().getNextExecutionTime(executionComplete)
+                        );
+                    };
+
+                }
+            };
+        }
+    }
+
+
     public static class OneTimeTaskBuilder<T> {
         private final String name;
         private Class<T> dataClass;
@@ -164,6 +202,7 @@ public class Tasks {
         private FailureHandler<T> onFailure;
         private DeadExecutionHandler<T> onDeadExecution;
         private ScheduleOnStartup<T> onStartup;
+        private Function<Instant, Instant> defaultExecutionTime = Function.identity();
 
         public TaskBuilder(String name, Class<T> dataClass) {
             this.name = name;
@@ -205,8 +244,13 @@ public class Tasks {
             return this;
         }
 
+        public TaskBuilder<T> defaultExecutionTime(Function<Instant,Instant> defaultExecutionTime) {
+            this.defaultExecutionTime = defaultExecutionTime;
+            return this;
+        }
+
         public CustomTask<T> execute(ExecutionHandler<T> executionHandler) {
-            return new CustomTask<T>(name, dataClass, onStartup, onFailure, onDeadExecution) {
+            return new CustomTask<T>(name, dataClass, onStartup, defaultExecutionTime, onFailure, onDeadExecution) {
                 @Override
                 public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                     return executionHandler.execute(taskInstance, executionContext);

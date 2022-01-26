@@ -21,6 +21,7 @@ import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExec
 import com.github.kagkarlsson.scheduler.task.FailureHandler.OnFailureRetryLater;
 
 import java.time.Duration;
+import java.time.Instant;
 
 public abstract class OneTimeTask<T> extends AbstractTask<T> {
 
@@ -30,6 +31,16 @@ public abstract class OneTimeTask<T> extends AbstractTask<T> {
 
     public OneTimeTask(String name, Class<T> dataClass, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
         super(name, dataClass, failureHandler, deadExecutionHandler);
+    }
+
+    @Override
+    public SchedulableInstance<T> schedulableInstance(String id) {
+        return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), Instant::now);
+    }
+
+    @Override
+    public SchedulableInstance<T> schedulableInstance(String id, T data) {
+        return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), Instant::now);
     }
 
     @Override
