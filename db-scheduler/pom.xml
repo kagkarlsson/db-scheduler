@@ -15,14 +15,14 @@
         <!-- Dependencies -->
         <cron-utils.version>9.1.6</cron-utils.version>
         <hamcrest.version>1.3</hamcrest.version>
-        <hikaricp.version>3.1.0</hikaricp.version>
-        <hsqldb.version>2.3.3</hsqldb.version>
+        <hikaricp.version>4.0.3</hikaricp.version>
+        <hsqldb.version>2.6.1</hsqldb.version>
         <java8-matchers.version>1.6</java8-matchers.version>
-        <equals-verifier.version>3.5</equals-verifier.version>
+        <equals-verifier.version>3.9</equals-verifier.version>
         <micro-jdbc.version>0.3</micro-jdbc.version>
         <otj-pg-embedded.version>0.11.4</otj-pg-embedded.version>
-        <postgresql.version>42.2.25</postgresql.version>
-        <slf4j.version>1.7.7</slf4j.version>
+        <postgresql.version>42.3.2</postgresql.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <test.excludedTags>compatibility</test.excludedTags>
     </properties>
 
@@ -164,19 +164,19 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.19</version>
+            <version>8.0.28</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
-            <version>8.2.1.jre8</version>
+            <version>10.2.0.jre17</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc8</artifactId>
-            <version>18.3.0.0</version>
+            <version>21.5.0.0</version>
             <scope>test</scope>
         </dependency>
 
