@@ -55,7 +55,6 @@ public class ClusterTest {
 //    );
 
 
-    @Test
     @RepeatedTest(10)
     public void test_concurrency_optimistic_locking() throws InterruptedException {
         DEBUG_LOG.info("Starting test_concurrency_optimistic_locking");

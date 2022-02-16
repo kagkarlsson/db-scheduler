@@ -21,10 +21,12 @@ import com.github.kagkarlsson.scheduler.task.helper.RecurringTaskWithPersistentS
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
+import com.github.kagkarlsson.scheduler.task.schedule.PersistentCronSchedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import javax.sql.DataSource;
 import java.time.Duration;
+import java.time.ZoneId;
 
 public class RecurringTaskWithPersistentScheduleMain extends Example {
 
@@ -35,8 +37,8 @@ public class RecurringTaskWithPersistentScheduleMain extends Example {
     @Override
     public void run(DataSource dataSource) {
 
-        final RecurringTaskWithPersistentSchedule<SerializableCronSchedule> task =
-            Tasks.recurringWithPersistentSchedule("dynamic-recurring-task", SerializableCronSchedule.class)
+        final RecurringTaskWithPersistentSchedule<PersistentCronSchedule> task =
+            Tasks.recurringWithPersistentSchedule("dynamic-recurring-task", PersistentCronSchedule.class)
                 .execute((taskInstance, executionContext) -> {
                     System.out.println("Instance: '" + taskInstance.getId() + "' ran using persistent schedule: " + taskInstance.getData().getSchedule());
                 });
@@ -50,30 +52,8 @@ public class RecurringTaskWithPersistentScheduleMain extends Example {
         scheduler.start();
         sleep(2_000);
 
-        scheduler.schedule(task.schedulableInstance("id1", new SerializableCronSchedule("0/6 * * * * ?")));
-        scheduler.schedule(task.schedulableInstance("id2", new SerializableCronSchedule("3/6 * * * * ?")));
+        scheduler.schedule(task.schedulableInstance("id1", new PersistentCronSchedule("0/6 * * * * ?")));
+        scheduler.schedule(task.schedulableInstance("id2", new PersistentCronSchedule("3/6 * * * * ?")));
     }
 
-    private static class SerializableCronSchedule implements ScheduleAndData {
-        private final String cronPattern;
-
-        SerializableCronSchedule(String cronPattern) {
-            this.cronPattern = cronPattern;
-        }
-
-        @Override
-        public String toString() {
-            return "SerializableCronSchedule pattern=" + cronPattern;
-        }
-
-        @Override
-        public Schedule getSchedule() {
-            return new CronSchedule(cronPattern); // FIXLATER: possibly cache this, probably not necessary
-        }
-
-        @Override
-        public Object getData() {
-            return null; // null for now
-        }
-    }
 }
