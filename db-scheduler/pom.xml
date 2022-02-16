@@ -21,7 +21,7 @@
         <equals-verifier.version>3.5</equals-verifier.version>
         <micro-jdbc.version>0.3</micro-jdbc.version>
         <otj-pg-embedded.version>0.11.4</otj-pg-embedded.version>
-        <postgresql.version>42.2.25</postgresql.version>
+        <postgresql.version>42.3.3</postgresql.version>
         <slf4j.version>1.7.7</slf4j.version>
         <test.excludedTags>compatibility</test.excludedTags>
     </properties>
