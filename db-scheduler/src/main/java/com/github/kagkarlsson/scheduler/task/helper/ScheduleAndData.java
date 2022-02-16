@@ -13,28 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.examples.helpers;
+package com.github.kagkarlsson.scheduler.task.helper;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
-import javax.sql.DataSource;
+import java.io.Serializable;
 
-public abstract class Example {
-
-    protected Logger log = LoggerFactory.getLogger(getClass());
-
-    public abstract void run(DataSource ds);
-
-    protected void runWithDatasource() {
-        run(HsqlDatasource.initDatabase());
-    }
-
-    protected void sleep(int millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
+public interface ScheduleAndData extends Serializable {
+    Schedule getSchedule();
+    Object getData();
 }

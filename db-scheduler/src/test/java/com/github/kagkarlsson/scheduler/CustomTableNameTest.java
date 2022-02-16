@@ -4,7 +4,7 @@ import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.RowMapper;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
-import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -46,7 +46,7 @@ public class CustomTableNameTest {
         Instant now = Instant.now();
         TaskInstance<Void> instance1 = oneTimeTask.instance("id1");
 
-        taskRepository.createIfNotExists(new Execution(now, instance1));
+        taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance1, now));
 
         JdbcRunner jdbcRunner = new JdbcRunner(DB.getDataSource());
         jdbcRunner.query("SELECT count(1) AS number_of_tasks FROM " + CUSTOM_TABLENAME, NOOP, (RowMapper<Integer>) rs -> rs.getInt("number_of_tasks"));

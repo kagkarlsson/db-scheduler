@@ -27,6 +27,7 @@ import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.Logger;
@@ -85,9 +86,10 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public boolean createIfNotExists(Execution execution) { // TODO: SchedulableExecution interface (make possible to work with TaskInstanceId)
+    public boolean createIfNotExists(SchedulableInstance instance) {
+        final TaskInstance taskInstance = instance.getTaskInstance();
         try {
-            Optional<Execution> existingExecution = getExecution(execution.taskInstance);
+            Optional<Execution> existingExecution = getExecution(taskInstance);
             if (existingExecution.isPresent()) {
                 LOG.debug("Execution not created, it already exists. Due: {}", existingExecution.get().executionTime);
                 return false;
@@ -96,10 +98,10 @@ public class JdbcTaskRepository implements TaskRepository {
             jdbcRunner.execute(
                     "insert into " + tableName + "(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
                     (PreparedStatement p) -> {
-                        p.setString(1, execution.taskInstance.getTaskName());
-                        p.setString(2, execution.taskInstance.getId());
-                        p.setObject(3, serializer.serialize(execution.taskInstance.getData()));
-                        jdbcCustomization.setInstant(p, 4, execution.executionTime);
+                        p.setString(1, taskInstance.getTaskName());
+                        p.setString(2, taskInstance.getId());
+                        p.setObject(3, serializer.serialize(taskInstance.getData()));
+                        jdbcCustomization.setInstant(p, 4, instance.getExecutionTime());
                         p.setBoolean(5, false);
                         p.setLong(6, 1L);
                     });
@@ -107,9 +109,9 @@ public class JdbcTaskRepository implements TaskRepository {
 
         } catch (SQLRuntimeException e) {
             LOG.debug("Exception when inserting execution. Assuming it to be a constraint violation.", e);
-            Optional<Execution> existingExecution = getExecution(execution.taskInstance);
+            Optional<Execution> existingExecution = getExecution(taskInstance);
             if (!existingExecution.isPresent()) {
-                throw new ExecutionException("Failed to add new execution.", execution, e);
+                throw new TaskInstanceException("Failed to add new execution.", instance.getTaskName(), instance.getId(), e);
             }
             LOG.debug("Execution not created, another thread created it.");
             return false;

@@ -1,35 +1,35 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
+import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
+import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
+import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
+import com.google.common.util.concurrent.MoreExecutors;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.logging.LogLevel;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
-import com.github.kagkarlsson.scheduler.task.AbstractTask;
-import com.github.kagkarlsson.scheduler.task.CompletionHandler;
-import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.ExecutionContext;
-import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
-import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
-import com.google.common.util.concurrent.MoreExecutors;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 
 public class DeadExecutionsTest {
@@ -84,7 +84,7 @@ public class DeadExecutionsTest {
         final Instant now = settableClock.now();
 
         final TaskInstance<Void> taskInstance = oneTimeTask.instance("id1");
-        final Execution execution1 = new Execution(now.minus(Duration.ofDays(1)), taskInstance);
+        final SchedulableTaskInstance<Void> execution1 = new SchedulableTaskInstance<>(taskInstance, now.minus(Duration.ofDays(1)));
         jdbcTaskRepository.createIfNotExists(execution1);
 
         final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
@@ -110,7 +110,7 @@ public class DeadExecutionsTest {
         final Instant oneHourAgo = settableClock.now();
 
         final TaskInstance<Void> taskInstance = nonCompleting.instance("id1");
-        final Execution execution1 = new Execution(oneHourAgo, taskInstance);
+        final SchedulableTaskInstance<Void> execution1 = new SchedulableTaskInstance<>(taskInstance, oneHourAgo);
         jdbcTaskRepository.createIfNotExists(execution1);
 
         scheduler.executeDue();
@@ -134,7 +134,8 @@ public class DeadExecutionsTest {
         private final VoidExecutionHandler<T> handler;
 
         public NonCompletingTask(String name, Class<T> dataClass, VoidExecutionHandler<T> handler, DeadExecutionHandler<T> deadExecutionHandler) {
-            super(name, dataClass, (executionComplete, executionOperations) -> {}, deadExecutionHandler);
+            super(name, dataClass, (executionComplete, executionOperations) -> {
+            }, deadExecutionHandler);
             this.handler = handler;
         }
 

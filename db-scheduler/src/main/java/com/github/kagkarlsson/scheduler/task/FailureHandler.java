@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +79,6 @@ public interface FailureHandler<T> {
     }
 
     class OnFailureRetryLater<T> implements FailureHandler<T> {
-
         private static final Logger LOG = LoggerFactory.getLogger(CompletionHandler.OnCompleteReschedule.class);
         private final Duration sleepDuration;
 
@@ -95,7 +95,6 @@ public interface FailureHandler<T> {
     }
 
     class OnFailureReschedule<T> implements FailureHandler<T> {
-
         private static final Logger LOG = LoggerFactory.getLogger(CompletionHandler.OnCompleteReschedule.class);
         private final Schedule schedule;
 
@@ -108,6 +107,19 @@ public interface FailureHandler<T> {
             Instant nextExecution = schedule.getNextExecutionTime(executionComplete);
             LOG.debug("Execution failed. Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
             executionOperations.reschedule(executionComplete, nextExecution);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    class OnFailureRescheduleUsingTaskDataSchedule<T extends ScheduleAndData> implements FailureHandler<T> {
+        private static final Logger LOG = LoggerFactory.getLogger(CompletionHandler.OnCompleteReschedule.class);
+
+        @Override
+        public void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
+            final T data = (T)executionComplete.getExecution().taskInstance.getData();
+            final Instant nextExecutionTime = data.getSchedule().getNextExecutionTime(executionComplete);
+            LOG.debug("Execution failed. Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecutionTime);
+            executionOperations.reschedule(executionComplete, nextExecutionTime);
         }
     }
 }

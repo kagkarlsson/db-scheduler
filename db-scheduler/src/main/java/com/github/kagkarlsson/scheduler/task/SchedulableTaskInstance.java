@@ -18,26 +18,28 @@ package com.github.kagkarlsson.scheduler.task;
 import java.time.Instant;
 import java.util.function.Supplier;
 
-public interface SchedulableInstance<T> extends TaskInstanceId {
+public class SchedulableTaskInstance<T> implements SchedulableInstance<T> {
+    private final TaskInstance<T> taskInstance;
+    Supplier<Instant> executionTime;
 
-    TaskInstance<T> getTaskInstance();
-    Instant getExecutionTime();
-
-    default String getTaskName() {
-        return getTaskInstance().getTaskName();
+    public SchedulableTaskInstance(TaskInstance<T> taskInstance, Supplier<Instant> executionTime) {
+        this.taskInstance = taskInstance;
+        this.executionTime = executionTime;
     }
 
-    default String getId() {
-        return getTaskInstance().getId();
+    // TODO remove
+    public SchedulableTaskInstance(TaskInstance<T> taskInstance, Instant executionTime) {
+        this.taskInstance = taskInstance;
+        this.executionTime = () -> executionTime;
     }
 
-    static <T> SchedulableInstance<T> of(TaskInstance<T> taskInstance, Instant executionTime) {
-        return new SchedulableTaskInstance<T>(taskInstance, executionTime);
+    @Override
+    public TaskInstance<T> getTaskInstance() {
+        return taskInstance;
     }
 
-    static <T> SchedulableInstance<T> of(TaskInstance<T> taskInstance, Supplier<Instant> executionTime) {
-        return new SchedulableTaskInstance<T>(taskInstance, executionTime);
+    @Override
+    public Instant getExecutionTime() {
+        return executionTime.get();
     }
-
-
 }

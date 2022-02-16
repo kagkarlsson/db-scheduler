@@ -60,7 +60,6 @@ public interface SchedulerClient {
      *
      * @param taskInstanceId
      * @param newExecutionTime the new execution-time
-     * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      */
@@ -73,13 +72,17 @@ public interface SchedulerClient {
      * @param taskInstanceId
      * @param newExecutionTime the new execution-time
      * @param newData          the new task-data
-     * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      */
     <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
 
-    // TODO: doc
+    /**
+     * Update an existing execution with a new execution-time and new task-data. If the execution does not exist or if
+     * it is currently running, an exception is thrown.
+     *
+     * @param schedulableInstance the updated instance
+     */
     <T> void reschedule(SchedulableInstance<T> schedulableInstance);
 
     /**
@@ -228,7 +231,7 @@ public interface SchedulerClient {
 
         @Override
         public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
-            boolean success = taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
+            boolean success = taskRepository.createIfNotExists(SchedulableInstance.of(taskInstance, executionTime));
             if (success) {
                 notifyListeners(ClientEvent.EventType.SCHEDULE, taskInstance, executionTime);
             }

@@ -17,21 +17,20 @@ package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.task.AbstractTask;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
+import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
 import java.time.Instant;
 
-public abstract class RecurringTaskWithPersistentSchedule<T extends Tasks.ScheduleAndData> extends AbstractTask<T> {
+public abstract class RecurringTaskWithPersistentSchedule<T extends ScheduleAndData> extends AbstractTask<T> {
 
     public RecurringTaskWithPersistentSchedule(String name, Class<T> dataClass) {
         super(
             name,
             dataClass,
-            (executionComplete, executionOperations) -> {
-                final T data = (T)executionComplete.getExecution().taskInstance.getData(); // TODO: avoid cast?
-                executionOperations.reschedule(executionComplete, data.getSchedule().getNextExecutionTime(executionComplete));
-            },
+            new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>(),
             new DeadExecutionHandler.ReviveDeadExecution<>());
     }
 
@@ -47,11 +46,11 @@ public abstract class RecurringTaskWithPersistentSchedule<T extends Tasks.Schedu
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id, T data) {
-        return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), () -> data.getSchedule().getInitialExecutionTime(Instant.now()));
+        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), () -> data.getSchedule().getInitialExecutionTime(Instant.now()));
     }
 
     @Override
     public String toString() {
-        return RecurringTaskWithPersistentSchedule.class.getName() + " name=" + getName(); // TODO: get a reference to the completion-handler for symmetry: + ", onComplete=" + onComplete;
+        return RecurringTaskWithPersistentSchedule.class.getName() + " name=" + getName();
     }
 }

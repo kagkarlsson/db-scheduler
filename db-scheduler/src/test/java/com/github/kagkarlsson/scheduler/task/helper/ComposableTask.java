@@ -24,15 +24,6 @@ import java.time.Instant;
 @Deprecated
 public class ComposableTask {
 
-    public static RecurringTask<Void> recurringTask(String name, Schedule schedule, VoidExecutionHandler<Void> executionHandler) {
-        return new RecurringTask<Void>(name, schedule, Void.class) {
-            @Override
-            public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
-                executionHandler.execute(taskInstance, executionContext);
-            }
-        };
-    }
-
     public static <T> OneTimeTask<T> onetimeTask(String name, Class<T> dataClass, VoidExecutionHandler<T> executionHandler) {
         return new OneTimeTask<T>(name, dataClass) {
             @Override
@@ -46,12 +37,12 @@ public class ComposableTask {
         return new AbstractTask<T>(name, dataClass, new FailureHandler.OnFailureRetryLater<>(Duration.ofMinutes(5)), new DeadExecutionHandler.ReviveDeadExecution<>()) {
             @Override
             public SchedulableInstance<T> schedulableInstance(String id) {
-                return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), Instant::now);  // TODO: remove composable task instead of implementing this
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), Instant::now);
             }
 
             @Override
             public SchedulableInstance<T> schedulableInstance(String id, T data) {
-                return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), Instant::now);  // TODO: remove composable task instead of implementing this
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), Instant::now);
             }
 
             @Override
@@ -66,12 +57,12 @@ public class ComposableTask {
         return new AbstractTask<T>(name, dataClass, failureHandler, new DeadExecutionHandler.ReviveDeadExecution<>()) {
             @Override
             public SchedulableInstance<T> schedulableInstance(String id) {
-                return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), Instant::now);  // TODO: remove composable task instead of implementing this
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), Instant::now);
             }
 
             @Override
             public SchedulableInstance<T> schedulableInstance(String id, T data) {
-                return new SchedulableInstance.SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), Instant::now);  // TODO: remove composable task instead of implementing this
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), Instant::now);
             }
 
             @Override

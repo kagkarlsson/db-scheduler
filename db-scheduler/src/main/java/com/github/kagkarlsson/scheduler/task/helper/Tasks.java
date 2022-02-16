@@ -18,7 +18,6 @@ package com.github.kagkarlsson.scheduler.task.helper;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
-import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Function;
@@ -120,11 +119,6 @@ public class Tasks {
         }
     }
 
-    public interface ScheduleAndData extends Serializable {
-        Schedule getSchedule();
-        Object getData();
-    }
-
     public static class RecurringTaskWithPersistentScheduleBuilder<T extends ScheduleAndData> {
         private final String name;
         private final Class<T> dataClass;
@@ -147,6 +141,23 @@ public class Tasks {
                         );
                     };
 
+                }
+            };
+        }
+
+        public RecurringTaskWithPersistentSchedule<T> executeStateful(StateReturningExecutionHandler<T> executionHandler) {
+            return new RecurringTaskWithPersistentSchedule<T>(name, dataClass) {
+
+                @Override
+                public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    final T nextData = executionHandler.execute(taskInstance, executionContext);
+
+                    return (executionComplete, executionOperations) -> {
+                        executionOperations.reschedule(
+                            executionComplete,
+                            nextData.getSchedule().getNextExecutionTime(executionComplete)
+                        );
+                    };
                 }
             };
         }
