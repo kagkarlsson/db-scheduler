@@ -41,12 +41,12 @@ public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id) {
-        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), () -> defaultExecutionTime.apply(Instant.now())); // TODO: supply instant from clock
+        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), () -> defaultExecutionTime.apply(Instant.now()));
     }
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id, T data) {
-        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), () -> defaultExecutionTime.apply(Instant.now())); // TODO: supply instant from clock
+        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), () -> defaultExecutionTime.apply(Instant.now()));
     }
 
     @Override

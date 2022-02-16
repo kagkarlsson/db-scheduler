@@ -27,7 +27,6 @@ public class SchedulableTaskInstance<T> implements SchedulableInstance<T> {
         this.executionTime = executionTime;
     }
 
-    // TODO remove
     public SchedulableTaskInstance(TaskInstance<T> taskInstance, Instant executionTime) {
         this.taskInstance = taskInstance;
         this.executionTime = () -> executionTime;
