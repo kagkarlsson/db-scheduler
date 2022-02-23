@@ -4,6 +4,7 @@ import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTaskWithPersistentSchedule;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -53,17 +54,17 @@ public class DynamicRecurringTaskTest {
     public void should_schedule_multiple_instances_with_different_schedules() {
 
         final String taskName = "dynamic-recurring";
-        final RecurringTaskWithPersistentSchedule<PersistentDailySchedule> task =
-            Tasks.recurringWithPersistentSchedule(taskName, PersistentDailySchedule.class)
+        final RecurringTaskWithPersistentSchedule<PlainScheduleAndData> task =
+            Tasks.recurringWithPersistentSchedule(taskName, PlainScheduleAndData.class)
             .execute((taskInstance, executionContext) -> {
             });
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(task));
         scheduler.start();
 
-        final PersistentDailySchedule schedule1 = new PersistentDailySchedule(new Daily(LocalTime.of(23, 51)));
-        final PersistentDailySchedule schedule2 = new PersistentDailySchedule(new Daily(LocalTime.of(23, 50)));
-        final PersistentDailySchedule schedule3 = new PersistentDailySchedule(new Daily(LocalTime.of(23, 55)));
+        final PlainScheduleAndData schedule1 = new PlainScheduleAndData(new Daily(LocalTime.of(23, 51)));
+        final PlainScheduleAndData schedule2 = new PlainScheduleAndData(new Daily(LocalTime.of(23, 50)));
+        final PlainScheduleAndData schedule3 = new PlainScheduleAndData(new Daily(LocalTime.of(23, 55)));
 
         scheduler.schedule(task.schedulableInstance("id1", schedule1));
         scheduler.schedule(task.schedulableInstance("id2", schedule2));
@@ -120,84 +121,14 @@ public class DynamicRecurringTaskTest {
             .build();
     }
 
-    public static class PersistentDailySchedule implements ScheduleAndData {
-        private final Daily daily;
 
-        public PersistentDailySchedule(Daily daily) {
-            this.daily = daily;
-        }
-
-        @Override
-        public String toString() {
-            return "PersistentDailySchedule daily=" + daily;
-        }
-
-        @Override
-        public Schedule getSchedule() {
-            return daily;
-        }
-
-        @Override
-        public Object getData() {
-            return null;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            PersistentDailySchedule that = (PersistentDailySchedule) o;
-            return Objects.equals(daily, that.daily);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(daily);
-        }
-    }
-
-    public static class PersistentFixedDelaySchedule implements ScheduleAndData {
-        private final FixedDelay schedule;
-        private final Integer data;
-
-        public PersistentFixedDelaySchedule(FixedDelay schedule, Integer data) {
-            this.schedule = schedule;
-            this.data = data;
-        }
-
-        public FixedDelay getSchedule() {
-            return schedule;
-        }
-
-        @Override
-        public Object getData() {
-            return data;
-        }
-
-        @Override
-        public String toString() {
-            return "PersistentFixedDelaySchedule{" +
-                "daily=" + schedule +
-                ", data=" + data +
-                '}';
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            PersistentFixedDelaySchedule that = (PersistentFixedDelaySchedule) o;
-            return Objects.equals(schedule, that.schedule) &&
-                Objects.equals(data, that.data);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(schedule, data);
+    public static class PersistentFixedDelaySchedule extends PlainScheduleAndData {
+        public PersistentFixedDelaySchedule(Schedule schedule, Integer data) {
+            super(schedule, data);
         }
 
         public PersistentFixedDelaySchedule returnIncremented() {
-            return new PersistentFixedDelaySchedule(schedule, data + 1);
+            return new PersistentFixedDelaySchedule(super.getSchedule(), ((Integer)super.getData()) + 1);
         }
     }
 
