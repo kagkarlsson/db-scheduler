@@ -474,6 +474,12 @@ Observations for these tests:
 
 Currently, polling strategy `lock-and-fetch` is implemented only for Postgres. Contributions adding support for more databases are welcome.
 
+### User testimonial
+
+There are a number of users that are using db-scheduler for high throughput use-cases. See for example:
+
+* https://github.com/kagkarlsson/db-scheduler/issues/209#issuecomment-1026699872
+* https://github.com/kagkarlsson/db-scheduler/issues/190#issuecomment-805867950
 
 ### Things to note / gotchas
 
