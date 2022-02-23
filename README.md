@@ -6,7 +6,7 @@
 
 Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
 
-As such, also appreciated by users ([cbarbosa2](https://github.com/kagkarlsson/db-scheduler/issues/115#issuecomment-649601944), [rafaelhofmann](https://github.com/kagkarlsson/db-scheduler/issues/140#issuecomment-704955500)):
+As such, also appreciated by users ([cbarbosa2](https://github.com/kagkarlsson/db-scheduler/issues/115#issuecomment-649601944), [rafaelhofmann](https://github.com/kagkarlsson/db-scheduler/issues/140#issuecomment-704955500), [BukhariH](https://github.com/kagkarlsson/db-scheduler/pull/268#issue-1147378003)):
 
 > Your lib rocks! I'm so glad I got rid of Quartz and replaced it by yours which is way easier to handle!
 >
