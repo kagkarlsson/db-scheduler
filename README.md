@@ -78,11 +78,12 @@ List of organizations known to be running db-scheduler in production:
 |-------------------------------------------|--------------------------------------------------------------|
 | [Digipost](https://digipost.no)           | Provider of digital mailboxes in Norway                      |
 | [Vy Group](https://www.vy.no/en)          | One of the largest transport groups in the Nordic countries. |
-| [TransferWise](https://transferwise.com/) | A cheap, fast way to send money abroad.                      |
+| [Wise](https://wise.com/)                 | A cheap, fast way to send money abroad.                      |
 | Becker Professional Education             |                                                              |
 | [Monitoria](https://monitoria.ca)         | Website monitoring service.                                  |
 | [Loadster](https://loadster.app)          | Load testing for web applications.                           |
 | [Statens vegvesen](https://www.vegvesen.no/)| The Norwegian Public Roads Administration                  |
+| [Lightyear](https://golightyear.com/) |  A simple and approachable way to invest your money globally.    |
 
 Feel free to open a PR to add your organization to the list.
 
