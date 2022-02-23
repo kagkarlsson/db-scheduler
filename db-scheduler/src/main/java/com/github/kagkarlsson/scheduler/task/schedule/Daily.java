@@ -17,6 +17,7 @@ package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -27,7 +28,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class Daily implements Schedule {
+public class Daily implements Schedule, Serializable {
 
     private final List<LocalTime> times;
     private final ZoneId zone;

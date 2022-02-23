@@ -22,6 +22,7 @@ import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
@@ -51,13 +52,14 @@ public interface SchedulerClient {
      */
     <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime);
 
+    <T> void schedule(SchedulableInstance<T> schedulableInstance);
+
     /**
      * Update an existing execution to a new execution-time. If the execution does not exist or if it is currently
      * running, an exception is thrown.
      *
      * @param taskInstanceId
      * @param newExecutionTime the new execution-time
-     * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      */
@@ -70,11 +72,18 @@ public interface SchedulerClient {
      * @param taskInstanceId
      * @param newExecutionTime the new execution-time
      * @param newData          the new task-data
-     * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      */
     <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
+
+    /**
+     * Update an existing execution with a new execution-time and new task-data. If the execution does not exist or if
+     * it is currently running, an exception is thrown.
+     *
+     * @param schedulableInstance the updated instance
+     */
+    <T> void reschedule(SchedulableInstance<T> schedulableInstance);
 
     /**
      * Removes/Cancels an execution.
@@ -191,6 +200,7 @@ public interface SchedulerClient {
 
         public SchedulerClient build() {
             TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, knownTasks);
+            final SystemClock clock = new SystemClock();
 
             TaskRepository taskRepository = new JdbcTaskRepository(
                 dataSource,
@@ -199,9 +209,10 @@ public interface SchedulerClient {
                 tableName,
                 taskResolver,
                 new SchedulerClientName(),
-                serializer);
+                serializer,
+                clock);
 
-            return new StandardSchedulerClient(taskRepository);
+            return new StandardSchedulerClient(taskRepository, clock);
         }
     }
 
@@ -209,28 +220,39 @@ public interface SchedulerClient {
 
         private static final Logger LOG = LoggerFactory.getLogger(StandardSchedulerClient.class);
         protected final TaskRepository taskRepository;
+        private final Clock clock;
         private SchedulerClientEventListener schedulerClientEventListener;
 
-        StandardSchedulerClient(TaskRepository taskRepository) {
-            this(taskRepository, SchedulerClientEventListener.NOOP);
+        StandardSchedulerClient(TaskRepository taskRepository, Clock clock) {
+            this(taskRepository, SchedulerClientEventListener.NOOP, clock);
         }
 
-        StandardSchedulerClient(TaskRepository taskRepository, SchedulerClientEventListener schedulerClientEventListener) {
+        StandardSchedulerClient(TaskRepository taskRepository, SchedulerClientEventListener schedulerClientEventListener, Clock clock) {
             this.taskRepository = taskRepository;
             this.schedulerClientEventListener = schedulerClientEventListener;
+            this.clock = clock;
         }
 
         @Override
         public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
-            boolean success = taskRepository.createIfNotExists(new Execution(executionTime, taskInstance));
+            boolean success = taskRepository.createIfNotExists(SchedulableInstance.of(taskInstance, executionTime));
             if (success) {
                 notifyListeners(ClientEvent.EventType.SCHEDULE, taskInstance, executionTime);
             }
+        }
+        @Override
+        public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
+            schedule(schedulableInstance.getTaskInstance(), schedulableInstance.getNextExecutionTime(clock.now()));
         }
 
         @Override
         public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
             reschedule(taskInstanceId, newExecutionTime, null);
+        }
+
+        @Override
+        public <T> void reschedule(SchedulableInstance<T> schedulableInstance) {
+            reschedule(schedulableInstance, schedulableInstance.getNextExecutionTime(clock.now()), schedulableInstance.getTaskInstance().getData());
         }
 
         @Override

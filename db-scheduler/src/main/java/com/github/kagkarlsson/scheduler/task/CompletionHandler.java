@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,6 @@ public interface CompletionHandler<T> {
     }
 
     class OnCompleteReschedule<T> implements CompletionHandler<T> {
-
         private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReschedule.class);
         private final Schedule schedule;
         private final boolean setNewData;
@@ -69,7 +69,5 @@ public interface CompletionHandler<T> {
         }
 
     }
-
-
 
 }

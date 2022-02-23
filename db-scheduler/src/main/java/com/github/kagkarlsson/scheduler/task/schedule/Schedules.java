@@ -23,23 +23,23 @@ import java.util.List;
 public class Schedules {
     private static final Parser SCHEDULE_PARSER = CompositeParser.of(new FixedDelayParser(), new DailyParser());
 
-    public static Schedule daily(LocalTime... times) {
+    public static Daily daily(LocalTime... times) {
         return new Daily(times);
     }
 
-    public static Schedule daily(ZoneId zone, LocalTime... times) {
+    public static Daily daily(ZoneId zone, LocalTime... times) {
         return new Daily(zone, times);
     }
 
-    public static Schedule fixedDelay(Duration delay) {
+    public static FixedDelay fixedDelay(Duration delay) {
         return FixedDelay.of(delay);
     }
 
-    public static Schedule cron(String cronPattern) {
+    public static CronSchedule cron(String cronPattern) {
         return new CronSchedule(cronPattern);
     }
 
-    public static Schedule cron(String cronPattern, ZoneId zoneId) {
+    public static CronSchedule cron(String cronPattern, ZoneId zoneId) {
         return new CronSchedule(cronPattern, zoneId);
     }
 

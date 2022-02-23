@@ -13,24 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler.task.helper;
 
-import java.time.Instant;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
-public interface Task<T> extends ExecutionHandler<T> {
-    String getName();
+import java.io.Serializable;
+import java.util.Objects;
 
-    Class<T> getDataClass();
+public interface ScheduleAndData extends Serializable {
+    Schedule getSchedule();
+    Object getData();
 
-    TaskInstance<T> instance(String id);
-    TaskInstance<T> instance(String id, T data);
-
-    default TaskInstanceId instanceId(String id) {  return TaskInstanceId.of(getName(), id); };
-
-    SchedulableInstance<T> schedulableInstance(String id);
-    SchedulableInstance<T> schedulableInstance(String id, T data);
-
-    FailureHandler<T> getFailureHandler();
-
-    DeadExecutionHandler<T> getDeadExecutionHandler();
+    default PlainScheduleAndData of(Schedule schedule, Object data) {
+        return new PlainScheduleAndData(schedule, data);
+    }
 }

@@ -19,18 +19,10 @@ import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Duration;
+import java.time.Instant;
 
 @Deprecated
 public class ComposableTask {
-
-    public static RecurringTask<Void> recurringTask(String name, Schedule schedule, VoidExecutionHandler<Void> executionHandler) {
-        return new RecurringTask<Void>(name, schedule, Void.class) {
-            @Override
-            public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
-                executionHandler.execute(taskInstance, executionContext);
-            }
-        };
-    }
 
     public static <T> OneTimeTask<T> onetimeTask(String name, Class<T> dataClass, VoidExecutionHandler<T> executionHandler) {
         return new OneTimeTask<T>(name, dataClass) {
@@ -44,6 +36,16 @@ public class ComposableTask {
     public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler<T> completionHandler, VoidExecutionHandler<T> executionHandler) {
         return new AbstractTask<T>(name, dataClass, new FailureHandler.OnFailureRetryLater<>(Duration.ofMinutes(5)), new DeadExecutionHandler.ReviveDeadExecution<>()) {
             @Override
+            public SchedulableInstance<T> schedulableInstance(String id) {
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), (currentTime) -> currentTime);
+            }
+
+            @Override
+            public SchedulableInstance<T> schedulableInstance(String id, T data) {
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), (currentTime) -> currentTime);
+            }
+
+            @Override
             public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                 executionHandler.execute(taskInstance, executionContext);
                 return completionHandler;
@@ -53,6 +55,16 @@ public class ComposableTask {
 
     public static <T> Task<T> customTask(String name, Class<T> dataClass, CompletionHandler<T> completionHandler, FailureHandler<T> failureHandler, VoidExecutionHandler<T> executionHandler) {
         return new AbstractTask<T>(name, dataClass, failureHandler, new DeadExecutionHandler.ReviveDeadExecution<>()) {
+            @Override
+            public SchedulableInstance<T> schedulableInstance(String id) {
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), (currentTime) -> currentTime);
+            }
+
+            @Override
+            public SchedulableInstance<T> schedulableInstance(String id, T data) {
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), (currentTime) -> currentTime);
+            }
+
             @Override
             public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                 executionHandler.execute(taskInstance, executionContext);

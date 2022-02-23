@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler.compatibility;
 
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
+import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -14,6 +15,8 @@ import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
@@ -169,12 +172,12 @@ public abstract class CompatibilityTest {
         taskResolver.addTask(oneTime);
 
         DataSource dataSource = getDataSource();
-        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), new SystemClock());
 
         final Instant now = TimeHelper.truncatedInstantNow();
 
-        jdbcTaskRepository.createIfNotExists(new Execution(now.plusSeconds(10), oneTime.instance("future1")));
-        jdbcTaskRepository.createIfNotExists(new Execution(now, oneTime.instance("id1")));
+        jdbcTaskRepository.createIfNotExists(SchedulableInstance.of(oneTime.instance("future1"), now.plusSeconds(10)));
+        jdbcTaskRepository.createIfNotExists(new SchedulableTaskInstance<>(oneTime.instance("id1"), now));
         List<Execution> picked = jdbcTaskRepository.lockAndGetDue(now, POLLING_LIMIT);
         assertThat(picked, IsCollectionWithSize.hasSize(1));
 
@@ -186,12 +189,12 @@ public abstract class CompatibilityTest {
         taskResolver.addTask(oneTime);
 
         DataSource dataSource = getDataSource();
-        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), new SystemClock());
 
         final Instant now = TimeHelper.truncatedInstantNow();
 
         final TaskInstance<String> taskInstance = oneTime.instance("id1", data);
-        final Execution newExecution = new Execution(now, taskInstance);
+        final SchedulableTaskInstance<String> newExecution = new SchedulableTaskInstance<>(taskInstance, now);
         jdbcTaskRepository.createIfNotExists(newExecution);
         Execution storedExecution = (jdbcTaskRepository.getExecution(taskInstance)).get();
         assertThat(storedExecution.getExecutionTime(), is(now));
@@ -225,12 +228,12 @@ public abstract class CompatibilityTest {
         taskResolver.addTask(recurringWithData);
 
         DataSource dataSource = getDataSource();
-        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), new SystemClock());
 
         final Instant now = TimeHelper.truncatedInstantNow();
 
         final TaskInstance<Integer> taskInstance = recurringWithData.instance("id1", 1);
-        final Execution newExecution = new Execution(now, taskInstance);
+        final SchedulableTaskInstance<Integer> newExecution = new SchedulableTaskInstance<>(taskInstance, now);
 
         jdbcTaskRepository.createIfNotExists(newExecution);
 
