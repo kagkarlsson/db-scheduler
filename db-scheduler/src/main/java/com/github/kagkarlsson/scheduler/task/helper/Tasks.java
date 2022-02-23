@@ -155,7 +155,8 @@ public class Tasks {
                     return (executionComplete, executionOperations) -> {
                         executionOperations.reschedule(
                             executionComplete,
-                            nextData.getSchedule().getNextExecutionTime(executionComplete)
+                            nextData.getSchedule().getNextExecutionTime(executionComplete),
+                            nextData
                         );
                     };
                 }

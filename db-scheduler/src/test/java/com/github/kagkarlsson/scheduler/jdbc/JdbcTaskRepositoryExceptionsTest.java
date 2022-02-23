@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler.jdbc;
 import java.time.Instant;
 import java.util.List;
 
+import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ public class JdbcTaskRepositoryExceptionsTest {
     @BeforeEach
     public void setup() {
         expectedTableName = randomAlphanumeric(5);
-        jdbcTaskRepository = new JdbcTaskRepository(null, expectedTableName, null, null, null, mockJdbcRunner);
+        jdbcTaskRepository = new JdbcTaskRepository(null, expectedTableName, null, null, null, mockJdbcRunner, new SystemClock());
     }
 
     @Test

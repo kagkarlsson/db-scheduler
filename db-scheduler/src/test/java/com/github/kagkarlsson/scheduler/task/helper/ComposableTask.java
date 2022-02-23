@@ -37,12 +37,12 @@ public class ComposableTask {
         return new AbstractTask<T>(name, dataClass, new FailureHandler.OnFailureRetryLater<>(Duration.ofMinutes(5)), new DeadExecutionHandler.ReviveDeadExecution<>()) {
             @Override
             public SchedulableInstance<T> schedulableInstance(String id) {
-                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), Instant::now);
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), (currentTime) -> currentTime);
             }
 
             @Override
             public SchedulableInstance<T> schedulableInstance(String id, T data) {
-                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), Instant::now);
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), (currentTime) -> currentTime);
             }
 
             @Override
@@ -57,12 +57,12 @@ public class ComposableTask {
         return new AbstractTask<T>(name, dataClass, failureHandler, new DeadExecutionHandler.ReviveDeadExecution<>()) {
             @Override
             public SchedulableInstance<T> schedulableInstance(String id) {
-                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), Instant::now);
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), (currentTime) -> currentTime);
             }
 
             @Override
             public SchedulableInstance<T> schedulableInstance(String id, T data) {
-                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), Instant::now);
+                return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), (currentTime) -> currentTime);
             }
 
             @Override

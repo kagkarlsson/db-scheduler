@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler.compatibility;
 
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
+import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -171,7 +172,7 @@ public abstract class CompatibilityTest {
         taskResolver.addTask(oneTime);
 
         DataSource dataSource = getDataSource();
-        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), new SystemClock());
 
         final Instant now = TimeHelper.truncatedInstantNow();
 
@@ -188,7 +189,7 @@ public abstract class CompatibilityTest {
         taskResolver.addTask(oneTime);
 
         DataSource dataSource = getDataSource();
-        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), new SystemClock());
 
         final Instant now = TimeHelper.truncatedInstantNow();
 
@@ -227,7 +228,7 @@ public abstract class CompatibilityTest {
         taskResolver.addTask(recurringWithData);
 
         DataSource dataSource = getDataSource();
-        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"));
+        final JdbcTaskRepository jdbcTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled(), DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), new SystemClock());
 
         final Instant now = TimeHelper.truncatedInstantNow();
 

@@ -17,11 +17,12 @@ package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-public class FixedDelay implements Schedule {
+public class FixedDelay implements Schedule, Serializable {
 
     private final Duration duration;
 

@@ -16,20 +16,19 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import java.time.Instant;
-import java.util.function.Supplier;
 
 public class SchedulableTaskInstance<T> implements SchedulableInstance<T> {
     private final TaskInstance<T> taskInstance;
-    Supplier<Instant> executionTime;
+    NextExecutionTime executionTime;
 
-    public SchedulableTaskInstance(TaskInstance<T> taskInstance, Supplier<Instant> executionTime) {
+    public SchedulableTaskInstance(TaskInstance<T> taskInstance, NextExecutionTime executionTime) {
         this.taskInstance = taskInstance;
         this.executionTime = executionTime;
     }
 
     public SchedulableTaskInstance(TaskInstance<T> taskInstance, Instant executionTime) {
         this.taskInstance = taskInstance;
-        this.executionTime = () -> executionTime;
+        this.executionTime = (_ignored) -> executionTime;
     }
 
     @Override
@@ -38,7 +37,8 @@ public class SchedulableTaskInstance<T> implements SchedulableInstance<T> {
     }
 
     @Override
-    public Instant getExecutionTime() {
-        return executionTime.get();
+    public Instant getNextExecutionTime(Instant currentTime) {
+        return executionTime.getNextExecutionTime(currentTime);
     }
+
 }

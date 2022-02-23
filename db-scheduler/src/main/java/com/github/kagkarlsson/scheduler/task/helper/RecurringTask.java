@@ -49,12 +49,12 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id) {
-        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), () -> schedule.getInitialExecutionTime(Instant.now()));
+        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), schedule::getInitialExecutionTime);
     }
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id, T data) {
-        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), () -> schedule.getInitialExecutionTime(Instant.now()));
+        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), schedule::getInitialExecutionTime);
     }
 
     @Override

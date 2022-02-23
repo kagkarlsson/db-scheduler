@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.AbstractTask;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.NextExecutionTime;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
@@ -30,23 +31,23 @@ import java.util.function.Function;
 
 public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup {
     private ScheduleOnStartup<T> scheduleOnStartup;
-    private final Function<Instant,Instant> defaultExecutionTime;
+    private final NextExecutionTime defaultExecutionTime;
 
     public CustomTask(String name, Class<T> dataClass, ScheduleOnStartup<T> scheduleOnStartup, Function<Instant,Instant> defaultExecutionTime,
                       FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
         super(name, dataClass, failureHandler, deadExecutionHandler);
         this.scheduleOnStartup = scheduleOnStartup;
-        this.defaultExecutionTime = defaultExecutionTime;
+        this.defaultExecutionTime = NextExecutionTime.from(defaultExecutionTime);
     }
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id) {
-        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), () -> defaultExecutionTime.apply(Instant.now()));
+        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), defaultExecutionTime);
     }
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id, T data) {
-        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), () -> defaultExecutionTime.apply(Instant.now()));
+        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), defaultExecutionTime);
     }
 
     @Override

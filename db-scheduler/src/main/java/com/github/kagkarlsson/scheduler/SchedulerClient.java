@@ -200,6 +200,7 @@ public interface SchedulerClient {
 
         public SchedulerClient build() {
             TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, knownTasks);
+            final SystemClock clock = new SystemClock();
 
             TaskRepository taskRepository = new JdbcTaskRepository(
                 dataSource,
@@ -208,9 +209,10 @@ public interface SchedulerClient {
                 tableName,
                 taskResolver,
                 new SchedulerClientName(),
-                serializer);
+                serializer,
+                clock);
 
-            return new StandardSchedulerClient(taskRepository);
+            return new StandardSchedulerClient(taskRepository, clock);
         }
     }
 
@@ -218,15 +220,17 @@ public interface SchedulerClient {
 
         private static final Logger LOG = LoggerFactory.getLogger(StandardSchedulerClient.class);
         protected final TaskRepository taskRepository;
+        private final Clock clock;
         private SchedulerClientEventListener schedulerClientEventListener;
 
-        StandardSchedulerClient(TaskRepository taskRepository) {
-            this(taskRepository, SchedulerClientEventListener.NOOP);
+        StandardSchedulerClient(TaskRepository taskRepository, Clock clock) {
+            this(taskRepository, SchedulerClientEventListener.NOOP, clock);
         }
 
-        StandardSchedulerClient(TaskRepository taskRepository, SchedulerClientEventListener schedulerClientEventListener) {
+        StandardSchedulerClient(TaskRepository taskRepository, SchedulerClientEventListener schedulerClientEventListener, Clock clock) {
             this.taskRepository = taskRepository;
             this.schedulerClientEventListener = schedulerClientEventListener;
+            this.clock = clock;
         }
 
         @Override
@@ -238,7 +242,7 @@ public interface SchedulerClient {
         }
         @Override
         public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
-            schedule(schedulableInstance.getTaskInstance(), schedulableInstance.getExecutionTime());
+            schedule(schedulableInstance.getTaskInstance(), schedulableInstance.getNextExecutionTime(clock.now()));
         }
 
         @Override
@@ -248,7 +252,7 @@ public interface SchedulerClient {
 
         @Override
         public <T> void reschedule(SchedulableInstance<T> schedulableInstance) {
-            reschedule(schedulableInstance, schedulableInstance.getExecutionTime(), schedulableInstance.getTaskInstance().getData());
+            reschedule(schedulableInstance, schedulableInstance.getNextExecutionTime(clock.now()), schedulableInstance.getTaskInstance().getData());
         }
 
         @Override

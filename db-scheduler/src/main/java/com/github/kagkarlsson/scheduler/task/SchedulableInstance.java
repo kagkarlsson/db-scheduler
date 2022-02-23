@@ -16,12 +16,11 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import java.time.Instant;
-import java.util.function.Supplier;
 
 public interface SchedulableInstance<T> extends TaskInstanceId {
 
     TaskInstance<T> getTaskInstance();
-    Instant getExecutionTime();
+    Instant getNextExecutionTime(Instant currentTime);
 
     default String getTaskName() {
         return getTaskInstance().getTaskName();
@@ -35,9 +34,7 @@ public interface SchedulableInstance<T> extends TaskInstanceId {
         return new SchedulableTaskInstance<T>(taskInstance, executionTime);
     }
 
-    static <T> SchedulableInstance<T> of(TaskInstance<T> taskInstance, Supplier<Instant> executionTime) {
+    static <T> SchedulableInstance<T> of(TaskInstance<T> taskInstance, NextExecutionTime executionTime) {
         return new SchedulableTaskInstance<T>(taskInstance, executionTime);
     }
-
-
 }

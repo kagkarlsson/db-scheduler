@@ -64,7 +64,7 @@ public class JdbcTaskRepositoryTest {
         knownTasks.add(alternativeOneTimeTask);
         testableRegistry = new TestableRegistry(true, Collections.emptyList());
         taskResolver = new TaskResolver(testableRegistry, knownTasks);
-        taskRepository = new JdbcTaskRepository(DB.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed(SCHEDULER_NAME));
+        taskRepository = new JdbcTaskRepository(DB.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed(SCHEDULER_NAME), new SystemClock());
     }
 
     @Test
@@ -325,7 +325,7 @@ public class JdbcTaskRepositoryTest {
         createDeadExecution(oneTimeTask.instance("id1"), timeDied);
 
         TaskResolver taskResolverMissingTask = new TaskResolver(testableRegistry);
-        JdbcTaskRepository repoMissingTask = new JdbcTaskRepository(DB.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolverMissingTask, new SchedulerName.Fixed(SCHEDULER_NAME));
+        JdbcTaskRepository repoMissingTask = new JdbcTaskRepository(DB.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolverMissingTask, new SchedulerName.Fixed(SCHEDULER_NAME), new SystemClock());
 
         assertThat(taskResolverMissingTask.getUnresolved(), hasSize(0));
         assertEquals(0, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
