@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import java.io.NotSerializableException;
 import java.io.StreamCorruptedException;
 
+import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import org.junit.jupiter.api.Test;
 
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;

@@ -37,6 +37,7 @@
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
+        <!-- Shaded -->
         <dependency>
             <groupId>com.cronutils</groupId>
             <artifactId>cron-utils</artifactId>
@@ -48,9 +49,15 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!-- Optional -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
             <optional>true</optional>
         </dependency>
 

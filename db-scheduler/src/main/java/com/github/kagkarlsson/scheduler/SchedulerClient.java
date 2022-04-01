@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutin
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;

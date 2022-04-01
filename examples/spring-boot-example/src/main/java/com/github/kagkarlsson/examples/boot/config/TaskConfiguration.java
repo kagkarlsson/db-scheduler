@@ -19,13 +19,11 @@ import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDela
 
 import com.github.kagkarlsson.examples.boot.CounterService;
 import com.github.kagkarlsson.scheduler.SchedulerName;
-import com.github.kagkarlsson.scheduler.Serializer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
