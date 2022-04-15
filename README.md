@@ -292,7 +292,7 @@ For Java serialization it is recommended to specify a `serialVersionUID` to be a
 and the class changes, deserialization will likely fail with a `InvalidClassException`. Should this happen, find and set the current auto-generated
 `serialVersionUID` explicitly. It will then be possible to do non-breaking changes to the class.
 
-If you need to migrate from Java serialization to a `GsonSerializer`, configure the scheduler to use a `SerializerWithFallbackDeserializers´:
+If you need to migrate from Java serialization to a `GsonSerializer`, configure the scheduler to use a `SerializerWithFallbackDeserializers`:
 
 ```java
 .serializer(new SerializerWithFallbackDeserializers(new GsonSerializer(), new JavaSerializer()))
