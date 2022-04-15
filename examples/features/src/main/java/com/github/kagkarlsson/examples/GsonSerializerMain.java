@@ -43,6 +43,7 @@ public class GsonSerializerMain extends Example {
         final Scheduler scheduler = Scheduler
             .create(dataSource, myAdhocTask)
             .serializer(new GsonSerializer())
+            .registerShutdownHook()
             .build();
 
         scheduler.start();

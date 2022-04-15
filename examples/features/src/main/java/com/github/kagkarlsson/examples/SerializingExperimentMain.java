@@ -13,34 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.manual;
+package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.serializer.GsonSerializer;
 import com.github.kagkarlsson.scheduler.serializer.JavaSerializer;
-import com.github.kagkarlsson.scheduler.serializer.MigratingSerializer;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import com.github.kagkarlsson.scheduler.serializer.SerializerWithFallbackDeserializers;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import org.postgresql.ds.PGSimpleDataSource;
 
 import javax.sql.DataSource;
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
 /*
 
-    Setup for testing out changes to code with persistent data.
+    Setup for testing out changes to code with persistent data. Requires non-embedded postgres database. Setup using Docker.
 
     docker run -d --name my_postgres -v my_dbdata:/var/lib/postgresql/data -p 54320:5432 -e POSTGRES_PASSWORD=my_password postgres:13
     psql -h localhost -p 54320 postgres postgres
-    CREATE TABLE ....
+    create table scheduled_tasks (  task_name text not null,  task_instance text not null,  task_data bytea,  execution_time timestamp with time zone not null,  picked BOOLEAN not null,  picked_by text,  last_success timestamp with time zone,  last_failure timestamp with time zone,  consecutive_failures INT,  last_heartbeat timestamp with time zone,  version BIGINT not null,  PRIMARY KEY (task_name, task_instance));
 
-    run scheduler...
+    get json data
+      select convert_from(task_data, 'UTF-8') from scheduled_tasks ;
 
-    select convert_from(task_data, 'UTF-8') from scheduled_tasks ;
+    Not setting 'serialVersionUID' to begin with might cause this on class-changes:
+    java.io.InvalidClassException: com.github.kagkarlsson.examples.SerializingExperimentMain$MyData; local class incompatible: stream classdesc serialVersionUID = 6236001007065622457, local class serialVersionUID = 1
+
  */
 public class SerializingExperimentMain {
 
@@ -67,17 +70,21 @@ public class SerializingExperimentMain {
             .create(dataSource)
             .startTasks(task)
             .pollingInterval(Duration.ofSeconds(1))
+            .heartbeatInterval(Duration.ofSeconds(3))
 //            .serializer(new GsonSerializer())
-            .serializer(new MigratingSerializer(new JavaSerializer(), new GsonSerializer()))
+//            .serializer(new JavaSerializer())
+//            .serializer(new SerializerWithFallbackDeserializers(new GsonSerializer(), new JavaSerializer()))
+            .serializer(new SerializerWithFallbackDeserializers(new JavaSerializer(), new GsonSerializer()))
             .registerShutdownHook()
             .build();
 
         scheduler.start();
     }
 
-    public static class MyData {
+    public static class MyData implements Serializable {
         public final long id;
         private final Instant time;
+        private static final long serialVersionUID = 6236001007065622457L;
 
         public MyData(long id, Instant time) {
             this.id = id;

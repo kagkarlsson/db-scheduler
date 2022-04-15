@@ -24,15 +24,15 @@ import java.time.Instant;
 public class GsonSerializer implements Serializer {
     private final Gson gson;
 
-    public GsonSerializer() {
-        this(getDefaultGson());
-    }
-
     public static Gson getDefaultGson() {
         return new GsonBuilder()
             .serializeNulls()
             .registerTypeAdapter(Instant.class, new InstantAdapter())
             .create();
+    }
+
+    public GsonSerializer() {
+        this(getDefaultGson());
     }
 
     public GsonSerializer(Gson gson) {
