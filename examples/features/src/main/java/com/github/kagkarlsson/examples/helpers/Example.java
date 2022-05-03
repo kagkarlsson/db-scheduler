@@ -26,7 +26,7 @@ public abstract class Example {
 
     public abstract void run(DataSource ds);
 
-    protected void runWithDatasource() {
+    public void runWithDatasource() {
         run(HsqlDatasource.initDatabase());
     }
 
