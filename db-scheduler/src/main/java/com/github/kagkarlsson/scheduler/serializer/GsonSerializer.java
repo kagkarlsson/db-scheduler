@@ -19,10 +19,13 @@ import com.github.kagkarlsson.scheduler.serializer.gson.InstantAdapter;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.function.Consumer;
 
 public class GsonSerializer implements Serializer {
+    public static final Charset CHARSET = StandardCharsets.UTF_8;
     private final Gson gson;
 
     public static GsonBuilder getDefaultGson() {
@@ -47,12 +50,12 @@ public class GsonSerializer implements Serializer {
 
     @Override
     public byte[] serialize(Object object) {
-        return gson.toJson(object).getBytes();
+        return gson.toJson(object).getBytes(CHARSET);
     }
 
     @Override
     public <T> T deserialize(Class<T> clazz, byte[] serializedData) {
-        return gson.fromJson(new String(serializedData), clazz);
+        return gson.fromJson(new String(serializedData, CHARSET), clazz);
     }
 
 }
