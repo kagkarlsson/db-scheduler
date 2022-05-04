@@ -99,6 +99,12 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+			<!-- Override to make testcontainers work on M1 -->
+			<dependency>
+				<groupId>net.java.dev.jna</groupId>
+				<artifactId>jna</artifactId>
+				<version>5.11.0</version>
+			</dependency>
 			<dependency>
 				<groupId>org.apache.commons</groupId>
 				<artifactId>commons-lang3</artifactId>

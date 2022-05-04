@@ -20,7 +20,7 @@
         <java8-matchers.version>1.6</java8-matchers.version>
         <equals-verifier.version>3.9</equals-verifier.version>
         <micro-jdbc.version>0.3</micro-jdbc.version>
-        <otj-pg-embedded.version>0.11.4</otj-pg-embedded.version>
+        <otj-pg-embedded.version>1.0.1</otj-pg-embedded.version>
         <postgresql.version>42.3.3</postgresql.version>
         <slf4j.version>1.7.36</slf4j.version>
         <test.excludedTags>compatibility</test.excludedTags>
@@ -75,6 +75,7 @@
             <artifactId>jackson-annotations</artifactId>
             <optional>true</optional>
         </dependency>
+
 
         <!-- Test -->
         <dependency>
