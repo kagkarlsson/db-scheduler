@@ -22,11 +22,11 @@ public class SerializerWithFallbackDeserializers implements Serializer {
 
     private static final Logger LOG = LoggerFactory.getLogger(SerializerWithFallbackDeserializers.class);
     private final Serializer serializer;
-    private final Serializer[] fallbackDeserializers;
+    private final Serializer fallbackDeserializer;
 
-    public SerializerWithFallbackDeserializers(Serializer serializer, Serializer ... fallbackDeserializers) {
+    public SerializerWithFallbackDeserializers(Serializer serializer, Serializer fallbackDeserializer) {
         this.serializer = serializer;
-        this.fallbackDeserializers = fallbackDeserializers;
+        this.fallbackDeserializer = fallbackDeserializer;
     }
     @Override
     public byte[] serialize(Object data) {
@@ -39,7 +39,7 @@ public class SerializerWithFallbackDeserializers implements Serializer {
             return serializer.deserialize(clazz, serializedData);
         } catch (Exception e) {
             LOG.debug("Failed to deserialize data. Trying fallback Serializer.", e);
-            return fallbackDeserializers[0].deserialize(clazz, serializedData);
+            return fallbackDeserializer.deserialize(clazz, serializedData);
         }
     }
 }
