@@ -22,14 +22,14 @@ import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 
 import javax.sql.DataSource;
-import java.io.Serializable;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 
-public class GsonSerializerMain extends Example {
+public class JsonSerializerMain extends Example {
 
     public static void main(String[] args) {
-        new GsonSerializerMain().runWithDatasource();
+        new JsonSerializerMain().runWithDatasource();
     }
 
     @Override
@@ -42,18 +42,20 @@ public class GsonSerializerMain extends Example {
 
         final Scheduler scheduler = Scheduler
             .create(dataSource, myAdhocTask)
-            .serializer(new GsonSerializer())
+            .serializer(new GsonSerializer()) // also try .serializer(new JacksonSerializer())
             .registerShutdownHook()
+            .pollingInterval(Duration.ofSeconds(1))
             .build();
 
         scheduler.start();
 
-        scheduler.schedule(myAdhocTask.instance("id1", new JsonData(1001L, Instant.now())), Instant.now().plusSeconds(5));
+        scheduler.schedule(myAdhocTask.instance("id1", new JsonData(1001L, Instant.now())), Instant.now().plusSeconds(1));
     }
 
     public static class JsonData {
-        public final long id;
-        private final Instant time;
+        public long id;
+        private Instant time;
+        private JsonData() {}
 
         public JsonData(long id, Instant time) {
             this.id = id;

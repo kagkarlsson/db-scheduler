@@ -20,23 +20,29 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.time.Instant;
+import java.util.function.Consumer;
 
 public class GsonSerializer implements Serializer {
     private final Gson gson;
 
-    public static Gson getDefaultGson() {
+    public static GsonBuilder getDefaultGson() {
         return new GsonBuilder()
             .serializeNulls()
-            .registerTypeAdapter(Instant.class, new InstantAdapter())
-            .create();
+            .registerTypeAdapter(Instant.class, new InstantAdapter());
     }
 
     public GsonSerializer() {
-        this(getDefaultGson());
+        this(getDefaultGson().create());
     }
 
     public GsonSerializer(Gson gson) {
         this.gson = gson;
+    }
+
+    public GsonSerializer(Consumer<GsonBuilder> gsonCustomizer) {
+        GsonBuilder defaultGson = getDefaultGson();
+        gsonCustomizer.accept(defaultGson);
+        this.gson = defaultGson.create();
     }
 
     @Override
