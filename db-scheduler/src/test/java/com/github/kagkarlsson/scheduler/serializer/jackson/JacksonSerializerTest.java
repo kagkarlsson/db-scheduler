@@ -8,7 +8,7 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-public class InstantSerializerTest {
+public class JacksonSerializerTest {
 
     @Test
     public void serialize_instant() {
