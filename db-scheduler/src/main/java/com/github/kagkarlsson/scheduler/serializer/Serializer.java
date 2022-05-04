@@ -13,28 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.examples.helpers;
+package com.github.kagkarlsson.scheduler.serializer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public interface Serializer {
 
-import javax.sql.DataSource;
+    byte[] serialize(Object data);
 
-public abstract class Example {
+    <T> T deserialize(Class<T> clazz, byte[] serializedData);
 
-    protected Logger log = LoggerFactory.getLogger(getClass());
+    Serializer DEFAULT_JAVA_SERIALIZER = new JavaSerializer();
 
-    public abstract void run(DataSource ds);
-
-    public void runWithDatasource() {
-        run(HsqlDatasource.initDatabase());
-    }
-
-    protected void sleep(int millis) {
-        try {
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

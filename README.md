@@ -154,6 +154,7 @@ scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.
 * [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)
 * [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java)
 * [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java)
+* [JsonSerializerMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JsonSerializerMain.java)
 
 
 ## Configuration
@@ -227,7 +228,9 @@ Name of the table used to track task-executions. Change name in the table defini
 the table. Default `scheduled_tasks`.
 
 :gear: `.serializer(Serializer)`<br/>
-Serializer implementation to use when serializing task data. Default standard Java serialization.
+Serializer implementation to use when serializing task data. Default to using standard Java serialization,
+but db-scheduler also bundles a number of other Serializers (`GsonSerializer`, `JacksonSerializer`, `KotlinSerializer`).
+See also additional documentation under [Serializers](#Serializers).
 
 :gear: `.executorService(ExecutorService)`<br/>
 If specified, use this externally managed executor service to run executions. Ideally the number of threads it
@@ -282,6 +285,26 @@ The currently available patterns are:
 | `DAILY\|12:30,15:30...(\|time_zone)`  | Same as `.daily(LocalTime)` with optional time zone (e.g. Europe/Rome, UTC)|
 
 More details on the time zone formats can be found [here](https://docs.oracle.com/javase/8/docs/api/java/time/ZoneId.html#of-java.lang.String-).
+
+### Serializers
+
+A task-instance may have some associated data in the field `task_data`. The scheduler uses a `Serializer` to read and write this
+data to the database. By default, standard Java serialization is used, but a number of options is provided:
+
+* `GsonSerializer`
+* `JacksonSerializer`
+* `KotlinSerializer`
+
+For Java serialization it is recommended to specify a `serialVersionUID` to be able to evolve the class representing the data. If not specified,
+and the class changes, deserialization will likely fail with a `InvalidClassException`. Should this happen, find and set the current auto-generated
+`serialVersionUID` explicitly. It will then be possible to do non-breaking changes to the class.
+
+If you need to migrate from Java serialization to a `GsonSerializer`, configure the scheduler to use a `SerializerWithFallbackDeserializers`:
+
+```java
+.serializer(new SerializerWithFallbackDeserializers(new GsonSerializer(), new JavaSerializer()))
+```
+
 
 ## Third-party task repositories
 
