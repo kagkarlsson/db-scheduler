@@ -52,7 +52,7 @@ public class TaskConfiguration {
      * Define a one-time task which have to be manually scheduled.
      */
     @Bean
-    Task<Void> sampleOneTimeTask() {
+    public static Task<Void> sampleOneTimeTask() {
         return Tasks.oneTime("sample-one-time-task")
             .execute((instance, ctx) -> {
                 log.info("I am a one-time task!");
