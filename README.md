@@ -229,7 +229,7 @@ the table. Default `scheduled_tasks`.
 
 :gear: `.serializer(Serializer)`<br/>
 Serializer implementation to use when serializing task data. Default to using standard Java serialization,
-but db-scheduler also bundles a number of other Serializers (`GsonSerializer`, `JacksonSerializer`, `KotlinSerializer`).
+but db-scheduler also bundles a `GsonSerializer` and `JacksonSerializer`. See examples for a [KotlinSerializer](https://github.com/kagkarlsson/db-scheduler/blob/master/examples/features/src/main/java/com/github/kagkarlsson/examples/kotlin/KotlinSerializer.kt).
 See also additional documentation under [Serializers](#Serializers).
 
 :gear: `.executorService(ExecutorService)`<br/>
@@ -293,7 +293,7 @@ data to the database. By default, standard Java serialization is used, but a num
 
 * `GsonSerializer`
 * `JacksonSerializer`
-* `KotlinSerializer`
+* [KotlinSerializer](https://github.com/kagkarlsson/db-scheduler/blob/master/examples/features/src/main/java/com/github/kagkarlsson/examples/kotlin/KotlinSerializer.kt)
 
 For Java serialization it is recommended to specify a `serialVersionUID` to be able to evolve the class representing the data. If not specified,
 and the class changes, deserialization will likely fail with a `InvalidClassException`. Should this happen, find and set the current auto-generated
