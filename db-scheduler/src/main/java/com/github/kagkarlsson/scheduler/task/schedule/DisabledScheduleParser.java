@@ -15,25 +15,21 @@
  */
 package com.github.kagkarlsson.scheduler.task.schedule;
 
-import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import java.util.Collections;
+import java.util.List;
+import java.util.regex.MatchResult;
+import java.util.regex.Pattern;
 
-import java.time.Instant;
+final class DisabledScheduleParser extends RegexBasedParser {
+    private static final Pattern DISABLED_PATTERN = Pattern.compile("^-$");
+    private static final List<String> EXAMPLES = Collections.singletonList("-");
 
-public interface Schedule {
-
-    Instant getNextExecutionTime(ExecutionComplete executionComplete);
-
-    /**
-     * Used to get the first execution-time for a schedule. Simulates an ExecutionComplete event.
-     */
-    default Instant getInitialExecutionTime(Instant now) {
-        return getNextExecutionTime(ExecutionComplete.simulatedSuccess(now));
+    DisabledScheduleParser() {
+        super(DISABLED_PATTERN, EXAMPLES);
     }
 
-    boolean isDeterministic();
-
-    default boolean isDisabled() {
-        return false;
+    @Override
+    protected Schedule matchedSchedule(MatchResult matchResult) {
+        return new DisabledSchedule();
     }
-
 }

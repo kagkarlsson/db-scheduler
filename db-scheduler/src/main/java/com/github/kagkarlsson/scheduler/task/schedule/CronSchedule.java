@@ -24,6 +24,7 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -35,25 +36,30 @@ import java.util.Optional;
  */
 public class CronSchedule implements Schedule {
 
+    private static final String DISABLED = "-";
     private static final Logger LOG = LoggerFactory.getLogger(CronSchedule.class);
     private final String pattern;
     private final ZoneId zoneId;
     private final ExecutionTime cronExecutionTime;
 
+    public CronSchedule(String pattern) {
+        this(pattern, ZoneId.systemDefault());
+    }
+
     public CronSchedule(String pattern, ZoneId zoneId) {
         this.pattern = pattern;
-        CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING));
-        Cron cron = parser.parse(pattern);
-        this.cronExecutionTime = ExecutionTime.forCron(cron);
-
         if (zoneId == null) {
             throw new IllegalArgumentException("zoneId may not be null");
         }
         this.zoneId = zoneId;
-    }
 
-    public CronSchedule(String pattern) {
-        this(pattern, ZoneId.systemDefault());
+        if (isDisabled()) {
+            this.cronExecutionTime = new DisabledScheduleExecutionTime();
+        } else {
+            CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING));
+            Cron cron = parser.parse(pattern);
+            this.cronExecutionTime = ExecutionTime.forCron(cron);
+        }
     }
 
     @Override
@@ -77,5 +83,41 @@ public class CronSchedule implements Schedule {
     @Override
     public String toString() {
         return "CronSchedule pattern=" + pattern + ", zone=" + zoneId;
+    }
+
+    private static class DisabledScheduleExecutionTime implements ExecutionTime {
+        @Override
+        public Optional<ZonedDateTime> nextExecution(ZonedDateTime date) {
+            throw unsupportedException();
+        }
+
+        @Override
+        public Optional<Duration> timeToNextExecution(ZonedDateTime date) {
+            throw unsupportedException();
+        }
+
+        @Override
+        public Optional<ZonedDateTime> lastExecution(ZonedDateTime date) {
+            throw unsupportedException();
+        }
+
+        @Override
+        public Optional<Duration> timeFromLastExecution(ZonedDateTime date) {
+            throw unsupportedException();
+        }
+
+        @Override
+        public boolean isMatch(ZonedDateTime date) {
+            throw unsupportedException();
+        }
+
+        private UnsupportedOperationException unsupportedException() {
+            return new UnsupportedOperationException("Schedule is marked as disabled. Method should never be called");
+        }
+    }
+
+    @Override
+    public boolean isDisabled() {
+        return DISABLED.equals(pattern);
     }
 }
