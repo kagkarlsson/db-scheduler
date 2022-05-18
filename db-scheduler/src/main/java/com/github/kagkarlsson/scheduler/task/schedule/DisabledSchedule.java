@@ -19,21 +19,29 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 
 import java.time.Instant;
 
-public interface Schedule {
+public class DisabledSchedule implements Schedule{
 
-    Instant getNextExecutionTime(ExecutionComplete executionComplete);
-
-    /**
-     * Used to get the first execution-time for a schedule. Simulates an ExecutionComplete event.
-     */
-    default Instant getInitialExecutionTime(Instant now) {
-        return getNextExecutionTime(ExecutionComplete.simulatedSuccess(now));
+    @Override
+    public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
+        throw unsupportedException();
     }
 
-    boolean isDeterministic();
-
-    default boolean isDisabled() {
-        return false;
+    @Override
+    public boolean isDeterministic() {
+        throw unsupportedException();
     }
 
+    @Override
+    public Instant getInitialExecutionTime(Instant now) {
+        throw unsupportedException();
+    }
+
+    @Override
+    public boolean isDisabled() {
+        return true;
+    }
+
+    private UnsupportedOperationException unsupportedException() {
+        return new UnsupportedOperationException("DisabledSchedule does not support any other operations than 'isDisabled()'. This appears to be a bug.");
+    }
 }

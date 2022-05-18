@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.task.schedule.Daily;
+import com.github.kagkarlsson.scheduler.task.schedule.DisabledSchedule;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
@@ -50,6 +51,8 @@ public class SchedulesTest {
 
         Schedule fixedDelaySchedule = assertParsable("FIXED_DELAY|10s", FixedDelay.class);
         assertThat(fixedDelaySchedule.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plusSeconds(10)));
+
+        assertParsable("-", DisabledSchedule.class);
     }
 
     private ExecutionComplete complete(Instant timeDone) {
