@@ -34,6 +34,7 @@ import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegi
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -52,6 +53,7 @@ public class DbSchedulerAutoConfigurationTest {
                 "spring.profiles.active=integration-test"
             ).withConfiguration(AutoConfigurations.of(
                 DataSourceAutoConfiguration.class,
+                SqlInitializationAutoConfiguration.class,
                 MetricsAutoConfiguration.class,
                 CompositeMeterRegistryAutoConfiguration.class,
                 HealthContributorAutoConfiguration.class,

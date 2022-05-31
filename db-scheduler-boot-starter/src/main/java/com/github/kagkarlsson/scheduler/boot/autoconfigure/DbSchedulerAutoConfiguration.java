@@ -48,6 +48,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.ConfigurableObjectInputStream;
@@ -63,7 +64,7 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 @ConditionalOnProperty(value = "db-scheduler.enabled", matchIfMissing = true)
 public class DbSchedulerAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfiguration.class);
-    private static Predicate<Task<?>> shouldBeStarted = task -> task instanceof OnStartup;
+    private static final Predicate<Task<?>> shouldBeStarted = task -> task instanceof OnStartup;
 
     private final DbSchedulerProperties config;
     private final DataSource existingDataSource;
@@ -98,6 +99,7 @@ public class DbSchedulerAutoConfiguration {
 
     @ConditionalOnBean(DataSource.class)
     @ConditionalOnMissingBean
+    @DependsOnDatabaseInitialization
     @Bean(destroyMethod = "stop")
     public Scheduler scheduler(DbSchedulerCustomizer customizer, StatsRegistry registry) {
         log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
