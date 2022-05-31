@@ -8,7 +8,7 @@ jobs:
         java: [ '8', '11', '17' ]
     name: Temurin ${{ matrix.java }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Java ${{ matrix.java }}
       uses: actions/setup-java@v3
