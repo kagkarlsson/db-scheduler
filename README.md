@@ -86,6 +86,7 @@ List of organizations known to be running db-scheduler in production:
 | [Lightyear](https://golightyear.com/)     |  A simple and approachable way to invest your money globally.|
 | [NAV](https://www.nav.no/)                |  The Norwegian Labour and Welfare Administration             |
 | [ModernLoop](https://modernloop.io/)      |  Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination.             |
+| [Diffia](https://www.diffia.com/)         |  Norwegian eHealth company                                   |
 
 Feel free to open a PR to add your organization to the list.
 
