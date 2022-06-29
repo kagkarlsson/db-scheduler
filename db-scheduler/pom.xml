@@ -21,7 +21,7 @@
         <equals-verifier.version>3.10</equals-verifier.version>
         <bytebuddy.version>1.12.8</bytebuddy.version>
         <micro-jdbc.version>0.3</micro-jdbc.version>
-        <otj-pg-embedded.version>0.11.4</otj-pg-embedded.version>
+        <otj-pg-embedded.version>1.0.1</otj-pg-embedded.version>
         <postgresql.version>42.3.3</postgresql.version>
         <slf4j.version>1.7.36</slf4j.version>
         <test.excludedTags>compatibility</test.excludedTags>
@@ -101,6 +101,12 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>

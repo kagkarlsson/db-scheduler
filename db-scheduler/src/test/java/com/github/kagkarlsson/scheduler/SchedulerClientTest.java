@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.time.Duration.ofSeconds;
@@ -155,9 +156,12 @@ public class SchedulerClientTest {
         }
 
         @Override
-        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+        public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             executionContext.getSchedulerClient().schedule(secondTask, instant);
             this.timesExecuted++;
+            return CompletableFuture.runAsync(() -> {
+
+            });
         }
     }
 }

@@ -13,6 +13,7 @@ import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.LoggerFactory;
@@ -20,13 +21,15 @@ import org.slf4j.LoggerFactory;
 public class TestTasks {
 
     public static final CompletionHandler<Void> REMOVE_ON_COMPLETE = new CompletionHandler.OnCompleteRemove<>();
-    public static final VoidExecutionHandler<Void> DO_NOTHING = (taskInstance, executionContext) -> {};
+    public static final VoidExecutionHandler<Void> DO_NOTHING = (taskInstance, executionContext) -> {
+        return CompletableFuture.runAsync(() -> {});
+    };
 
     public static <T> OneTimeTask<T> oneTime(String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {
         return new OneTimeTask<T>(name, dataClass) {
             @Override
-            public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                handler.execute(taskInstance, executionContext);
+            public CompletableFuture<Void> executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                return handler.execute(taskInstance, executionContext);
             }
         };
     }
@@ -34,8 +37,8 @@ public class TestTasks {
     public static <T> OneTimeTask<T> oneTimeWithType(String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {
         return new OneTimeTask<T>(name, dataClass) {
             @Override
-            public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                handler.execute(taskInstance, executionContext);
+            public CompletableFuture<Void> executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                return handler.execute(taskInstance, executionContext);
             }
         };
     }
@@ -43,8 +46,8 @@ public class TestTasks {
     public static RecurringTask<Void> recurring(String name, FixedDelay schedule, VoidExecutionHandler<Void> handler) {
         return new RecurringTask<Void>(name, schedule, Void.class) {
             @Override
-            public void executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
-                handler.execute(taskInstance, executionContext);
+            public CompletableFuture<Void> executeRecurringly(TaskInstance<Void> taskInstance, ExecutionContext executionContext) {
+                return handler.execute(taskInstance, executionContext);
             }
         };
     }
@@ -52,8 +55,8 @@ public class TestTasks {
     public static <T> RecurringTask<T> recurringWithData(String name, Class<T> dataClass, T initialData, FixedDelay schedule, VoidExecutionHandler<T> handler) {
         return new RecurringTask<T>(name, schedule, dataClass, initialData) {
             @Override
-            public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                handler.execute(taskInstance, executionContext);
+            public CompletableFuture<Void> executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                return handler.execute(taskInstance, executionContext);
             }
         };
     }
@@ -98,13 +101,16 @@ public class TestTasks {
         }
 
         @Override
-        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-            this.timesExecuted.incrementAndGet();
-            try {
-                Thread.sleep(wait.toMillis());
-            } catch (InterruptedException e) {
-                LoggerFactory.getLogger(CountingHandler.class).info("Interrupted.");
-            }
+        public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+            return CompletableFuture.runAsync(() -> {
+                // TODO: put it inside cf?
+                this.timesExecuted.incrementAndGet();
+                try {
+                    Thread.sleep(wait.toMillis());
+                } catch (InterruptedException e) {
+                    LoggerFactory.getLogger(CountingHandler.class).info("Interrupted.");
+                }
+            });
         }
     }
 
@@ -117,12 +123,14 @@ public class TestTasks {
         }
 
         @Override
-        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-            try {
-                waitForNotify.await();
-            } catch (InterruptedException e) {
-                LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
-            }
+        public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+            return CompletableFuture.runAsync(() -> {
+                try {
+                    waitForNotify.await();
+                } catch (InterruptedException e) {
+                    LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
+                }
+            });
         }
     }
 
@@ -137,13 +145,15 @@ public class TestTasks {
         }
 
         @Override
-        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-            try {
-                waitForExecute.countDown();
-                waitInExecuteUntil.await();
-            } catch (InterruptedException e) {
-                LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
-            }
+        public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+            return CompletableFuture.runAsync(() -> {
+                try {
+                    waitForExecute.countDown();
+                    waitInExecuteUntil.await();
+                } catch (InterruptedException e) {
+                    LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
+                }
+            });
         }
     }
 
@@ -156,19 +166,24 @@ public class TestTasks {
         }
 
         @Override
-        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-            try {
-                Thread.sleep(millis);
-            } catch (InterruptedException e) {
-                LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
-            }
+        public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+            return CompletableFuture.runAsync(() -> {
+                try {
+                    Thread.sleep(millis);
+                } catch (InterruptedException e) {
+                    LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
+                }
+            });
         }
     }
 
     public static class DoNothingHandler<T> implements VoidExecutionHandler<T> {
 
         @Override
-        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+        public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+            return CompletableFuture.runAsync(() -> {
+
+            });
         }
     }
 
@@ -176,8 +191,11 @@ public class TestTasks {
         public T savedData;
 
         @Override
-        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+        public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             savedData = taskInstance.getData();
+            return CompletableFuture.runAsync(() -> {
+
+            });
         }
     }
 

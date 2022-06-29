@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -106,12 +107,13 @@ public class ClusterTest {
 
     @Test
     public void test_concurrency_recurring() throws InterruptedException {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(15), () -> {
 
             final RecurringTask<Void> task1 = Tasks.recurring("task1", Schedules.fixedDelay(Duration.ofMillis(0)))
                     .execute((taskInstance, executionContext) -> {
                         // do nothing
                         // System.out.println(counter.incrementAndGet() + " " + Thread.currentThread().getName());
+                        return CompletableFuture.runAsync(() -> {});
                     });
 
             final TestTasks.SimpleStatsRegistry stats = new TestTasks.SimpleStatsRegistry();

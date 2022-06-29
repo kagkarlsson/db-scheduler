@@ -24,6 +24,7 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStartup {
 
@@ -65,12 +66,15 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
     }
 
     @Override
-    public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-        executeRecurringly(taskInstance, executionContext);
-        return onComplete;
+    public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+        CompletableFuture<Void> voidFuture = executeRecurringly(taskInstance, executionContext);
+        return voidFuture.thenApply((v) -> {
+            return onComplete;
+        });
+
     }
 
-    public abstract void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+    public abstract CompletableFuture<Void> executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
     public TaskInstanceId getDefaultTaskInstance() {
         return TaskInstanceId.of(name, INSTANCE);

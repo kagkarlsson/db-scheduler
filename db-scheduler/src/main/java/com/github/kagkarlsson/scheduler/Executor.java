@@ -99,4 +99,8 @@ public class Executor {
             LOG.warn("Released execution was not found in collection of executions currently being processed. Should never happen. Execution-id: " + executionId);
         }
     }
+
+    public ExecutorService getExecutorService() {
+        return executorService;
+    }
 }

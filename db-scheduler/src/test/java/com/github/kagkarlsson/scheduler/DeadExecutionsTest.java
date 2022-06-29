@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -140,9 +141,11 @@ public class DeadExecutionsTest {
         }
 
         @Override
-        public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-            handler.execute(taskInstance, executionContext);
-            throw new RuntimeException("simulated unexpected exception");
+        public CompletableFuture<Void> executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+            return handler.execute(taskInstance, executionContext)
+                .thenApply((v) -> {
+                    throw new RuntimeException("simulated unexpected exception");
+                });
         }
     }
 

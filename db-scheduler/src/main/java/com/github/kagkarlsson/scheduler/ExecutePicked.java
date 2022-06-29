@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 @SuppressWarnings("rawtypes")
 class ExecutePicked implements Runnable {
@@ -61,15 +62,13 @@ class ExecutePicked implements Runnable {
     public void run() {
         // FIXLATER: need to cleanup all the references back to scheduler fields
         final UUID executionId = executor.addCurrentlyProcessing(new CurrentlyExecuting(pickedExecution, clock));
-        try {
-            statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
-            executePickedExecution(pickedExecution);
-        } finally {
-            executor.removeCurrentlyProcessing(executionId);
-        }
+
+        statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
+        executePickedExecution(pickedExecution, executionId);
+
     }
 
-    private void executePickedExecution(Execution execution) {
+    private void executePickedExecution(Execution execution, UUID executionId) {
         final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
         if (!task.isPresent()) {
             LOG.error("Failed to find implementation for task with name '{}'. Should have been excluded in JdbcRepository.", execution.taskInstance.getTaskName());
@@ -78,22 +77,20 @@ class ExecutePicked implements Runnable {
         }
 
         Instant executionStarted = clock.now();
-        try {
-            LOG.debug("Executing " + execution);
-            CompletionHandler completion = task.get().execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, schedulerClient));
+        CompletableFuture<CompletionHandler> completableFuture = task.get().execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, schedulerClient));
+        completableFuture.whenComplete((completion, ex) -> {
+            LOG.debug("Completing " + execution + " on " + Thread.currentThread().getName());
+            if (ex != null) {
+                failure(task.get(), execution, ex, executionStarted, (ex instanceof RuntimeException) ? "Unhandled exception" : "Error");
+                statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
+                return;
+            }
             LOG.debug("Execution done");
-
             complete(completion, execution, executionStarted);
             statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
-
-        } catch (RuntimeException unhandledException) {
-            failure(task.get(), execution, unhandledException, executionStarted, "Unhandled exception");
-            statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
-
-        } catch (Throwable unhandledError) {
-            failure(task.get(), execution, unhandledError, executionStarted, "Error");
-            statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
-        }
+            executor.removeCurrentlyProcessing(executionId);
+        });
+        LOG.debug("Launched another thread to execute the task. Running on " + Thread.currentThread().getName());
     }
 
     private void complete(CompletionHandler completion, Execution execution, Instant executionStarted) {

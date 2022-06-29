@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -61,10 +62,14 @@ public class SchedulerTest {
     }
 
     private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
+        return schedulerFor(1, executor, tasks);
+    }
+
+    private Scheduler schedulerFor(int threadpoolSize, ExecutorService executor, Task<?> ... tasks) {
         final StatsRegistry statsRegistry = StatsRegistry.NOOP;
         TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, Arrays.asList(tasks));
         JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), clock);
-        final Scheduler scheduler = new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor,
+        final Scheduler scheduler = new Scheduler(clock, taskRepository, taskRepository, taskResolver, threadpoolSize, executor,
             new SchedulerName.Fixed("name"), new Waiter(ZERO), ofSeconds(1), false,
             statsRegistry, PollingStrategyConfig.DEFAULT_FETCH, ofDays(14), ZERO, LogLevel.DEBUG, true, new ArrayList<>());
         stopScheduler.register(scheduler);
@@ -166,16 +171,16 @@ public class SchedulerTest {
     public void should_expose_cause_of_failure_to_completion_handler() throws InterruptedException {
         TestTasks.ResultRegisteringFailureHandler<Void> failureHandler = new TestTasks.ResultRegisteringFailureHandler<>();
         Task<Void> oneTimeTask = ComposableTask.customTask("cause-testing-task", Void.class, TestTasks.REMOVE_ON_COMPLETE, failureHandler,
-                (inst, ctx) -> { throw new RuntimeException("Failed!");});
+                (inst, ctx) -> { return CompletableFuture.runAsync(() -> { throw new RuntimeException("Failed!"); });});
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
         scheduler.executeDue();
-//        failureHandler.waitForNotify.await();
+        failureHandler.waitForNotify.await();
 
         assertThat(failureHandler.result, is(ExecutionComplete.Result.FAILED));
-        assertThat(failureHandler.cause.get().getMessage(), is("Failed!"));
+        assertThat(failureHandler.cause.get().getMessage(), is("java.lang.RuntimeException: Failed!"));
 
     }
 
@@ -187,8 +192,8 @@ public class SchedulerTest {
         OneTimeTask<Void> oneTimeTask = Tasks.oneTime("max-retries-task")
             .onFailure(failureHandler)
             .execute((inst, ctx) -> {
-                handler.execute(inst, ctx);
-                throw new RuntimeException("Failed!");
+                return handler.execute(inst, ctx)
+                    .thenRun(() -> { throw new RuntimeException("Failed!"); });
             });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
@@ -214,10 +219,12 @@ public class SchedulerTest {
         OneTimeTask<Void> oneTimeTask = Tasks.oneTime("exponential-defaults-task")
             .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration))
             .execute((inst, ctx) -> {
-                executionTimes.add(ctx.getExecution().executionTime);
-                if(executionTimes.size() < 10){
-                    throw new RuntimeException("Failed!");
-                }
+                return CompletableFuture.runAsync(() -> {
+                    executionTimes.add(ctx.getExecution().executionTime);
+                    if(executionTimes.size() < 10){
+                        throw new RuntimeException("Failed!");
+                    }
+                });
             });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
@@ -254,10 +261,12 @@ public class SchedulerTest {
         OneTimeTask<Void> oneTimeTask = Tasks.oneTime("exponential-custom-rate-task")
             .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration, customRate))
             .execute((inst, ctx) -> {
-                executionTimes.add(ctx.getExecution().executionTime);
-                if(executionTimes.size() < 10){
-                    throw new RuntimeException("Failed!");
-                }
+                return CompletableFuture.runAsync(() -> {
+                    executionTimes.add(ctx.getExecution().executionTime);
+                    if(executionTimes.size() < 10){
+                        throw new RuntimeException("Failed!");
+                    }
+                });
             });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);

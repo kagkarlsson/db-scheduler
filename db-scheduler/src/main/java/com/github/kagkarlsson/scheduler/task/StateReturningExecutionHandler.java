@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface StateReturningExecutionHandler<T> {
 
     /**
@@ -24,5 +26,5 @@ public interface StateReturningExecutionHandler<T> {
      * @param executionContext
      * @return
      */
-    T execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+    CompletableFuture<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 }
