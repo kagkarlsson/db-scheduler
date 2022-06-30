@@ -103,7 +103,6 @@ public class TestTasks {
         @Override
         public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             return CompletableFuture.runAsync(() -> {
-                // TODO: put it inside cf?
                 this.timesExecuted.incrementAndGet();
                 try {
                     Thread.sleep(wait.toMillis());
@@ -181,9 +180,7 @@ public class TestTasks {
 
         @Override
         public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-            return CompletableFuture.runAsync(() -> {
-
-            });
+            return CompletableFuture.runAsync(() -> {});
         }
     }
 
@@ -193,9 +190,7 @@ public class TestTasks {
         @Override
         public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             savedData = taskInstance.getData();
-            return CompletableFuture.runAsync(() -> {
-
-            });
+            return CompletableFuture.runAsync(() -> {});
         }
     }
 

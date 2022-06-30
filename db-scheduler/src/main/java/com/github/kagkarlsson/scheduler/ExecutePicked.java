@@ -62,35 +62,37 @@ class ExecutePicked implements Runnable {
     public void run() {
         // FIXLATER: need to cleanup all the references back to scheduler fields
         final UUID executionId = executor.addCurrentlyProcessing(new CurrentlyExecuting(pickedExecution, clock));
-
         statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
-        executePickedExecution(pickedExecution, executionId);
-
+        executePickedExecution(pickedExecution).whenComplete((c, ex) -> executor.removeCurrentlyProcessing(executionId));
     }
 
-    private void executePickedExecution(Execution execution, UUID executionId) {
+    private CompletableFuture<CompletionHandler> executePickedExecution(Execution execution) {
         final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
         if (!task.isPresent()) {
             LOG.error("Failed to find implementation for task with name '{}'. Should have been excluded in JdbcRepository.", execution.taskInstance.getTaskName());
             statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
-            return;
+            return new CompletableFuture<>();
         }
 
         Instant executionStarted = clock.now();
+        LOG.debug("Executing " + execution);
         CompletableFuture<CompletionHandler> completableFuture = task.get().execute(execution.taskInstance, new ExecutionContext(schedulerState, execution, schedulerClient));
-        completableFuture.whenComplete((completion, ex) -> {
-            LOG.debug("Completing " + execution + " on " + Thread.currentThread().getName());
+
+        return completableFuture.whenCompleteAsync((completion, ex) -> {
             if (ex != null) {
-                failure(task.get(), execution, ex, executionStarted, (ex instanceof RuntimeException) ? "Unhandled exception" : "Error");
-                statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
+                if (ex instanceof RuntimeException) {
+                    failure(task.get(), execution, ex, executionStarted, "Unhandled exception");
+                    statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
+                } else {
+                    failure(task.get(), execution, ex, executionStarted, "Error");
+                    statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
+                }
                 return;
             }
             LOG.debug("Execution done");
             complete(completion, execution, executionStarted);
             statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
-            executor.removeCurrentlyProcessing(executionId);
-        });
-        LOG.debug("Launched another thread to execute the task. Running on " + Thread.currentThread().getName());
+        }, executor.getExecutorService());
     }
 
     private void complete(CompletionHandler completion, Execution execution, Instant executionStarted) {

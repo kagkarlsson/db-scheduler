@@ -79,7 +79,7 @@ public class DynamicRecurringTaskTest {
     }
 
     @Test
-    public void should_support_statechanging_tasks() {
+    public void should_support_statechanging_tasks() throws InterruptedException {
         final PersistentFixedDelaySchedule scheduleAndData1 = new PersistentFixedDelaySchedule(Schedules.fixedDelay(Duration.ofSeconds(10)), 1);
 
         final String taskName = "dynamic-recurring";
@@ -101,12 +101,8 @@ public class DynamicRecurringTaskTest {
 
         assertScheduled(scheduler, task.instanceId("id1"), clock.now(), scheduleAndData1); // FixedDelay has initial execution-time now()
         scheduler.runAnyDueExecutions();
-        try {
-            // Asu
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertScheduled(scheduler, task.instanceId("id1"), clock.now().plus(Duration.ofSeconds(10)), scheduleAndData1.returnIncremented());
     }
 

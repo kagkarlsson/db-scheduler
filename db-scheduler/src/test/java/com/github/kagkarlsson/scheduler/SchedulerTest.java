@@ -62,14 +62,10 @@ public class SchedulerTest {
     }
 
     private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
-        return schedulerFor(1, executor, tasks);
-    }
-
-    private Scheduler schedulerFor(int threadpoolSize, ExecutorService executor, Task<?> ... tasks) {
         final StatsRegistry statsRegistry = StatsRegistry.NOOP;
         TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, Arrays.asList(tasks));
         JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), clock);
-        final Scheduler scheduler = new Scheduler(clock, taskRepository, taskRepository, taskResolver, threadpoolSize, executor,
+        final Scheduler scheduler = new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor,
             new SchedulerName.Fixed("name"), new Waiter(ZERO), ofSeconds(1), false,
             statsRegistry, PollingStrategyConfig.DEFAULT_FETCH, ofDays(14), ZERO, LogLevel.DEBUG, true, new ArrayList<>());
         stopScheduler.register(scheduler);
@@ -134,18 +130,21 @@ public class SchedulerTest {
     }
 
     @Test
-    public void scheduler_should_execute_recurring_task_and_reschedule() {
+    public void scheduler_should_execute_recurring_task_and_reschedule() throws InterruptedException {
         RecurringTask<Void> recurringTask = TestTasks.recurring("Recurring", FixedDelay.of(ofHours(1)), handler);
         Scheduler scheduler = schedulerFor(recurringTask);
 
         scheduler.schedule(recurringTask.instance("single"), clock.now());
         scheduler.executeDue();
-
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(handler.timesExecuted.get(), is(1));
 
         Instant nextExecutionTime = clock.now().plus(ofHours(1));
         clock.set(nextExecutionTime);
         scheduler.executeDue();
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(handler.timesExecuted.get(), is(2));
     }
 

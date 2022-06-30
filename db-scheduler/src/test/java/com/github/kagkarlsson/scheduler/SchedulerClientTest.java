@@ -159,9 +159,7 @@ public class SchedulerClientTest {
         public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             executionContext.getSchedulerClient().schedule(secondTask, instant);
             this.timesExecuted++;
-            return CompletableFuture.runAsync(() -> {
-
-            });
+            return CompletableFuture.runAsync(() -> {});
         }
     }
 }

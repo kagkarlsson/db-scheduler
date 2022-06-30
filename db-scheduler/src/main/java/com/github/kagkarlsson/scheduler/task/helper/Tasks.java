@@ -98,8 +98,7 @@ public class Tasks {
 
                 @Override
                 public CompletableFuture<Void> executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                    CompletableFuture<Void> voidFuture = executionHandler.execute(taskInstance, executionContext);
-                    return voidFuture.thenRun(() -> {});
+                    return executionHandler.execute(taskInstance, executionContext);
                 }
             };
         }
@@ -119,9 +118,7 @@ public class Tasks {
                 @Override
                 public CompletableFuture<Void> executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                     // never called
-                    return CompletableFuture.runAsync(() -> {
-
-                    });
+                    return CompletableFuture.runAsync(() -> {});
                 }
             };
         }
@@ -142,15 +139,10 @@ public class Tasks {
                 public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                     CompletableFuture<Void> voidFuture= executionHandler.execute(taskInstance, executionContext);
                     return voidFuture.thenApply((v) -> {
-                        return new CompletionHandler<T>() {
-                            @Override
-                            public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-                                executionOperations.reschedule(
-                                    executionComplete,
-                                    taskInstance.getData().getSchedule().getNextExecutionTime(executionComplete)
-                                );
-                            }
-                        };
+                        return (CompletionHandler<T>) (executionComplete, executionOperations) -> executionOperations.reschedule(
+                            executionComplete,
+                            taskInstance.getData().getSchedule().getNextExecutionTime(executionComplete)
+                        );
                     });
 
                 };
@@ -164,16 +156,11 @@ public class Tasks {
                 public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                     final CompletableFuture<T> nextDataFuture = executionHandler.execute(taskInstance, executionContext);
                     return nextDataFuture.thenApply((nextData) -> {
-                        return new CompletionHandler<T>() {
-                            @Override
-                            public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-                                executionOperations.reschedule(
-                                    executionComplete,
-                                    nextData.getSchedule().getNextExecutionTime(executionComplete),
-                                    nextData
-                                );
-                            }
-                        };
+                        return (CompletionHandler<T>) (executionComplete, executionOperations) -> executionOperations.reschedule(
+                            executionComplete,
+                            nextData.getSchedule().getNextExecutionTime(executionComplete),
+                            nextData
+                        );
                     });
                 }
             };
