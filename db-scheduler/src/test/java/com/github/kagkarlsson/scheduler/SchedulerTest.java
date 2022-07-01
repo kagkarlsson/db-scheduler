@@ -73,7 +73,7 @@ public class SchedulerTest {
     }
 
     @Test
-    public void scheduler_should_execute_task_when_exactly_due() {
+    public void scheduler_should_execute_task_when_exactly_due() throws InterruptedException {
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
@@ -85,11 +85,13 @@ public class SchedulerTest {
 
         clock.set(executionTime);
         scheduler.executeDue();
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(handler.timesExecuted.get(), is(1));
     }
 
     @Test
-    public void scheduler_should_execute_rescheduled_task_when_exactly_due() {
+    public void scheduler_should_execute_rescheduled_task_when_exactly_due() throws InterruptedException {
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
@@ -108,6 +110,8 @@ public class SchedulerTest {
 
         clock.set(reScheduledExecutionTime);
         scheduler.executeDue();
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(handler.timesExecuted.get(), is(1));
     }
 

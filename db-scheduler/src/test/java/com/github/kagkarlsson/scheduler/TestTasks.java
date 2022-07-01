@@ -22,7 +22,7 @@ public class TestTasks {
 
     public static final CompletionHandler<Void> REMOVE_ON_COMPLETE = new CompletionHandler.OnCompleteRemove<>();
     public static final VoidExecutionHandler<Void> DO_NOTHING = (taskInstance, executionContext) -> {
-        return CompletableFuture.runAsync(() -> {});
+        return CompletableFuture.completedFuture(null);
     };
 
     public static <T> OneTimeTask<T> oneTime(String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {
@@ -180,7 +180,7 @@ public class TestTasks {
 
         @Override
         public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-            return CompletableFuture.runAsync(() -> {});
+            return CompletableFuture.completedFuture(null);
         }
     }
 
@@ -190,7 +190,7 @@ public class TestTasks {
         @Override
         public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             savedData = taskInstance.getData();
-            return CompletableFuture.runAsync(() -> {});
+            return CompletableFuture.completedFuture(null);
         }
     }
 

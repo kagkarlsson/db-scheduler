@@ -58,7 +58,7 @@ public class DynamicRecurringTaskTest {
         final RecurringTaskWithPersistentSchedule<PlainScheduleAndData> task =
             Tasks.recurringWithPersistentSchedule(taskName, PlainScheduleAndData.class)
             .execute((taskInstance, executionContext) -> {
-                return CompletableFuture.runAsync(() -> {});
+                return CompletableFuture.completedFuture(null);
             });
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(task));

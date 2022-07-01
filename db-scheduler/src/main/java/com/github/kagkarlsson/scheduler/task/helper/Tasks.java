@@ -118,7 +118,7 @@ public class Tasks {
                 @Override
                 public CompletableFuture<Void> executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                     // never called
-                    return CompletableFuture.runAsync(() -> {});
+                    return CompletableFuture.completedFuture(null);
                 }
             };
         }
@@ -137,7 +137,7 @@ public class Tasks {
             return new RecurringTaskWithPersistentSchedule<T>(name, dataClass) {
                 @Override
                 public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                    CompletableFuture<Void> voidFuture= executionHandler.execute(taskInstance, executionContext);
+                    CompletableFuture<Void> voidFuture = executionHandler.execute(taskInstance, executionContext);
                     return voidFuture.thenApply((v) -> {
                         return (CompletionHandler<T>) (executionComplete, executionOperations) -> executionOperations.reschedule(
                             executionComplete,

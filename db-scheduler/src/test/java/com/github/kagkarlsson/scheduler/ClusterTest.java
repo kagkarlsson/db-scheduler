@@ -107,13 +107,13 @@ public class ClusterTest {
 
     @Test
     public void test_concurrency_recurring() throws InterruptedException {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(15), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(10), () -> {
 
             final RecurringTask<Void> task1 = Tasks.recurring("task1", Schedules.fixedDelay(Duration.ofMillis(0)))
                     .execute((taskInstance, executionContext) -> {
                         // do nothing
                         // System.out.println(counter.incrementAndGet() + " " + Thread.currentThread().getName());
-                        return CompletableFuture.runAsync(() -> {});
+                        return CompletableFuture.completedFuture(null);
                     });
 
             final TestTasks.SimpleStatsRegistry stats = new TestTasks.SimpleStatsRegistry();
