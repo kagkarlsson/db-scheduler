@@ -26,7 +26,7 @@ public class ExecutionComplete {
     private final Result result;
     private final Throwable cause;
 
-    ExecutionComplete(Execution execution, Instant timeStarted, Instant timeDone, Result result, Throwable cause) {
+    public ExecutionComplete(Execution execution, Instant timeStarted, Instant timeDone, Result result, Throwable cause) {
         this.timeStarted = timeStarted;
         this.cause = cause;
         if (result == Result.OK && cause != null) {
