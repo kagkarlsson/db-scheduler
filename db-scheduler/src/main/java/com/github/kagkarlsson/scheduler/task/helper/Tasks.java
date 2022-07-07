@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 public class Tasks {
@@ -96,8 +97,8 @@ public class Tasks {
             return new RecurringTask<T>(name, schedule, dataClass, scheduleOnStartup, onFailure, onDeadExecution) {
 
                 @Override
-                public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                    executionHandler.execute(taskInstance, executionContext);
+                public CompletableFuture<Void> executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    return executionHandler.execute(taskInstance, executionContext);
                 }
             };
         }
@@ -106,14 +107,18 @@ public class Tasks {
             return new RecurringTask<T>(name, schedule, dataClass, scheduleOnStartup, onFailure, onDeadExecution) {
 
                 @Override
-                public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                    final T nextData = executionHandler.execute(taskInstance, executionContext);
-                    return new CompletionHandler.OnCompleteReschedule<>(schedule, nextData);
+                public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    final CompletableFuture<T> nextDataFuture = executionHandler.execute(taskInstance, executionContext);
+                    return nextDataFuture.thenApply((nextData) -> {
+                        return new CompletionHandler.OnCompleteReschedule<>(schedule, nextData);
+                    });
+
                 }
 
                 @Override
-                public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                public CompletableFuture<Void> executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                     // never called
+                    return CompletableFuture.completedFuture(null);
                 }
             };
         }
@@ -131,17 +136,16 @@ public class Tasks {
         public RecurringTaskWithPersistentSchedule<T> execute(VoidExecutionHandler<T> executionHandler) {
             return new RecurringTaskWithPersistentSchedule<T>(name, dataClass) {
                 @Override
-                public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                    executionHandler.execute(taskInstance, executionContext);
-
-                    return (executionComplete, executionOperations) -> {
-                        executionOperations.reschedule(
+                public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    CompletableFuture<Void> voidFuture = executionHandler.execute(taskInstance, executionContext);
+                    return voidFuture.thenApply((v) -> {
+                        return (CompletionHandler<T>) (executionComplete, executionOperations) -> executionOperations.reschedule(
                             executionComplete,
                             taskInstance.getData().getSchedule().getNextExecutionTime(executionComplete)
                         );
-                    };
+                    });
 
-                }
+                };
             };
         }
 
@@ -149,16 +153,15 @@ public class Tasks {
             return new RecurringTaskWithPersistentSchedule<T>(name, dataClass) {
 
                 @Override
-                public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                    final T nextData = executionHandler.execute(taskInstance, executionContext);
-
-                    return (executionComplete, executionOperations) -> {
-                        executionOperations.reschedule(
+                public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    final CompletableFuture<T> nextDataFuture = executionHandler.execute(taskInstance, executionContext);
+                    return nextDataFuture.thenApply((nextData) -> {
+                        return (CompletionHandler<T>) (executionComplete, executionOperations) -> executionOperations.reschedule(
                             executionComplete,
                             nextData.getSchedule().getNextExecutionTime(executionComplete),
                             nextData
                         );
-                    };
+                    });
                 }
             };
         }
@@ -201,8 +204,8 @@ public class Tasks {
         public OneTimeTask<T> execute(VoidExecutionHandler<T> executionHandler) {
             return new OneTimeTask<T>(name, dataClass, onFailure, onDeadExecution) {
                 @Override
-                public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                    executionHandler.execute(taskInstance, executionContext);
+                public CompletableFuture<Void> executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                    return executionHandler.execute(taskInstance, executionContext);
                 }
             };
         }
@@ -264,7 +267,7 @@ public class Tasks {
         public CustomTask<T> execute(ExecutionHandler<T> executionHandler) {
             return new CustomTask<T>(name, dataClass, onStartup, defaultExecutionTime, onFailure, onDeadExecution) {
                 @Override
-                public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                     return executionHandler.execute(taskInstance, executionContext);
                 }
             };

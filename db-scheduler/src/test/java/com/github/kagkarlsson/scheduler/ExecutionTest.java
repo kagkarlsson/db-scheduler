@@ -7,6 +7,7 @@ import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,7 +24,7 @@ public class ExecutionTest {
     @Test
     public void test_equals() {
         Instant now = Instant.now();
-        OneTimeTask<Void> task = TestTasks.oneTime("OneTime", Void.class, (instance, executionContext) -> {});
+        OneTimeTask<Void> task = TestTasks.oneTime("OneTime", Void.class, (instance, executionContext) -> CompletableFuture.completedFuture(null));
         RecurringTask<Void> task2 = TestTasks.recurring("Recurring", FixedDelay.of(Duration.ofHours(1)), TestTasks.DO_NOTHING);
 
         assertEquals(new Execution(now, task.instance("id1")), new Execution(now, task.instance("id1")));

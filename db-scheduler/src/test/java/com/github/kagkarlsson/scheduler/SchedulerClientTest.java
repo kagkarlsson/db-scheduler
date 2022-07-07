@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.time.Duration.ofSeconds;
@@ -65,16 +66,18 @@ public class SchedulerClientTest {
     }
 
     @Test
-    public void client_should_be_able_to_schedule_executions() {
+    public void client_should_be_able_to_schedule_executions() throws InterruptedException {
         SchedulerClient client = SchedulerClient.Builder.create(DB.getDataSource()).build();
         client.schedule(oneTimeTaskA.instance("1"), settableClock.now());
 
         scheduler.runAnyDueExecutions();
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(1));
     }
 
     @Test
-    public void should_be_able_to_schedule_other_executions_from_an_executionhandler() {
+    public void should_be_able_to_schedule_other_executions_from_an_executionhandler() throws InterruptedException {
         scheduler.schedule(scheduleAnotherTask.instance("1"), settableClock.now());
         scheduler.runAnyDueExecutions();
         assertThat(scheduleAnother.timesExecuted, CoreMatchers.is(1));
@@ -82,6 +85,8 @@ public class SchedulerClientTest {
 
         scheduler.tick(ofSeconds(1));
         scheduler.runAnyDueExecutions();
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(1));
     }
 
@@ -155,9 +160,10 @@ public class SchedulerClientTest {
         }
 
         @Override
-        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+        public CompletableFuture<Void> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             executionContext.getSchedulerClient().schedule(secondTask, instant);
             this.timesExecuted++;
+            return CompletableFuture.completedFuture(null);
         }
     }
 }

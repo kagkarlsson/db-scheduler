@@ -22,6 +22,7 @@ import com.github.kagkarlsson.scheduler.task.FailureHandler.OnFailureRetryLater;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 
 public abstract class OneTimeTask<T> extends AbstractTask<T> {
 
@@ -44,12 +45,14 @@ public abstract class OneTimeTask<T> extends AbstractTask<T> {
     }
 
     @Override
-    public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-        executeOnce(taskInstance, executionContext);
-        return new OnCompleteRemove<>();
+    public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+        CompletableFuture<Void> voidFuture = executeOnce(taskInstance, executionContext);
+        return voidFuture.thenApply((nextData) -> {
+            return new OnCompleteRemove<>();
+        });
     }
 
-    public abstract void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+    public abstract CompletableFuture<Void> executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext);
 
     @Override
     public String toString() {

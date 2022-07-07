@@ -21,6 +21,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static java.util.Collections.singletonList;
@@ -120,7 +121,7 @@ public class RecurringTaskTest {
     public void should_not_update_data_of_preexisting_exeutions_even_if_rescheduling_because_of_updated_schedule() {
         RecurringTask<Integer> recurringTask = Tasks.recurring(RECURRING_A, Schedules.daily(LocalTime.of(23, 59)), Integer.class)
             .initialData(1)
-            .execute((taskInstance, executionContext) -> {});
+            .execute((taskInstance, executionContext) -> CompletableFuture.completedFuture(null));
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(recurringTask));
 
@@ -133,7 +134,7 @@ public class RecurringTaskTest {
                 LocalTime.of(12, 0),
                 LocalTime.of(23, 59)), Integer.class)
             .initialData(2)
-            .execute((taskInstance, executionContext) -> {});
+            .execute((taskInstance, executionContext) -> CompletableFuture.completedFuture(null));
 
         ManualScheduler schedulerUpdatedTask = manualSchedulerFor(singletonList(recurringTaskNewSchedule));
 
