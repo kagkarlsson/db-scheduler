@@ -21,7 +21,7 @@ import java.time.ZoneId;
 import java.util.List;
 
 public class Schedules {
-    private static final Parser SCHEDULE_PARSER = CompositeParser.of(new FixedDelayParser(), new DailyParser());
+    private static final Parser SCHEDULE_PARSER = CompositeParser.of(new FixedDelayParser(), new DailyParser(), new DisabledScheduleParser());
 
     public static Daily daily(LocalTime... times) {
         return new Daily(times);

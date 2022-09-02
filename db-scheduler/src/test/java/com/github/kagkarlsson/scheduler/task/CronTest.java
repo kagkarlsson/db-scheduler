@@ -12,6 +12,8 @@ import java.time.ZonedDateTime;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 public class CronTest {
@@ -68,6 +70,12 @@ public class CronTest {
         //Every day: 13:05 and 20:05 New York time
         ZonedDateTime firstJanuaryMiddayUTC = ZonedDateTime.of(2000, 1, 1, 12, 0, 0, 0, utc);   //midday UTC = 07:00 New York time
         assertNextExecutionTime(firstJanuaryMiddayUTC, "0 05 13,20 * * ?", newYork, ZonedDateTime.of(2000, 1, 1, 13, 5, 0, 0, newYork));  //next fire time should be 13:05 New York time
+    }
+
+    @Test
+    public void should_mark_schedule_as_disabled() {
+        assertTrue(Schedules.cron("-").isDisabled());
+        assertFalse(Schedules.cron("0 * * * * ?").isDisabled());
     }
 
     private void assertNextExecutionTime(ZonedDateTime timeDone, String cronPattern, ZonedDateTime expectedTime) {

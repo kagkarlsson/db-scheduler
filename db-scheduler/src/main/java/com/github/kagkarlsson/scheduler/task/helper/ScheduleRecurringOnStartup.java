@@ -46,6 +46,17 @@ class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
         final TaskInstance<T> instanceWithoutData = task.instance(this.instance);
         final Optional<ScheduledExecution<Object>> preexistingExecution = scheduler.getScheduledExecution(instanceWithoutData);
 
+        if (schedule.isDisabled()) {
+            if (preexistingExecution.isPresent()) {
+                LOG.info("Task-instance '{}' has a Schedule that has been marked as disabled. Removing existing execution with execution-time '{}'.",
+                    instanceWithoutData, preexistingExecution.get().getExecutionTime());
+                tryCancel(scheduler, instanceWithoutData);
+            } else {
+                LOG.info("Task-instance '{}' has a Schedule that has been marked as disabled. Will not schedule a new execution", instanceWithoutData);
+            }
+            return;
+        }
+
         if (preexistingExecution.isPresent()) {
             Optional<Instant> newNextExecutionTime = checkForNewExecutionTime(clock, instanceWithoutData, preexistingExecution.get());
 
@@ -59,6 +70,15 @@ class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
             final Instant initialExecutionTime = schedule.getInitialExecutionTime(clock.now());
             LOG.info("Creating initial execution for task-instance '{}'. Next execution-time: {}", instanceWithoutData, initialExecutionTime);
             scheduler.schedule(getSchedulableInstance(task), initialExecutionTime);
+        }
+    }
+
+    private void tryCancel(SchedulerClient scheduler, TaskInstance<T> instanceWithoutData) {
+        try {
+            scheduler.cancel(instanceWithoutData);
+        } catch (RuntimeException e) {
+            LOG.warn("Failed to cancel existing execution for a Task with a Scheduled marked as disabled. " +
+                "May happen if another instance already did it, or if it is currently executing.", e);
         }
     }
 

@@ -10,13 +10,14 @@ import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
-public class InstantAdapterTest {
+public class GsonSerializerTest {
 
     @Test
     public void serialize_instant() {
+        final GsonSerializer gsonSerializer = new GsonSerializer();
         final Instant now = Instant.now();
-        final Gson gson = GsonSerializer.getDefaultGson().create();
-        assertEquals(now, gson.fromJson(gson.toJson(now), Instant.class));
+
+        assertEquals(now, gsonSerializer.deserialize(Instant.class, gsonSerializer.serialize(now)));
     }
 
 }

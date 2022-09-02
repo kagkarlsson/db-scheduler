@@ -6,7 +6,7 @@
 
 Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
 
-As such, also appreciated by users ([cbarbosa2](https://github.com/kagkarlsson/db-scheduler/issues/115#issuecomment-649601944), [rafaelhofmann](https://github.com/kagkarlsson/db-scheduler/issues/140#issuecomment-704955500)):
+As such, also appreciated by users ([cbarbosa2](https://github.com/kagkarlsson/db-scheduler/issues/115#issuecomment-649601944), [rafaelhofmann](https://github.com/kagkarlsson/db-scheduler/issues/140#issuecomment-704955500), [BukhariH](https://github.com/kagkarlsson/db-scheduler/pull/268#issue-1147378003)):
 
 > Your lib rocks! I'm so glad I got rid of Quartz and replaced it by yours which is way easier to handle!
 >
@@ -44,7 +44,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>10.5</version>
+    <version>11.2</version>
 </dependency>
 ```
 
@@ -83,7 +83,10 @@ List of organizations known to be running db-scheduler in production:
 | [Monitoria](https://monitoria.ca)         | Website monitoring service.                                  |
 | [Loadster](https://loadster.app)          | Load testing for web applications.                           |
 | [Statens vegvesen](https://www.vegvesen.no/)| The Norwegian Public Roads Administration                  |
-| [Lightyear](https://golightyear.com/) |  A simple and approachable way to invest your money globally.    |
+| [Lightyear](https://golightyear.com/)     |  A simple and approachable way to invest your money globally.|
+| [NAV](https://www.nav.no/)                |  The Norwegian Labour and Welfare Administration             |
+| [ModernLoop](https://modernloop.io/)      |  Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination.             |
+| [Diffia](https://www.diffia.com/)         |  Norwegian eHealth company                                   |
 
 Feel free to open a PR to add your organization to the list.
 
@@ -227,7 +230,7 @@ the table. Default `scheduled_tasks`.
 
 :gear: `.serializer(Serializer)`<br/>
 Serializer implementation to use when serializing task data. Default to using standard Java serialization,
-but db-scheduler also bundles a number of other Serializers (`GsonSerializer`, `JacksonSerializer`, `KotlinSerializer`).
+but db-scheduler also bundles a `GsonSerializer` and `JacksonSerializer`. See examples for a [KotlinSerializer](https://github.com/kagkarlsson/db-scheduler/blob/master/examples/features/src/main/java/com/github/kagkarlsson/examples/kotlin/KotlinSerializer.kt).
 See also additional documentation under [Serializers](#Serializers).
 
 :gear: `.executorService(ExecutorService)`<br/>
@@ -271,7 +274,7 @@ The library contains a number of Schedule-implementations for recurring tasks. S
 | ------------- | ------------- |
 | `.daily(LocalTime ...)`  | Runs every day at specified times. Optionally a time zone can be specified. |
 | `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)`|
-| `.cron(String)`  | Spring-style cron-expression. |
+| `.cron(String)`  | Spring-style cron-expression. The pattern `-` is interpreted as a [disabled schedule](#disabled-schedules).  |
 
 Another option to configure schedules is reading string patterns with `Schedules.parse(String)`.
 
@@ -281,8 +284,14 @@ The currently available patterns are:
 | ------------- | ------------- |
 | `FIXED_DELAY\|Ns`  | Same as `.fixedDelay(Duration)` with duration set to N seconds. |
 | `DAILY\|12:30,15:30...(\|time_zone)`  | Same as `.daily(LocalTime)` with optional time zone (e.g. Europe/Rome, UTC)|
+| `-`  | [Disabled schedule](#disabled-schedules) |
 
 More details on the time zone formats can be found [here](https://docs.oracle.com/javase/8/docs/api/java/time/ZoneId.html#of-java.lang.String-).
+
+### Disabled schedules
+
+A `Schedule` can be marked as disabled. The scheduler will not schedule the initial executions for tasks with a disabled schedule,
+and it will remove any existing executions for that task.
 
 ### Serializers
 
@@ -291,7 +300,7 @@ data to the database. By default, standard Java serialization is used, but a num
 
 * `GsonSerializer`
 * `JacksonSerializer`
-* `KotlinSerializer`
+* [KotlinSerializer](https://github.com/kagkarlsson/db-scheduler/blob/master/examples/features/src/main/java/com/github/kagkarlsson/examples/kotlin/KotlinSerializer.kt)
 
 For Java serialization it is recommended to specify a `serialVersionUID` to be able to evolve the class representing the data. If not specified,
 and the class changes, deserialization will likely fail with a `InvalidClassException`. Should this happen, find and set the current auto-generated
@@ -327,7 +336,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>10.5</version>
+        <version>11.2</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -497,6 +506,12 @@ Observations for these tests:
 
 Currently, polling strategy `lock-and-fetch` is implemented only for Postgres. Contributions adding support for more databases are welcome.
 
+### User testimonial
+
+There are a number of users that are using db-scheduler for high throughput use-cases. See for example:
+
+* https://github.com/kagkarlsson/db-scheduler/issues/209#issuecomment-1026699872
+* https://github.com/kagkarlsson/db-scheduler/issues/190#issuecomment-805867950
 
 ### Things to note / gotchas
 
