@@ -12,7 +12,5 @@ create table scheduled_tasks
     last_heartbeat       TIMESTAMP(6),
     version              NUMBER(19, 0),
     PRIMARY KEY (task_name, task_instance)
-);
+)
 
-CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time);
-CREATE INDEX last_heartbeat_idx ON scheduled_tasks (last_heartbeat);
