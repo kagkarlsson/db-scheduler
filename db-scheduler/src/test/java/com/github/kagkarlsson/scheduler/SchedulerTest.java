@@ -1,5 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
+import ch.qos.logback.classic.Level;
+import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension;
+import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension.LogLevelOverride;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
@@ -16,6 +19,7 @@ import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -41,6 +45,16 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 
 public class SchedulerTest {
+
+    //    Enable if test gets flaky!
+    @RegisterExtension
+    public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
+        new LogLevelOverride("com.github.kagkarlsson.scheduler", Level.DEBUG)
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.ExecutePicked", Level.DEBUG),
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.Executor", Level.DEBUG),
+//        new LogLevelOverride("com.github.kagkarlsson.scheduler.FetchCandidates", Level.DEBUG)
+    );
+
 
     private TestTasks.CountingHandler<Void> handler;
     private SettableClock clock;
@@ -71,7 +85,7 @@ public class SchedulerTest {
         return scheduler;
     }
 
-    @Test
+    @RepeatedTest(10)
     public void scheduler_should_execute_task_when_exactly_due() {
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
         Scheduler scheduler = schedulerFor(oneTimeTask);
