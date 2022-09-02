@@ -65,7 +65,7 @@ public class SchedulerPerfTest {
     @Test
     public void PerfTest() throws InterruptedException {
         int threadPoolSize = 300;
-        int batch = 10;
+        int batch = 3;        // keeping total tasks < 3000
         int upperlimit = 3;   // 3 is the upperlimit of the each fetch
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
         ThreadPoolExecutor executor = (ThreadPoolExecutor)Executors.newFixedThreadPool(threadPoolSize, ExecutorUtils.defaultThreadFactoryWithPrefix("PerfTest-"));
@@ -88,7 +88,7 @@ public class SchedulerPerfTest {
 
         long taskCount = 0;
         do {
-            Thread.sleep(1000);
+            Thread.sleep(5000);
             taskCount = executor.getTaskCount();
             System.out.println("workqueue " + taskCount);
         } while( taskCount > 0 );
