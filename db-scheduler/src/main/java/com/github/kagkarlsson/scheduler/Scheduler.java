@@ -39,7 +39,6 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
@@ -69,6 +68,7 @@ public class Scheduler implements SchedulerClient {
     private final Waiter heartbeatWaiter;
     final SettableSchedulerState schedulerState = new SettableSchedulerState();
     final ConfigurableLogger failureLogger;
+    private SchedulerClientEventListener earlyExecutionListener;
 
     protected Scheduler(Clock clock, TaskRepository schedulerTaskRepository, TaskRepository clientTaskRepository, TaskResolver taskResolver, int threadpoolSize, ExecutorService executorService, SchedulerName schedulerName,
                         Waiter executeDueWaiter, Duration heartbeatInterval, boolean enableImmediateExecution, StatsRegistry statsRegistry, PollingStrategyConfig pollingStrategyConfig, Duration deleteUnresolvedAfter, Duration shutdownMaxWait,
@@ -88,15 +88,15 @@ public class Scheduler implements SchedulerClient {
         this.statsRegistry = statsRegistry;
         this.dueExecutor = Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
         this.housekeeperExecutor = Executors.newScheduledThreadPool(3, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-housekeeper-"));
-        SchedulerClientEventListener earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
+        earlyExecutionListener = (enableImmediateExecution ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter) : SchedulerClientEventListener.NOOP);
         delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener, clock);
         this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 
         if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
             schedulerTaskRepository.checkSupportsLockAndFetch();
-            executeDueStrategy = new LockAndFetchCandidates(executor, schedulerTaskRepository, this, threadpoolSize, statsRegistry, schedulerState, failureLogger, taskResolver, clock, pollingStrategyConfig, this::triggerCheckForDueExecutions);
+            executeDueStrategy = new LockAndFetchCandidates(executor, schedulerTaskRepository, this, earlyExecutionListener, threadpoolSize, statsRegistry, schedulerState, failureLogger, taskResolver, clock, pollingStrategyConfig, this::triggerCheckForDueExecutions);
         } else if (pollingStrategyConfig.type == PollingStrategyConfig.Type.FETCH) {
-            executeDueStrategy = new FetchCandidates(executor, schedulerTaskRepository, this, threadpoolSize, statsRegistry, schedulerState, failureLogger, taskResolver, clock, pollingStrategyConfig, this::triggerCheckForDueExecutions);
+            executeDueStrategy = new FetchCandidates(executor, schedulerTaskRepository, this, earlyExecutionListener, threadpoolSize, statsRegistry, schedulerState, failureLogger, taskResolver, clock, pollingStrategyConfig, this::triggerCheckForDueExecutions);
         } else {
             throw new IllegalArgumentException("Unknown polling-strategy type: " + pollingStrategyConfig.type);
         }
@@ -266,7 +266,7 @@ public class Scheduler implements SchedulerClient {
                     Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
                     if (task.isPresent()) {
                         statsRegistry.register(SchedulerStatsEvent.DEAD_EXECUTION);
-                        task.get().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(schedulerTaskRepository, execution));
+                        task.get().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(schedulerTaskRepository, earlyExecutionListener, execution));
                     } else {
                         LOG.error("Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.", execution.taskInstance.getTaskName());
                     }

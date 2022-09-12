@@ -15,6 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.ClientEvent;
+import com.github.kagkarlsson.scheduler.ClientEvent.ClientEventContext;
+import com.github.kagkarlsson.scheduler.ClientEvent.EventType;
+import com.github.kagkarlsson.scheduler.SchedulerClientEventListener;
 import com.github.kagkarlsson.scheduler.TaskRepository;
 
 import java.time.Instant;
@@ -22,10 +26,12 @@ import java.time.Instant;
 public class ExecutionOperations<T> {
 
     private final TaskRepository taskRepository;
+    private final SchedulerClientEventListener earlyExecutionListener;
     private final Execution execution;
 
-    public ExecutionOperations(TaskRepository taskRepository, Execution execution) {
+    public ExecutionOperations(TaskRepository taskRepository, SchedulerClientEventListener earlyExecutionListener, Execution execution) {
         this.taskRepository = taskRepository;
+        this.earlyExecutionListener = earlyExecutionListener;
         this.execution = execution;
     }
 
@@ -39,7 +45,7 @@ public class ExecutionOperations<T> {
         } else {
             taskRepository.reschedule(execution, nextExecutionTime, execution.lastSuccess, completed.getTimeDone(), execution.consecutiveFailures + 1);
         }
-
+        hintExecutionScheduled(completed, nextExecutionTime);
     }
 
     public void reschedule(ExecutionComplete completed, Instant nextExecutionTime, T newData) {
@@ -48,6 +54,13 @@ public class ExecutionOperations<T> {
         } else {
             taskRepository.reschedule(execution, nextExecutionTime, newData, execution.lastSuccess, completed.getTimeDone(), execution.consecutiveFailures + 1);
         }
+        hintExecutionScheduled(completed, nextExecutionTime);
+    }
+
+    private void hintExecutionScheduled(ExecutionComplete completed, Instant nextExecutionTime) {
+        // Hint that a new execution was scheduled in-case we want to go check for it immediately
+        earlyExecutionListener.newEvent(new ClientEvent(
+            new ClientEventContext(EventType.RESCHEDULE, completed.getExecution().taskInstance, nextExecutionTime)));
     }
 
 }

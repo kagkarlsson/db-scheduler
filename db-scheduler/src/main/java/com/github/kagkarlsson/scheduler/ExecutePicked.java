@@ -35,6 +35,7 @@ class ExecutePicked implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(ExecutePicked.class);
     private final Executor executor;
     private final TaskRepository taskRepository;
+    private SchedulerClientEventListener earlyExecutionListener;
     private final SchedulerClient schedulerClient;
     private final StatsRegistry statsRegistry;
     private final TaskResolver taskResolver;
@@ -43,11 +44,12 @@ class ExecutePicked implements Runnable {
     private final Clock clock;
     private final Execution pickedExecution;
 
-    public ExecutePicked(Executor executor, TaskRepository taskRepository, SchedulerClient schedulerClient, StatsRegistry statsRegistry,
+    public ExecutePicked(Executor executor, TaskRepository taskRepository, SchedulerClientEventListener earlyExecutionListener, SchedulerClient schedulerClient, StatsRegistry statsRegistry,
                          TaskResolver taskResolver, SchedulerState schedulerState, ConfigurableLogger failureLogger,
                          Clock clock, Execution pickedExecution) {
         this.executor = executor;
         this.taskRepository = taskRepository;
+        this.earlyExecutionListener = earlyExecutionListener;
         this.schedulerClient = schedulerClient;
         this.statsRegistry = statsRegistry;
         this.taskResolver = taskResolver;
@@ -99,7 +101,7 @@ class ExecutePicked implements Runnable {
     private void complete(CompletionHandler completion, Execution execution, Instant executionStarted) {
         ExecutionComplete completeEvent = ExecutionComplete.success(execution, executionStarted, clock.now());
         try {
-            completion.complete(completeEvent, new ExecutionOperations(taskRepository, execution));
+            completion.complete(completeEvent, new ExecutionOperations(taskRepository, earlyExecutionListener, execution));
             statsRegistry.registerSingleCompletedExecution(completeEvent);
         } catch (Throwable e) {
             statsRegistry.register(StatsRegistry.SchedulerStatsEvent.COMPLETIONHANDLER_ERROR);
@@ -115,7 +117,7 @@ class ExecutePicked implements Runnable {
 
         ExecutionComplete completeEvent = ExecutionComplete.failure(execution, executionStarted, clock.now(), cause);
         try {
-            task.getFailureHandler().onFailure(completeEvent, new ExecutionOperations(taskRepository, execution));
+            task.getFailureHandler().onFailure(completeEvent, new ExecutionOperations(taskRepository, earlyExecutionListener, execution));
             statsRegistry.registerSingleCompletedExecution(completeEvent);
         } catch (Throwable e) {
             statsRegistry.register(StatsRegistry.SchedulerStatsEvent.FAILUREHANDLER_ERROR);

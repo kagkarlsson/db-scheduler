@@ -32,6 +32,7 @@ public class FetchCandidates implements PollStrategy {
     private final Executor executor;
     private final TaskRepository taskRepository;
     private final SchedulerClient schedulerClient;
+    private SchedulerClientEventListener earlyExecutionListener;
     private final StatsRegistry statsRegistry;
     private final SchedulerState schedulerState;
     private final ConfigurableLogger failureLogger;
@@ -44,12 +45,13 @@ public class FetchCandidates implements PollStrategy {
     private final int upperLimit;
 
     public FetchCandidates(Executor executor, TaskRepository taskRepository, SchedulerClient schedulerClient,
-                           int threadpoolSize, StatsRegistry statsRegistry, SchedulerState schedulerState,
+                           SchedulerClientEventListener earlyExecutionListener, int threadpoolSize, StatsRegistry statsRegistry, SchedulerState schedulerState,
                            ConfigurableLogger failureLogger, TaskResolver taskResolver, Clock clock,
                            PollingStrategyConfig pollingStrategyConfig, Runnable triggerCheckForNewExecutions) {
         this.executor = executor;
         this.taskRepository = taskRepository;
         this.schedulerClient = schedulerClient;
+        this.earlyExecutionListener = earlyExecutionListener;
         this.statsRegistry = statsRegistry;
         this.schedulerState = schedulerState;
         this.failureLogger = failureLogger;
@@ -82,7 +84,7 @@ public class FetchCandidates implements PollStrategy {
             executor.addToQueue(
                 () -> {
                     final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
-                    candidate.ifPresent(picked -> new ExecutePicked(executor, taskRepository, schedulerClient, statsRegistry,
+                    candidate.ifPresent(picked -> new ExecutePicked(executor, taskRepository, earlyExecutionListener, schedulerClient, statsRegistry,
                         taskResolver, schedulerState, failureLogger,
                         clock, picked).run());
                 },
