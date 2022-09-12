@@ -21,7 +21,7 @@ import java.time.Instant;
 
 public class ClientEvent {
 
-    enum EventType {
+    public enum EventType {
         SCHEDULE,
         RESCHEDULE,
         CANCEL
