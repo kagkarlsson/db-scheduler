@@ -3,13 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
-import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.ExecutionContext;
-import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
-import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
+import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -150,9 +144,9 @@ public class DeadExecutionsTest {
         public int timesCalled = 0;
 
         @Override
-        public void deadExecution(Execution execution, ExecutionOperations<T> executionOperations) {
+        public void deadExecution(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
             timesCalled++;
-            super.deadExecution(execution, executionOperations);
+            super.deadExecution(executionComplete, executionOperations);
         }
     }
 
