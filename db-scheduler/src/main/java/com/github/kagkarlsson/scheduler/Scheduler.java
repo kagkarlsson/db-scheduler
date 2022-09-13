@@ -20,13 +20,7 @@ import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
-import com.github.kagkarlsson.scheduler.task.OnStartup;
-import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
-import com.github.kagkarlsson.scheduler.task.Task;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import com.github.kagkarlsson.scheduler.task.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -266,7 +260,9 @@ public class Scheduler implements SchedulerClient {
                     Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
                     if (task.isPresent()) {
                         statsRegistry.register(SchedulerStatsEvent.DEAD_EXECUTION);
-                        task.get().getDeadExecutionHandler().deadExecution(execution, new ExecutionOperations(schedulerTaskRepository, earlyExecutionListener, execution));
+                        task.get().getDeadExecutionHandler().deadExecution(
+                            ExecutionComplete.failure(execution, now, now, null),
+                            new ExecutionOperations(schedulerTaskRepository, earlyExecutionListener, execution));
                     } else {
                         LOG.error("Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.", execution.taskInstance.getTaskName());
                     }
