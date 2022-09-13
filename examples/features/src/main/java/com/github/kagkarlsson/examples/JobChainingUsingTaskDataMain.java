@@ -17,10 +17,7 @@ package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
-import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
-import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 
@@ -29,10 +26,10 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 
-public class JobChainingPocMain extends Example {
+public class JobChainingUsingTaskDataMain extends Example {
 
     public static void main(String[] args) {
-        new JobChainingPocMain().runWithDatasource();
+        new JobChainingUsingTaskDataMain().runWithDatasource();
     }
 
     @Override

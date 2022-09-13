@@ -5,10 +5,7 @@ import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
-import com.github.kagkarlsson.scheduler.task.Task;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,6 +75,23 @@ public class JdbcTaskRepositoryTest {
         assertFalse(taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance1, now)));
 
         assertTrue(taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance2, now)));
+    }
+
+    @Test
+    public void test_replace() {
+        Instant now = TimeHelper.truncatedInstantNow();
+
+        TaskInstance<Integer> instance1 = oneTimeTaskWithData.instance("id1", 1);
+        SchedulableInstance<Integer> instance2 = oneTimeTaskWithData.schedulableInstance("id2", 2);
+
+        assertTrue(taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance1, now)));
+        Execution scheduled = taskRepository.getExecution(instance1).get();
+        assertEquals(1, scheduled.taskInstance.getData());
+
+        taskRepository.replace(scheduled, instance2);
+        Execution replaced = taskRepository.getExecution(instance2.getTaskInstance()).get();
+        assertEquals(2, replaced.taskInstance.getData());
+        assertEquals("id2", replaced.taskInstance.getId());
     }
 
     @Test
