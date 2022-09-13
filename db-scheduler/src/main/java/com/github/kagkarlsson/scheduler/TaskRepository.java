@@ -28,6 +28,9 @@ public interface TaskRepository {
 
     boolean createIfNotExists(SchedulableInstance execution);
     List<Execution> getDue(Instant now, int limit);
+
+    Instant replace(Execution toBeReplaced, SchedulableInstance newInstance);
+
     void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer);
     void getScheduledExecutions(ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer);
 

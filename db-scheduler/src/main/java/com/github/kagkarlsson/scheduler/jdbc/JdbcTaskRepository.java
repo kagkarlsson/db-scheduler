@@ -121,6 +121,59 @@ public class JdbcTaskRepository implements TaskRepository {
         }
     }
 
+    /**
+     * Instead of doing delete+insert, we allow updating an existing execution will all new fields
+     * @return the execution-time of the new execution
+     */
+    @Override
+    public Instant replace(Execution toBeReplaced, SchedulableInstance newInstance) {
+        Instant newExecutionTime = newInstance.getNextExecutionTime(clock.now());
+        Execution newExecution = new Execution(newExecutionTime, newInstance.getTaskInstance());
+        Object newData = newInstance.getTaskInstance().getData();
+
+        final int updated = jdbcRunner.execute(
+            "update " + tableName + " set " +
+                "task_name = ?, " +
+                "task_instance = ?, " +
+                "picked = ?, " +
+                "picked_by = ?, " +
+                "last_heartbeat = ?, " +
+                "last_success = ?, " +
+                "last_failure = ?, " +
+                "consecutive_failures = ?, " +
+                "execution_time = ?, " +
+                "task_data = ?, " +
+                "version = 1 " +
+                "where task_name = ? " +
+                "and task_instance = ? " +
+                "and version = ?",
+            ps -> {
+                int index = 1;
+                ps.setString(index++, newExecution.taskInstance.getTaskName()); // task_name
+                ps.setString(index++, newExecution.taskInstance.getId()); // task_instance
+                ps.setBoolean(index++, false); // picked
+                ps.setString(index++, null);   // picked_by
+                jdbcCustomization.setInstant(ps, index++, null); // last_heartbeat
+                jdbcCustomization.setInstant(ps, index++, null); // last_success
+                jdbcCustomization.setInstant(ps, index++, null); // last_failure
+                ps.setInt(index++, 0); // consecutive_failures
+                jdbcCustomization.setInstant(ps, index++, newExecutionTime); // execution_time
+                // may cause datbase-specific problems, might have to use setNull instead
+                ps.setObject(index++, serializer.serialize(newData)); // task_data
+                ps.setString(index++, toBeReplaced.taskInstance.getTaskName()); // task_name
+                ps.setString(index++, toBeReplaced.taskInstance.getId()); // task_instance
+                ps.setLong(index++, toBeReplaced.version); // version
+            });
+
+        if (updated == 0) {
+            throw new IllegalStateException("Failed to replace execution, found none matching " + toBeReplaced);
+        } else if (updated > 1) {
+            LOG.error("Expected one execution to be updated, but updated " + updated + ". Indicates a bug. " +
+                "Replaced " + toBeReplaced.taskInstance + " with " + newExecution.taskInstance);
+        }
+        return newExecutionTime;
+    }
+
     @Override
     public void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer) {
         UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
