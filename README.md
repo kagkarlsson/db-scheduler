@@ -44,7 +44,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>11.2</version>
+    <version>11.5</version>
 </dependency>
 ```
 
@@ -338,7 +338,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>11.2</version>
+        <version>11.5</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
