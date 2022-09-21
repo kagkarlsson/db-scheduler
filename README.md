@@ -427,7 +427,7 @@ The _dynamic_ recurring task is a later addition to db-scheduler and was added t
 of the same type of task (i.e. same implementation) with different schedules. The `Schedule` is persisted in the `task_data` alongside any regular data.
 Unlike the _static_ recurring task, the dynamic one will not automatically schedule instances of the task. It is up to the user to create instances and
 update the schedule for existing ones if necessary (using the `SchedulerClient` interface).
-See the example [RecurringTaskWithPersistentScheduleMain.java]((./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java)) for more details.
+See the example [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java) for more details.
 
 Create using `Tasks.recurringWithPersistentSchedule(..)`.
 
