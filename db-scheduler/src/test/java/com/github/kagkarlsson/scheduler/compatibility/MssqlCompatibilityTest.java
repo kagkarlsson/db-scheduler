@@ -27,7 +27,7 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
     public MssqlCompatibilityTest() { super(false);}
 
     @BeforeAll
-    private static void initSchema() {
+    static void initSchema() {
         final DriverDataSource datasource = new DriverDataSource(MSSQL.getJdbcUrl(), "com.microsoft.sqlserver.jdbc.SQLServerDriver",
             new Properties(), MSSQL.getUsername(), MSSQL.getPassword());
 

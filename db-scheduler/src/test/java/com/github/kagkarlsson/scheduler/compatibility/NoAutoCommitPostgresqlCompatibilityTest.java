@@ -27,7 +27,7 @@ public class NoAutoCommitPostgresqlCompatibilityTest extends CompatibilityTest {
     public NoAutoCommitPostgresqlCompatibilityTest() { super(true);}
 
     @BeforeAll
-    private static void initSchema() {
+    static void initSchema() {
         final DriverDataSource datasource = new DriverDataSource(POSTGRES.getJdbcUrl(), "org.postgresql.Driver",
             new Properties(), POSTGRES.getUsername(), POSTGRES.getPassword());
 
