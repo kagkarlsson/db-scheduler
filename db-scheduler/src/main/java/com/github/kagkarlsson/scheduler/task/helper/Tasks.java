@@ -122,14 +122,20 @@ public class Tasks {
     public static class RecurringTaskWithPersistentScheduleBuilder<T extends ScheduleAndData> {
         private final String name;
         private final Class<T> dataClass;
+        private FailureHandler<T> onFailure = new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>();
 
         public RecurringTaskWithPersistentScheduleBuilder(String name, Class<T> dataClass) {
             this.name = name;
             this.dataClass = dataClass;
         }
 
+        public RecurringTaskWithPersistentScheduleBuilder<T> onFailure(FailureHandler<T> failureHandler) {
+            this.onFailure = failureHandler;
+            return this;
+        }
+
         public RecurringTaskWithPersistentSchedule<T> execute(VoidExecutionHandler<T> executionHandler) {
-            return new RecurringTaskWithPersistentSchedule<T>(name, dataClass) {
+            return new RecurringTaskWithPersistentSchedule<T>(name, dataClass, onFailure) {
                 @Override
                 public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
                     executionHandler.execute(taskInstance, executionContext);
@@ -146,7 +152,7 @@ public class Tasks {
         }
 
         public RecurringTaskWithPersistentSchedule<T> executeStateful(StateReturningExecutionHandler<T> executionHandler) {
-            return new RecurringTaskWithPersistentSchedule<T>(name, dataClass) {
+            return new RecurringTaskWithPersistentSchedule<T>(name, dataClass, onFailure) {
 
                 @Override
                 public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
