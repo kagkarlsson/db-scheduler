@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -72,7 +73,7 @@ public class SchedulerTest {
     }
 
     @Test
-    public void scheduler_should_execute_task_when_exactly_due() {
+    public void scheduler_should_execute_task_when_exactly_due() throws InterruptedException {
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
@@ -84,11 +85,13 @@ public class SchedulerTest {
 
         clock.set(executionTime);
         scheduler.executeDue();
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(handler.timesExecuted.get(), is(1));
     }
 
     @Test
-    public void scheduler_should_execute_rescheduled_task_when_exactly_due() {
+    public void scheduler_should_execute_rescheduled_task_when_exactly_due() throws InterruptedException {
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
@@ -107,6 +110,8 @@ public class SchedulerTest {
 
         clock.set(reScheduledExecutionTime);
         scheduler.executeDue();
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(handler.timesExecuted.get(), is(1));
     }
 
@@ -129,18 +134,21 @@ public class SchedulerTest {
     }
 
     @Test
-    public void scheduler_should_execute_recurring_task_and_reschedule() {
+    public void scheduler_should_execute_recurring_task_and_reschedule() throws InterruptedException {
         RecurringTask<Void> recurringTask = TestTasks.recurring("Recurring", FixedDelay.of(ofHours(1)), handler);
         Scheduler scheduler = schedulerFor(recurringTask);
 
         scheduler.schedule(recurringTask.instance("single"), clock.now());
         scheduler.executeDue();
-
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(handler.timesExecuted.get(), is(1));
 
         Instant nextExecutionTime = clock.now().plus(ofHours(1));
         clock.set(nextExecutionTime);
         scheduler.executeDue();
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertThat(handler.timesExecuted.get(), is(2));
     }
 
@@ -166,16 +174,16 @@ public class SchedulerTest {
     public void should_expose_cause_of_failure_to_completion_handler() throws InterruptedException {
         TestTasks.ResultRegisteringFailureHandler<Void> failureHandler = new TestTasks.ResultRegisteringFailureHandler<>();
         Task<Void> oneTimeTask = ComposableTask.customTask("cause-testing-task", Void.class, TestTasks.REMOVE_ON_COMPLETE, failureHandler,
-                (inst, ctx) -> { throw new RuntimeException("Failed!");});
+                (inst, ctx) -> { return CompletableFuture.runAsync(() -> { throw new RuntimeException("Failed!"); });});
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
         scheduler.executeDue();
-//        failureHandler.waitForNotify.await();
+        failureHandler.waitForNotify.await();
 
         assertThat(failureHandler.result, is(ExecutionComplete.Result.FAILED));
-        assertThat(failureHandler.cause.get().getMessage(), is("Failed!"));
+        assertThat(failureHandler.cause.get().getMessage(), is("java.lang.RuntimeException: Failed!"));
 
     }
 
@@ -187,8 +195,8 @@ public class SchedulerTest {
         OneTimeTask<Void> oneTimeTask = Tasks.oneTime("max-retries-task")
             .onFailure(failureHandler)
             .execute((inst, ctx) -> {
-                handler.execute(inst, ctx);
-                throw new RuntimeException("Failed!");
+                return handler.execute(inst, ctx)
+                    .thenRun(() -> { throw new RuntimeException("Failed!"); });
             });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
@@ -214,10 +222,12 @@ public class SchedulerTest {
         OneTimeTask<Void> oneTimeTask = Tasks.oneTime("exponential-defaults-task")
             .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration))
             .execute((inst, ctx) -> {
-                executionTimes.add(ctx.getExecution().executionTime);
-                if(executionTimes.size() < 10){
-                    throw new RuntimeException("Failed!");
-                }
+                return CompletableFuture.runAsync(() -> {
+                    executionTimes.add(ctx.getExecution().executionTime);
+                    if(executionTimes.size() < 10){
+                        throw new RuntimeException("Failed!");
+                    }
+                });
             });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
@@ -254,10 +264,12 @@ public class SchedulerTest {
         OneTimeTask<Void> oneTimeTask = Tasks.oneTime("exponential-custom-rate-task")
             .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration, customRate))
             .execute((inst, ctx) -> {
-                executionTimes.add(ctx.getExecution().executionTime);
-                if(executionTimes.size() < 10){
-                    throw new RuntimeException("Failed!");
-                }
+                return CompletableFuture.runAsync(() -> {
+                    executionTimes.add(ctx.getExecution().executionTime);
+                    if(executionTimes.size() < 10){
+                        throw new RuntimeException("Failed!");
+                    }
+                });
             });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);

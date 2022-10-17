@@ -28,6 +28,7 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static java.util.Collections.singletonList;
@@ -57,6 +58,7 @@ public class DynamicRecurringTaskTest {
         final RecurringTaskWithPersistentSchedule<PlainScheduleAndData> task =
             Tasks.recurringWithPersistentSchedule(taskName, PlainScheduleAndData.class)
             .execute((taskInstance, executionContext) -> {
+                return CompletableFuture.completedFuture(null);
             });
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(task));
@@ -77,16 +79,18 @@ public class DynamicRecurringTaskTest {
     }
 
     @Test
-    public void should_support_statechanging_tasks() {
+    public void should_support_statechanging_tasks() throws InterruptedException {
         final PersistentFixedDelaySchedule scheduleAndData1 = new PersistentFixedDelaySchedule(Schedules.fixedDelay(Duration.ofSeconds(10)), 1);
 
         final String taskName = "dynamic-recurring";
         final RecurringTaskWithPersistentSchedule<PersistentFixedDelaySchedule> task =
             Tasks.recurringWithPersistentSchedule(taskName, PersistentFixedDelaySchedule.class)
                 .executeStateful((taskInstance, executionContext) -> {
-                    final PersistentFixedDelaySchedule persistentFixedDelaySchedule = taskInstance.getData().returnIncremented();
-                    System.out.println(persistentFixedDelaySchedule);
-                    return persistentFixedDelaySchedule;
+                    return CompletableFuture.supplyAsync(() -> {
+                        final PersistentFixedDelaySchedule persistentFixedDelaySchedule = taskInstance.getData().returnIncremented();
+                        System.out.println(persistentFixedDelaySchedule);
+                        return persistentFixedDelaySchedule;
+                    });
                 });
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(task));
@@ -97,7 +101,8 @@ public class DynamicRecurringTaskTest {
 
         assertScheduled(scheduler, task.instanceId("id1"), clock.now(), scheduleAndData1); // FixedDelay has initial execution-time now()
         scheduler.runAnyDueExecutions();
-
+        // Since execution is executed in an async way, we need to wait for a while to let the execution finish before asserting
+        Thread.sleep(1000);
         assertScheduled(scheduler, task.instanceId("id1"), clock.now().plus(Duration.ofSeconds(10)), scheduleAndData1.returnIncremented());
     }
 

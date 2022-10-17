@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 
 import static com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,12 +33,12 @@ public class DeadExecutionTest {
     public void test_dead_execution() {
         Assertions.assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
             CustomTask<Void> customTask = Tasks.custom("custom-a", Void.class)
-                .execute((taskInstance, executionContext) -> new CompletionHandler<Void>() {
+                .execute((taskInstance, executionContext) -> CompletableFuture.supplyAsync(() -> new CompletionHandler<Void>() {
                     @Override
                     public void complete(ExecutionComplete executionComplete, ExecutionOperations<Void> executionOperations) {
                         //do nothing on complete, row will be left as-is in database
                     }
-                });
+                }));
 
             TestableRegistry.Condition completedCondition = TestableRegistry.Conditions.completed(2);
 

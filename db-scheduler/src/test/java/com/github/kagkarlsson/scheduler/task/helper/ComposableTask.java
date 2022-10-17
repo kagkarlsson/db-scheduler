@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CompletableFuture;
 
 @Deprecated
 public class ComposableTask {
@@ -27,8 +28,8 @@ public class ComposableTask {
     public static <T> OneTimeTask<T> onetimeTask(String name, Class<T> dataClass, VoidExecutionHandler<T> executionHandler) {
         return new OneTimeTask<T>(name, dataClass) {
             @Override
-            public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                executionHandler.execute(taskInstance, executionContext);
+            public CompletableFuture<Void> executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                return executionHandler.execute(taskInstance, executionContext);
             }
         };
     }
@@ -46,9 +47,9 @@ public class ComposableTask {
             }
 
             @Override
-            public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                executionHandler.execute(taskInstance, executionContext);
-                return completionHandler;
+            public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                return executionHandler.execute(taskInstance, executionContext)
+                    .thenApply((v) -> completionHandler);
             }
         };
     }
@@ -66,9 +67,9 @@ public class ComposableTask {
             }
 
             @Override
-            public CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-                executionHandler.execute(taskInstance, executionContext);
-                return completionHandler;
+            public CompletableFuture<CompletionHandler<T>> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+                return executionHandler.execute(taskInstance, executionContext)
+                    .thenApply((v) -> completionHandler);
             }
         };
     }
