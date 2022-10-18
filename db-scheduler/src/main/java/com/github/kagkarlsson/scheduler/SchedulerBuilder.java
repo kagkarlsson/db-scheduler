@@ -57,9 +57,9 @@ public class SchedulerBuilder {
     protected final DataSource dataSource;
     protected SchedulerName schedulerName;
     protected int executorThreads = 10;
+    protected TaskResolver taskResolver = null;
     protected final List<Task<?>> knownTasks = new ArrayList<>();
     protected final List<OnStartup> startTasks = new ArrayList<>();
-    protected Waiter waiter = new Waiter(DEFAULT_POLLING_INTERVAL, clock);
     protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
     protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
     protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
@@ -74,6 +74,7 @@ public class SchedulerBuilder {
     protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
     protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
     private boolean registerShutdownHook = false;
+    protected Duration pollingInterval = DEFAULT_POLLING_INTERVAL;
 
     public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
         this.dataSource = dataSource;
@@ -91,8 +92,18 @@ public class SchedulerBuilder {
         return this;
     }
 
+    public SchedulerBuilder taskResolver(TaskResolver taskResolver) {
+        this.taskResolver = taskResolver;
+        return this;
+    }
+
+    public SchedulerBuilder clock(Clock clock) {
+        this.clock = clock;
+        return this;
+    }
+
     public SchedulerBuilder pollingInterval(Duration pollingInterval) {
-        waiter = new Waiter(pollingInterval, clock);
+        this.pollingInterval = pollingInterval;
         return this;
     }
 
@@ -189,10 +200,11 @@ public class SchedulerBuilder {
              schedulerName = new SchedulerName.Hostname();
         }
 
-        final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
+        final TaskResolver taskResolver = ofNullable(this.taskResolver).orElseGet(() -> new TaskResolver(statsRegistry, clock, knownTasks));
         final JdbcCustomization jdbcCustomization = ofNullable(this.jdbcCustomization).orElseGet(() -> new AutodetectJdbcCustomization(dataSource));
         final JdbcTaskRepository schedulerTaskRepository = new JdbcTaskRepository(dataSource, true, jdbcCustomization, tableName, taskResolver, schedulerName, serializer, clock);
         final JdbcTaskRepository clientTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled, jdbcCustomization, tableName, taskResolver, schedulerName, serializer, clock);
+        final Waiter waiter = new Waiter(pollingInterval, clock);
 
         ExecutorService candidateExecutorService = executorService;
         if (candidateExecutorService == null) {
