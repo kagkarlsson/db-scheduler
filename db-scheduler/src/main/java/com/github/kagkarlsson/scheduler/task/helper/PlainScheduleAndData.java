@@ -17,9 +17,10 @@ package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class PlainScheduleAndData implements ScheduleAndData {
+public class PlainScheduleAndData implements ScheduleAndData, Serializable {
     private final Schedule schedule;
     private final Object data;
 
