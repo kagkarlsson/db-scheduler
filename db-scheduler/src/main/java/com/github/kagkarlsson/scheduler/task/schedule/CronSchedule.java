@@ -24,6 +24,7 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -34,13 +35,12 @@ import java.util.Optional;
 /**
  * Spring-style cron-pattern schedule
  */
-public class CronSchedule implements Schedule {
+public class CronSchedule implements Schedule, Serializable {
 
     private static final String DISABLED = "-";
     private static final Logger LOG = LoggerFactory.getLogger(CronSchedule.class);
     private final String pattern;
     private final ZoneId zoneId;
-    private final ExecutionTime cronExecutionTime;
 
     public CronSchedule(String pattern) {
         this(pattern, ZoneId.systemDefault());
@@ -52,14 +52,6 @@ public class CronSchedule implements Schedule {
             throw new IllegalArgumentException("zoneId may not be null");
         }
         this.zoneId = zoneId;
-
-        if (isDisabled()) {
-            this.cronExecutionTime = new DisabledScheduleExecutionTime();
-        } else {
-            CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING));
-            Cron cron = parser.parse(pattern);
-            this.cronExecutionTime = ExecutionTime.forCron(cron);
-        }
     }
 
     @Override
@@ -67,6 +59,16 @@ public class CronSchedule implements Schedule {
         ZonedDateTime lastDone = ZonedDateTime.ofInstant(executionComplete.getTimeDone(), zoneId);  //frame the 'last done' time in the context of the time zone for this schedule
         //so that expressions like "0 05 13,20 * * ?" (New York) can operate in the
         // context of the desired time zone
+        ExecutionTime cronExecutionTime;
+
+        if (isDisabled()) {
+            cronExecutionTime = new CronSchedule.DisabledScheduleExecutionTime();
+        } else {
+            CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING));
+            Cron cron = parser.parse(pattern);
+            cronExecutionTime = ExecutionTime.forCron(cron);
+        }
+
         Optional<ZonedDateTime> nextTime = cronExecutionTime.nextExecution(lastDone);
         if (!nextTime.isPresent()) {
             LOG.error("Cron-pattern did not return any further execution-times. This behavior is currently not supported by the scheduler. Setting next execution-time to far-future.");
