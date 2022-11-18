@@ -133,8 +133,10 @@ public class TestTasks {
 
         public final CountDownLatch waitInExecuteUntil;
         public final CountDownLatch waitForExecute;
+        private long initialSleep;
 
-        public PausingHandler() {
+        public PausingHandler(long initialSleep) {
+            this.initialSleep = initialSleep;
             waitForExecute = new CountDownLatch(1);
             waitInExecuteUntil = new CountDownLatch(1);
         }
@@ -142,6 +144,7 @@ public class TestTasks {
         @Override
         public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             try {
+                Thread.sleep(initialSleep);
                 waitForExecute.countDown();
                 waitInExecuteUntil.await();
             } catch (InterruptedException e) {

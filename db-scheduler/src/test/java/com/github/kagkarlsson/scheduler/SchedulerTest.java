@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler;
 
 import ch.qos.logback.classic.Level;
 import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension;
+import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
@@ -14,7 +15,9 @@ import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
+import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SchedulerTest {
 
@@ -60,36 +64,37 @@ public class SchedulerTest {
         handler = new TestTasks.CountingHandler<>();
     }
 
-    private Scheduler schedulerFor(Task<?>... tasks) {
-        return schedulerFor(MoreExecutors.newDirectExecutorService(), tasks);
-    }
+    private ManualScheduler schedulerFor(Task<?>... tasks) {
+//        final StatsRegistry statsRegistry = StatsRegistry.NOOP;
+//        TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, Arrays.asList(tasks));
+//        JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), clock);
+//        final Scheduler scheduler = new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor,
+//            new SchedulerName.Fixed("name"), new Waiter(ZERO), ofSeconds(1), false,
+//            statsRegistry, PollingStrategyConfig.DEFAULT_FETCH, ofDays(14), ZERO, LogLevel.DEBUG, true, new ArrayList<>());
 
-    private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
-        final StatsRegistry statsRegistry = StatsRegistry.NOOP;
-        TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, Arrays.asList(tasks));
-        JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), clock);
-        final Scheduler scheduler = new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor,
-            new SchedulerName.Fixed("name"), new Waiter(ZERO), ofSeconds(1), false,
-            statsRegistry, PollingStrategyConfig.DEFAULT_FETCH, ofDays(14), ZERO, LogLevel.DEBUG, true, new ArrayList<>());
-        stopScheduler.register(scheduler);
-        return scheduler;
+
+        ManualScheduler manualScheduler = TestHelper.createManualScheduler(postgres.getDataSource(), tasks)
+            .clock(clock)
+            .start();
+        stopScheduler.register(manualScheduler);
+        return manualScheduler;
     }
 
     @Test
     public void scheduler_should_execute_task_when_exactly_due() {
         LOG.info("scheduler_should_execute_task_when_exactly_due()");
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
-        Scheduler scheduler = schedulerFor(oneTimeTask);
+        ManualScheduler scheduler = schedulerFor(oneTimeTask);
 
         try {
             Instant executionTime = clock.now().plus(ofMinutes(1));
             scheduler.schedule(oneTimeTask.instance("1"), executionTime);
 
-            scheduler.executeDue();
+            scheduler.runAnyDueExecutions();
             assertThat(handler.timesExecuted.get(), is(0));
 
             clock.set(executionTime);
-            scheduler.executeDue();
+            scheduler.runAnyDueExecutions();
             assertThat(handler.timesExecuted.get(), is(1));
         } catch (RuntimeException|Error e) {
             LOG.info("scheduler_should_execute_task_when_exactly_due() failed");
@@ -105,7 +110,7 @@ public class SchedulerTest {
     public void scheduler_should_execute_rescheduled_task_when_exactly_due() {
         LOG.info("scheduler_should_execute_rescheduled_task_when_exactly_due()");
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
-        Scheduler scheduler = schedulerFor(oneTimeTask);
+        ManualScheduler scheduler = schedulerFor(oneTimeTask);
 
         try {
             Instant executionTime = clock.now().plus(ofMinutes(1));
@@ -117,15 +122,15 @@ public class SchedulerTest {
             Instant reScheduledExecutionTime = clock.now().plus(ofMinutes(2));
 
             scheduler.reschedule(oneTimeTaskInstance, reScheduledExecutionTime);
-            scheduler.executeDue();
+            scheduler.runAnyDueExecutions();
             assertThat(handler.timesExecuted.get(), is(0));
 
             clock.set(executionTime);
-            scheduler.executeDue();
+            scheduler.runAnyDueExecutions();
             assertThat(handler.timesExecuted.get(), is(0));
 
             clock.set(reScheduledExecutionTime);
-            scheduler.executeDue();
+            scheduler.runAnyDueExecutions();
             assertThat(handler.timesExecuted.get(), is(1));
         } catch (RuntimeException|Error e) {
             LOG.info("scheduler_should_execute_rescheduled_task_when_exactly_due() failed");
@@ -173,18 +178,26 @@ public class SchedulerTest {
 
     @Test
     public void scheduler_should_track_duration() throws InterruptedException {
-        TestTasks.PausingHandler<Void> pausingHandler = new TestTasks.PausingHandler<>();
-        OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, pausingHandler);
-        Scheduler scheduler = schedulerFor(Executors.newSingleThreadExecutor(), oneTimeTask);
 
+//        TestableRegistry.Condition completedCondition = TestableRegistry.Conditions.completed(1);
+//        new TestableRegistry(false, TestableRegistry.)
+
+        TestTasks.PausingHandler<Void> pausingHandler = new TestTasks.PausingHandler<>(30);
+        OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, pausingHandler);
+
+        Scheduler scheduler = Scheduler.create(postgres.getDataSource(), oneTimeTask)
+            .threads(2)
+            .pollingInterval(Duration.ofMillis(100))
+            .schedulerName(new SchedulerName.Fixed("test"))
+            .build();
+        stopScheduler.register(scheduler);
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
-        scheduler.executeDue();
+        scheduler.start();
+        //scheduler.triggerCheckForDueExecutions();
         pausingHandler.waitForExecute.await();
 
         assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));
-        clock.set(clock.now.plus(ofMinutes(1)));
-
-        assertThat(scheduler.getCurrentlyExecuting().get(0).getDuration(), is(ofMinutes(1)));
+        assertTrue(scheduler.getCurrentlyExecuting().get(0).getDuration().toMillis() > 30);
 
         pausingHandler.waitInExecuteUntil.countDown();
     }
