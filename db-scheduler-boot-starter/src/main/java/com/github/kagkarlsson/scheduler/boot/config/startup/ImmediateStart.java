@@ -16,15 +16,15 @@
 package com.github.kagkarlsson.scheduler.boot.config.startup;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
-import javax.annotation.PostConstruct;
+import org.springframework.beans.factory.InitializingBean;
 
-public class ImmediateStart extends AbstractSchedulerStarter {
+public class ImmediateStart extends AbstractSchedulerStarter implements InitializingBean {
   public ImmediateStart(final Scheduler scheduler) {
     super(scheduler);
   }
 
-  @PostConstruct
-  void startImmediately() {
+  @Override
+  public void afterPropertiesSet() throws Exception {
     doStart();
   }
 }

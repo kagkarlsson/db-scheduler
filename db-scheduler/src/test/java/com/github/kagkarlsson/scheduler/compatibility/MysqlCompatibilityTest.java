@@ -27,7 +27,7 @@ public class MysqlCompatibilityTest extends CompatibilityTest {
     public MysqlCompatibilityTest() { super(false);}
 
     @BeforeAll
-    private static void initSchema() {
+    static void initSchema() {
         final DriverDataSource datasource = new DriverDataSource(MY_SQL.getJdbcUrl(), "com.mysql.cj.jdbc.Driver", new Properties(), MY_SQL.getUsername(), MY_SQL.getPassword());
 
         final HikariConfig hikariConfig = new HikariConfig();

@@ -27,7 +27,7 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
     public Oracle11gCompatibilityTest() { super(false);}
 
     @BeforeAll
-    private static void initSchema() {
+    static void initSchema() {
         final DriverDataSource datasource = new DriverDataSource(ORACLE.getJdbcUrl(), "oracle.jdbc.OracleDriver", new Properties(), ORACLE.getUsername(), ORACLE.getPassword());
 
         final HikariConfig hikariConfig = new HikariConfig();

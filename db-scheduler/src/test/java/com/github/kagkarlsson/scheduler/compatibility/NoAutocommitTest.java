@@ -44,7 +44,7 @@ public class NoAutocommitTest {
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer();
 
     @BeforeAll
-    private static void initSchema() {
+    static void initSchema() {
         final DriverDataSource datasource = new DriverDataSource(POSTGRES.getJdbcUrl(), "org.postgresql.Driver",
             new Properties(), POSTGRES.getUsername(), POSTGRES.getPassword());
 
