@@ -17,8 +17,8 @@
 * Docker
 
 ### Running tests
-Simply running `mvn clean test` will run most of the tests. There are a layer of compatibilty tests that also should be run
-but take long as they spin up numerous docker containers but they can be run by adding a profile when running tests `mvn -Pcompatibility clean test`.
+Simply running `mvn clean test` will run most of the tests. There are a layer of compatibilty-tests that also should be run
+but take longer time as they spin up numerous docker containers. Run using `mvn -Pcompatibility clean test`.
 This is the command that CI will execute so make sure to run it locally and verify all is good on your end first.
 
 ### Formatting

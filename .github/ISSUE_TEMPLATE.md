@@ -27,7 +27,7 @@ Please answer the following questions for yourself before submitting an issue. *
 - DB-Scheduler Version :
 - Java Version :
 - Spring Boot (check for Yes) : [ ]
-- Database Instance and Version :
+- Database and Version :
 
 ## Logs
 <!-- If you have any logs to share throw them here in a code block or provide a link to them -->
