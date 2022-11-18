@@ -29,6 +29,10 @@ public abstract class OneTimeTask<T> extends AbstractTask<T> {
         this(name, dataClass, new OnFailureRetryLater<>(Duration.ofMinutes(5)), new ReviveDeadExecution<>());
     }
 
+    public OneTimeTask(String name, Class<T> dataClass, FailureHandler<T> failureHandler) {
+        this(name, dataClass, failureHandler, new ReviveDeadExecution<>());
+    }
+
     public OneTimeTask(String name, Class<T> dataClass, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
         super(name, dataClass, failureHandler, deadExecutionHandler);
     }

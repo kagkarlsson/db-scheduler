@@ -22,15 +22,20 @@ import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
-import java.time.Instant;
-
 public abstract class RecurringTaskWithPersistentSchedule<T extends ScheduleAndData> extends AbstractTask<T> {
 
     public RecurringTaskWithPersistentSchedule(String name, Class<T> dataClass) {
+        this(
+            name,
+            dataClass,
+            new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>());
+    }
+
+    public RecurringTaskWithPersistentSchedule(String name, Class<T> dataClass, FailureHandler<T> onFailure) {
         super(
             name,
             dataClass,
-            new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>(),
+            onFailure,
             new DeadExecutionHandler.ReviveDeadExecution<>());
     }
 

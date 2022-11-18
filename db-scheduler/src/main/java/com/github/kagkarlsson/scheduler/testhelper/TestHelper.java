@@ -19,6 +19,7 @@ import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.Waiter;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
@@ -75,6 +76,7 @@ public class TestHelper {
             final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
             final JdbcTaskRepository schedulerTaskRepository = new JdbcTaskRepository(dataSource, true, new DefaultJdbcCustomization(), tableName, taskResolver, new SchedulerName.Fixed("manual"), serializer, clock);
             final JdbcTaskRepository clientTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled, new DefaultJdbcCustomization(), tableName, taskResolver, new SchedulerName.Fixed("manual"), serializer, clock);
+            final Waiter waiter = new Waiter(pollingInterval, clock);
 
             return new ManualScheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads,
                 new DirectExecutorService(), schedulerName, waiter, heartbeatInterval, enableImmediateExecution,

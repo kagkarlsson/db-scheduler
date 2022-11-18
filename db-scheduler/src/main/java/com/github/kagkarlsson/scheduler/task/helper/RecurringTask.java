@@ -30,10 +30,14 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
     public static final String INSTANCE = "recurring";
     private final OnCompleteReschedule<T> onComplete;
     private final Schedule schedule;
-    private ScheduleOnStartup<T> scheduleOnStartup;
+    private final ScheduleOnStartup<T> scheduleOnStartup;
 
     public RecurringTask(String name, Schedule schedule, Class<T> dataClass) {
         this(name, schedule, dataClass, new ScheduleRecurringOnStartup<>(INSTANCE, null, schedule), new FailureHandler.OnFailureReschedule<T>(schedule), new ReviveDeadExecution<>());
+    }
+
+    public RecurringTask(String name, Schedule schedule, Class<T> dataClass, FailureHandler<T> failureHandler) {
+        this(name, schedule, dataClass, new ScheduleRecurringOnStartup<>(INSTANCE, null, schedule), failureHandler, new ReviveDeadExecution<>());
     }
 
     public RecurringTask(String name, Schedule schedule, Class<T> dataClass, T initialData) {
