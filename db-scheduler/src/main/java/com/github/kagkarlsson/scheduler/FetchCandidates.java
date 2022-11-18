@@ -71,7 +71,7 @@ public class FetchCandidates implements PollStrategy {
         // Fetch new candidates for execution. Old ones still in ExecutorService will become stale and be discarded
         final int executionsToFetch = upperLimit;
         List<Execution> fetchedDueExecutions = taskRepository.getDue(now, executionsToFetch);
-        LOG.trace("Fetched {} task instances due for execution", fetchedDueExecutions.size());
+        LOG.trace("Fetched {} task instances due for execution at {}", fetchedDueExecutions.size(), now);
 
         currentGenerationNumber.incrementAndGet();
         DueExecutionsBatch newDueBatch = new DueExecutionsBatch(
