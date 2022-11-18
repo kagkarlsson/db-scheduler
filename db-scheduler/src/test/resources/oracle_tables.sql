@@ -13,3 +13,4 @@ create table scheduled_tasks
     version              NUMBER(19, 0),
     PRIMARY KEY (task_name, task_instance)
 )
+

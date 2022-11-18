@@ -41,7 +41,7 @@ public class ExecutorUtils {
         }
     }
 
-    private static boolean awaitTermination(ExecutorService executor, Duration timeout) {
+    public static boolean awaitTermination(ExecutorService executor, Duration timeout) {
         try {
             return executor.awaitTermination(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {

@@ -18,15 +18,17 @@ package com.github.kagkarlsson.scheduler.jdbc;
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
+import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.SchedulerName;
-import com.github.kagkarlsson.scheduler.Serializer;
+import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import org.slf4j.Logger;
@@ -61,33 +63,36 @@ public class JdbcTaskRepository implements TaskRepository {
     private final Serializer serializer;
     private final String tableName;
     private final JdbcCustomization jdbcCustomization;
+    private final Clock clock;
 
-    public JdbcTaskRepository(DataSource dataSource, boolean commitWhenAutocommitDisabled, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName) {
-        this(dataSource, commitWhenAutocommitDisabled, new AutodetectJdbcCustomization(dataSource), tableName, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER);
+    public JdbcTaskRepository(DataSource dataSource, boolean commitWhenAutocommitDisabled, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Clock clock) {
+        this(dataSource, commitWhenAutocommitDisabled, new AutodetectJdbcCustomization(dataSource), tableName, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER, clock);
     }
 
-    public JdbcTaskRepository(DataSource dataSource, boolean commitWhenAutocommitDisabled, JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName) {
-        this(dataSource, commitWhenAutocommitDisabled, jdbcCustomization, tableName, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER);
+    public JdbcTaskRepository(DataSource dataSource, boolean commitWhenAutocommitDisabled, JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Clock clock) {
+        this(dataSource, commitWhenAutocommitDisabled, jdbcCustomization, tableName, taskResolver, schedulerSchedulerName, Serializer.DEFAULT_JAVA_SERIALIZER, clock);
     }
 
-    public JdbcTaskRepository(DataSource dataSource, boolean commitWhenAutocommitDisabled, JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer) {
-        this(jdbcCustomization, tableName, taskResolver, schedulerSchedulerName, serializer, new JdbcRunner(dataSource, commitWhenAutocommitDisabled));
+    public JdbcTaskRepository(DataSource dataSource, boolean commitWhenAutocommitDisabled, JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer, Clock clock) {
+        this(jdbcCustomization, tableName, taskResolver, schedulerSchedulerName, serializer, new JdbcRunner(dataSource, commitWhenAutocommitDisabled), clock);
     }
 
-    protected JdbcTaskRepository(JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer, JdbcRunner jdbcRunner) {
+    protected JdbcTaskRepository(JdbcCustomization jdbcCustomization, String tableName, TaskResolver taskResolver, SchedulerName schedulerSchedulerName, Serializer serializer, JdbcRunner jdbcRunner, Clock clock) {
         this.tableName = tableName;
         this.taskResolver = taskResolver;
         this.schedulerSchedulerName = schedulerSchedulerName;
         this.jdbcRunner = jdbcRunner;
         this.serializer = serializer;
         this.jdbcCustomization = jdbcCustomization;
+        this.clock = clock;
     }
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public boolean createIfNotExists(Execution execution) {
+    public boolean createIfNotExists(SchedulableInstance instance) {
+        final TaskInstance taskInstance = instance.getTaskInstance();
         try {
-            Optional<Execution> existingExecution = getExecution(execution.taskInstance);
+            Optional<Execution> existingExecution = getExecution(taskInstance);
             if (existingExecution.isPresent()) {
                 LOG.debug("Execution not created, it already exists. Due: {}", existingExecution.get().executionTime);
                 return false;
@@ -96,10 +101,10 @@ public class JdbcTaskRepository implements TaskRepository {
             jdbcRunner.execute(
                     "insert into " + tableName + "(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
                     (PreparedStatement p) -> {
-                        p.setString(1, execution.taskInstance.getTaskName());
-                        p.setString(2, execution.taskInstance.getId());
-                        p.setObject(3, serializer.serialize(execution.taskInstance.getData()));
-                        jdbcCustomization.setInstant(p, 4, execution.executionTime);
+                        p.setString(1, taskInstance.getTaskName());
+                        p.setString(2, taskInstance.getId());
+                        p.setObject(3, serializer.serialize(taskInstance.getData()));
+                        jdbcCustomization.setInstant(p, 4, instance.getNextExecutionTime(clock.now()));
                         p.setBoolean(5, false);
                         p.setLong(6, 1L);
                     });
@@ -107,13 +112,66 @@ public class JdbcTaskRepository implements TaskRepository {
 
         } catch (SQLRuntimeException e) {
             LOG.debug("Exception when inserting execution. Assuming it to be a constraint violation.", e);
-            Optional<Execution> existingExecution = getExecution(execution.taskInstance);
+            Optional<Execution> existingExecution = getExecution(taskInstance);
             if (!existingExecution.isPresent()) {
-                throw new ExecutionException("Failed to add new execution.", execution, e);
+                throw new TaskInstanceException("Failed to add new execution.", instance.getTaskName(), instance.getId(), e);
             }
             LOG.debug("Execution not created, another thread created it.");
             return false;
         }
+    }
+
+    /**
+     * Instead of doing delete+insert, we allow updating an existing execution will all new fields
+     * @return the execution-time of the new execution
+     */
+    @Override
+    public Instant replace(Execution toBeReplaced, SchedulableInstance newInstance) {
+        Instant newExecutionTime = newInstance.getNextExecutionTime(clock.now());
+        Execution newExecution = new Execution(newExecutionTime, newInstance.getTaskInstance());
+        Object newData = newInstance.getTaskInstance().getData();
+
+        final int updated = jdbcRunner.execute(
+            "update " + tableName + " set " +
+                "task_name = ?, " +
+                "task_instance = ?, " +
+                "picked = ?, " +
+                "picked_by = ?, " +
+                "last_heartbeat = ?, " +
+                "last_success = ?, " +
+                "last_failure = ?, " +
+                "consecutive_failures = ?, " +
+                "execution_time = ?, " +
+                "task_data = ?, " +
+                "version = 1 " +
+                "where task_name = ? " +
+                "and task_instance = ? " +
+                "and version = ?",
+            ps -> {
+                int index = 1;
+                ps.setString(index++, newExecution.taskInstance.getTaskName()); // task_name
+                ps.setString(index++, newExecution.taskInstance.getId()); // task_instance
+                ps.setBoolean(index++, false); // picked
+                ps.setString(index++, null);   // picked_by
+                jdbcCustomization.setInstant(ps, index++, null); // last_heartbeat
+                jdbcCustomization.setInstant(ps, index++, null); // last_success
+                jdbcCustomization.setInstant(ps, index++, null); // last_failure
+                ps.setInt(index++, 0); // consecutive_failures
+                jdbcCustomization.setInstant(ps, index++, newExecutionTime); // execution_time
+                // may cause datbase-specific problems, might have to use setNull instead
+                ps.setObject(index++, serializer.serialize(newData)); // task_data
+                ps.setString(index++, toBeReplaced.taskInstance.getTaskName()); // task_name
+                ps.setString(index++, toBeReplaced.taskInstance.getId()); // task_instance
+                ps.setLong(index++, toBeReplaced.version); // version
+            });
+
+        if (updated == 0) {
+            throw new IllegalStateException("Failed to replace execution, found none matching " + toBeReplaced);
+        } else if (updated > 1) {
+            LOG.error("Expected one execution to be updated, but updated " + updated + ". Indicates a bug. " +
+                "Replaced " + toBeReplaced.taskInstance + " with " + newExecution.taskInstance);
+        }
+        return newExecutionTime;
     }
 
     @Override

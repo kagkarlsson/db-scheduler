@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
+import java.util.function.Function;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -33,6 +34,7 @@ import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegi
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -51,8 +53,12 @@ public class DbSchedulerAutoConfigurationTest {
                 "spring.profiles.active=integration-test"
             ).withConfiguration(AutoConfigurations.of(
                 DataSourceAutoConfiguration.class,
+                SqlInitializationAutoConfiguration.class,
                 MetricsAutoConfiguration.class,
                 CompositeMeterRegistryAutoConfiguration.class,
+                HealthContributorAutoConfiguration.class,
+                DbSchedulerMetricsAutoConfiguration.class,
+                DbSchedulerActuatorAutoConfiguration.class,
                 DbSchedulerAutoConfiguration.class
             ));
     }
@@ -109,9 +115,17 @@ public class DbSchedulerAutoConfigurationTest {
     @Test
     public void it_should_autoconfigure_a_health_check() {
         ctxRunner
-            .withConfiguration(AutoConfigurations.of(HealthContributorAutoConfiguration.class))
             .run((AssertableApplicationContext ctx) -> {
                 assertThat(ctx).hasSingleBean(DbSchedulerHealthIndicator.class);
+            });
+    }
+
+    @Test
+    public void it_should_not_autoconfigure_a_health_check_when_actuator_is_absent() {
+        ctxRunner
+            .with(classesRemovedFromClasspath(HealthContributorAutoConfiguration.class))
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).doesNotHaveBean(DbSchedulerHealthIndicator.class);
             });
     }
 
@@ -124,6 +138,7 @@ public class DbSchedulerAutoConfigurationTest {
                 assertThat(ctx).doesNotHaveBean(DbSchedulerStarter.class);
                 assertThat(ctx).doesNotHaveBean(DbSchedulerCustomizer.class);
                 assertThat(ctx).doesNotHaveBean(DbSchedulerHealthIndicator.class);
+                assertThat(ctx).doesNotHaveBean(StatsRegistry.class);
             });
     }
 
@@ -179,7 +194,16 @@ public class DbSchedulerAutoConfigurationTest {
     @Test
     public void it_should_provide_noop_registry_if_micrometer_not_present() {
         ctxRunner.withUserConfiguration(SingleTaskConfiguration.class)
-            .withClassLoader(new FilteredClassLoader(Meter.class, MeterRegistry.class))
+            .with(classesRemovedFromClasspath(Meter.class, MeterRegistry.class))
+            .run((AssertableApplicationContext ctx) -> {
+                assertThat(ctx).hasSingleBean(DefaultStatsRegistry.class);
+            });
+    }
+
+    @Test
+    public void it_should_provide_noop_registry_if_actuator_not_present() {
+        ctxRunner.withUserConfiguration(SingleTaskConfiguration.class)
+            .with(classesRemovedFromClasspath(MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class))
             .run((AssertableApplicationContext ctx) -> {
                 assertThat(ctx).hasSingleBean(DefaultStatsRegistry.class);
             });
@@ -271,5 +295,9 @@ public class DbSchedulerAutoConfigurationTest {
             .execute((instance, context) -> {
                 log.info("Executed task: {}, ctx: {}", instance, context);
             });
+    }
+
+    private static Function<ApplicationContextRunner, ApplicationContextRunner> classesRemovedFromClasspath(Class<?>... classesToHide) {
+        return ctxRunner -> ctxRunner.withClassLoader(new FilteredClassLoader(classesToHide));
     }
 }

@@ -98,7 +98,7 @@ public class ExecutorPoolTest {
             completed.forEach(e -> {
                 assertThat(e.getResult(), is(ExecutionComplete.Result.OK));
                 Duration durationUntilExecuted = Duration.between(now, e.getTimeDone());
-                assertThat(durationUntilExecuted, TimeMatchers.shorterThan(Duration.ofSeconds(1)));
+                assertThat(durationUntilExecuted, TimeMatchers.shorterThan(Duration.ofMillis(1100)));
             });
             registry.assertNoFailures();
         }, waitingForConditionTimedOut(scheduler));

@@ -30,6 +30,7 @@ public class LockAndFetchCandidates implements PollStrategy {
     private final Executor executor;
     private final TaskRepository taskRepository;
     private final SchedulerClient schedulerClient;
+    private SchedulerClientEventListener earlyExecutionListener;
     private final StatsRegistry statsRegistry;
     private final TaskResolver taskResolver;
     private final SchedulerState schedulerState;
@@ -42,12 +43,13 @@ public class LockAndFetchCandidates implements PollStrategy {
     private AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
 
     public LockAndFetchCandidates(Executor executor, TaskRepository taskRepository, SchedulerClient schedulerClient,
-                                  int threadpoolSize, StatsRegistry statsRegistry, SchedulerState schedulerState,
+                                  SchedulerClientEventListener earlyExecutionListener, int threadpoolSize, StatsRegistry statsRegistry, SchedulerState schedulerState,
                                   ConfigurableLogger failureLogger, TaskResolver taskResolver, Clock clock,
                                   PollingStrategyConfig pollingStrategyConfig, Runnable triggerCheckForNewExecutions) {
         this.executor = executor;
         this.taskRepository = taskRepository;
         this.schedulerClient = schedulerClient;
+        this.earlyExecutionListener = earlyExecutionListener;
         this.statsRegistry = statsRegistry;
         this.taskResolver = taskResolver;
         this.schedulerState = schedulerState;
@@ -87,7 +89,7 @@ public class LockAndFetchCandidates implements PollStrategy {
 
         for (Execution picked : pickedExecutions) {
             executor.addToQueue(
-                new ExecutePicked(executor, taskRepository, schedulerClient, statsRegistry,
+                new ExecutePicked(executor, taskRepository, earlyExecutionListener, schedulerClient, statsRegistry,
                     taskResolver, schedulerState, failureLogger,
                     clock, picked),
                 () -> {

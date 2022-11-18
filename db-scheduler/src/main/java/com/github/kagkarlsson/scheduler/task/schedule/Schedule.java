@@ -32,4 +32,8 @@ public interface Schedule {
 
     boolean isDeterministic();
 
+    default boolean isDisabled() {
+        return false;
+    }
+
 }

@@ -13,16 +13,17 @@
     <properties>
         <license.dir>${project.parent.basedir}/.license</license.dir>
         <!-- Dependencies -->
-        <cron-utils.version>9.1.3</cron-utils.version>
+        <cron-utils.version>9.2.0</cron-utils.version>
         <hamcrest.version>1.3</hamcrest.version>
-        <hikaricp.version>3.1.0</hikaricp.version>
-        <hsqldb.version>2.3.3</hsqldb.version>
+        <hikaricp.version>4.0.3</hikaricp.version>
+        <hsqldb.version>2.7.1</hsqldb.version>
         <java8-matchers.version>1.6</java8-matchers.version>
-        <equals-verifier.version>3.5</equals-verifier.version>
+        <equals-verifier.version>3.10.1</equals-verifier.version>
+        <bytebuddy.version>1.12.16</bytebuddy.version>
         <micro-jdbc.version>0.3</micro-jdbc.version>
-        <otj-pg-embedded.version>0.11.4</otj-pg-embedded.version>
-        <postgresql.version>9.4.1207</postgresql.version>
-        <slf4j.version>1.7.7</slf4j.version>
+        <otj-pg-embedded.version>1.0.1</otj-pg-embedded.version>
+        <postgresql.version>42.5.0</postgresql.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <test.excludedTags>compatibility</test.excludedTags>
     </properties>
 
@@ -37,16 +38,45 @@
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
+        <!-- Shaded -->
         <dependency>
             <groupId>com.cronutils</groupId>
             <artifactId>cron-utils</artifactId>
             <version>${cron-utils.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.glassfish</groupId>
+                    <artifactId>javax.el</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+        <!-- Optional -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <optional>true</optional>
+        </dependency>
+
 
         <!-- Test -->
         <dependency>
@@ -97,8 +127,19 @@
             <artifactId>equalsverifier</artifactId>
             <version>${equals-verifier.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>byte-buddy</artifactId>
+                    <groupId>net.bytebuddy</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
@@ -153,7 +194,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.19</version>
+            <version>8.0.28</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -165,19 +206,41 @@
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc8</artifactId>
-            <version>18.3.0.0</version>
+            <version>21.5.0.0</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>3.3.3</version>
+            <version>4.8.0</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>byte-buddy</artifactId>
+                    <groupId>net.bytebuddy</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>byte-buddy-agent</artifactId>
+                    <groupId>net.bytebuddy</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy</artifactId>
+            <version>${bytebuddy.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.bytebuddy</groupId>
+            <artifactId>byte-buddy-agent</artifactId>
+            <version>${bytebuddy.version}</version>
             <scope>test</scope>
         </dependency>
 
