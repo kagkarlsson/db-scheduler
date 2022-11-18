@@ -41,6 +41,7 @@ public class CronSchedule implements Schedule, Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(CronSchedule.class);
     private final String pattern;
     private final ZoneId zoneId;
+    private transient ExecutionTime cronExecutionTime; // lazily initialized
 
     public CronSchedule(String pattern) {
         this(pattern, ZoneId.systemDefault());
@@ -52,22 +53,15 @@ public class CronSchedule implements Schedule, Serializable {
             throw new IllegalArgumentException("zoneId may not be null");
         }
         this.zoneId = zoneId;
+        lazyInitExecutionTime();
     }
 
     @Override
     public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
+        lazyInitExecutionTime(); // for deserialized objects
         ZonedDateTime lastDone = ZonedDateTime.ofInstant(executionComplete.getTimeDone(), zoneId);  //frame the 'last done' time in the context of the time zone for this schedule
         //so that expressions like "0 05 13,20 * * ?" (New York) can operate in the
         // context of the desired time zone
-        ExecutionTime cronExecutionTime;
-
-        if (isDisabled()) {
-            cronExecutionTime = new CronSchedule.DisabledScheduleExecutionTime();
-        } else {
-            CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING));
-            Cron cron = parser.parse(pattern);
-            cronExecutionTime = ExecutionTime.forCron(cron);
-        }
 
         Optional<ZonedDateTime> nextTime = cronExecutionTime.nextExecution(lastDone);
         if (!nextTime.isPresent()) {
@@ -75,6 +69,24 @@ public class CronSchedule implements Schedule, Serializable {
             return Instant.now().plus(1000, ChronoUnit.YEARS);
         }
         return nextTime.get().toInstant();
+    }
+
+    private void lazyInitExecutionTime() {
+        if (cronExecutionTime != null) {
+            return;
+        }
+
+        synchronized (this) {
+            if (cronExecutionTime == null) {
+                if (isDisabled()) {
+                    cronExecutionTime = new CronSchedule.DisabledScheduleExecutionTime();
+                } else {
+                    CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING));
+                    Cron cron = parser.parse(pattern);
+                    cronExecutionTime = ExecutionTime.forCron(cron);
+                }
+            }
+        }
     }
 
     @Override
@@ -85,6 +97,14 @@ public class CronSchedule implements Schedule, Serializable {
     @Override
     public String toString() {
         return "CronSchedule pattern=" + pattern + ", zone=" + zoneId;
+    }
+
+    public String getPattern() {
+        return pattern;
+    }
+
+    public ZoneId getZoneId() {
+        return zoneId;
     }
 
     private static class DisabledScheduleExecutionTime implements ExecutionTime {
