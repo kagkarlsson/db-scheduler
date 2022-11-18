@@ -92,11 +92,13 @@ public class SchedulerTest {
             scheduler.executeDue();
             assertThat(handler.timesExecuted.get(), is(1));
         } catch (RuntimeException e) {
+            LOG.info("scheduler_should_execute_task_when_exactly_due() failed");
             scheduler.getScheduledExecutions().forEach(it -> {
                 LOG.info("Execution in database scheduled to: " + it.getExecutionTime());
             });
             throw e;
         }
+        LOG.info("scheduler_should_execute_task_when_exactly_due() end");
     }
 
     @Test
@@ -126,11 +128,13 @@ public class SchedulerTest {
             scheduler.executeDue();
             assertThat(handler.timesExecuted.get(), is(1));
         } catch (RuntimeException e) {
+            LOG.info("scheduler_should_execute_rescheduled_task_when_exactly_due() failed");
             scheduler.getScheduledExecutions().forEach(it -> {
                 LOG.info("Execution in database scheduled to: " + it.getExecutionTime());
             });
             throw e;
         }
+        LOG.info("scheduler_should_execute_rescheduled_task_when_exactly_due() end");
     }
 
     @Test
