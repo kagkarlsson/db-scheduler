@@ -101,9 +101,12 @@ public class TestTasks {
         public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
             this.timesExecuted.incrementAndGet();
             try {
-                Thread.sleep(wait.toMillis());
+                if (wait.toMillis() > 0) {
+                    Thread.sleep(wait.toMillis());
+                }
             } catch (InterruptedException e) {
                 LoggerFactory.getLogger(CountingHandler.class).info("Interrupted.");
+                LoggerFactory.getLogger(CountingHandler.class).debug("Stacktrace", e);
             }
         }
     }

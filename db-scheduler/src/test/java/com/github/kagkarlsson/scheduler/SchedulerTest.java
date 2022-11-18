@@ -1,8 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.logging.LogLevel;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -12,29 +9,22 @@ import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
-import static java.time.Duration.ZERO;
-import static java.time.Duration.between;
-import static java.time.Duration.ofDays;
-import static java.time.Duration.ofHours;
-import static java.time.Duration.ofMillis;
-import static java.time.Duration.ofMinutes;
-import static java.time.Duration.ofSeconds;
+import static java.time.Duration.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -44,11 +34,17 @@ public class SchedulerTest {
 
     private TestTasks.CountingHandler<Void> handler;
     private SettableClock clock;
+    private static final Logger LOG = LoggerFactory.getLogger(SchedulerTest.class);
 
     @RegisterExtension
     public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
     @RegisterExtension
     public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
+//    @RegisterExtension
+//        public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
+//        new ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson.scheduler", Level.TRACE)
+//    );
+
 
     @BeforeEach
     public void setUp() {
@@ -56,58 +52,74 @@ public class SchedulerTest {
         handler = new TestTasks.CountingHandler<>();
     }
 
-    private Scheduler schedulerFor(Task<?>... tasks) {
-        return schedulerFor(MoreExecutors.newDirectExecutorService(), tasks);
-    }
-
-    private Scheduler schedulerFor(ExecutorService executor, Task<?> ... tasks) {
-        final StatsRegistry statsRegistry = StatsRegistry.NOOP;
-        TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, Arrays.asList(tasks));
-        JdbcTaskRepository taskRepository = new JdbcTaskRepository(postgres.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), clock);
-        final Scheduler scheduler = new Scheduler(clock, taskRepository, taskRepository, taskResolver, 1, executor,
-            new SchedulerName.Fixed("name"), new Waiter(ZERO), ofSeconds(1), false,
-            statsRegistry, PollingStrategyConfig.DEFAULT_FETCH, ofDays(14), ZERO, LogLevel.DEBUG, true, new ArrayList<>());
-        stopScheduler.register(scheduler);
-        return scheduler;
+    private ManualScheduler schedulerFor(Task<?>... tasks) {
+        ManualScheduler manualScheduler = TestHelper.createManualScheduler(postgres.getDataSource(), tasks)
+            .clock(clock)
+            .start();
+        stopScheduler.register(manualScheduler);
+        return manualScheduler;
     }
 
     @Test
     public void scheduler_should_execute_task_when_exactly_due() {
+        LOG.info("scheduler_should_execute_task_when_exactly_due()");
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
-        Scheduler scheduler = schedulerFor(oneTimeTask);
+        ManualScheduler scheduler = schedulerFor(oneTimeTask);
 
-        Instant executionTime = clock.now().plus(ofMinutes(1));
-        scheduler.schedule(oneTimeTask.instance("1"), executionTime);
+        try {
+            Instant executionTime = clock.now().plus(ofMinutes(1));
+            scheduler.schedule(oneTimeTask.instance("1"), executionTime);
 
-        scheduler.executeDue();
-        assertThat(handler.timesExecuted.get(), is(0));
+            scheduler.runAnyDueExecutions();
+            assertThat(handler.timesExecuted.get(), is(0));
 
-        clock.set(executionTime);
-        scheduler.executeDue();
-        assertThat(handler.timesExecuted.get(), is(1));
+            clock.set(executionTime);
+            scheduler.runAnyDueExecutions();
+            assertThat(handler.timesExecuted.get(), is(1));
+        } catch (RuntimeException|Error e) {
+            LOG.info("scheduler_should_execute_task_when_exactly_due() failed");
+            scheduler.getScheduledExecutions().forEach(it -> {
+                LOG.info("Execution in database scheduled to: " + it.getExecutionTime());
+            });
+            throw e;
+        }
+        LOG.info("scheduler_should_execute_task_when_exactly_due() end");
     }
 
     @Test
     public void scheduler_should_execute_rescheduled_task_when_exactly_due() {
+        LOG.info("scheduler_should_execute_rescheduled_task_when_exactly_due()");
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
-        Scheduler scheduler = schedulerFor(oneTimeTask);
+        ManualScheduler scheduler = schedulerFor(oneTimeTask);
 
-        Instant executionTime = clock.now().plus(ofMinutes(1));
-        String instanceId = "1";
-        TaskInstance<Void> oneTimeTaskInstance = oneTimeTask.instance(instanceId);
-        scheduler.schedule(oneTimeTaskInstance, executionTime);
-        Instant reScheduledExecutionTime = clock.now().plus(ofMinutes(2));
-        scheduler.reschedule(oneTimeTaskInstance, reScheduledExecutionTime);
-        scheduler.executeDue();
-        assertThat(handler.timesExecuted.get(), is(0));
+        try {
+            Instant executionTime = clock.now().plus(ofMinutes(1));
 
-        clock.set(executionTime);
-        scheduler.executeDue();
-        assertThat(handler.timesExecuted.get(), is(0));
+            String instanceId = "1";
+            TaskInstance<Void> oneTimeTaskInstance = oneTimeTask.instance(instanceId);
+            scheduler.schedule(oneTimeTaskInstance, executionTime);
 
-        clock.set(reScheduledExecutionTime);
-        scheduler.executeDue();
-        assertThat(handler.timesExecuted.get(), is(1));
+            Instant reScheduledExecutionTime = clock.now().plus(ofMinutes(2));
+
+            scheduler.reschedule(oneTimeTaskInstance, reScheduledExecutionTime);
+            scheduler.runAnyDueExecutions();
+            assertThat(handler.timesExecuted.get(), is(0));
+
+            clock.set(executionTime);
+            scheduler.runAnyDueExecutions();
+            assertThat(handler.timesExecuted.get(), is(0));
+
+            clock.set(reScheduledExecutionTime);
+            scheduler.runAnyDueExecutions();
+            assertThat(handler.timesExecuted.get(), is(1));
+        } catch (RuntimeException|Error e) {
+            LOG.info("scheduler_should_execute_rescheduled_task_when_exactly_due() failed");
+            scheduler.getScheduledExecutions().forEach(it -> {
+                LOG.info("Execution in database scheduled to: " + it.getExecutionTime());
+            });
+            throw e;
+        }
+        LOG.info("scheduler_should_execute_rescheduled_task_when_exactly_due() end");
     }
 
     @Test
@@ -146,18 +158,21 @@ public class SchedulerTest {
 
     @Test
     public void scheduler_should_track_duration() throws InterruptedException {
+
         TestTasks.PausingHandler<Void> pausingHandler = new TestTasks.PausingHandler<>();
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, pausingHandler);
-        Scheduler scheduler = schedulerFor(Executors.newSingleThreadExecutor(), oneTimeTask);
 
+        Scheduler scheduler = Scheduler.create(postgres.getDataSource(), oneTimeTask)
+            .threads(2)
+            .pollingInterval(Duration.ofMillis(100))
+            .schedulerName(new SchedulerName.Fixed("test"))
+            .build();
+        stopScheduler.register(scheduler);
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
-        scheduler.executeDue();
+        scheduler.start();
         pausingHandler.waitForExecute.await();
 
         assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));
-        clock.set(clock.now.plus(ofMinutes(1)));
-
-        assertThat(scheduler.getCurrentlyExecuting().get(0).getDuration(), is(ofMinutes(1)));
 
         pausingHandler.waitInExecuteUntil.countDown();
     }

@@ -2,7 +2,7 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) %cyan(%logger{50}) - %msg%n%rootException</pattern>
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%-5level) [%-7.7thread] %cyan(%logger{50}) - %msg%n%rootException</pattern>
         </encoder>
     </appender>
 
