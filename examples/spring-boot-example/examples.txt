@@ -1,0 +1,31 @@
+
+For one-time/custom, start task through endpoint
+  schedule?example=<example-name>
+
+
+
+* One-time long-running task, only running in the off-hours
+
+* (Monthly Regular consistency-check)
+
+* Dynamic recurring task - multiple instances of the same task
+
+✅ Job-chaining
+
+* Scheduled tasks admin
+  - list scheduled
+  - cancel
+  - reschedule
+
+
+✅ TransactionallyStagedJob - throw exception x% of the time, show job not scheduled and picked
+Longrunning Nightly onetime task
+Longrunning Nightly onetime task
+Multithreaded task
+
+"time limited long-running task" (onetime vs recurring)
+
+long-running tasks that supports shutdown
+
+long-polling
+https://www.baeldung.com/spring-mvc-long-polling

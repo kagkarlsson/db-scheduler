@@ -17,7 +17,7 @@ package com.github.kagkarlsson.scheduler.task;
 
 import java.time.Instant;
 
-public interface Task<T> extends ExecutionHandler<T> {
+public interface Task<T> extends ExecutionHandler<T>, HasTaskName {
     String getName();
 
     Class<T> getDataClass();
@@ -33,4 +33,9 @@ public interface Task<T> extends ExecutionHandler<T> {
     FailureHandler<T> getFailureHandler();
 
     DeadExecutionHandler<T> getDeadExecutionHandler();
+
+    @Override
+    default String getTaskName() {
+        return getName();
+    }
 }

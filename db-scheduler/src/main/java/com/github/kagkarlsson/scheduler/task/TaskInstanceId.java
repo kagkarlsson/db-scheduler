@@ -17,7 +17,8 @@ package com.github.kagkarlsson.scheduler.task;
 
 import java.util.Objects;
 
-public interface TaskInstanceId {
+public interface TaskInstanceId extends HasTaskName {
+    @Override
     String getTaskName();
     String getId();
     static TaskInstanceId of(String taskName, String id) {

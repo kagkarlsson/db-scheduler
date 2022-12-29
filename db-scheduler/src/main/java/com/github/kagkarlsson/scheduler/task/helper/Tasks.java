@@ -26,8 +26,14 @@ public class Tasks {
     public static final Duration DEFAULT_RETRY_INTERVAL = Duration.ofMinutes(5);
 
     public static RecurringTaskBuilder<Void> recurring(String name, Schedule schedule) {
-        return new RecurringTaskBuilder<>(name, schedule, Void.class);
+        return recurring(HasTaskName.of(name), schedule);
     }
+
+    public static RecurringTaskBuilder<Void> recurring(HasTaskName name, Schedule schedule) {
+        return new RecurringTaskBuilder<>(name.getTaskName(), schedule, Void.class);
+    }
+
+    // TODO: fix the rest
 
     public static <T> RecurringTaskBuilder<T> recurring(String name, Schedule schedule, Class<T> dataClass) {
         return new RecurringTaskBuilder<>(name, schedule, dataClass);
@@ -42,7 +48,12 @@ public class Tasks {
     }
 
     public static <T> OneTimeTaskBuilder<T> oneTime(String name, Class<T> dataClass) {
-        return new OneTimeTaskBuilder<>(name, dataClass);
+        return oneTime(HasTaskName.of(name), dataClass);
+        // TODO: add signature for TaskDescriptor, where data-class is fetched from descriptor. need to make two implementations of descriptors, with/without data and correct instance() methods for them
+    }
+
+    public static <T> OneTimeTaskBuilder<T> oneTime(HasTaskName name, Class<T> dataClass) {
+        return new OneTimeTaskBuilder<>(name.getTaskName(), dataClass);
     }
 
     public static <T> TaskBuilder<T> custom(String name, Class<T> dataClass) {
