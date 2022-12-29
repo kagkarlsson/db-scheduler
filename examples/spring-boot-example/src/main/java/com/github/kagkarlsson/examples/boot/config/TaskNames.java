@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.examples.boot.config;
 
-import com.github.kagkarlsson.examples.boot.config.TaskChainingConfiguration.JobState;
+import com.github.kagkarlsson.examples.boot.config.LongRunningJobConfiguration.PrimeGeneratorState;
+import com.github.kagkarlsson.examples.boot.config.JobChainingConfiguration.JobState;
 import com.github.kagkarlsson.scheduler.task.TaskWithoutDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
 
@@ -16,4 +17,6 @@ public class TaskNames {
 
     public static final TaskWithoutDataDescriptor PARALLEL_JOB_SPAWNER = new TaskWithoutDataDescriptor("parallel-job-spawner");
     public static final TaskWithDataDescriptor<Integer> PARALLEL_JOB = new TaskWithDataDescriptor<>("parallel-job", Integer.class);
+
+    public static final TaskWithDataDescriptor<PrimeGeneratorState> LONG_RUNNING_TASK = new TaskWithDataDescriptor<>("long-running-task", PrimeGeneratorState.class);
 }

@@ -20,10 +20,10 @@ import static com.github.kagkarlsson.examples.boot.config.TaskNames.*;
 @Configuration
 public class ParallellJobConfiguration {
 
-    private TransactionTemplate tt;
+    private TransactionTemplate tx;
 
-    public ParallellJobConfiguration(TransactionTemplate tt) {
-        this.tt = tt;
+    public ParallellJobConfiguration(TransactionTemplate tx) {
+        this.tx = tx;
     }
 
     @Bean
@@ -32,7 +32,7 @@ public class ParallellJobConfiguration {
             .execute((TaskInstance<Void> taskInstance, ExecutionContext executionContext) -> {
 
                 // Create all or none. SchedulerClient is transactions-aware since a Spring datasource is used
-                tt.executeWithoutResult((TransactionStatus status) -> {
+                tx.executeWithoutResult((TransactionStatus status) -> {
                     for (int quarter = 1; quarter < 5; quarter++) {
                         // can use 'executionContext.getSchedulerClient()' to avoid circular dependency
                         executionContext.getSchedulerClient().schedule(PARALLEL_JOB.instance("q"+quarter, quarter), Instant.now());

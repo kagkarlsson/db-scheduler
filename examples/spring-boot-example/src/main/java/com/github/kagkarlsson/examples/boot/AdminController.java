@@ -1,10 +1,10 @@
 package com.github.kagkarlsson.examples.boot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.kagkarlsson.examples.boot.config.TaskChainingConfiguration.JobState;
+import com.github.kagkarlsson.examples.boot.config.LongRunningJobConfiguration.PrimeGeneratorState;
+import com.github.kagkarlsson.examples.boot.config.JobChainingConfiguration.JobState;
 import com.github.kagkarlsson.examples.boot.config.TaskNames;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,13 +25,11 @@ public class AdminController {
     private static int ID = 1;
     private static int CHAINED_JOB_ID = 1;
     private final SchedulerClient schedulerClient;
-    private TransactionTemplate tt;
-    private ObjectMapper objectMapper;
+    private final TransactionTemplate tx;
 
-    public AdminController(SchedulerClient schedulerClient, TransactionTemplate tt, ObjectMapper objectMapper) {
+    public AdminController(SchedulerClient schedulerClient, TransactionTemplate tx) {
         this.schedulerClient = schedulerClient;
-        this.tt = tt;
-        this.objectMapper = objectMapper;
+        this.tx = tx;
     }
 
     @GetMapping(path = "/tasks")
@@ -66,7 +64,7 @@ public class AdminController {
             "rolls back, i.e. it never runs."
         );
 
-        tt.executeWithoutResult((TransactionStatus status) -> {
+        tx.executeWithoutResult((TransactionStatus status) -> {
             schedulerClient.schedule(
                 TaskNames.TRANSACTIONALLY_STAGED_TASK.instance(String.valueOf(ID++)),
                 Instant.now().plusSeconds(request.seconds)
@@ -96,6 +94,18 @@ public class AdminController {
 
         schedulerClient.reschedule(
             TaskNames.PARALLEL_JOB_SPAWNER.instanceId(RecurringTask.INSTANCE),
+            Instant.now()
+        );
+    }
+
+    @PostMapping(path = "/triggerLongRunning", headers = {"Content-type=application/json"})
+    public void triggerLongRunning(@RequestBody TriggerOneTimeRequest request) {
+        LOG.info("Starting long-running task "+TaskNames.LONG_RUNNING_TASK.getTaskName()+" to run 3s at a time until it " +
+            "has found all prime-numbers smaller than 1.000.000.");
+
+        PrimeGeneratorState initialState = new PrimeGeneratorState(0, 0);
+        schedulerClient.schedule(
+            TaskNames.LONG_RUNNING_TASK.instance("prime-generator", initialState),
             Instant.now()
         );
     }

@@ -19,9 +19,8 @@ For one-time/custom, start task through endpoint
 
 
 ✅ TransactionallyStagedJob - throw exception x% of the time, show job not scheduled and picked
+✅ Multithreaded task
 Longrunning Nightly onetime task
-Longrunning Nightly onetime task
-Multithreaded task
 
 "time limited long-running task" (onetime vs recurring)
 

@@ -7,6 +7,7 @@ This Maven module provides a working example of the [db-scheduler](https://githu
 * `TransactionallyStagedJobConfiguration`
 * `TaskChainingConfiguration`
 * `ParallellJobConfiguration`
+* `LongRunningTask`
 
 ## Admin via SchedulerClient
 

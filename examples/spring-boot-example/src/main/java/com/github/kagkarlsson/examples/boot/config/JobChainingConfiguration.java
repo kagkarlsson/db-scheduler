@@ -14,7 +14,7 @@ import java.time.Duration;
 import static com.github.kagkarlsson.examples.boot.config.TaskNames.*;
 
 @Configuration
-public class TaskChainingConfiguration {
+public class JobChainingConfiguration {
 
     @Bean
     public CustomTask<JobState> chainedStep1() {
