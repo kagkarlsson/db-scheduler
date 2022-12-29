@@ -3,12 +3,12 @@ package com.github.kagkarlsson.scheduler.task;
 /**
  * Experimental
  */
-public class TaskWithDataDescriptor<T> implements HasTaskName {
+public class TaskWithDataDescriptor<T> implements TaskDescriptor<T> {
 
     private final String taskName;
-    private final Class<?> dataClass;
+    private final Class<T> dataClass;
 
-    public TaskWithDataDescriptor(String taskName, Class<?> dataClass) { //TODO: not used?
+    public TaskWithDataDescriptor(String taskName, Class<T> dataClass) { //TODO: not used?
         this.taskName = taskName;
         this.dataClass = dataClass;
     }
@@ -20,6 +20,11 @@ public class TaskWithDataDescriptor<T> implements HasTaskName {
     @Override
     public String getTaskName() {
         return taskName;
+    }
+
+    @Override
+    public Class<T> getDataClass() {
+        return dataClass;
     }
 
     public TaskInstanceId instanceId(String id) {

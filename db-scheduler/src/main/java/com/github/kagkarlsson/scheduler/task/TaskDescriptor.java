@@ -1,26 +1,32 @@
 package com.github.kagkarlsson.scheduler.task;
 
-/**
- * Experimental
- */
-public class TaskDescriptor implements HasTaskName {
+public interface TaskDescriptor<T> extends HasTaskName {
 
-    private final String taskName;
+    String getTaskName();
+    Class<T> getDataClass();
 
-    public TaskDescriptor(String taskName) {
-        this.taskName = taskName;
+    static <T> TaskDescriptor<T> of(String name, Class<T> dataClass) {
+        return new TaskDescriptor.SimpleTaskDescriptor<T>(name, dataClass);
     }
 
-    public TaskInstance<Void> instance(String id) {
-        return new TaskInstance<>(taskName, id);
-    }
+    class SimpleTaskDescriptor<T> implements TaskDescriptor<T> {
 
-    @Override
-    public String getTaskName() {
-        return taskName;
-    }
+        private final String name;
+        private final Class<T> dataClass;
 
-    public TaskInstanceId instanceId(String id) {
-        return TaskInstanceId.of(taskName, id);
+        public SimpleTaskDescriptor(String name, Class<T> dataClass) {
+            this.name = name;
+            this.dataClass = dataClass;
+        }
+
+        @Override
+        public String getTaskName() {
+            return name;
+        }
+
+        @Override
+        public Class<T> getDataClass() {
+            return dataClass;
+        }
     }
 }

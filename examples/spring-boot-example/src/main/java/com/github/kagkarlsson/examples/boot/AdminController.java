@@ -54,7 +54,7 @@ public class AdminController {
         );
 
         schedulerClient.schedule(
-            new TaskInstance<Void>(TaskNames.BASIC_ONE_TIME_TASK, String.valueOf(ID++)),
+            TaskNames.BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)),
             Instant.now().plusSeconds(request.seconds)
         );
     }
@@ -68,7 +68,7 @@ public class AdminController {
 
         tt.executeWithoutResult((TransactionStatus status) -> {
             schedulerClient.schedule(
-                new TaskInstance<Void>(TaskNames.TRANSACTIONALLY_STAGED_TASK, String.valueOf(ID++)),
+                TaskNames.TRANSACTIONALLY_STAGED_TASK.instance(String.valueOf(ID++)),
                 Instant.now().plusSeconds(request.seconds)
             );
 
@@ -85,7 +85,7 @@ public class AdminController {
 
         int id = CHAINED_JOB_ID++;
         schedulerClient.schedule(
-            new TaskInstance<>(TaskNames.CHAINED_STEP_1_TASK, "chain-" + id, new JobState(id, 0)),
+            TaskNames.CHAINED_STEP_1_TASK.instance("chain-" + id, new JobState(id, 0)),
             Instant.now().plusSeconds(request.seconds)
         );
     }

@@ -34,6 +34,7 @@ public class ParallellJobConfiguration {
                 // Create all or none. SchedulerClient is transactions-aware since a Spring datasource is used
                 tt.executeWithoutResult((TransactionStatus status) -> {
                     for (int quarter = 1; quarter < 5; quarter++) {
+                        // can use 'executionContext.getSchedulerClient()' to avoid circular dependency
                         executionContext.getSchedulerClient().schedule(PARALLEL_JOB.instance("q"+quarter, quarter), Instant.now());
                     }
                 });
@@ -43,7 +44,7 @@ public class ParallellJobConfiguration {
 
     @Bean
     public Task<Integer> parallelJob() {
-        return Tasks.oneTime(PARALLEL_JOB, Integer.class)
+        return Tasks.oneTime(PARALLEL_JOB)
             .execute((TaskInstance<Integer> taskInstance, ExecutionContext executionContext) -> {
                 long startTime = System.currentTimeMillis();
 

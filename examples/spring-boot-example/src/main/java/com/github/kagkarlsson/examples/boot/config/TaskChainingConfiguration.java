@@ -18,7 +18,7 @@ public class TaskChainingConfiguration {
 
     @Bean
     public CustomTask<JobState> chainedStep1() {
-        return Tasks.custom(CHAINED_STEP_1_TASK, JobState.class)
+        return Tasks.custom(CHAINED_STEP_1_TASK)
             .execute((taskInstance, executionContext) -> {
                 JobState data = taskInstance.getData();
                 EventLogger.logTask(CHAINED_STEP_1_TASK, "Ran step1. Schedules step2 after successful run. Data: " + data);
@@ -31,7 +31,7 @@ public class TaskChainingConfiguration {
 
     @Bean
     public CustomTask<JobState> chainedStep2() {
-        return Tasks.custom(CHAINED_STEP_2_TASK, JobState.class)
+        return Tasks.custom(CHAINED_STEP_2_TASK)
             .execute((taskInstance, executionContext) -> {
                 JobState data = taskInstance.getData();
                 JobState nextJobState = new JobState(data.id, data.counter + 1);
@@ -49,7 +49,7 @@ public class TaskChainingConfiguration {
 
     @Bean
     public CustomTask<JobState> chainedStep3() {
-        return Tasks.custom(CHAINED_STEP_3_TASK, JobState.class)
+        return Tasks.custom(CHAINED_STEP_3_TASK)
             .execute((taskInstance, executionContext) -> {
                 EventLogger.logTask(CHAINED_STEP_3_TASK, "Ran step3. This was the final step in the processing, removing. Data: " + taskInstance.getData());
                 return new CompletionHandler.OnCompleteRemove<>(); // same as for one-time tasks

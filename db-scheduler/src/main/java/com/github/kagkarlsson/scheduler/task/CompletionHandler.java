@@ -87,6 +87,13 @@ public interface CompletionHandler<T> {
             this.newTaskName = newTaskName;
         }
 
+        public OnCompleteReplace(TaskDescriptor<T> newTask, T newData) {
+            this((TaskInstance<T> currentInstance) -> {
+                return SchedulableInstance.of(new TaskInstance<>(newTask.getTaskName(), currentInstance.getId(), newData), Instant.now());
+            });
+            this.newTaskName = newTask.getTaskName();
+        }
+
         public OnCompleteReplace(Function<TaskInstance<T>, SchedulableInstance<T>> newInstanceCreator) {
             this.newInstanceCreator = newInstanceCreator;
         }

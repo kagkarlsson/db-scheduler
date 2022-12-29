@@ -26,45 +26,52 @@ public class Tasks {
     public static final Duration DEFAULT_RETRY_INTERVAL = Duration.ofMinutes(5);
 
     public static RecurringTaskBuilder<Void> recurring(String name, Schedule schedule) {
-        return recurring(HasTaskName.of(name), schedule);
+        return recurring(TaskDescriptor.of(name, Void.class), schedule);
     }
 
-    public static RecurringTaskBuilder<Void> recurring(HasTaskName name, Schedule schedule) {
-        return new RecurringTaskBuilder<>(name.getTaskName(), schedule, Void.class);
+    public static <T> RecurringTaskBuilder<T> recurring(String name, Schedule schedule, Class<T> dataClass) {
+        return recurring(TaskDescriptor.of(name, dataClass), schedule);
+    }
+
+    public static <T> RecurringTaskBuilder<T> recurring(TaskDescriptor<T> descriptor, Schedule schedule) {
+        return new RecurringTaskBuilder<>(descriptor.getTaskName(), schedule, descriptor.getDataClass());
     }
 
     // TODO: fix the rest
 
-    public static <T> RecurringTaskBuilder<T> recurring(String name, Schedule schedule, Class<T> dataClass) {
-        return new RecurringTaskBuilder<>(name, schedule, dataClass);
+    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(String name, Class<T> dataClass) {
+        return recurringWithPersistentSchedule(TaskDescriptor.of(name, dataClass));
     }
 
-    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(String name, Class<T> dataClass) {
-        return new RecurringTaskWithPersistentScheduleBuilder<T>(name, dataClass);
+    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(TaskDescriptor<T> descriptor) {
+        return new RecurringTaskWithPersistentScheduleBuilder<T>(descriptor.getTaskName(), descriptor.getDataClass());
     }
 
     public static OneTimeTaskBuilder<Void> oneTime(String name) {
-        return new OneTimeTaskBuilder<>(name, Void.class);
+        return oneTime(TaskDescriptor.of(name, Void.class));
     }
 
     public static <T> OneTimeTaskBuilder<T> oneTime(String name, Class<T> dataClass) {
-        return oneTime(HasTaskName.of(name), dataClass);
-        // TODO: add signature for TaskDescriptor, where data-class is fetched from descriptor. need to make two implementations of descriptors, with/without data and correct instance() methods for them
+        return oneTime(TaskDescriptor.of(name, dataClass));
     }
 
-    public static <T> OneTimeTaskBuilder<T> oneTime(HasTaskName name, Class<T> dataClass) {
-        return new OneTimeTaskBuilder<>(name.getTaskName(), dataClass);
+    public static <T> OneTimeTaskBuilder<T> oneTime(TaskDescriptor<T> descriptor) {
+        return new OneTimeTaskBuilder<>(descriptor.getTaskName(), descriptor.getDataClass());
     }
 
     public static <T> TaskBuilder<T> custom(String name, Class<T> dataClass) {
         return new TaskBuilder<>(name, dataClass);
     }
 
+    public static <T> TaskBuilder<T> custom(TaskDescriptor<T> taskDescriptor) {
+        return new TaskBuilder<>(taskDescriptor.getTaskName(), taskDescriptor.getDataClass());
+    }
+
 
     public static class RecurringTaskBuilder<T> {
         private final String name;
         private final Schedule schedule;
-        private Class<T> dataClass;
+        private final Class<T> dataClass;
         private FailureHandler<T> onFailure;
         private DeadExecutionHandler<T> onDeadExecution;
         private ScheduleRecurringOnStartup<T> scheduleOnStartup;
@@ -184,7 +191,7 @@ public class Tasks {
 
     public static class OneTimeTaskBuilder<T> {
         private final String name;
-        private Class<T> dataClass;
+        private final Class<T> dataClass;
         private FailureHandler<T> onFailure;
         private DeadExecutionHandler<T> onDeadExecution;
 
@@ -227,7 +234,7 @@ public class Tasks {
 
     public static class TaskBuilder<T> {
         private final String name;
-        private Class<T> dataClass;
+        private final Class<T> dataClass;
         private FailureHandler<T> onFailure;
         private DeadExecutionHandler<T> onDeadExecution;
         private ScheduleOnStartup<T> onStartup;
