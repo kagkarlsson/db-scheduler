@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler.task.helper;
 
+import com.github.kagkarlsson.scheduler.Clock;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
@@ -107,6 +109,20 @@ public class Tasks {
 
         public RecurringTaskBuilder<T> initialData(T initialData) {
             this.scheduleOnStartup = new ScheduleRecurringOnStartup<>(RecurringTask.INSTANCE, initialData, schedule);
+            return this;
+        }
+
+        /**
+         * Disable 'scheduleOnStartup' to get control over when and show the executions is scheduled.
+         * Schedules will not be updated etc, so not really recommended.
+         */
+        public RecurringTaskBuilder<T> doNotScheduleOnStartup() {
+            this.scheduleOnStartup = new ScheduleRecurringOnStartup<T>(RecurringTask.INSTANCE, null, null) {
+                @Override
+                public void apply(SchedulerClient scheduler, Clock clock, Task<T> task) {
+                    // do nothing
+                }
+            };
             return this;
         }
 

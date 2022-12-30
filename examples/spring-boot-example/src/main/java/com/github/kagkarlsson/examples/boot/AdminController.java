@@ -144,6 +144,17 @@ public class AdminController {
         );
     }
 
+    @PostMapping(path = "/triggerStateTrackingRecurring", headers = {"Content-type=application/json"})
+    public void triggerStateTrackingRecurring(@RequestBody TriggerOneTimeRequest request) {
+        Integer data = 1;
+        LOG.info("Starting recurring task "+TaskNames.STATE_TRACKING_RECURRING_TASK.getTaskName()+" with initial data: " + data);
+
+        schedulerClient.schedule(
+            TaskNames.STATE_TRACKING_RECURRING_TASK.instance(RecurringTask.INSTANCE, data),
+            Instant.now() // start-time, will run according to schedule after this
+        );
+    }
+
     public static class TriggerOneTimeRequest {
         public final int seconds;
 

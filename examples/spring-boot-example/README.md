@@ -8,6 +8,7 @@ This Maven module provides a working example of the [db-scheduler](https://githu
 * `TaskChainingConfiguration`
 * `ParallellJobConfiguration`
 * `LongRunningTask`
+* `RecurringStateTrackingConfiguration`
 * `MultiInstanceRecurring`
 
 ## Admin via SchedulerClient

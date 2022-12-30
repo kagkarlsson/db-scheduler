@@ -36,4 +36,6 @@ public class TaskNames {
 
     public static final TaskWithDataDescriptor<PrimeGeneratorState> LONG_RUNNING_TASK = new TaskWithDataDescriptor<>("long-running-task", PrimeGeneratorState.class);
     public static final TaskWithDataDescriptor<ScheduleAndCustomer> MULTI_INSTANCE_RECURRING_TASK = new TaskWithDataDescriptor<>("multi-instance-recurring-task", ScheduleAndCustomer.class);
+
+    public static final TaskWithDataDescriptor<Integer> STATE_TRACKING_RECURRING_TASK = new TaskWithDataDescriptor<>("state-tracking-recurring-task", Integer.class);
 }
