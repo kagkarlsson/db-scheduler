@@ -1,12 +1,12 @@
 /**
  * Copyright (C) Gustav Karlsson
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@ import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTaskWithPersistentSchedule;
+import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
@@ -57,13 +58,31 @@ public class StatefulRecurringTaskWithPersistentScheduleMain extends Example {
                 1)));
     }
 
-    public static class ScheduleAndInteger extends PlainScheduleAndData {
+    public static class ScheduleAndInteger implements ScheduleAndData {
+        private final Schedule schedule;
+        private final Integer data;
+
+        public ScheduleAndInteger() {
+            this(null, null);
+        }
+
         public ScheduleAndInteger(Schedule schedule, Integer data) {
-            super(schedule, data);
+            this.schedule = schedule;
+            this.data = data;
+        }
+
+        @Override
+        public Schedule getSchedule() {
+            return schedule;
+        }
+
+        @Override
+        public Integer getData() {
+            return data;
         }
 
         public ScheduleAndInteger returnIncremented() {
-            return new ScheduleAndInteger(super.getSchedule(), ((Integer) super.getData()) + 1);
+            return new ScheduleAndInteger(getSchedule(), getData() + 1);
         }
     }
 

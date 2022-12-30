@@ -26,6 +26,9 @@ public class FixedDelay implements Schedule, Serializable {
 
     private final Duration duration;
 
+    private FixedDelay() { // For serializers
+        duration = null;
+    }
     private FixedDelay(Duration duration) {
         this.duration = Objects.requireNonNull(duration);
     }

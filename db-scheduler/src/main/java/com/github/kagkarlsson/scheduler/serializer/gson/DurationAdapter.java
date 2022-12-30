@@ -13,34 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task;
+package com.github.kagkarlsson.scheduler.serializer.gson;
 
-/**
- * Experimental
- */
-public class TaskWithoutDataDescriptor implements TaskDescriptor<Void> {
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
-    private final String taskName;
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 
-    public TaskWithoutDataDescriptor(String taskName) {
-        this.taskName = taskName;
-    }
+public class DurationAdapter extends TypeAdapter<Duration> {
 
-    public TaskInstance<Void> instance(String id) {
-        return new TaskInstance<>(taskName, id);
+    @Override
+    public void write(JsonWriter jsonWriter, Duration duration) throws IOException {
+        jsonWriter.value(duration.toMillis());
     }
 
     @Override
-    public String getTaskName() {
-        return taskName;
-    }
-
-    @Override
-    public Class<Void> getDataClass() {
-        return Void.class;
-    }
-
-    public TaskInstanceId instanceId(String id) {
-        return TaskInstanceId.of(taskName, id);
+    public Duration read(JsonReader jsonReader) throws IOException {
+        return Duration.ofMillis(Long.parseLong(jsonReader.nextString()));
     }
 }

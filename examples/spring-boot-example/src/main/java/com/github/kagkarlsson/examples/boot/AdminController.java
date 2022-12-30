@@ -1,11 +1,31 @@
+/**
+ * Copyright (C) Gustav Karlsson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.github.kagkarlsson.examples.boot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kagkarlsson.examples.boot.config.LongRunningJobConfiguration.PrimeGeneratorState;
 import com.github.kagkarlsson.examples.boot.config.JobChainingConfiguration.JobState;
+import com.github.kagkarlsson.examples.boot.config.MultiInstanceRecurringConfiguration;
+import com.github.kagkarlsson.examples.boot.config.MultiInstanceRecurringConfiguration.Customer;
+import com.github.kagkarlsson.examples.boot.config.MultiInstanceRecurringConfiguration.ScheduleAndCustomer;
 import com.github.kagkarlsson.examples.boot.config.TaskNames;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
+import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.TransactionStatus;
@@ -107,6 +127,20 @@ public class AdminController {
         schedulerClient.schedule(
             TaskNames.LONG_RUNNING_TASK.instance("prime-generator", initialState),
             Instant.now()
+        );
+    }
+
+    @PostMapping(path = "/triggerMultiInstance", headers = {"Content-type=application/json"})
+    public void triggerMultiInstance(@RequestBody TriggerOneTimeRequest request) {
+        CronSchedule cron = new CronSchedule(String.format("%s * * * * *", new Random().nextInt(59)));
+        Customer customer = new Customer(String.valueOf(new Random().nextInt(10000)));
+        ScheduleAndCustomer data = new ScheduleAndCustomer(cron, customer);
+
+        LOG.info("Scheduling new recurring task "+TaskNames.MULTI_INSTANCE_RECURRING_TASK.getTaskName()+" with data: " + data);
+
+        schedulerClient.schedule(
+            TaskNames.MULTI_INSTANCE_RECURRING_TASK.instance(customer.id, data),
+            cron.getInitialExecutionTime(Instant.now())
         );
     }
 
