@@ -85,6 +85,7 @@ public class DbSchedulerAutoConfigurationTest {
             assertThat(props.getPollingInterval()).isEqualTo(DEFAULT_POLLING_INTERVAL);
             assertThat(props.getHeartbeatInterval()).isEqualTo(DEFAULT_HEARTBEAT_INTERVAL);
             assertThat(props.getDeleteUnresolvedAfter()).isEqualTo(DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION);
+            assertThat(props.isCommitWhenAutocommitDisabled()).isFalse();
         });
     }
 

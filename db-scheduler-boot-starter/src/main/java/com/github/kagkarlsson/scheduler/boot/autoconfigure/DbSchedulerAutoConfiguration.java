@@ -112,6 +112,8 @@ public class DbSchedulerAutoConfiguration {
 
         builder.threads(config.getThreads());
 
+        builder.commitWhenAutocommitDisabled(config.isCommitWhenAutocommitDisabled());
+
         // Polling
         builder.pollingInterval(config.getPollingInterval());
 

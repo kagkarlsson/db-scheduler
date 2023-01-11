@@ -110,6 +110,11 @@ public class DbSchedulerProperties {
     private Duration shutdownMaxWait = SchedulerBuilder.SHUTDOWN_MAX_WAIT;
 
     /**
+     * If this is enabled, the scheduler will attempt to commit changes.
+     */
+    private boolean commitWhenAutocommitDisabled = false;
+
+    /**
      * <p>Which log level to use when logging task failures. Defaults to {@link LogLevel#DEBUG}.</p>
      */
     private LogLevel failureLoggerLevel = SchedulerBuilder.DEFAULT_FAILURE_LOG_LEVEL;
@@ -237,5 +242,13 @@ public class DbSchedulerProperties {
 
     public void setPollingStrategyUpperLimitFractionOfThreads(double pollingStrategyUpperLimitFractionOfThreads) {
         this.pollingStrategyUpperLimitFractionOfThreads = pollingStrategyUpperLimitFractionOfThreads;
+    }
+
+    public boolean isCommitWhenAutocommitDisabled() {
+        return commitWhenAutocommitDisabled;
+    }
+
+    public void setCommitWhenAutocommitDisabled(boolean commitWhenAutocommitDisabled) {
+        this.commitWhenAutocommitDisabled = commitWhenAutocommitDisabled;
     }
 }

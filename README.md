@@ -361,6 +361,7 @@ db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=
 db-scheduler.threads=10
+db-scheduler.commitWhenAutocommitDisabled=false
 
 # Ignored if a custom DbSchedulerStarter bean is defined
 db-scheduler.delay-startup-until-context-ready=false
