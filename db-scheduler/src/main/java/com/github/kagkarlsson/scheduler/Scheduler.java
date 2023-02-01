@@ -15,14 +15,8 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
-import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
-import com.github.kagkarlsson.scheduler.logging.LogLevel;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
-import com.github.kagkarlsson.scheduler.task.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import javax.sql.DataSource;
 import java.time.Duration;
@@ -35,8 +29,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 
-import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
+import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
+import com.github.kagkarlsson.scheduler.task.OnStartup;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Scheduler implements SchedulerClient {
 
@@ -162,6 +169,16 @@ public class Scheduler implements SchedulerClient {
         }
 
         executor.stop(shutdownMaxWait);
+    }
+
+    public void pause() {
+        LOG.info("Pausing scheduler.");
+        this.schedulerState.setPaused(true);
+    }
+
+    public void resume() {
+        LOG.info("Resuming scheduler.");
+        this.schedulerState.setPaused(false);
     }
 
     public SchedulerState getSchedulerState() {

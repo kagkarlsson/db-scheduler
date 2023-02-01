@@ -21,10 +21,13 @@ public interface SchedulerState {
 
     boolean isStarted();
 
+    boolean isPaused();
+
     class SettableSchedulerState implements SchedulerState {
 
         private boolean isShuttingDown;
         private boolean isStarted;
+        private boolean isPaused;
 
         @Override
         public boolean isShuttingDown() {
@@ -36,6 +39,11 @@ public interface SchedulerState {
             return isStarted;
         }
 
+        @Override
+        public boolean isPaused() {
+            return isPaused;
+        }
+
         public void setIsShuttingDown() {
             this.isShuttingDown = true;
         }
@@ -43,6 +51,11 @@ public interface SchedulerState {
         public void setStarted() {
             this.isStarted = true;
         }
+
+        public void setPaused(boolean isPaused) {
+            this.isPaused = isPaused;
+        }
+
     }
 
 }

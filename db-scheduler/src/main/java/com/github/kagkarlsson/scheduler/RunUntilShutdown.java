@@ -36,11 +36,13 @@ class RunUntilShutdown implements Runnable {
     @Override
     public void run() {
         while (!schedulerState.isShuttingDown()) {
-            try {
-                toRun.run();
-            } catch (Throwable e) {
-                LOG.error("Unhandled exception. Will keep running.", e);
-                statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+            if (!schedulerState.isPaused()) {
+                try {
+                    toRun.run();
+                } catch (Throwable e) {
+                    LOG.error("Unhandled exception. Will keep running.", e);
+                    statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+                }
             }
 
             try {
