@@ -164,6 +164,16 @@ public class Scheduler implements SchedulerClient {
         executor.stop(shutdownMaxWait);
     }
 
+    public void pause() {
+        LOG.info("Pausing scheduler.");
+        this.schedulerState.setPaused(true);
+    }
+
+    public void resume() {
+        LOG.info("Resuming scheduler.");
+        this.schedulerState.setPaused(false);
+    }
+
     public SchedulerState getSchedulerState() {
         return schedulerState;
     }
