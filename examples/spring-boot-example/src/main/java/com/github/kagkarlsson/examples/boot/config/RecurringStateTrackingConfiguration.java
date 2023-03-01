@@ -15,9 +15,11 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
+import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import org.springframework.context.annotation.Bean;
@@ -35,9 +37,21 @@ import static com.github.kagkarlsson.examples.boot.config.TaskNames.*;
 @Configuration
 public class RecurringStateTrackingConfiguration {
 
+    public static void start(ExampleContext ctx) {
+        Integer data = 1;
+        ctx.log("Starting recurring task " + TaskNames.STATE_TRACKING_RECURRING_TASK.getTaskName()
+            + " with initial data: " + data + ". Initial execution-time will be now (deviating from defined schedule).");
+
+        ctx.schedulerClient.schedule(
+            TaskNames.STATE_TRACKING_RECURRING_TASK.instance(RecurringTask.INSTANCE, data),
+            Instant.now() // start-time, will run according to schedule after this
+        );
+    }
+
     @Bean
     public Task<Integer> stateTrackingRecurring() {
         return Tasks.recurring(STATE_TRACKING_RECURRING_TASK, Schedules.cron("0/5 * * * * *"))
+            // TODO: enable/disable recurring job via curl
             .doNotScheduleOnStartup() // just for demo-purposes, so it does not start with the demo-application
             .executeStateful((TaskInstance<Integer> taskInstance, ExecutionContext executionContext) -> {
                 EventLogger.logTask(STATE_TRACKING_RECURRING_TASK, "Ran recurring task. Will keep running according to the same schedule, " +

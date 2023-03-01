@@ -15,21 +15,36 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
+import com.github.kagkarlsson.examples.boot.ExampleContext;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
+import org.springframework.transaction.support.TransactionTemplate;
 import utils.EventLogger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.Instant;
 
 import static com.github.kagkarlsson.examples.boot.config.TaskNames.*;
 
 @Configuration
 public class JobChainingConfiguration {
+    private static int CHAINED_JOB_ID = 1;
+
+    public static void start(ExampleContext ctx) {
+        ctx.log("Scheduling a chained one-time task to run.");
+
+        int id = CHAINED_JOB_ID++;
+        ctx.schedulerClient.schedule(
+            TaskNames.CHAINED_STEP_1_TASK.instance("chain-" + id, new JobState(id, 0)),
+            Instant.now()
+        );
+    }
 
     @Bean
     public CustomTask<JobState> chainedStep1() {
@@ -70,8 +85,8 @@ public class JobChainingConfiguration {
                 return new CompletionHandler.OnCompleteRemove<>(); // same as for one-time tasks
             });
     }
-
     public static class JobState implements Serializable {
+
         private static final long serialVersionUID = 1L; // recommended when using Java serialization
         public final int id;
         public final int counter;

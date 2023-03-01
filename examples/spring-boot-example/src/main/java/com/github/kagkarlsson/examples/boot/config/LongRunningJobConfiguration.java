@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
+import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -27,11 +28,23 @@ import utils.EventLogger;
 
 import java.io.Serializable;
 import java.time.Duration;
+import java.time.Instant;
 
 import static com.github.kagkarlsson.examples.boot.config.TaskNames.LONG_RUNNING_TASK;
 
 @Configuration
 public class LongRunningJobConfiguration {
+
+    public static void start(ExampleContext ctx) {
+        ctx.log("Scheduling long-running task "+TaskNames.LONG_RUNNING_TASK.getTaskName()+" to run 3s at a time until it " +
+            "has found all prime-numbers smaller than 1.000.000.");
+
+        PrimeGeneratorState initialState = new PrimeGeneratorState(0, 0);
+        ctx.schedulerClient.schedule(
+            TaskNames.LONG_RUNNING_TASK.instance("prime-generator", initialState),
+            Instant.now()
+        );
+    }
 
     @Bean
     public CustomTask<PrimeGeneratorState> longRunningTask() {

@@ -15,6 +15,7 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
+import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -40,8 +41,22 @@ import static com.github.kagkarlsson.examples.boot.config.TaskNames.*;
 @Configuration
 public class MultiInstanceRecurringConfiguration {
 
+    public static void start(ExampleContext ctx) {
+        CronSchedule cron = new CronSchedule(String.format("%s * * * * *", new Random().nextInt(59)));
+        Customer customer = new Customer(String.valueOf(new Random().nextInt(10000)));
+        ScheduleAndCustomer data = new ScheduleAndCustomer(cron, customer);
+
+        ctx.log("Scheduling instance of recurring task "+TaskNames.MULTI_INSTANCE_RECURRING_TASK.getTaskName()+" with data: " + data);
+
+        ctx.schedulerClient.schedule(
+            TaskNames.MULTI_INSTANCE_RECURRING_TASK.instance(customer.id, data),
+            cron.getInitialExecutionTime(Instant.now())
+        );
+    }
+
     @Bean
     public Task<ScheduleAndCustomer> multiInstanceRecurring() {
+        // This task will only start running when at least one instance of the task has been scheduled
         return Tasks.recurringWithPersistentSchedule(MULTI_INSTANCE_RECURRING_TASK)
             .execute((TaskInstance<ScheduleAndCustomer> taskInstance, ExecutionContext executionContext) -> {
 

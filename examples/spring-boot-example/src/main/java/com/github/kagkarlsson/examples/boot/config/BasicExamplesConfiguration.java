@@ -19,9 +19,11 @@ import static com.github.kagkarlsson.examples.boot.config.TaskNames.BASIC_RECURR
 import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDelay;
 
 import com.github.kagkarlsson.examples.boot.CounterService;
+import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
+import java.time.Instant;
 
 import utils.EventLogger;
 import org.slf4j.Logger;
@@ -32,6 +34,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class BasicExamplesConfiguration {
     private static final Logger log = LoggerFactory.getLogger(BasicExamplesConfiguration.class);
+    private static int ID = 1;
 
     /**
      * Define a recurring task with a dependency, which will automatically be picked up by the
@@ -57,6 +60,17 @@ public class BasicExamplesConfiguration {
             .execute((instance, ctx) -> {
                 log.info("I am a one-time task!");
             });
+    }
+
+    public static void triggerOneTime(ExampleContext ctx) {
+        ctx.log("Scheduling a basic one-time task to run 'Instant.now()+seconds'. If seconds=0, the scheduler will pick " +
+            "these up immediately since it is configured with 'immediate-execution-enabled=true'"
+        );
+
+        ctx.schedulerClient.schedule(
+            TaskNames.BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)),
+            Instant.now()
+        );
     }
 
 }

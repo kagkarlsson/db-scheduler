@@ -15,20 +15,25 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
+import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
+import org.springframework.transaction.TransactionStatus;
 import utils.EventLogger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.Serializable;
+import java.time.Instant;
+import java.util.Random;
 
 import static com.github.kagkarlsson.examples.boot.config.TaskNames.TRANSACTIONALLY_STAGED_TASK;
 
 @Configuration
 public class TransactionallyStagedJobConfiguration {
+    private static int ID = 1;
 
     @Bean
     public Task<Void> transactionallyStagedTask() {
@@ -36,6 +41,23 @@ public class TransactionallyStagedJobConfiguration {
             .execute((TaskInstance<Void> taskInstance, ExecutionContext executionContext) -> {
                 EventLogger.logTask(TRANSACTIONALLY_STAGED_TASK, "Ran. Will only run if transactions it was scheduled commits. ");
             });
+    }
+
+    public static void start(ExampleContext ctx) {
+        ctx.log("Scheduling a one-time task in a transaction. If the transaction rolls back, the insert of the task also " +
+            "rolls back, i.e. it never runs."
+        );
+
+        ctx.tx.executeWithoutResult((TransactionStatus status) -> {
+            ctx.schedulerClient.schedule(
+                TaskNames.TRANSACTIONALLY_STAGED_TASK.instance(String.valueOf(ID++)),
+                Instant.now()
+            );
+
+            if (new Random().nextBoolean()) {
+                throw new RuntimeException("Simulated failure happening after task was scheduled.");
+            }
+        });
     }
 
     public static class JobState implements Serializable {

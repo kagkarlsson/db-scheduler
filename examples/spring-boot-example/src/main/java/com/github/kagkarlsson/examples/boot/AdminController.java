@@ -15,16 +15,14 @@
  */
 package com.github.kagkarlsson.examples.boot;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.kagkarlsson.examples.boot.config.LongRunningJobConfiguration.PrimeGeneratorState;
+import com.github.kagkarlsson.examples.boot.config.*;
 import com.github.kagkarlsson.examples.boot.config.JobChainingConfiguration.JobState;
-import com.github.kagkarlsson.examples.boot.config.MultiInstanceRecurringConfiguration;
+import com.github.kagkarlsson.examples.boot.config.LongRunningJobConfiguration.PrimeGeneratorState;
 import com.github.kagkarlsson.examples.boot.config.MultiInstanceRecurringConfiguration.Customer;
 import com.github.kagkarlsson.examples.boot.config.MultiInstanceRecurringConfiguration.ScheduleAndCustomer;
-import com.github.kagkarlsson.examples.boot.config.TaskNames;
+import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
-import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +31,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
@@ -42,17 +42,26 @@ import java.util.stream.Collectors;
 public class AdminController {
     private static final Logger LOG = LoggerFactory.getLogger(AdminController.class);
 
-    private static int ID = 1;
-    private static int CHAINED_JOB_ID = 1;
+    // Endpoints
+    public static final String LIST_SCHEDULED = "/tasks";
+    public static final String START = "/start";
+    public static final String STOP = "/stop";
+    public static final String SCHEDULE_TRANSACTIONALLY_STAGED = "/scheduleTransactionallyStaged";
+    public static final String SCHEDULE_CHAINED = "/scheduleChained";
+    public static final String START_PARALLEL = "/startParallel";
+    public static final String SCHEDULE_LONG_RUNNING = "/scheduleLongRunning";
+    public static final String SCHEDULE_MULTI_INSTANCE = "/scheduleMultiInstance";
+    public static final String START_STATE_TRACKING_RECURRING = "/startStateTrackingRecurring";
+
     private final SchedulerClient schedulerClient;
-    private final TransactionTemplate tx;
+    private final ExampleContext exampleContext;
 
     public AdminController(SchedulerClient schedulerClient, TransactionTemplate tx) {
         this.schedulerClient = schedulerClient;
-        this.tx = tx;
+        exampleContext = new ExampleContext(schedulerClient, tx, LOG);
     }
 
-    @GetMapping(path = "/tasks")
+    @GetMapping(path = LIST_SCHEDULED)
     public List<Scheduled> list() {
         return schedulerClient.getScheduledExecutions().stream()
             .map(e -> {
@@ -65,105 +74,35 @@ public class AdminController {
             .collect(Collectors.toList());
     }
 
-    @PostMapping(path = "/triggerOneTime", headers = {"Content-type=application/json"})
-    public void triggerOneTime(@RequestBody TriggerOneTimeRequest request) {
-        LOG.info("Scheduling a basic one-time task to run 'Instant.now()+seconds'. If seconds=0, the scheduler will pick " +
-            "these up immediately since it is configured with 'immediate-execution-enabled=true'"
-        );
+    @PostMapping(path = START, headers = {"Content-type=application/json"})
+    public void start(@RequestBody StartRequest request) {
 
-        schedulerClient.schedule(
-            TaskNames.BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)),
-            Instant.now().plusSeconds(request.seconds)
-        );
+        Map<String, Runnable> taskStarterMapping = new HashMap<>();
+        taskStarterMapping.put(TaskNames.BASIC_ONE_TIME_TASK.getTaskName(), () -> BasicExamplesConfiguration.triggerOneTime(exampleContext));
+        taskStarterMapping.put(TaskNames.TRANSACTIONALLY_STAGED_TASK.getTaskName(), () -> TransactionallyStagedJobConfiguration.start(exampleContext));
+        taskStarterMapping.put(TaskNames.CHAINED_STEP_1_TASK.getTaskName(), () -> JobChainingConfiguration.start(exampleContext));
+        taskStarterMapping.put(TaskNames.PARALLEL_JOB_SPAWNER.getTaskName(), () -> ParallellJobConfiguration.start(exampleContext));
+        taskStarterMapping.put(TaskNames.LONG_RUNNING_TASK.getTaskName(), () -> LongRunningJobConfiguration.start(exampleContext));
+        taskStarterMapping.put(TaskNames.MULTI_INSTANCE_RECURRING_TASK.getTaskName(), () -> MultiInstanceRecurringConfiguration.start(exampleContext));
+        taskStarterMapping.put(TaskNames.STATE_TRACKING_RECURRING_TASK.getTaskName(), () -> RecurringStateTrackingConfiguration.start(exampleContext));
+
+        taskStarterMapping.get(request.taskName).run();
     }
 
-
-    @PostMapping(path = "/triggerTransactionallyStaged", headers = {"Content-type=application/json"})
-    public void triggerTransactinallyStaged(@RequestBody TriggerOneTimeRequest request) {
-        LOG.info("Scheduling a one-time task in a transaction. If the transaction rolls back, the insert of the task also " +
-            "rolls back, i.e. it never runs."
-        );
-
-        tx.executeWithoutResult((TransactionStatus status) -> {
-            schedulerClient.schedule(
-                TaskNames.TRANSACTIONALLY_STAGED_TASK.instance(String.valueOf(ID++)),
-                Instant.now().plusSeconds(request.seconds)
-            );
-
-            if (new Random().nextBoolean()) {
-                throw new RuntimeException("Simulated failure happening after task was scheduled.");
-            }
-
-        });
+    @PostMapping(path = STOP, headers = {"Content-type=application/json"})
+    public void stop(@RequestBody StartRequest request) {
+        schedulerClient.getScheduledExecutions().stream().filter(t)
     }
 
-    @PostMapping(path = "/triggerChained", headers = {"Content-type=application/json"})
-    public void triggerChained(@RequestBody TriggerOneTimeRequest request) {
-        LOG.info("Scheduling a chained one-time task to run.");
+    public static class StartRequest {
+        public final String taskName;
 
-        int id = CHAINED_JOB_ID++;
-        schedulerClient.schedule(
-            TaskNames.CHAINED_STEP_1_TASK.instance("chain-" + id, new JobState(id, 0)),
-            Instant.now().plusSeconds(request.seconds)
-        );
-    }
-
-    @PostMapping(path = "/triggerParallel", headers = {"Content-type=application/json"})
-    public void triggerParallel(@RequestBody TriggerOneTimeRequest request) {
-        LOG.info("Rescheduling task "+TaskNames.PARALLEL_JOB_SPAWNER.getTaskName()+" to run now. (deviating from defined schedule)");
-
-        schedulerClient.reschedule(
-            TaskNames.PARALLEL_JOB_SPAWNER.instanceId(RecurringTask.INSTANCE),
-            Instant.now()
-        );
-    }
-
-    @PostMapping(path = "/triggerLongRunning", headers = {"Content-type=application/json"})
-    public void triggerLongRunning(@RequestBody TriggerOneTimeRequest request) {
-        LOG.info("Starting long-running task "+TaskNames.LONG_RUNNING_TASK.getTaskName()+" to run 3s at a time until it " +
-            "has found all prime-numbers smaller than 1.000.000.");
-
-        PrimeGeneratorState initialState = new PrimeGeneratorState(0, 0);
-        schedulerClient.schedule(
-            TaskNames.LONG_RUNNING_TASK.instance("prime-generator", initialState),
-            Instant.now()
-        );
-    }
-
-    @PostMapping(path = "/triggerMultiInstance", headers = {"Content-type=application/json"})
-    public void triggerMultiInstance(@RequestBody TriggerOneTimeRequest request) {
-        CronSchedule cron = new CronSchedule(String.format("%s * * * * *", new Random().nextInt(59)));
-        Customer customer = new Customer(String.valueOf(new Random().nextInt(10000)));
-        ScheduleAndCustomer data = new ScheduleAndCustomer(cron, customer);
-
-        LOG.info("Scheduling new recurring task "+TaskNames.MULTI_INSTANCE_RECURRING_TASK.getTaskName()+" with data: " + data);
-
-        schedulerClient.schedule(
-            TaskNames.MULTI_INSTANCE_RECURRING_TASK.instance(customer.id, data),
-            cron.getInitialExecutionTime(Instant.now())
-        );
-    }
-
-    @PostMapping(path = "/triggerStateTrackingRecurring", headers = {"Content-type=application/json"})
-    public void triggerStateTrackingRecurring(@RequestBody TriggerOneTimeRequest request) {
-        Integer data = 1;
-        LOG.info("Starting recurring task "+TaskNames.STATE_TRACKING_RECURRING_TASK.getTaskName()+" with initial data: " + data);
-
-        schedulerClient.schedule(
-            TaskNames.STATE_TRACKING_RECURRING_TASK.instance(RecurringTask.INSTANCE, data),
-            Instant.now() // start-time, will run according to schedule after this
-        );
-    }
-
-    public static class TriggerOneTimeRequest {
-        public final int seconds;
-
-        public TriggerOneTimeRequest() {
-            this(0);
+        public StartRequest() {
+            this("");
         }
 
-        public TriggerOneTimeRequest(int seconds) {
-            this.seconds = seconds;
+        public StartRequest(String taskName) {
+            this.taskName = taskName;
         }
     }
 
@@ -184,5 +123,4 @@ public class AdminController {
             this.data = data;
         }
     }
-
 }
