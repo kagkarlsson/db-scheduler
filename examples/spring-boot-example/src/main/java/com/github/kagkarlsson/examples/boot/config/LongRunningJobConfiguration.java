@@ -19,6 +19,7 @@ import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
@@ -30,22 +31,25 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 
-import static com.github.kagkarlsson.examples.boot.config.TaskNames.LONG_RUNNING_TASK;
-
 @Configuration
 public class LongRunningJobConfiguration {
 
+    public static final TaskWithDataDescriptor<PrimeGeneratorState> LONG_RUNNING_TASK = new TaskWithDataDescriptor<>("long-running-task", PrimeGeneratorState.class);
+
+
+    /** Start the example */
     public static void start(ExampleContext ctx) {
-        ctx.log("Scheduling long-running task "+TaskNames.LONG_RUNNING_TASK.getTaskName()+" to run 3s at a time until it " +
+        ctx.log("Scheduling long-running task "+ LONG_RUNNING_TASK.getTaskName()+" to run 3s at a time until it " +
             "has found all prime-numbers smaller than 1.000.000.");
 
         PrimeGeneratorState initialState = new PrimeGeneratorState(0, 0);
         ctx.schedulerClient.schedule(
-            TaskNames.LONG_RUNNING_TASK.instance("prime-generator", initialState),
+            LONG_RUNNING_TASK.instance("prime-generator", initialState),
             Instant.now()
         );
     }
 
+    /** Bean definition */
     @Bean
     public CustomTask<PrimeGeneratorState> longRunningTask() {
         return Tasks.custom(LONG_RUNNING_TASK)
@@ -69,6 +73,7 @@ public class LongRunningJobConfiguration {
                     currentNumber++;
                 }
 
+                // Make the decision on whether to reschedule at a later time or terminate/remove
                 if (currentNumber > 1_000_000) {
                     // lets say 1M is the end-condition for our long-running task
                     return new CompletionHandler.OnCompleteRemove<>();

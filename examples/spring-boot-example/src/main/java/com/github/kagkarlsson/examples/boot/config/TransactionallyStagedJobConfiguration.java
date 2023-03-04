@@ -19,6 +19,7 @@ import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskWithoutDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import org.springframework.transaction.TransactionStatus;
 import utils.EventLogger;
@@ -29,12 +30,36 @@ import java.io.Serializable;
 import java.time.Instant;
 import java.util.Random;
 
-import static com.github.kagkarlsson.examples.boot.config.TaskNames.TRANSACTIONALLY_STAGED_TASK;
-
 @Configuration
 public class TransactionallyStagedJobConfiguration {
+
+    public static final TaskWithoutDataDescriptor TRANSACTIONALLY_STAGED_TASK = new TaskWithoutDataDescriptor("transactionally-staged-task");
     private static int ID = 1;
 
+
+    /** Start the example */
+    public static void start(ExampleContext ctx) {
+        ctx.log("Scheduling a one-time task in a transaction. If the transaction rolls back, the insert of the task also " +
+            "rolls back, i.e. it will never run."
+        );
+
+        ctx.tx.executeWithoutResult((TransactionStatus status) -> {
+            // Since it is scheduled in a transaction, the scheduler will not run it until the tx commits
+            // If the tx rolls back, the insert of the new job will also roll back, i.e. not run.
+            ctx.schedulerClient.schedule(
+                TRANSACTIONALLY_STAGED_TASK.instance(String.valueOf(ID++)),
+                Instant.now()
+            );
+
+            // Do additional database-operations here
+
+            if (new Random().nextBoolean()) {
+                throw new RuntimeException("Simulated failure happening after task was scheduled. Scheduled task will never run.");
+            }
+        });
+    }
+
+    /** Bean definition */
     @Bean
     public Task<Void> transactionallyStagedTask() {
         return Tasks.oneTime(TRANSACTIONALLY_STAGED_TASK)
@@ -43,43 +68,4 @@ public class TransactionallyStagedJobConfiguration {
             });
     }
 
-    public static void start(ExampleContext ctx) {
-        ctx.log("Scheduling a one-time task in a transaction. If the transaction rolls back, the insert of the task also " +
-            "rolls back, i.e. it never runs."
-        );
-
-        ctx.tx.executeWithoutResult((TransactionStatus status) -> {
-            ctx.schedulerClient.schedule(
-                TaskNames.TRANSACTIONALLY_STAGED_TASK.instance(String.valueOf(ID++)),
-                Instant.now()
-            );
-
-            if (new Random().nextBoolean()) {
-                throw new RuntimeException("Simulated failure happening after task was scheduled.");
-            }
-        });
-    }
-
-    public static class JobState implements Serializable {
-        private static final long serialVersionUID = 1L; // recommended when using Java serialization
-        public final int id;
-        public final int counter;
-
-        public JobState() {
-            this(0, 0);
-        } // for serializing
-
-        public JobState(int id, int counter) {
-            this.id = id;
-            this.counter = counter;
-        }
-
-        @Override
-        public String toString() {
-            return "JobState{" +
-                "id=" + id +
-                ", counter=" + counter +
-                '}';
-        }
-    }
 }

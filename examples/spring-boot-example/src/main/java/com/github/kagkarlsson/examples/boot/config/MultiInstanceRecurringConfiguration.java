@@ -19,41 +19,39 @@ import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData;
+import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionTemplate;
 import utils.EventLogger;
-import utils.Utils;
 
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.Random;
 
-import static com.github.kagkarlsson.examples.boot.config.TaskNames.*;
-
 @Configuration
 public class MultiInstanceRecurringConfiguration {
 
+    public static final TaskWithDataDescriptor<ScheduleAndCustomer> MULTI_INSTANCE_RECURRING_TASK = new TaskWithDataDescriptor<>("multi-instance-recurring-task", ScheduleAndCustomer.class);
+
+
+    /** Start the example */
     public static void start(ExampleContext ctx) {
         CronSchedule cron = new CronSchedule(String.format("%s * * * * *", new Random().nextInt(59)));
         Customer customer = new Customer(String.valueOf(new Random().nextInt(10000)));
         ScheduleAndCustomer data = new ScheduleAndCustomer(cron, customer);
 
-        ctx.log("Scheduling instance of recurring task "+TaskNames.MULTI_INSTANCE_RECURRING_TASK.getTaskName()+" with data: " + data);
+        ctx.log("Scheduling instance of recurring task "+ MULTI_INSTANCE_RECURRING_TASK.getTaskName()+" with data: " + data);
 
         ctx.schedulerClient.schedule(
-            TaskNames.MULTI_INSTANCE_RECURRING_TASK.instance(customer.id, data),
+            MULTI_INSTANCE_RECURRING_TASK.instance(customer.id, data),
             cron.getInitialExecutionTime(Instant.now())
         );
     }
 
+    /** Bean definition */
     @Bean
     public Task<ScheduleAndCustomer> multiInstanceRecurring() {
         // This task will only start running when at least one instance of the task has been scheduled

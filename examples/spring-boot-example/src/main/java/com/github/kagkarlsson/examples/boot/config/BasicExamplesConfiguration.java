@@ -15,12 +15,12 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
-import static com.github.kagkarlsson.examples.boot.config.TaskNames.BASIC_RECURRING_TASK;
 import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDelay;
 
 import com.github.kagkarlsson.examples.boot.CounterService;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskWithoutDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
 import java.time.Instant;
@@ -33,8 +33,24 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class BasicExamplesConfiguration {
+
+    public static final TaskWithoutDataDescriptor BASIC_ONE_TIME_TASK = new TaskWithoutDataDescriptor("sample-one-time-task");
+    public static final TaskWithoutDataDescriptor BASIC_RECURRING_TASK = new TaskWithoutDataDescriptor("recurring-sample-task");
     private static final Logger log = LoggerFactory.getLogger(BasicExamplesConfiguration.class);
     private static int ID = 1;
+
+
+    /** Start the example */
+    public static void triggerOneTime(ExampleContext ctx) {
+        ctx.log("Scheduling a basic one-time task to run 'Instant.now()+seconds'. If seconds=0, the scheduler will pick " +
+            "these up immediately since it is configured with 'immediate-execution-enabled=true'"
+        );
+
+        ctx.schedulerClient.schedule(
+            BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)),
+            Instant.now()
+        );
+    }
 
     /**
      * Define a recurring task with a dependency, which will automatically be picked up by the
@@ -56,21 +72,10 @@ public class BasicExamplesConfiguration {
      */
     @Bean
     Task<Void> sampleOneTimeTask() {
-        return Tasks.oneTime(TaskNames.BASIC_ONE_TIME_TASK)
+        return Tasks.oneTime(BASIC_ONE_TIME_TASK)
             .execute((instance, ctx) -> {
                 log.info("I am a one-time task!");
             });
-    }
-
-    public static void triggerOneTime(ExampleContext ctx) {
-        ctx.log("Scheduling a basic one-time task to run 'Instant.now()+seconds'. If seconds=0, the scheduler will pick " +
-            "these up immediately since it is configured with 'immediate-execution-enabled=true'"
-        );
-
-        ctx.schedulerClient.schedule(
-            TaskNames.BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)),
-            Instant.now()
-        );
     }
 
 }

@@ -16,12 +16,11 @@
 package com.github.kagkarlsson.examples.boot.config;
 
 import com.github.kagkarlsson.examples.boot.ExampleContext;
-import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
+import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
-import org.springframework.transaction.support.TransactionTemplate;
 import utils.EventLogger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,22 +29,27 @@ import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 
-import static com.github.kagkarlsson.examples.boot.config.TaskNames.*;
-
 @Configuration
 public class JobChainingConfiguration {
+
+    public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_1_TASK = new TaskWithDataDescriptor<>("chained-step-1", JobState.class);
+    public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_2_TASK = new TaskWithDataDescriptor<>("chained-step-2", JobState.class);
+    public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_3_TASK = new TaskWithDataDescriptor<>("chained-step-3", JobState.class);
     private static int CHAINED_JOB_ID = 1;
 
+
+    /** Start the example */
     public static void start(ExampleContext ctx) {
         ctx.log("Scheduling a chained one-time task to run.");
 
         int id = CHAINED_JOB_ID++;
         ctx.schedulerClient.schedule(
-            TaskNames.CHAINED_STEP_1_TASK.instance("chain-" + id, new JobState(id, 0)),
+            CHAINED_STEP_1_TASK.instance("chain-" + id, new JobState(id, 0)),
             Instant.now()
         );
     }
 
+    /** Bean definition */
     @Bean
     public CustomTask<JobState> chainedStep1() {
         return Tasks.custom(CHAINED_STEP_1_TASK)
@@ -59,6 +63,7 @@ public class JobChainingConfiguration {
             });
     }
 
+    /** Bean definition */
     @Bean
     public CustomTask<JobState> chainedStep2() {
         return Tasks.custom(CHAINED_STEP_2_TASK)
@@ -77,6 +82,7 @@ public class JobChainingConfiguration {
             });
     }
 
+    /** Bean definition */
     @Bean
     public CustomTask<JobState> chainedStep3() {
         return Tasks.custom(CHAINED_STEP_3_TASK)

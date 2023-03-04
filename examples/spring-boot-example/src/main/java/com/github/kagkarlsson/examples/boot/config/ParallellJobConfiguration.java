@@ -16,9 +16,7 @@
 package com.github.kagkarlsson.examples.boot.config;
 
 import com.github.kagkarlsson.examples.boot.ExampleContext;
-import com.github.kagkarlsson.scheduler.task.ExecutionContext;
-import com.github.kagkarlsson.scheduler.task.Task;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
@@ -32,30 +30,33 @@ import utils.Utils;
 import java.time.Instant;
 import java.util.Random;
 
-import static com.github.kagkarlsson.examples.boot.config.TaskNames.*;
-
 @Configuration
 public class ParallellJobConfiguration {
+
+    public static final TaskWithoutDataDescriptor PARALLEL_JOB_SPAWNER = new TaskWithoutDataDescriptor("parallel-job-spawner");
+    public static final TaskWithDataDescriptor<Integer> PARALLEL_JOB = new TaskWithDataDescriptor<>("parallel-job", Integer.class);
     private TransactionTemplate tx;
 
     public ParallellJobConfiguration(TransactionTemplate tx) {
         this.tx = tx;
     }
 
+
+    /** Start the example */
     public static void start(ExampleContext ctx) {
-        ctx.log("Starting recurring task "+TaskNames.PARALLEL_JOB_SPAWNER.getTaskName()+". Initial execution-time will be now (deviating from defined schedule).");
+        ctx.log("Starting recurring task "+ PARALLEL_JOB_SPAWNER.getTaskName()+". Initial execution-time will be now (deviating from defined schedule).");
 
         ctx.schedulerClient.reschedule(
-            TaskNames.PARALLEL_JOB_SPAWNER.instanceId(RecurringTask.INSTANCE),
+            PARALLEL_JOB_SPAWNER.instanceId(RecurringTask.INSTANCE),
             Instant.now()
         );
     }
 
+    /** Bean definition */
     @Bean
     public Task<Void> parallelJobSpawner() {
         return Tasks.recurring(PARALLEL_JOB_SPAWNER, Schedules.cron("0/20 * * * * *"))
-            // TODO: enable/disable recurring job via curl
-             .doNotScheduleOnStartup() // just for demo-purposes, so it does not start with the demo-application
+             .doNotScheduleOnStartup() // just for demo-purposes, so we can start it on-demand
             .execute((TaskInstance<Void> taskInstance, ExecutionContext executionContext) -> {
 
                 // Create all or none. SchedulerClient is transactions-aware since a Spring datasource is used
