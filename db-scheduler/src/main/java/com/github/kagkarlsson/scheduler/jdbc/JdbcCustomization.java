@@ -29,6 +29,10 @@ public interface JdbcCustomization {
     void setInstant(PreparedStatement p, int index, Instant value) throws SQLException;
     Instant getInstant(ResultSet rs, String columnName) throws SQLException;
 
+    default byte[] getBytes(ResultSet rs, String columnName) throws SQLException {
+        return rs.getBytes(columnName);
+    }
+
     boolean supportsExplicitQueryLimitPart();
     String getQueryLimitPart(int limit);
 

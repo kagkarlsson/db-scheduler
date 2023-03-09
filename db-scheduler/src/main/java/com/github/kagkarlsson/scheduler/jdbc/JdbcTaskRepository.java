@@ -470,7 +470,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 }
 
                 String instanceId = rs.getString("task_instance");
-                byte[] data = rs.getBytes("task_data");
+                byte[] data = jdbcCustomization.getBytes(rs,"task_data");
 
                 Instant executionTime = jdbcCustomization.getInstant(rs, "execution_time");
 

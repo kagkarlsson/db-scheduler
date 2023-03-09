@@ -43,8 +43,13 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
             LOG.info("Detected database {}.", databaseProductName);
 
             if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
-                LOG.info("Using MSSQL jdbc-overrides.");
-                detectedCustomization = new MssqlJdbcCustomization();
+                if (c.getMetaData().getDriverName().contains("jTDS")) {
+                    LOG.info("Using MSSQL jTDS jdbc-overrides.");
+                    detectedCustomization = new MssqlJtdsJdbcCustomization();
+                } else {
+                    LOG.info("Using MSSQL jdbc-overrides.");
+                    detectedCustomization = new MssqlJdbcCustomization();
+                }
             } else if (databaseProductName.equals(POSTGRESQL)) {
                 LOG.info("Using PostgreSQL jdbc-overrides.");
                 detectedCustomization = new PostgreSqlJdbcCustomization();
@@ -65,6 +70,11 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     @Override
     public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
         return jdbcCustomization.getInstant(rs, columnName);
+    }
+
+    @Override
+    public byte[] getBytes(ResultSet rs, String columnName) throws SQLException {
+        return jdbcCustomization.getBytes(rs, columnName);
     }
 
     @Override

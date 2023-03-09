@@ -39,6 +39,8 @@ public class CronSchedule implements Schedule, Serializable {
 
     private static final String DISABLED = "-";
     private static final Logger LOG = LoggerFactory.getLogger(CronSchedule.class);
+
+    private static final long serialVersionUID = 6577185347687546367L;
     private final String pattern;
     private final ZoneId zoneId;
     private transient ExecutionTime cronExecutionTime; // lazily initialized
