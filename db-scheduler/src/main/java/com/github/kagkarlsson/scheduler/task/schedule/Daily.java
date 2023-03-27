@@ -33,6 +33,11 @@ public class Daily implements Schedule, Serializable {
     private final List<LocalTime> times;
     private final ZoneId zone;
 
+    private Daily() { // For serializers
+        zone = ZoneId.systemDefault();
+        times = null;
+    }
+
     public Daily(LocalTime... times) {
         this(ZoneId.systemDefault(), Arrays.asList(times));
     }

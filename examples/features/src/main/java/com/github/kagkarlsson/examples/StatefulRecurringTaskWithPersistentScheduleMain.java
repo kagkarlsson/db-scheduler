@@ -19,6 +19,7 @@ import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTaskWithPersistentSchedule;
+import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
@@ -57,13 +58,31 @@ public class StatefulRecurringTaskWithPersistentScheduleMain extends Example {
                 1)));
     }
 
-    public static class ScheduleAndInteger extends PlainScheduleAndData {
+    public static class ScheduleAndInteger implements ScheduleAndData {
+        private final Schedule schedule;
+        private final Integer data;
+
+        public ScheduleAndInteger() {
+            this(null, null);
+        }
+
         public ScheduleAndInteger(Schedule schedule, Integer data) {
-            super(schedule, data);
+            this.schedule = schedule;
+            this.data = data;
+        }
+
+        @Override
+        public Schedule getSchedule() {
+            return schedule;
+        }
+
+        @Override
+        public Integer getData() {
+            return data;
         }
 
         public ScheduleAndInteger returnIncremented() {
-            return new ScheduleAndInteger(super.getSchedule(), ((Integer) super.getData()) + 1);
+            return new ScheduleAndInteger(getSchedule(), getData() + 1);
         }
     }
 

@@ -37,10 +37,13 @@ public class ScheduledExecution<DATA_TYPE> {
 
     @SuppressWarnings("unchecked")
     public DATA_TYPE getData() {
-        if (dataClass.isInstance(this.execution.taskInstance.getData())) {
-            return (DATA_TYPE) this.execution.taskInstance.getData();
+        Object data = this.execution.taskInstance.getData();
+        if (data == null) {
+            return null;
+        } else if (dataClass.isInstance(data)) {
+            return (DATA_TYPE) data;
         }
-        throw new DataClassMismatchException(dataClass, this.execution.taskInstance.getData().getClass());
+        throw new DataClassMismatchException(dataClass, data.getClass());
     }
 
     public Instant getLastSuccess() {

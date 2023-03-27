@@ -13,18 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task.helper;
+package com.github.kagkarlsson.scheduler.serializer.gson;
 
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
-import java.io.Serializable;
-import java.util.Objects;
+import java.io.IOException;
+import java.time.ZoneId;
 
-public interface ScheduleAndData extends Serializable {
-    Schedule getSchedule();
-    Object getData();
+public class ZoneIdAdapter extends TypeAdapter<ZoneId> {
 
-    static PlainScheduleAndData of(Schedule schedule, Object data) {
-        return new PlainScheduleAndData(schedule, data);
+    @Override
+    public void write(JsonWriter jsonWriter, ZoneId zoneId) throws IOException {
+        jsonWriter.value(zoneId.getId());
+    }
+
+    @Override
+    public ZoneId read(JsonReader jsonReader) throws IOException {
+        return ZoneId.of(jsonReader.nextString());
     }
 }

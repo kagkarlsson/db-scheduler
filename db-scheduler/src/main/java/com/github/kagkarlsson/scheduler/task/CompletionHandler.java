@@ -15,12 +15,12 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.util.function.Function;
 
 public interface CompletionHandler<T> {
 
@@ -70,4 +70,47 @@ public interface CompletionHandler<T> {
 
     }
 
+    class OnCompleteReplace<T> implements CompletionHandler<T> {
+        private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReplace.class);
+        private String newTaskName = "<hidden>"; // used for logging purposes only
+        private final Function<TaskInstance<T>, SchedulableInstance<T>> newInstanceCreator;
+
+        public OnCompleteReplace(String newTaskName) {
+            this(newTaskName, null);
+        }
+
+        public OnCompleteReplace(String newTaskName, T newData) {
+            this((TaskInstance<T> currentInstance) -> {
+                return SchedulableInstance.of(new TaskInstance<>(newTaskName, currentInstance.getId(), newData), Instant.now());
+            });
+            this.newTaskName = newTaskName;
+        }
+
+        public OnCompleteReplace(TaskDescriptor<T> newTask, T newData) {
+            this((TaskInstance<T> currentInstance) -> {
+                return SchedulableInstance.of(new TaskInstance<>(newTask.getTaskName(), currentInstance.getId(), newData), Instant.now());
+            });
+            this.newTaskName = newTask.getTaskName();
+        }
+
+        public OnCompleteReplace(Function<TaskInstance<T>, SchedulableInstance<T>> newInstanceCreator) {
+            this.newInstanceCreator = newInstanceCreator;
+        }
+
+
+        @Override
+        @SuppressWarnings({"unchecked"})
+        public void complete(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
+            TaskInstance<T> currentInstance = executionComplete.getExecution().taskInstance;
+            SchedulableInstance<T> nextInstance = newInstanceCreator.apply(currentInstance);
+            LOG.debug("Removing instance {} and scheduling instance {}", executionComplete.getExecution().taskInstance, nextInstance);
+            executionOperations.removeAndScheduleNew(nextInstance);
+        }
+
+        @Override
+        public String toString() {
+            return "OnCompleteReplace with task '"+newTaskName+"'";
+        }
+
+    }
 }
