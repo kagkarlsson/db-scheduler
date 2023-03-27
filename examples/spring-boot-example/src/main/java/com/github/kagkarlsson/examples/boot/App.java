@@ -37,12 +37,6 @@ public class App {
 
         ConfigurableApplicationContext ctx = SpringApplication.run(App.class, args);
 
-        System.out.println("Supported endpoints:");
-        ctx.getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class).getHandlerMethods()
-            .forEach((key, value) ->  {
-                System.out.println(key);
-            });
-        System.out.println();
     }
 
     /**

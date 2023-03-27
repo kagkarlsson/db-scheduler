@@ -18,8 +18,10 @@ package com.github.kagkarlsson.scheduler.task.helper;
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
+import java.io.ObjectStreamClass;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Function;
@@ -39,14 +41,12 @@ public class Tasks {
         return new RecurringTaskBuilder<>(descriptor.getTaskName(), schedule, descriptor.getDataClass());
     }
 
-    // TODO: fix the rest
-
     public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(String name, Class<T> dataClass) {
         return recurringWithPersistentSchedule(TaskDescriptor.of(name, dataClass));
     }
 
     public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(TaskDescriptor<T> descriptor) {
-        return new RecurringTaskWithPersistentScheduleBuilder<T>(descriptor.getTaskName(), descriptor.getDataClass());
+        return new RecurringTaskWithPersistentScheduleBuilder<>(descriptor.getTaskName(), descriptor.getDataClass());
     }
 
     public static OneTimeTaskBuilder<Void> oneTime(String name) {
