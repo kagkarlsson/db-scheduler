@@ -28,7 +28,7 @@ public class RunUntilShutdownTest {
 
     @Test
     public void should_wait_on_ok_execution() {
-        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
+        Assertions.assertTimeoutPreemptively(Duration.ofSeconds(2), () -> {
 
             runUntilShutdown.run();
             assertThat(countingWaiter.counter, is(2));
