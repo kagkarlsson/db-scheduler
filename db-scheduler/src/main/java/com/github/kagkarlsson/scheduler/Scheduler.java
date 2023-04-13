@@ -157,11 +157,12 @@ public class Scheduler implements SchedulerClient {
             }
         }
 
+        executor.stop(shutdownMaxWait);
+
+        // Shutdown heartbeating thread last
         if (!ExecutorUtils.shutdownAndAwaitTermination(housekeeperExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
             LOG.warn("Failed to shutdown housekeeper-executor properly.");
         }
-
-        executor.stop(shutdownMaxWait);
     }
 
     public void pause() {
