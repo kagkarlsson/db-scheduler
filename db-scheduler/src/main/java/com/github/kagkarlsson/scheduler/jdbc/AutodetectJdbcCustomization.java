@@ -73,8 +73,13 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     }
 
     @Override
-    public byte[] getBytes(ResultSet rs, String columnName) throws SQLException {
-        return jdbcCustomization.getBytes(rs, columnName);
+    public void setTaskData(PreparedStatement p, int index, byte[] value) throws SQLException {
+        jdbcCustomization.setTaskData(p, index, value);
+    }
+
+    @Override
+    public byte[] getTaskData(ResultSet rs, String columnName) throws SQLException {
+        return jdbcCustomization.getTaskData(rs, columnName);
     }
 
     @Override

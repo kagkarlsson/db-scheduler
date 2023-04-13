@@ -103,7 +103,7 @@ public class JdbcTaskRepository implements TaskRepository {
                     (PreparedStatement p) -> {
                         p.setString(1, taskInstance.getTaskName());
                         p.setString(2, taskInstance.getId());
-                        p.setObject(3, serializer.serialize(taskInstance.getData()));
+                        jdbcCustomization.setTaskData(p, 3, serializer.serialize(taskInstance.getData()));
                         jdbcCustomization.setInstant(p, 4, instance.getNextExecutionTime(clock.now()));
                         p.setBoolean(5, false);
                         p.setLong(6, 1L);
@@ -470,7 +470,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 }
 
                 String instanceId = rs.getString("task_instance");
-                byte[] data = jdbcCustomization.getBytes(rs,"task_data");
+                byte[] data = jdbcCustomization.getTaskData(rs,"task_data");
 
                 Instant executionTime = jdbcCustomization.getInstant(rs, "execution_time");
 

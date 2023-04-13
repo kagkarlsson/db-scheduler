@@ -15,20 +15,20 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
-import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDelay;
-
 import com.github.kagkarlsson.examples.boot.CounterService;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-import java.time.Duration;
-import java.util.Optional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.Duration;
+import java.util.Optional;
+
+import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDelay;
 
 @Configuration
 public class TaskConfiguration {

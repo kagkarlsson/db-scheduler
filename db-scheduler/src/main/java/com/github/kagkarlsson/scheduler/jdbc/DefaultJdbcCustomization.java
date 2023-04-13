@@ -38,6 +38,16 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
 
     @Override
+    public void setTaskData(PreparedStatement p, int index, byte[] value) throws SQLException {
+        p.setObject(index, value);
+    }
+
+    @Override
+    public byte[] getTaskData(ResultSet rs, String columnName) throws SQLException {
+        return rs.getBytes(columnName);
+    }
+
+    @Override
     public boolean supportsExplicitQueryLimitPart() {
         return false;
     }

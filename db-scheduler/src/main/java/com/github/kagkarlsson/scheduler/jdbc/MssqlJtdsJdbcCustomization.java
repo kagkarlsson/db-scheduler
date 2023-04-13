@@ -17,8 +17,10 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.sql.Clob;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -30,7 +32,7 @@ public class MssqlJtdsJdbcCustomization extends MssqlJdbcCustomization {
     }
 
     @Override
-    public byte[] getBytes(ResultSet rs, String columnName) throws SQLException {
+    public byte[] getTaskData(ResultSet rs, String columnName) throws SQLException {
         byte[] result;
         try (Reader reader = ((Clob) rs.getObject(columnName)).getCharacterStream()) {
             char[] charArray = new char[8 * 1024];
@@ -45,4 +47,5 @@ public class MssqlJtdsJdbcCustomization extends MssqlJdbcCustomization {
         }
         return result;
     }
+
 }

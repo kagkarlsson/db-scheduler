@@ -19,6 +19,7 @@ import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
+import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
@@ -29,6 +30,7 @@ import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInput;
@@ -39,6 +41,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -142,6 +145,11 @@ public class DbSchedulerAutoConfiguration {
 
         // Use custom serializer if provided. Otherwise use devtools friendly serializer.
         builder.serializer(customizer.serializer().orElse(SPRING_JAVA_SERIALIZER));
+
+        // Use custom JdbcCustomizer if provided.
+        builder.jdbcCustomization(
+            customizer.jdbcCustomization()
+                .orElse(new AutodetectJdbcCustomization(transactionalDataSource)));
 
         if (config.isImmediateExecutionEnabled()) {
             builder.enableImmediateExecution();
