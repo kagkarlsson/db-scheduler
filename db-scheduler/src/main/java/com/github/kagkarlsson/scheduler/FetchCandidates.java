@@ -17,7 +17,9 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.task.AsyncExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +66,7 @@ public class FetchCandidates implements PollStrategy {
         upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public void run() {
         Instant now = clock.now();
@@ -84,9 +87,25 @@ public class FetchCandidates implements PollStrategy {
             executor.addToQueue(
                 () -> {
                     final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
-                    candidate.ifPresent(picked -> new ExecutePicked(executor, taskRepository, earlyExecutionListener, schedulerClient, statsRegistry,
-                        taskResolver, schedulerState, failureLogger,
-                        clock, picked).run());
+
+                    candidate.ifPresent(picked -> {
+
+                        // Experimental support for async execution. Peek at Task to see if support async
+                        // Unresolved tasks will be handled further in
+                        final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
+                        if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
+                            // Experimental branch
+                            new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
+                                schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                                clock, picked).run();
+
+                        } else {
+                            // The default
+                            new ExecutePicked(executor, taskRepository, earlyExecutionListener,
+                                schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                                clock, picked).run();
+                        }
+                    });
                 },
                 () -> {
                     newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);

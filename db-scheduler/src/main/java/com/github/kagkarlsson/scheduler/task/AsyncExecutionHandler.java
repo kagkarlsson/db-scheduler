@@ -15,8 +15,17 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-public interface ExecutionHandler<T> {
+import java.util.concurrent.CompletableFuture;
 
-    CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext);
+/**
+ * Experimental
+ */
+public interface AsyncExecutionHandler<T> extends ExecutionHandler<T> {
 
+    CompletableFuture<CompletionHandler<T>> executeAsync(TaskInstance<T> taskInstance, AsyncExecutionContext executionContext);
+
+    @Override
+    default CompletionHandler<T> execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
+        throw new UnsupportedOperationException("Standard blocking execute note supported in this handler.");
+    }
 }

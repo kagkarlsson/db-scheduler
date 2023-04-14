@@ -13,24 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.examples.boot;
+package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.SchedulerClient;
-import org.slf4j.Logger;
-import org.springframework.transaction.support.TransactionTemplate;
+import com.github.kagkarlsson.scheduler.SchedulerState;
 
-public class ExampleContext {
-    public SchedulerClient schedulerClient;
-    public TransactionTemplate tx;
-    private Logger logger;
+import java.util.concurrent.Executor;
 
-    public ExampleContext(SchedulerClient schedulerClient, TransactionTemplate tx, Logger logger) {
-        this.schedulerClient = schedulerClient;
-        this.tx = tx;
-        this.logger = logger;
+public class AsyncExecutionContext extends ExecutionContext {
+    private final Executor executor;
+
+    public AsyncExecutionContext(SchedulerState schedulerState, Execution execution, SchedulerClient schedulerClient,
+                                 Executor executor) {
+        super(schedulerState, execution, schedulerClient);
+        this.executor = executor;
     }
 
-    public void log(String message) {
-        logger.info(message);
+    public Executor getAsyncExecutor() {
+        return executor;
     }
 }

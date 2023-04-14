@@ -163,6 +163,7 @@
 							<exclude>src/test/**</exclude>
 							<exclude>**/*.properties</exclude>
 							<exclude>**/*.sql</exclude>
+							<exclude>**/*.xml</exclude>
 							<exclude>.github/**</exclude>
 							<exclude>test/**</exclude>
 							<exclude>**/RuntimeTypeAdapterFactory.java</exclude>
