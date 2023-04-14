@@ -55,7 +55,7 @@ class AsyncExecutePicked {
         this.pickedExecution = pickedExecution;
     }
 
-    public CompletableFuture<Void> run() {
+    public CompletableFuture<Void> toCompletableFuture() {
         // FIXLATER: need to cleanup all the references back to scheduler fields
         final UUID executionId = executor.addCurrentlyProcessing(new CurrentlyExecuting(pickedExecution, clock));
         statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);

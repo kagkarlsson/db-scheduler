@@ -21,12 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,6 +68,7 @@ public class Executor {
     public void stop(Duration shutdownMaxWait) {
         LOG.info("Letting running executions finish. Will wait up to 2x{}.", shutdownMaxWait);
         final Instant startShutdown = clock.now();
+
         if (ExecutorUtils.shutdownAndAwaitTermination(executorService, shutdownMaxWait, shutdownMaxWait)) {
             LOG.info("Scheduler stopped.");
         } else {
@@ -111,6 +107,5 @@ public class Executor {
     public java.util.concurrent.Executor getExecutorService() {
         return executorService;
     }
-
 
 }

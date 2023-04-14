@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class LockAndFetchCandidates implements PollStrategy {
@@ -91,29 +92,32 @@ public class LockAndFetchCandidates implements PollStrategy {
         }
 
         for (Execution picked : pickedExecutions) {
-//            executor.addToQueue(() -> {
-//                    // Experimental support for async execution. Peek at Task to see if support async
-//                    // Unresolved tasks will be handled further in
-//                    final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
-//                    if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
-//                        // Experimental branch
-//                        new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
-//                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
-//                            clock, picked).run();
-//
-//                    } else {
-//                        // The default
-//                        new ExecutePicked(executor, taskRepository, earlyExecutionListener,
-//                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
-//                            clock, picked).run();
-//                    }
-//                },
-//                () -> {
-//                    if (moreExecutionsInDatabase.get()
-//                        && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
-//                        triggerCheckForNewExecutions.run();
-//                    }
-//                });
+            CompletableFuture
+                .runAsync(executor::incrementInQueue, executor.getExecutorService())
+                .thenComposeAsync((_ignored) -> {
+                    // Experimental support for async execution. Peek at Task to see if support async
+                    // Unresolved tasks will be handled further in
+                    final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
+                    if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
+
+                        return new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
+                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                            clock, picked).toCompletableFuture();
+                    } else {
+
+                        return CompletableFuture.runAsync(new ExecutePicked(executor, taskRepository, earlyExecutionListener,
+                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                            clock, picked), executor.getExecutorService());
+                    }
+
+                }, executor.getExecutorService())
+                .thenAccept(x -> {
+                    executor.decrementInQueue();
+                    if (moreExecutionsInDatabase.get()
+                        && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
+                        triggerCheckForNewExecutions.run();
+                    }
+                });
         }
         statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }

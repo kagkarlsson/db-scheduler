@@ -1,12 +1,12 @@
 /**
  * Copyright (C) Gustav Karlsson
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -86,7 +86,7 @@ public class FetchCandidates implements PollStrategy {
 
         for (Execution e : fetchedDueExecutions) {
 
-            CompletableFuture
+            CompletableFuture<Void> future = CompletableFuture
                 .runAsync(executor::incrementInQueue, executor.getExecutorService())
                 .thenComposeAsync((result) -> CompletableFuture.supplyAsync(() -> new PickDue(e, newDueBatch).call(), executor.getExecutorService()))
                 .thenComposeAsync((x) -> {
@@ -95,44 +95,29 @@ public class FetchCandidates implements PollStrategy {
                     } else {
                         return CompletableFuture.supplyAsync(x::get);
                     }
-                })
+                }, executor.getExecutorService())
                 .thenComposeAsync(picked -> {
-                    return new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
-                        schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
-                        clock, picked).run();
-                })
+                    // Experimental support for async execution. Peek at Task to see if support async
+                    // Unresolved tasks will be handled further in
+                    final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
+                    if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
+
+                        return new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
+                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                            clock, picked).toCompletableFuture();
+                    } else {
+
+                        return CompletableFuture.runAsync(new ExecutePicked(executor, taskRepository, earlyExecutionListener,
+                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                            clock, picked), executor.getExecutorService());
+                    }
+
+                }, executor.getExecutorService())
                 .thenAccept(x -> {
-                    LOG.info("Removing from queue");
                     executor.decrementInQueue();
                     newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);
                 });
 
-//            executor.addToQueue(
-//                () -> {
-//                    final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
-//
-//                    candidate.ifPresent(picked -> {
-//
-//                        // Experimental support for async execution. Peek at Task to see if support async
-//                        // Unresolved tasks will be handled further in
-//                        final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
-//                        if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
-//                            // Experimental branch
-//                            new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
-//                                schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
-//                                clock, picked).run();
-//
-//                        } else {
-//                            // The default
-//                            new ExecutePicked(executor, taskRepository, earlyExecutionListener,
-//                                schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
-//                                clock, picked).run();
-//                        }
-//                    });
-//                },
-//                () -> {
-//                    newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);
-//                });
         }
         statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }
