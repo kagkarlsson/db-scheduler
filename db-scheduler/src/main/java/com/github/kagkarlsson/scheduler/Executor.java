@@ -51,6 +51,8 @@ public class Executor {
             try {
                 r.run();
             } finally {
+                // For async, these callbacks are run before complete,
+                //  thus allowing queue of ongoing executions to grow without bound
                 currentlyInQueueOrProcessing.decrementAndGet();
                 // Run callbacks after decrementing currentlyInQueueOrProcessing
                 afterDone.run();
