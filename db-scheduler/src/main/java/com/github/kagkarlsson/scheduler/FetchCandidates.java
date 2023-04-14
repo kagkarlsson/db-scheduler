@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FetchCandidates implements PollStrategy {
@@ -84,32 +85,39 @@ public class FetchCandidates implements PollStrategy {
             (Integer leftInBatch) -> leftInBatch <= lowerLimit);
 
         for (Execution e : fetchedDueExecutions) {
-            executor.addToQueue(
-                () -> {
-                    final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
 
-                    candidate.ifPresent(picked -> {
+            CompletableFuture<Void> future = CompletableFuture
+                .runAsync(executor::incrementInQueue, executor.getExecutorService())
+                .thenComposeAsync((result) -> CompletableFuture.supplyAsync(() -> new PickDue(e, newDueBatch).call(), executor.getExecutorService()))
+                .thenComposeAsync((x) -> {
+                    if (!x.isPresent()) {
+                        return CompletableFuture.completedFuture(null);
+                    } else {
+                        return CompletableFuture.supplyAsync(x::get);
+                    }
+                }, executor.getExecutorService())
+                .thenComposeAsync(picked -> {
+                    // Experimental support for async execution. Peek at Task to see if support async
+                    // Unresolved tasks will be handled further in
+                    final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
+                    if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
 
-                        // Experimental support for async execution. Peek at Task to see if support async
-                        // Unresolved tasks will be handled further in
-                        final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
-                        if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
-                            // Experimental branch
-                            new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
-                                schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
-                                clock, picked).run();
+                        return new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
+                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                            clock, picked).toCompletableFuture();
+                    } else {
 
-                        } else {
-                            // The default
-                            new ExecutePicked(executor, taskRepository, earlyExecutionListener,
-                                schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
-                                clock, picked).run();
-                        }
-                    });
-                },
-                () -> {
+                        return CompletableFuture.runAsync(new ExecutePicked(executor, taskRepository, earlyExecutionListener,
+                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                            clock, picked), executor.getExecutorService());
+                    }
+
+                }, executor.getExecutorService())
+                .thenAccept(x -> {
+                    executor.decrementInQueue();
                     newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);
                 });
+
         }
         statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }

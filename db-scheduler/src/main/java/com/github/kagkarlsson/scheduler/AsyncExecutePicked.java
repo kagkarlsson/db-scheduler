@@ -27,7 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @SuppressWarnings("rawtypes")
-class AsyncExecutePicked implements Runnable {
+class AsyncExecutePicked {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncExecutePicked.class);
     private final Executor executor;
     private final TaskRepository taskRepository;
@@ -55,15 +55,14 @@ class AsyncExecutePicked implements Runnable {
         this.pickedExecution = pickedExecution;
     }
 
-    @Override
-    public void run() {
+    public CompletableFuture<Void> toCompletableFuture() {
         // FIXLATER: need to cleanup all the references back to scheduler fields
         final UUID executionId = executor.addCurrentlyProcessing(new CurrentlyExecuting(pickedExecution, clock));
         statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
-        executePickedExecution(pickedExecution).whenComplete((c, ex) -> executor.removeCurrentlyProcessing(executionId));
+        return executePickedExecution(pickedExecution).whenComplete((c, ex) -> executor.removeCurrentlyProcessing(executionId));
     }
 
-    private CompletableFuture<CompletionHandler> executePickedExecution(Execution execution) {
+    private CompletableFuture<Void> executePickedExecution(Execution execution) {
         final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
         if (!task.isPresent()) {
             LOG.error("Failed to find implementation for task with name '{}'. Should have been excluded in JdbcRepository.", execution.taskInstance.getTaskName());
@@ -79,7 +78,7 @@ class AsyncExecutePicked implements Runnable {
         LOG.debug("Executing " + execution);
         CompletableFuture<CompletionHandler> completableFuture = asyncHandler.executeAsync(execution.taskInstance, new AsyncExecutionContext(schedulerState, execution, schedulerClient, executor.getExecutorService()));
 
-        return completableFuture.whenCompleteAsync((completion, ex) -> {
+        return completableFuture.handle((completion, ex) -> {
             if (ex != null) {
                 if (ex instanceof RuntimeException) {
                     failure(task.get(), execution, ex, executionStarted, "Unhandled exception");
@@ -88,13 +87,14 @@ class AsyncExecutePicked implements Runnable {
                     failure(task.get(), execution, ex, executionStarted, "Error");
                     statsRegistry.register(StatsRegistry.ExecutionStatsEvent.FAILED);
                 }
-                return;
+                return null;
             }
             LOG.debug("Execution done");
             complete(completion, execution, executionStarted);
             statsRegistry.register(StatsRegistry.ExecutionStatsEvent.COMPLETED);
+            return null;
 
-        }, executor.getExecutorService());
+        });
     }
 
     private void complete(CompletionHandler completion, Execution execution, Instant executionStarted) {

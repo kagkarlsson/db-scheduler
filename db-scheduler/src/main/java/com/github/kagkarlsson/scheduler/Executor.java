@@ -21,14 +21,11 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class Executor {
@@ -44,20 +41,24 @@ public class Executor {
         this.clock = clock;
     }
 
-    public void addToQueue(Runnable r, Runnable afterDone) {
+    public void addToQueue(Supplier<CompletableFuture<Void>> toRun, Runnable afterDone) {
         currentlyInQueueOrProcessing.incrementAndGet(); // if we always had a ThreadPoolExecutor we could check queue-size using getQueue()
-        executorService.execute(() -> {
-            // Execute
-            try {
-                r.run();
-            } finally {
-                // For async, these callbacks are run before complete,
-                //  thus allowing queue of ongoing executions to grow without bound
-                currentlyInQueueOrProcessing.decrementAndGet();
-                // Run callbacks after decrementing currentlyInQueueOrProcessing
-                afterDone.run();
-            }
+
+        toRun.get().thenAccept(v -> {
+            // For async, these callbacks are run before complete,
+            //  thus allowing queue of ongoing executions to grow without bound
+            currentlyInQueueOrProcessing.decrementAndGet();
+            // Run callbacks after decrementing currentlyInQueueOrProcessing
+            afterDone.run();
         });
+
+    }
+
+    public void incrementInQueue() {
+        currentlyInQueueOrProcessing.incrementAndGet(); // if we always had a ThreadPoolExecutor we could check queue-size using getQueue()
+    }
+    public void decrementInQueue() {
+        currentlyInQueueOrProcessing.decrementAndGet();
     }
 
     public List<CurrentlyExecuting> getCurrentlyExecuting() {
@@ -67,6 +68,7 @@ public class Executor {
     public void stop(Duration shutdownMaxWait) {
         LOG.info("Letting running executions finish. Will wait up to 2x{}.", shutdownMaxWait);
         final Instant startShutdown = clock.now();
+
         if (ExecutorUtils.shutdownAndAwaitTermination(executorService, shutdownMaxWait, shutdownMaxWait)) {
             LOG.info("Scheduler stopped.");
         } else {
@@ -105,6 +107,5 @@ public class Executor {
     public java.util.concurrent.Executor getExecutorService() {
         return executorService;
     }
-
 
 }
