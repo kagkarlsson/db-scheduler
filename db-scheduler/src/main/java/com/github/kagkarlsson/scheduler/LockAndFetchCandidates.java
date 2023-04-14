@@ -91,29 +91,29 @@ public class LockAndFetchCandidates implements PollStrategy {
         }
 
         for (Execution picked : pickedExecutions) {
-            executor.addToQueue(() -> {
-                    // Experimental support for async execution. Peek at Task to see if support async
-                    // Unresolved tasks will be handled further in
-                    final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
-                    if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
-                        // Experimental branch
-                        new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
-                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
-                            clock, picked).run();
-
-                    } else {
-                        // The default
-                        new ExecutePicked(executor, taskRepository, earlyExecutionListener,
-                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
-                            clock, picked).run();
-                    }
-                },
-                () -> {
-                    if (moreExecutionsInDatabase.get()
-                        && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
-                        triggerCheckForNewExecutions.run();
-                    }
-                });
+//            executor.addToQueue(() -> {
+//                    // Experimental support for async execution. Peek at Task to see if support async
+//                    // Unresolved tasks will be handled further in
+//                    final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
+//                    if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
+//                        // Experimental branch
+//                        new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
+//                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+//                            clock, picked).run();
+//
+//                    } else {
+//                        // The default
+//                        new ExecutePicked(executor, taskRepository, earlyExecutionListener,
+//                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+//                            clock, picked).run();
+//                    }
+//                },
+//                () -> {
+//                    if (moreExecutionsInDatabase.get()
+//                        && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
+//                        triggerCheckForNewExecutions.run();
+//                    }
+//                });
         }
         statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }
