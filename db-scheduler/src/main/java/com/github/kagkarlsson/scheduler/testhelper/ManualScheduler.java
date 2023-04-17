@@ -54,6 +54,7 @@ public class ManualScheduler extends Scheduler {
 
     public void runAnyDueExecutions() {
         super.executeDueStrategy.run();
+        super.awaitCurrentlyExecuting();
     }
 
     public void runDeadExecutionDetection() {

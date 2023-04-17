@@ -23,11 +23,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+// TODO: make super-class of the polling-strategies instead
 public class Executor {
     private static final Logger LOG = LoggerFactory.getLogger(Executor.class);
 
@@ -35,12 +37,14 @@ public class Executor {
     private AtomicInteger currentlyInQueueOrProcessing = new AtomicInteger(0);
     private final ExecutorService executorService;
     private final Clock clock;
+    private Map<CompletableFuture<Void>, CompletableFuture<Void>> ongoingWork = new ConcurrentHashMap<>();
 
     public Executor(ExecutorService executorService, Clock clock) {
         this.executorService = executorService;
         this.clock = clock;
     }
 
+    // TODO: remove
     public void addToQueue(Supplier<CompletableFuture<Void>> toRun, Runnable afterDone) {
         currentlyInQueueOrProcessing.incrementAndGet(); // if we always had a ThreadPoolExecutor we could check queue-size using getQueue()
 
@@ -61,12 +65,27 @@ public class Executor {
         currentlyInQueueOrProcessing.decrementAndGet();
     }
 
+    public void addOngoingWork(CompletableFuture<Void> work) {
+        ongoingWork.put(work, work);
+    }
+
     public List<CurrentlyExecuting> getCurrentlyExecuting() {
         return new ArrayList<>(currentlyProcessing.values());
     }
 
+    @SuppressWarnings("rawtypes")
+    public void awaitCurrentlyExecuting() {
+        CompletableFuture[] ongoingWork = this.ongoingWork.keySet().toArray(new CompletableFuture[0]);
+        CompletableFuture.allOf(ongoingWork).join();
+    }
+
     public void stop(Duration shutdownMaxWait) {
+
         LOG.info("Letting running executions finish. Will wait up to 2x{}.", shutdownMaxWait);
+        // TODO: upper timelimit for completable futures as well
+        // Wait for futures explicitly, as we can no longer rely on executorService.shutdown()
+        awaitCurrentlyExecuting();
+
         final Instant startShutdown = clock.now();
 
         if (ExecutorUtils.shutdownAndAwaitTermination(executorService, shutdownMaxWait, shutdownMaxWait)) {
@@ -107,5 +126,4 @@ public class Executor {
     public java.util.concurrent.Executor getExecutorService() {
         return executorService;
     }
-
 }

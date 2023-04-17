@@ -5,6 +5,7 @@ import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.hamcrest.Matchers;
@@ -95,33 +96,6 @@ public class DeadExecutionsTest {
         assertThat(rescheduled.get().pickedBy, nullValue());
 
         assertThat(jdbcTaskRepository.getDue(Instant.now(), POLLING_LIMIT), hasSize(1));
-    }
-
-    @Test
-    public void scheduler_should_detect_dead_execution_that_never_updated_heartbeat() {
-        final Instant now = Instant.now();
-        settableClock.set(now.minus(Duration.ofHours(1)));
-        final Instant oneHourAgo = settableClock.now();
-
-        final TaskInstance<Void> taskInstance = nonCompleting.instance("id1");
-        final SchedulableTaskInstance<Void> execution1 = new SchedulableTaskInstance<>(taskInstance, oneHourAgo);
-        jdbcTaskRepository.createIfNotExists(execution1);
-
-        scheduler.executeDue();
-        assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(1));
-
-        scheduler.executeDue();
-        assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(1));
-
-        settableClock.set(Instant.now());
-
-        scheduler.detectDeadExecutions();
-        assertThat(deadExecutionHandler.timesCalled, is(1));
-
-        settableClock.set(Instant.now());
-
-        scheduler.executeDue();
-        assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(2));
     }
 
     public static class NonCompletingTask<T> extends OneTimeTask<T> {

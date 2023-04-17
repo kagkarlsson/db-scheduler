@@ -125,14 +125,14 @@ public class SchedulerTest {
     @Test
     public void scheduler_should_not_execute_canceled_tasks() {
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, handler);
-        Scheduler scheduler = schedulerFor(oneTimeTask);
+        ManualScheduler scheduler = schedulerFor(oneTimeTask);
 
         Instant executionTime = clock.now().plus(ofMinutes(1));
         String instanceId = "1";
         TaskInstance<Void> oneTimeTaskInstance = oneTimeTask.instance(instanceId);
         scheduler.schedule(oneTimeTaskInstance, executionTime);
         scheduler.cancel(oneTimeTaskInstance);
-        scheduler.executeDue();
+        scheduler.runAnyDueExecutions();
         assertThat(handler.timesExecuted.get(), is(0));
 
         clock.set(executionTime);
@@ -143,16 +143,16 @@ public class SchedulerTest {
     @Test
     public void scheduler_should_execute_recurring_task_and_reschedule() {
         RecurringTask<Void> recurringTask = TestTasks.recurring("Recurring", FixedDelay.of(ofHours(1)), handler);
-        Scheduler scheduler = schedulerFor(recurringTask);
+        ManualScheduler scheduler = schedulerFor(recurringTask);
 
         scheduler.schedule(recurringTask.instance("single"), clock.now());
-        scheduler.executeDue();
+        scheduler.runAnyDueExecutions();
 
         assertThat(handler.timesExecuted.get(), is(1));
 
         Instant nextExecutionTime = clock.now().plus(ofHours(1));
         clock.set(nextExecutionTime);
-        scheduler.executeDue();
+        scheduler.runAnyDueExecutions();
         assertThat(handler.timesExecuted.get(), is(2));
     }
 
@@ -183,10 +183,10 @@ public class SchedulerTest {
         Task<Void> oneTimeTask = ComposableTask.customTask("cause-testing-task", Void.class, TestTasks.REMOVE_ON_COMPLETE, failureHandler,
                 (inst, ctx) -> { throw new RuntimeException("Failed!");});
 
-        Scheduler scheduler = schedulerFor(oneTimeTask);
+        ManualScheduler scheduler = schedulerFor(oneTimeTask);
 
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
-        scheduler.executeDue();
+        scheduler.runAnyDueExecutions();
 //        failureHandler.waitForNotify.await();
 
         assertThat(failureHandler.result, is(ExecutionComplete.Result.FAILED));
@@ -206,15 +206,15 @@ public class SchedulerTest {
                 throw new RuntimeException("Failed!");
             });
 
-        Scheduler scheduler = schedulerFor(oneTimeTask);
+        ManualScheduler scheduler = schedulerFor(oneTimeTask);
 
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
-        scheduler.executeDue();
+        scheduler.runAnyDueExecutions();
 
         //Simulate 15 minutes worth of time to validate we did not process more than we should
         for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 15; minuteWorthOfTime ++) {
             clock.set(clock.now().plus(ofMinutes(1)));
-            scheduler.executeDue();
+            scheduler.runAnyDueExecutions();
         }
 
         //will always be maxRetries + 1 due to the first call always being required.
@@ -235,16 +235,16 @@ public class SchedulerTest {
                 }
             });
 
-        Scheduler scheduler = schedulerFor(oneTimeTask);
+        ManualScheduler scheduler = schedulerFor(oneTimeTask);
 
         Instant firstExecution = clock.now();
         scheduler.schedule(oneTimeTask.instance("1"), firstExecution);
-        scheduler.executeDue();
+        scheduler.runAnyDueExecutions();
 
         //Simulate 30 minutes worth of time to validate we did not process more than we should
         for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 30; minuteWorthOfTime ++) {
             clock.set(clock.now().plus(ofMinutes(1)));
-            scheduler.executeDue();
+            scheduler.runAnyDueExecutions();
         }
 
         assertThat(executionTimes.size(), is(10));
@@ -275,16 +275,16 @@ public class SchedulerTest {
                 }
             });
 
-        Scheduler scheduler = schedulerFor(oneTimeTask);
+        ManualScheduler scheduler = schedulerFor(oneTimeTask);
 
         Instant firstExecution = clock.now();
         scheduler.schedule(oneTimeTask.instance("1"), firstExecution);
-        scheduler.executeDue();
+        scheduler.runAnyDueExecutions();
 
         //Simulate 30 minutes worth of time to validate we did not process more than we should
         for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 30; minuteWorthOfTime ++) {
             clock.set(clock.now().plus(ofMinutes(1)));
-            scheduler.executeDue();
+            scheduler.runAnyDueExecutions();
         }
 
         assertThat(executionTimes.size(), is(10));

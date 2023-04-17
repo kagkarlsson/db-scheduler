@@ -324,4 +324,7 @@ public class Scheduler implements SchedulerClient {
         return new SchedulerBuilder(dataSource, knownTasks);
     }
 
+    protected void awaitCurrentlyExecuting() {
+        executor.awaitCurrentlyExecuting();
+    }
 }

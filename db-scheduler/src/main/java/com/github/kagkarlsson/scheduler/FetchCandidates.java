@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -88,15 +89,15 @@ public class FetchCandidates implements PollStrategy {
 
             CompletableFuture<Void> future = CompletableFuture
                 .runAsync(executor::incrementInQueue, executor.getExecutorService())
-                .thenComposeAsync((result) -> CompletableFuture.supplyAsync(() -> new PickDue(e, newDueBatch).call(), executor.getExecutorService()))
-                .thenComposeAsync((x) -> {
-                    if (!x.isPresent()) {
-                        return CompletableFuture.completedFuture(null);
-                    } else {
-                        return CompletableFuture.supplyAsync(x::get);
-                    }
-                }, executor.getExecutorService())
+                .thenComposeAsync((result) -> CompletableFuture.supplyAsync(() -> {
+                    Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
+                    return candidate.orElse(null); // TODO: remove optional before merge
+                }, executor.getExecutorService()))
                 .thenComposeAsync(picked -> {
+                    if (picked == null) {
+                        // Skip this step if we were not able to pick the execution (someone else got the lock)
+                        return CompletableFuture.completedFuture(null);
+                    }
                     // Experimental support for async execution. Peek at Task to see if support async
                     // Unresolved tasks will be handled further in
                     final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
@@ -117,6 +118,7 @@ public class FetchCandidates implements PollStrategy {
                     executor.decrementInQueue();
                     newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);
                 });
+            executor.addOngoingWork(future);
 
         }
         statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);

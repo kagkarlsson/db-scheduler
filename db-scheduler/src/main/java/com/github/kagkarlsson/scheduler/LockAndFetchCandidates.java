@@ -92,7 +92,7 @@ public class LockAndFetchCandidates implements PollStrategy {
         }
 
         for (Execution picked : pickedExecutions) {
-            CompletableFuture
+            CompletableFuture<Void> future = CompletableFuture
                 .runAsync(executor::incrementInQueue, executor.getExecutorService())
                 .thenComposeAsync((_ignored) -> {
                     // Experimental support for async execution. Peek at Task to see if support async
@@ -118,6 +118,8 @@ public class LockAndFetchCandidates implements PollStrategy {
                         triggerCheckForNewExecutions.run();
                     }
                 });
+
+            executor.addOngoingWork(future);
         }
         statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }
