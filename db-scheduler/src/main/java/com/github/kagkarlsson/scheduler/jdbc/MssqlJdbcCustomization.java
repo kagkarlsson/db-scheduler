@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
 
-public class MssqlJdbcCustomization implements JdbcCustomization {
+public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
 
     @Override
     public String getName() {
@@ -39,28 +39,4 @@ public class MssqlJdbcCustomization implements JdbcCustomization {
         p.setTimestamp(index, value != null ? Timestamp.from(value) : null, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
     }
 
-    @Override
-    public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-        return Optional.ofNullable(rs.getTimestamp(columnName)).map(Timestamp::toInstant).orElse(null);
-    }
-
-    @Override
-    public boolean supportsExplicitQueryLimitPart() {
-        return false;
-    }
-
-    @Override
-    public String getQueryLimitPart(int limit) {
-        return "";
-    }
-
-    @Override
-    public boolean supportsLockAndFetch() {
-        return false;
-    }
-
-    @Override
-    public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
-        throw new UnsupportedOperationException("lockAndFetch not supported for " + this.getClass().getName());
-    }
 }

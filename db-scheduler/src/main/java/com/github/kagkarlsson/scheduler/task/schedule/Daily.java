@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 
 public class Daily implements Schedule, Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private final List<LocalTime> times;
     private final ZoneId zone;
 

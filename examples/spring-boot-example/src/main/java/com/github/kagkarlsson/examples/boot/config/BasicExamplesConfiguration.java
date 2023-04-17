@@ -15,8 +15,6 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
-import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDelay;
-
 import com.github.kagkarlsson.examples.boot.CounterService;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -30,6 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDelay;
 
 @Configuration
 public class BasicExamplesConfiguration {

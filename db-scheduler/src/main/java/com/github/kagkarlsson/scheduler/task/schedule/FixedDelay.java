@@ -24,6 +24,8 @@ import java.util.Objects;
 
 public class FixedDelay implements Schedule, Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     private final Duration duration;
 
     private FixedDelay() { // For serializers

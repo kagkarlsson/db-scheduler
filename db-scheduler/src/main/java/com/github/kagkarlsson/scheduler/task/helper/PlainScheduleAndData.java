@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class PlainScheduleAndData implements ScheduleAndData, Serializable {
+    private static final long serialVersionUID = 1L;
     private final Schedule schedule;
     private final Object data;
 
