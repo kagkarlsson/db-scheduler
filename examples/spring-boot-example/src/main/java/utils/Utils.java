@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task.helper;
+package utils;
 
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import java.util.Random;
 
-import java.io.Serializable;
-import java.util.Objects;
+public class Utils {
 
-public interface ScheduleAndData extends Serializable {
-    Schedule getSchedule();
-    Object getData();
-
-    static PlainScheduleAndData of(Schedule schedule, Object data) {
-        return new PlainScheduleAndData(schedule, data);
+    public static void sleep(int millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

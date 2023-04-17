@@ -15,27 +15,32 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import java.time.Instant;
+/**
+ * Experimental
+ */
+public class TaskWithoutDataDescriptor implements TaskDescriptor<Void> {
 
-public interface Task<T> extends ExecutionHandler<T>, HasTaskName {
-    String getName();
+    private final String taskName;
 
-    Class<T> getDataClass();
+    public TaskWithoutDataDescriptor(String taskName) {
+        this.taskName = taskName;
+    }
 
-    TaskInstance<T> instance(String id);
-    TaskInstance<T> instance(String id, T data);
-
-    default TaskInstanceId instanceId(String id) {  return TaskInstanceId.of(getName(), id); };
-
-    SchedulableInstance<T> schedulableInstance(String id);
-    SchedulableInstance<T> schedulableInstance(String id, T data);
-
-    FailureHandler<T> getFailureHandler();
-
-    DeadExecutionHandler<T> getDeadExecutionHandler();
+    public TaskInstance<Void> instance(String id) {
+        return new TaskInstance<>(taskName, id);
+    }
 
     @Override
-    default String getTaskName() {
-        return getName();
+    public String getTaskName() {
+        return taskName;
+    }
+
+    @Override
+    public Class<Void> getDataClass() {
+        return Void.class;
+    }
+
+    public TaskInstanceId instanceId(String id) {
+        return TaskInstanceId.of(taskName, id);
     }
 }

@@ -15,13 +15,20 @@
  */
 package com.github.kagkarlsson.scheduler.serializer;
 
-import com.github.kagkarlsson.scheduler.serializer.gson.InstantAdapter;
+import com.github.kagkarlsson.scheduler.serializer.gson.*;
+import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
+import com.github.kagkarlsson.scheduler.task.schedule.Daily;
+import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.function.Consumer;
 
 public class GsonSerializer implements Serializer {
@@ -29,9 +36,19 @@ public class GsonSerializer implements Serializer {
     private final Gson gson;
 
     public static GsonBuilder getDefaultGson() {
+        RuntimeTypeAdapterFactory<Schedule> runtimeTypeAdapterFactory = RuntimeTypeAdapterFactory
+            .of(Schedule.class, "type")
+            .registerSubtype(CronSchedule.class, "cron")
+            .registerSubtype(FixedDelay.class, "fixedDelay")
+            .registerSubtype(Daily.class, "daily");
+
         return new GsonBuilder()
             .serializeNulls()
-            .registerTypeAdapter(Instant.class, new InstantAdapter());
+            .registerTypeAdapter(Instant.class, new InstantAdapter())
+            .registerTypeAdapter(Duration.class, new DurationAdapter())
+            .registerTypeAdapter(LocalTime.class, new LocalTimeAdapter())
+            .registerTypeHierarchyAdapter(ZoneId.class, new ZoneIdAdapter())
+            .registerTypeAdapterFactory(runtimeTypeAdapterFactory);
     }
 
     public GsonSerializer() {

@@ -25,6 +25,11 @@ public class PlainScheduleAndData implements ScheduleAndData, Serializable {
     private final Schedule schedule;
     private final Object data;
 
+    private PlainScheduleAndData() { // For serializers
+        schedule = null;
+        data = null;
+    }
+
     public PlainScheduleAndData(Schedule schedule) {
         this.schedule = schedule;
         this.data = null;
@@ -61,7 +66,7 @@ public class PlainScheduleAndData implements ScheduleAndData, Serializable {
 
     @Override
     public String toString() {
-        return this.getClass().getName() + "{" +
+        return this.getClass().getSimpleName() + "{" +
             "schedule=" + schedule +
             ", data=" + data +
             '}';

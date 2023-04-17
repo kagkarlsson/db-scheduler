@@ -19,19 +19,17 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
-import com.github.kagkarlsson.scheduler.serializer.gson.InstantAdapter;
+import com.github.kagkarlsson.scheduler.serializer.jackson.ScheduleMixin;
 import com.github.kagkarlsson.scheduler.serializer.jackson.InstantDeserializer;
 import com.github.kagkarlsson.scheduler.serializer.jackson.InstantSerializer;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
 import java.io.IOException;
-import java.sql.Time;
 import java.time.Instant;
 import java.util.function.Consumer;
 
@@ -46,7 +44,9 @@ public class JacksonSerializer implements Serializer {
         return new ObjectMapper()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
-            .registerModule(module);
+            .addMixIn(Schedule.class, ScheduleMixin.class)
+            .registerModule(module)
+            .registerModule(new JavaTimeModule());
     }
 
     public JacksonSerializer() {

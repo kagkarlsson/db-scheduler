@@ -13,18 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task.helper;
+package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+public interface HasTaskName {
+    String getTaskName();
 
-import java.io.Serializable;
-import java.util.Objects;
+    static HasTaskName of(String name) {
+        return new SimpleTaskName(name);
+    }
 
-public interface ScheduleAndData extends Serializable {
-    Schedule getSchedule();
-    Object getData();
+    class SimpleTaskName implements HasTaskName {
+        private String name;
 
-    static PlainScheduleAndData of(Schedule schedule, Object data) {
-        return new PlainScheduleAndData(schedule, data);
+        public SimpleTaskName(String name) {
+
+            this.name = name;
+        }
+
+        @Override
+        public String getTaskName() {
+            return name;
+        }
     }
 }

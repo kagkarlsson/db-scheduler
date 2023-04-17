@@ -165,6 +165,7 @@
 							<exclude>**/*.sql</exclude>
 							<exclude>.github/**</exclude>
 							<exclude>test/**</exclude>
+							<exclude>**/RuntimeTypeAdapterFactory.java</exclude>
 						</excludes>
 						<failIfMissing>${failOnMissingHeader}</failIfMissing>
 					</configuration>

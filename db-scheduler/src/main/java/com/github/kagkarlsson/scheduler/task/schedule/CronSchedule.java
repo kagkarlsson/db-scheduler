@@ -46,6 +46,10 @@ public class CronSchedule implements Schedule, Serializable {
     private final ZoneId zoneId;
     private transient ExecutionTime cronExecutionTime; // lazily initialized
 
+    private CronSchedule() { // For serializers
+        pattern = null;
+        zoneId = ZoneId.systemDefault();
+    }
     public CronSchedule(String pattern) {
         this(pattern, ZoneId.systemDefault());
     }

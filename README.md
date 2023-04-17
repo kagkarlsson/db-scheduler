@@ -44,7 +44,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>11.6</version>
+    <version>11.7</version>
 </dependency>
 ```
 
@@ -146,6 +146,8 @@ scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.
 
 ### More examples
 
+#### Plain Java
+
 * [EnableImmediateExecutionMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/EnableImmediateExecutionMain.java)
 * [MaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/MaxRetriesMain.java)
 * [ExponentialBackoffMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/ExponentialBackoffMain.java)
@@ -158,6 +160,21 @@ scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.
 * [JsonSerializerMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JsonSerializerMain.java)
 * [JobChainingUsingTaskDataMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingTaskDataMain.java)
 * [JobChainingUsingSeparateTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingSeparateTasksMain.java)
+
+#### Spring Boot
+
+
+
+| Example                                                                                                                                                         | Description                                                                                                                                                                                                                                |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [BasicExamples](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/BasicExamplesConfiguration.java)                       | A basic one-time task and recurring task                                                                                                                                                                                                   |
+| [TransactionallyStagedJob](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/TransactionallyStagedJobConfiguration.java) | Example of [transactionally staging a job](https://brandur.org/job-drain), i.e. making sure the background job runs **iff** the transaction commits (along with other db-modifications).                                                   |
+| [LongRunningJob](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/LongRunningJobConfiguration.java)                     | Long-running jobs need to **survive application restarts** and avoid restarting from the beginning. This example demonstrates how to **persisting progress** on shutdown and additionally  a technique for limiting the job to run nightly. |
+| [RecurringStateTracking](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/RecurringStateTrackingConfiguration.java)     | A recurring task with state that can be modified after each run.                                                                                                                                                                           |
+| [ParallellJobSpawner](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/ParallellJobConfiguration.java)                  | Demonstrates how to use a recurring job to spawn one-time jobs, e.g. for parallelization.                                                                                                                                                  |
+| [JobChaining](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/JobChainingConfiguration.java)                           | A one-time job with **multiple steps**. The next step is scheduled after the previous one completes.                                                                                                                                       |
+| [MultiInstanceRecurring](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/MultiInstanceRecurringConfiguration.java)     | Demonstrates how to achieve **multiple recurring jobs** of the same type, but potentially differing schedules and data.                                                                                                                    |
+
 
 
 ## Configuration
@@ -338,7 +355,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>11.6</version>
+        <version>11.7</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.

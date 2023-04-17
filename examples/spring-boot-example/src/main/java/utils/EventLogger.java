@@ -13,18 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.task.helper;
+package utils;
 
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import com.github.kagkarlsson.scheduler.task.HasTaskName;
+import com.github.kagkarlsson.scheduler.task.HasTaskName.SimpleTaskName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
-import java.util.Objects;
+public class EventLogger {
 
-public interface ScheduleAndData extends Serializable {
-    Schedule getSchedule();
-    Object getData();
+    public static final Logger EVENT_LOG = LoggerFactory.getLogger("SchedulerEvents");
 
-    static PlainScheduleAndData of(Schedule schedule, Object data) {
-        return new PlainScheduleAndData(schedule, data);
+    public static void logTask(String taskName, String message) {
+        logTask(new SimpleTaskName(taskName), message);
+    }
+    public static void logTask(HasTaskName taskName, String message) {
+        EVENT_LOG.info(taskName.getTaskName() + ": " + message);
     }
 }
