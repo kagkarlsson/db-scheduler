@@ -43,13 +43,8 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
             LOG.info("Detected database {}.", databaseProductName);
 
             if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
-                if (c.getMetaData().getDriverName().contains("jTDS")) {
-                    LOG.info("Using MSSQL jTDS jdbc-overrides.");
-                    detectedCustomization = new MssqlJtdsJdbcCustomization();
-                } else {
-                    LOG.info("Using MSSQL jdbc-overrides.");
-                    detectedCustomization = new MssqlJdbcCustomization();
-                }
+                LOG.info("Using MSSQL jdbc-overrides.");
+                detectedCustomization = new MssqlJdbcCustomization();
             } else if (databaseProductName.equals(POSTGRESQL)) {
                 LOG.info("Using PostgreSQL jdbc-overrides.");
                 detectedCustomization = new PostgreSqlJdbcCustomization();
