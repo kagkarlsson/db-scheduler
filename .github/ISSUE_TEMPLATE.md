@@ -1,3 +1,5 @@
+<!-- For questions, let's try Discussions (https://github.com/kagkarlsson/db-scheduler/discussions) instead -->
+
 # Prerequisites
 
 Please answer the following questions for yourself before submitting an issue. **YOU MAY DELETE THE PREREQUISITES SECTION.**
