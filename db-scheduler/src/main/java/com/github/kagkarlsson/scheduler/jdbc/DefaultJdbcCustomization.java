@@ -68,6 +68,11 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
 
     @Override
+    public boolean supportsLockAndFetchGeneric() {
+        return false;
+    }
+
+    @Override
     public String getName() {
         return "Default";
     }

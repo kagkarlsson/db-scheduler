@@ -5,6 +5,7 @@ import com.github.kagkarlsson.jdbc.Mappers;
 import com.opentable.db.postgres.embedded.EmbeddedPostgres;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import net.ttddyy.dsproxy.support.ProxyDataSourceBuilder;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -16,6 +17,7 @@ import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
 
 public class EmbeddedPostgresqlExtension implements AfterEachCallback {
 
+    private static final boolean ENABLE_DATASOURCE_LOGGING = false;
     private static EmbeddedPostgres embeddedPostgresql;
     private static DataSource dataSource;
     private final Consumer<DataSource> initializeSchema;
@@ -37,6 +39,12 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
 
                     HikariConfig config = new HikariConfig();
                     nonPooledDatasource = embeddedPostgresql.getDatabase("test", "test");
+                    if (ENABLE_DATASOURCE_LOGGING) {
+                        nonPooledDatasource =
+                            ProxyDataSourceBuilder.create(nonPooledDatasource)  // pass original datasource
+                                .logQueryBySlf4j()
+                                .build();
+                    }
                     config.setDataSource(nonPooledDatasource);
 
                     dataSource = new HikariDataSource(config);

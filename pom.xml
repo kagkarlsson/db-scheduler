@@ -189,6 +189,7 @@
 						<artifactSet>
 							<includes>
 								<include>com.cronutils:*</include>
+								<include>com.github.kagkarlsson:micro-jdbc:*</include>
 							</includes>
 						</artifactSet>
 						<filters>
@@ -201,6 +202,10 @@
 							</filter>
 						</filters>
 						<relocations>
+							<relocation>
+								<pattern>com.github.kagkarlsson.jdbc</pattern>
+								<shadedPattern>com.github.kagkarlsson.shaded.jdbc</shadedPattern>
+							</relocation>
 							<relocation>
 								<pattern>com.cronutils</pattern>
 								<shadedPattern>com.github.kagkarlsson.shaded.cronutils</shadedPattern>

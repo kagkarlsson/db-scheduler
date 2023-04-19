@@ -36,7 +36,9 @@ public interface JdbcCustomization {
     boolean supportsExplicitQueryLimitPart();
     String getQueryLimitPart(int limit);
 
+    // TODO: rename to postgres-specific, or "all-in-one"
     boolean supportsLockAndFetch();
     List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit);
 
+    boolean supportsLockAndFetchGeneric();
 }

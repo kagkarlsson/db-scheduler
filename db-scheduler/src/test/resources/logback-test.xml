@@ -7,7 +7,7 @@
     </appender>
 
     <logger level="INFO" name="com.github.kagkarlsson"/>
-
+    <logger level="DEBUG" name="net.ttddyy.dsproxy"/>
     <root level="WARN">
         <appender-ref ref="STDOUT"/>
     </root>

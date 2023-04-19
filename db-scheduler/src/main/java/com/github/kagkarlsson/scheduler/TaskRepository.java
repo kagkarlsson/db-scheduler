@@ -52,5 +52,5 @@ public interface TaskRepository {
 
     int removeExecutions(String taskName);
 
-    void checkSupportsLockAndFetch();
+    void verifySupportsLockAndFetch();
 }

@@ -98,6 +98,11 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     }
 
     @Override
+    public boolean supportsLockAndFetchGeneric() {
+        return jdbcCustomization.supportsLockAndFetchGeneric();
+    }
+
+    @Override
     public String getName() {
         return jdbcCustomization.getName();
     }

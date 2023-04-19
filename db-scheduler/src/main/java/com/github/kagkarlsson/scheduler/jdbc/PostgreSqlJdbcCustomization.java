@@ -23,6 +23,15 @@ import java.util.List;
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
 
 public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
+    private final boolean useGenericLockAndFetch;
+
+    public PostgreSqlJdbcCustomization() {
+        this(false);
+    }
+
+    public PostgreSqlJdbcCustomization(boolean useGenericLockAndFetch) {
+        this.useGenericLockAndFetch = useGenericLockAndFetch;
+    }
 
     @Override
     public String getName() {
@@ -41,7 +50,12 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
 
     @Override
     public boolean supportsLockAndFetch() {
-        return true;
+        return !useGenericLockAndFetch;
+    }
+
+    @Override
+    public boolean supportsLockAndFetchGeneric() {
+        return useGenericLockAndFetch;
     }
 
     @Override

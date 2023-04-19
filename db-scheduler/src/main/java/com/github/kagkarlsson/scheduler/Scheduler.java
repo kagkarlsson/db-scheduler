@@ -87,7 +87,7 @@ public class Scheduler implements SchedulerClient {
         this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 
         if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
-            schedulerTaskRepository.checkSupportsLockAndFetch();
+            schedulerTaskRepository.verifySupportsLockAndFetch();
             executeDueStrategy = new LockAndFetchCandidates(executor, schedulerTaskRepository, this, earlyExecutionListener, threadpoolSize, statsRegistry, schedulerState, failureLogger, taskResolver, clock, pollingStrategyConfig, this::triggerCheckForDueExecutions);
         } else if (pollingStrategyConfig.type == PollingStrategyConfig.Type.FETCH) {
             executeDueStrategy = new FetchCandidates(executor, schedulerTaskRepository, this, earlyExecutionListener, threadpoolSize, statsRegistry, schedulerState, failureLogger, taskResolver, clock, pollingStrategyConfig, this::triggerCheckForDueExecutions);

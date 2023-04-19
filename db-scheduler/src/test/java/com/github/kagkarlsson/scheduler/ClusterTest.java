@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import ch.qos.logback.classic.Level;
 import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension;
 import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension.LogLevelOverride;
+import com.github.kagkarlsson.scheduler.jdbc.PostgreSqlJdbcCustomization;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
@@ -66,7 +67,20 @@ public class ClusterTest {
     public void test_concurrency_select_for_update() throws InterruptedException {
         DEBUG_LOG.info("Starting test_concurrency_select_for_update");
         testConcurrencyForPollingStrategy(
-            (SchedulerBuilder b) -> b.pollUsingLockAndFetch(((double)NUMBER_OF_THREADS)/2, NUMBER_OF_THREADS));
+            (SchedulerBuilder b) -> {
+                b.pollUsingLockAndFetch(((double) NUMBER_OF_THREADS) / 2, NUMBER_OF_THREADS);
+                b.jdbcCustomization(new PostgreSqlJdbcCustomization(false));
+            });
+    }
+
+    @Test
+    public void test_concurrency_select_for_update_generic() throws InterruptedException {
+        DEBUG_LOG.info("Starting test_concurrency_select_for_update");
+        testConcurrencyForPollingStrategy(
+            (SchedulerBuilder b) -> {
+                b.pollUsingLockAndFetch(((double) NUMBER_OF_THREADS) / 2, NUMBER_OF_THREADS);
+                b.jdbcCustomization(new PostgreSqlJdbcCustomization(true));
+            });
     }
 
     private void testConcurrencyForPollingStrategy(Consumer<SchedulerBuilder> schedulerCustomization) throws InterruptedException {

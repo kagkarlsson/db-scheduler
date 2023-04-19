@@ -39,4 +39,8 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
         p.setTimestamp(index, value != null ? Timestamp.from(value) : null, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
     }
 
+    @Override
+    public boolean supportsLockAndFetchGeneric() {
+        return true;
+    }
 }
