@@ -15,17 +15,13 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.serializer.JacksonSerializer;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import java.util.Optional;
 
 @Configuration
 public class SchedulerConfiguration {
@@ -47,5 +43,4 @@ public class SchedulerConfiguration {
             }
         };
     }
-
 }

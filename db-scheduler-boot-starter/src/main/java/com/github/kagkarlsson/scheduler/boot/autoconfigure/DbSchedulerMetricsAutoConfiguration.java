@@ -57,8 +57,9 @@ public class DbSchedulerMetricsAutoConfiguration {
     @ConditionalOnMissingBean(StatsRegistry.class)
     @Bean
     StatsRegistry micrometerStatsRegistry(MeterRegistry registry) {
-        log.debug("Spring Boot Actuator and Micrometer detected. Will use: {} for StatsRegistry", registry.getClass().getName());
+        log.debug(
+                "Spring Boot Actuator and Micrometer detected. Will use: {} for StatsRegistry",
+                registry.getClass().getName());
         return new MicrometerStatsRegistry(registry, configuredTasks);
     }
 }
-

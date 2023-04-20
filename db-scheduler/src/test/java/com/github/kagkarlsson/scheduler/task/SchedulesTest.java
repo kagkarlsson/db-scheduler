@@ -1,26 +1,35 @@
 package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.task.schedule.Daily;
-import com.github.kagkarlsson.scheduler.task.schedule.DisabledSchedule;
-import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
-import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.github.kagkarlsson.scheduler.task.schedule.Daily;
+import com.github.kagkarlsson.scheduler.task.schedule.DisabledSchedule;
+import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import org.hamcrest.CoreMatchers;
+import org.junit.jupiter.api.Test;
+
 public class SchedulesTest {
-    private static final Instant NOON_TODAY = ZonedDateTime.now().withHour(12).withMinute(0).withSecond(0).withNano(0).toInstant();
-    private static final Instant NOON_TODAY_ROME = ZonedDateTime.now(ZoneId.of("Europe/Rome")).withHour(12).withMinute(0).withSecond(0).withNano(0).toInstant();
+    private static final Instant NOON_TODAY = ZonedDateTime.now()
+            .withHour(12)
+            .withMinute(0)
+            .withSecond(0)
+            .withNano(0)
+            .toInstant();
+    private static final Instant NOON_TODAY_ROME = ZonedDateTime.now(ZoneId.of("Europe/Rome"))
+            .withHour(12)
+            .withMinute(0)
+            .withSecond(0)
+            .withNano(0)
+            .toInstant();
 
     @Test
     public void should_validate_pattern() {
@@ -47,7 +56,9 @@ public class SchedulesTest {
 
         assertParsable("DAILY|12:00|Europe/Rome", Daily.class);
         Schedule dailyScheduleWithTimezone = assertParsable("DAILY|10:00,14:00|Europe/Rome", Daily.class);
-        assertThat(dailyScheduleWithTimezone.getNextExecutionTime(complete(NOON_TODAY_ROME)), is(NOON_TODAY_ROME.plus(Duration.ofHours(2))));
+        assertThat(
+                dailyScheduleWithTimezone.getNextExecutionTime(complete(NOON_TODAY_ROME)),
+                is(NOON_TODAY_ROME.plus(Duration.ofHours(2))));
 
         Schedule fixedDelaySchedule = assertParsable("FIXED_DELAY|10s", FixedDelay.class);
         assertThat(fixedDelaySchedule.getNextExecutionTime(complete(NOON_TODAY)), is(NOON_TODAY.plusSeconds(10)));

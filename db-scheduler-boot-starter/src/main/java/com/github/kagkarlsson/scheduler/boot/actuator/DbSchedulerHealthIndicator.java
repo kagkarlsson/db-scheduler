@@ -31,17 +31,11 @@ public class DbSchedulerHealthIndicator implements HealthIndicator {
     @Override
     public Health health() {
         if (state.isStarted() && !state.isShuttingDown()) {
-            return Health.up()
-                .withDetail("state", "started")
-                .build();
+            return Health.up().withDetail("state", "started").build();
         } else if (state.isStarted() && state.isShuttingDown()) {
-            return Health.outOfService()
-                .withDetail("state", "shutting_down")
-                .build();
+            return Health.outOfService().withDetail("state", "shutting_down").build();
         } else if (!state.isStarted() && !state.isShuttingDown()) {
-            return Health.down()
-                .withDetail("state", "not_started")
-                .build();
+            return Health.down().withDetail("state", "not_started").build();
         } else {
             return Health.down().build();
         }

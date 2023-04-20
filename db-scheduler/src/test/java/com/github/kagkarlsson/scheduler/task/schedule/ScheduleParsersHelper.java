@@ -1,11 +1,5 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
-import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Supplier;
-
 import static java.time.LocalTime.MIDNIGHT;
 import static java.time.LocalTime.NOON;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -14,10 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import java.time.Duration;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 class ScheduleParsersHelper {
-    private ScheduleParsersHelper() {
-    }
+    private ScheduleParsersHelper() {}
 
     static final String ANY_SCHEDULE_STRING = "ANY STRING";
     static final Schedule FIXED_DELAY = FixedDelay.of(Duration.ZERO);

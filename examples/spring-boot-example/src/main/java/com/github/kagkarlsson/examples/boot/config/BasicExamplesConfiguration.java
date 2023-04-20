@@ -15,6 +15,8 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
+import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDelay;
+
 import com.github.kagkarlsson.examples.boot.CounterService;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -22,34 +24,29 @@ import com.github.kagkarlsson.scheduler.task.TaskWithoutDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
 import java.time.Instant;
-
-import utils.EventLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDelay;
+import utils.EventLogger;
 
 @Configuration
 public class BasicExamplesConfiguration {
 
-    public static final TaskWithoutDataDescriptor BASIC_ONE_TIME_TASK = new TaskWithoutDataDescriptor("sample-one-time-task");
-    public static final TaskWithoutDataDescriptor BASIC_RECURRING_TASK = new TaskWithoutDataDescriptor("recurring-sample-task");
+    public static final TaskWithoutDataDescriptor BASIC_ONE_TIME_TASK =
+            new TaskWithoutDataDescriptor("sample-one-time-task");
+    public static final TaskWithoutDataDescriptor BASIC_RECURRING_TASK =
+            new TaskWithoutDataDescriptor("recurring-sample-task");
     private static final Logger log = LoggerFactory.getLogger(BasicExamplesConfiguration.class);
     private static int ID = 1;
 
-
     /** Start the example */
     public static void triggerOneTime(ExampleContext ctx) {
-        ctx.log("Scheduling a basic one-time task to run 'Instant.now()+seconds'. If seconds=0, the scheduler will pick " +
-            "these up immediately since it is configured with 'immediate-execution-enabled=true'"
-        );
+        ctx.log(
+                "Scheduling a basic one-time task to run 'Instant.now()+seconds'. If seconds=0, the scheduler will pick "
+                        + "these up immediately since it is configured with 'immediate-execution-enabled=true'");
 
-        ctx.schedulerClient.schedule(
-            BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)),
-            Instant.now()
-        );
+        ctx.schedulerClient.schedule(BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)), Instant.now());
     }
 
     /**
@@ -58,13 +55,12 @@ public class BasicExamplesConfiguration {
      */
     @Bean
     Task<Void> recurringSampleTask(CounterService counter) {
-        return Tasks
-            .recurring(BASIC_RECURRING_TASK, fixedDelay(Duration.ofMinutes(1)))
-            .execute((instance, ctx) -> {
-                log.info("Running recurring-simple-task. Instance: {}, ctx: {}", instance, ctx);
-                counter.increase();
-                EventLogger.logTask(BASIC_RECURRING_TASK, "Ran. Run-counter current-value="+counter.read());
-            });
+        return Tasks.recurring(BASIC_RECURRING_TASK, fixedDelay(Duration.ofMinutes(1)))
+                .execute((instance, ctx) -> {
+                    log.info("Running recurring-simple-task. Instance: {}, ctx: {}", instance, ctx);
+                    counter.increase();
+                    EventLogger.logTask(BASIC_RECURRING_TASK, "Ran. Run-counter current-value=" + counter.read());
+                });
     }
 
     /**
@@ -72,10 +68,8 @@ public class BasicExamplesConfiguration {
      */
     @Bean
     Task<Void> sampleOneTimeTask() {
-        return Tasks.oneTime(BASIC_ONE_TIME_TASK)
-            .execute((instance, ctx) -> {
-                log.info("I am a one-time task!");
-            });
+        return Tasks.oneTime(BASIC_ONE_TIME_TASK).execute((instance, ctx) -> {
+            log.info("I am a one-time task!");
+        });
     }
-
 }

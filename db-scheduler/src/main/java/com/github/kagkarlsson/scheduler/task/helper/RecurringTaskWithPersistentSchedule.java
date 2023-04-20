@@ -1,13 +1,13 @@
 /**
  * Copyright (C) Gustav Karlsson
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * <p>Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * <p>Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -25,33 +25,29 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 public abstract class RecurringTaskWithPersistentSchedule<T extends ScheduleAndData> extends AbstractTask<T> {
 
     public RecurringTaskWithPersistentSchedule(String name, Class<T> dataClass) {
-        this(
-            name,
-            dataClass,
-            new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>());
+        this(name, dataClass, new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>());
     }
 
     public RecurringTaskWithPersistentSchedule(String name, Class<T> dataClass, FailureHandler<T> onFailure) {
-        super(
-            name,
-            dataClass,
-            onFailure,
-            new DeadExecutionHandler.ReviveDeadExecution<>());
+        super(name, dataClass, onFailure, new DeadExecutionHandler.ReviveDeadExecution<>());
     }
 
     @Override
     public TaskInstance<T> instance(String id) {
-        throw new UnsupportedOperationException("Cannot instatiate a RecurringTaskWithPersistentSchedule without 'data' since that holds the schedule.");
+        throw new UnsupportedOperationException(
+                "Cannot instatiate a RecurringTaskWithPersistentSchedule without 'data' since that holds the schedule.");
     }
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id) {
-        throw new UnsupportedOperationException("Cannot instatiate a RecurringTaskWithPersistentSchedule without 'data' since that holds the schedule.");
+        throw new UnsupportedOperationException(
+                "Cannot instatiate a RecurringTaskWithPersistentSchedule without 'data' since that holds the schedule.");
     }
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id, T data) {
-        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), data.getSchedule()::getInitialExecutionTime);
+        return new SchedulableTaskInstance<>(
+                new TaskInstance<>(getName(), id, data), data.getSchedule()::getInitialExecutionTime);
     }
 
     @Override

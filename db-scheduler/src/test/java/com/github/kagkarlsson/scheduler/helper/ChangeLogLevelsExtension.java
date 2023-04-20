@@ -2,18 +2,17 @@ package com.github.kagkarlsson.scheduler.helper;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.LoggerFactory;
 
-import java.util.stream.Stream;
-
 public class ChangeLogLevelsExtension implements BeforeEachCallback, AfterEachCallback {
 
     private final LogLevelOverride[] overrides;
 
-    public ChangeLogLevelsExtension(LogLevelOverride ... overrides) {
+    public ChangeLogLevelsExtension(LogLevelOverride... overrides) {
         this.overrides = overrides;
     }
 

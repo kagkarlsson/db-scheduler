@@ -15,16 +15,15 @@
  */
 package com.github.kagkarlsson.scheduler.boot.config;
 
-import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import static java.time.temporal.ChronoUnit.*;
+
 import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
-import java.time.Duration;
-
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
-
-import static java.time.temporal.ChronoUnit.*;
 
 @ConfigurationProperties("db-scheduler")
 public class DbSchedulerProperties {
@@ -81,12 +80,14 @@ public class DbSchedulerProperties {
     /**
      * <p> The limit at which more executions are fetched from the database after fetching a full batch.</p>
      */
-    private double pollingStrategyLowerLimitFractionOfThreads = SchedulerBuilder.DEFAULT_POLLING_STRATEGY.lowerLimitFractionOfThreads;
+    private double pollingStrategyLowerLimitFractionOfThreads =
+            SchedulerBuilder.DEFAULT_POLLING_STRATEGY.lowerLimitFractionOfThreads;
     /**
      * <p> For Type=FETCH, the number of due executions fetched from the database in each batch.</p>
      * <p> For Type=LOCK_AND_FETCH, the maximum number of executions to pick and queue for execution.</p>
      */
-    private double pollingStrategyUpperLimitFractionOfThreads = SchedulerBuilder.DEFAULT_POLLING_STRATEGY.upperLimitFractionOfThreads;
+    private double pollingStrategyUpperLimitFractionOfThreads =
+            SchedulerBuilder.DEFAULT_POLLING_STRATEGY.upperLimitFractionOfThreads;
 
     /**
      * <p>Whether to start the scheduler when the application context has been loaded or as soon as
@@ -99,7 +100,6 @@ public class DbSchedulerProperties {
      */
     @DurationUnit(HOURS)
     private Duration deleteUnresolvedAfter = SchedulerBuilder.DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
-
 
     /**
      * How long the scheduler will wait before interrupting executor-service threads.

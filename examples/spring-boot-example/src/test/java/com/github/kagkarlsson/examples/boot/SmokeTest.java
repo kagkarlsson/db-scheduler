@@ -9,8 +9,6 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
-import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,14 +29,19 @@ public class SmokeTest {
     private static final Logger LOG = LoggerFactory.getLogger(SmokeTest.class);
 
     AssertableWebApplicationContext ctx;
+
     @Autowired
     ConfigurableWebApplicationContext applicationContext;
+
     @Autowired
     DbSchedulerHealthIndicator healthIndicator;
+
     @Autowired
     Task<Void> sampleOneTimeTask;
+
     @Autowired
     Scheduler scheduler;
+
     @Autowired
     TransactionTemplate tt;
 

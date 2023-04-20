@@ -1,17 +1,16 @@
 package com.github.kagkarlsson.scheduler;
 
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
-
 import java.time.Duration;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class StopSchedulerExtension implements AfterEachCallback {
 
     private Duration waitBeforeInterrupt = Duration.ZERO;
-    private Scheduler[] scheduler = new Scheduler[]{};
+    private Scheduler[] scheduler = new Scheduler[] {};
 
-    public void register(Scheduler ... scheduler) {
+    public void register(Scheduler... scheduler) {
         this.scheduler = scheduler;
     }
 

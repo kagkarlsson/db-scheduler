@@ -18,7 +18,6 @@ package com.github.kagkarlsson.scheduler.boot.config;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 

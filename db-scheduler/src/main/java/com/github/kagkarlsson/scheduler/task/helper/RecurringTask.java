@@ -1,13 +1,13 @@
 /**
  * Copyright (C) Gustav Karlsson
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * <p>Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * <p>Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -22,9 +22,6 @@ import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteResched
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 
-import java.time.Instant;
-import java.util.Optional;
-
 public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStartup {
 
     public static final String INSTANCE = "recurring";
@@ -33,18 +30,42 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
     private final ScheduleOnStartup<T> scheduleOnStartup;
 
     public RecurringTask(String name, Schedule schedule, Class<T> dataClass) {
-        this(name, schedule, dataClass, new ScheduleRecurringOnStartup<>(INSTANCE, null, schedule), new FailureHandler.OnFailureReschedule<T>(schedule), new ReviveDeadExecution<>());
+        this(
+                name,
+                schedule,
+                dataClass,
+                new ScheduleRecurringOnStartup<>(INSTANCE, null, schedule),
+                new FailureHandler.OnFailureReschedule<T>(schedule),
+                new ReviveDeadExecution<>());
     }
 
     public RecurringTask(String name, Schedule schedule, Class<T> dataClass, FailureHandler<T> failureHandler) {
-        this(name, schedule, dataClass, new ScheduleRecurringOnStartup<>(INSTANCE, null, schedule), failureHandler, new ReviveDeadExecution<>());
+        this(
+                name,
+                schedule,
+                dataClass,
+                new ScheduleRecurringOnStartup<>(INSTANCE, null, schedule),
+                failureHandler,
+                new ReviveDeadExecution<>());
     }
 
     public RecurringTask(String name, Schedule schedule, Class<T> dataClass, T initialData) {
-        this(name, schedule, dataClass, new ScheduleRecurringOnStartup<>(INSTANCE, initialData, schedule), new FailureHandler.OnFailureReschedule<T>(schedule), new ReviveDeadExecution<>());
+        this(
+                name,
+                schedule,
+                dataClass,
+                new ScheduleRecurringOnStartup<>(INSTANCE, initialData, schedule),
+                new FailureHandler.OnFailureReschedule<T>(schedule),
+                new ReviveDeadExecution<>());
     }
 
-    public RecurringTask(String name, Schedule schedule, Class<T> dataClass, ScheduleRecurringOnStartup<T> scheduleOnStartup, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
+    public RecurringTask(
+            String name,
+            Schedule schedule,
+            Class<T> dataClass,
+            ScheduleRecurringOnStartup<T> scheduleOnStartup,
+            FailureHandler<T> failureHandler,
+            DeadExecutionHandler<T> deadExecutionHandler) {
         super(name, dataClass, failureHandler, deadExecutionHandler);
         onComplete = new OnCompleteReschedule<>(schedule);
         this.schedule = schedule;
@@ -58,7 +79,8 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id, T data) {
-        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), schedule::getInitialExecutionTime);
+        return new SchedulableTaskInstance<>(
+                new TaskInstance<>(getName(), id, data), schedule::getInitialExecutionTime);
     }
 
     @Override
@@ -84,5 +106,4 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
     public String toString() {
         return "RecurringTask name=" + getName() + ", onComplete=" + onComplete;
     }
-
 }

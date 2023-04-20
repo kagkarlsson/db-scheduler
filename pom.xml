@@ -291,6 +291,34 @@
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
 			</plugin>
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.36.0</version>
+				<configuration>
+					<java>
+						<includes>
+							<include>src/main/java/**/*.java</include> <!-- Check application code -->
+							<include>src/test/java/**/*.java</include> <!-- Check application tests code -->
+						</includes>
+<!--						<googleJavaFormat>-->
+<!--							<version>1.15.0</version>-->
+<!--							<style>GOOGLE</style>-->
+<!--						</googleJavaFormat>-->
+						                        <palantirJavaFormat/>
+						<importOrder />
+						<removeUnusedImports />
+						<toggleOffOn/>
+						<trimTrailingWhitespace/>
+						<endWithNewline/>
+						<!--                        <indent>-->
+						<!--                            <tabs>true</tabs>-->
+						<!--                            <spacesPerTab>4</spacesPerTab>-->
+						<!--                        </indent>-->
+					</java>
+				</configuration>
+			</plugin>
+
 		</plugins>
 
 	</build>

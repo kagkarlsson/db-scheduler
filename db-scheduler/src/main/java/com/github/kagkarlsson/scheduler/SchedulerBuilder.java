@@ -1,13 +1,13 @@
 /**
  * Copyright (C) Gustav Karlsson
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * <p>Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * <p>Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -45,10 +45,8 @@ public class SchedulerBuilder {
     public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMinutes(5);
     public static final Duration DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION = Duration.ofDays(14);
     public static final Duration SHUTDOWN_MAX_WAIT = Duration.ofMinutes(30);
-    public static final PollingStrategyConfig DEFAULT_POLLING_STRATEGY = new PollingStrategyConfig(
-        PollingStrategyConfig.Type.FETCH,
-        0.5,
-        UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH);
+    public static final PollingStrategyConfig DEFAULT_POLLING_STRATEGY =
+            new PollingStrategyConfig(PollingStrategyConfig.Type.FETCH, 0.5, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH);
     public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.WARN;
     public static final boolean LOG_STACK_TRACE_ON_FAILURE = true;
 
@@ -156,22 +154,22 @@ public class SchedulerBuilder {
         return this;
     }
 
-    public SchedulerBuilder pollUsingFetchAndLockOnExecute(double lowerLimitFractionOfThreads, double executionsPerBatchFractionOfThreads) {
+    public SchedulerBuilder pollUsingFetchAndLockOnExecute(
+            double lowerLimitFractionOfThreads, double executionsPerBatchFractionOfThreads) {
         this.pollingStrategyConfig = new PollingStrategyConfig(
-            PollingStrategyConfig.Type.FETCH,
-            lowerLimitFractionOfThreads, executionsPerBatchFractionOfThreads);
+                PollingStrategyConfig.Type.FETCH, lowerLimitFractionOfThreads, executionsPerBatchFractionOfThreads);
         return this;
     }
 
-    public SchedulerBuilder pollUsingLockAndFetch(double lowerLimitFractionOfThreads, double upperLimitFractionOfThreads) {
+    public SchedulerBuilder pollUsingLockAndFetch(
+            double lowerLimitFractionOfThreads, double upperLimitFractionOfThreads) {
         this.pollingStrategyConfig = new PollingStrategyConfig(
-            PollingStrategyConfig.Type.LOCK_AND_FETCH,
-            lowerLimitFractionOfThreads, upperLimitFractionOfThreads);
+                PollingStrategyConfig.Type.LOCK_AND_FETCH, lowerLimitFractionOfThreads, upperLimitFractionOfThreads);
         return this;
     }
 
     public SchedulerBuilder failureLogging(LogLevel logLevel, boolean logStackTrace) {
-        if(logLevel == null) {
+        if (logLevel == null) {
             throw new IllegalArgumentException("Log level must not be null");
         }
         this.logLevel = logLevel;
@@ -186,30 +184,57 @@ public class SchedulerBuilder {
 
     public Scheduler build() {
         if (schedulerName == null) {
-             schedulerName = new SchedulerName.Hostname();
+            schedulerName = new SchedulerName.Hostname();
         }
 
         final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
-        final JdbcCustomization jdbcCustomization = ofNullable(this.jdbcCustomization).orElseGet(() -> new AutodetectJdbcCustomization(dataSource));
-        final JdbcTaskRepository schedulerTaskRepository = new JdbcTaskRepository(dataSource, true, jdbcCustomization, tableName, taskResolver, schedulerName, serializer, clock);
-        final JdbcTaskRepository clientTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled, jdbcCustomization, tableName, taskResolver, schedulerName, serializer, clock);
+        final JdbcCustomization jdbcCustomization =
+                ofNullable(this.jdbcCustomization).orElseGet(() -> new AutodetectJdbcCustomization(dataSource));
+        final JdbcTaskRepository schedulerTaskRepository = new JdbcTaskRepository(
+                dataSource, true, jdbcCustomization, tableName, taskResolver, schedulerName, serializer, clock);
+        final JdbcTaskRepository clientTaskRepository = new JdbcTaskRepository(
+                dataSource,
+                commitWhenAutocommitDisabled,
+                jdbcCustomization,
+                tableName,
+                taskResolver,
+                schedulerName,
+                serializer,
+                clock);
 
         ExecutorService candidateExecutorService = executorService;
         if (candidateExecutorService == null) {
-            candidateExecutorService = Executors.newFixedThreadPool(executorThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
+            candidateExecutorService =
+                    Executors.newFixedThreadPool(executorThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
         }
 
-        LOG.info("Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s enable-immediate-execution={}, table-name={}, name={}",
-            executorThreads,
-            waiter.getWaitDuration().getSeconds(),
-            heartbeatInterval.getSeconds(),
-            enableImmediateExecution,
-            tableName,
-            schedulerName.getName());
+        LOG.info(
+                "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s enable-immediate-execution={}, table-name={}, name={}",
+                executorThreads,
+                waiter.getWaitDuration().getSeconds(),
+                heartbeatInterval.getSeconds(),
+                enableImmediateExecution,
+                tableName,
+                schedulerName.getName());
 
-        final Scheduler scheduler = new Scheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads, candidateExecutorService,
-            schedulerName, waiter, heartbeatInterval, enableImmediateExecution, statsRegistry, pollingStrategyConfig,
-            deleteUnresolvedAfter, shutdownMaxWait, logLevel, logStackTrace, startTasks);
+        final Scheduler scheduler = new Scheduler(
+                clock,
+                schedulerTaskRepository,
+                clientTaskRepository,
+                taskResolver,
+                executorThreads,
+                candidateExecutorService,
+                schedulerName,
+                waiter,
+                heartbeatInterval,
+                enableImmediateExecution,
+                statsRegistry,
+                pollingStrategyConfig,
+                deleteUnresolvedAfter,
+                shutdownMaxWait,
+                logLevel,
+                logStackTrace,
+                startTasks);
 
         if (registerShutdownHook) {
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {

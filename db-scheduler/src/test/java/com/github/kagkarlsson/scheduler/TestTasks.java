@@ -49,7 +49,8 @@ public class TestTasks {
         };
     }
 
-    public static <T> RecurringTask<T> recurringWithData(String name, Class<T> dataClass, T initialData, FixedDelay schedule, VoidExecutionHandler<T> handler) {
+    public static <T> RecurringTask<T> recurringWithData(
+            String name, Class<T> dataClass, T initialData, FixedDelay schedule, VoidExecutionHandler<T> handler) {
         return new RecurringTask<T>(name, schedule, dataClass, initialData) {
             @Override
             public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
@@ -93,6 +94,7 @@ public class TestTasks {
         public CountingHandler() {
             wait = Duration.ofMillis(0);
         }
+
         public CountingHandler(Duration wait) {
             this.wait = wait;
         }
@@ -171,8 +173,7 @@ public class TestTasks {
     public static class DoNothingHandler<T> implements VoidExecutionHandler<T> {
 
         @Override
-        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
-        }
+        public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {}
     }
 
     public static class SavingHandler<T> implements VoidExecutionHandler<T> {
@@ -195,5 +196,4 @@ public class TestTasks {
             super.register(e);
         }
     }
-
 }

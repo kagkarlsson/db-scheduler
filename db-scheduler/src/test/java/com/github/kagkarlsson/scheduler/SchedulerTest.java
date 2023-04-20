@@ -1,5 +1,11 @@
 package com.github.kagkarlsson.scheduler;
 
+import static java.time.Duration.*;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.core.Is.is;
+
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -12,23 +18,16 @@ import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-
-import static java.time.Duration.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.core.Is.is;
 
 public class SchedulerTest {
 
@@ -38,13 +37,14 @@ public class SchedulerTest {
 
     @RegisterExtension
     public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
+
     @RegisterExtension
     public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
-//    @RegisterExtension
-//        public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
-//        new ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson.scheduler", Level.TRACE)
-//    );
-
+    //    @RegisterExtension
+    //        public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
+    //        new ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson.scheduler",
+    // Level.TRACE)
+    //    );
 
     @BeforeEach
     public void setUp() {
@@ -54,8 +54,8 @@ public class SchedulerTest {
 
     private ManualScheduler schedulerFor(Task<?>... tasks) {
         ManualScheduler manualScheduler = TestHelper.createManualScheduler(postgres.getDataSource(), tasks)
-            .clock(clock)
-            .start();
+                .clock(clock)
+                .start();
         stopScheduler.register(manualScheduler);
         return manualScheduler;
     }
@@ -76,7 +76,7 @@ public class SchedulerTest {
             clock.set(executionTime);
             scheduler.runAnyDueExecutions();
             assertThat(handler.timesExecuted.get(), is(1));
-        } catch (RuntimeException|Error e) {
+        } catch (RuntimeException | Error e) {
             LOG.info("scheduler_should_execute_task_when_exactly_due() failed");
             scheduler.getScheduledExecutions().forEach(it -> {
                 LOG.info("Execution in database scheduled to: " + it.getExecutionTime());
@@ -112,7 +112,7 @@ public class SchedulerTest {
             clock.set(reScheduledExecutionTime);
             scheduler.runAnyDueExecutions();
             assertThat(handler.timesExecuted.get(), is(1));
-        } catch (RuntimeException|Error e) {
+        } catch (RuntimeException | Error e) {
             LOG.info("scheduler_should_execute_rescheduled_task_when_exactly_due() failed");
             scheduler.getScheduledExecutions().forEach(it -> {
                 LOG.info("Execution in database scheduled to: " + it.getExecutionTime());
@@ -163,10 +163,10 @@ public class SchedulerTest {
         OneTimeTask<Void> oneTimeTask = TestTasks.oneTime("OneTime", Void.class, pausingHandler);
 
         Scheduler scheduler = Scheduler.create(postgres.getDataSource(), oneTimeTask)
-            .threads(2)
-            .pollingInterval(Duration.ofMillis(100))
-            .schedulerName(new SchedulerName.Fixed("test"))
-            .build();
+                .threads(2)
+                .pollingInterval(Duration.ofMillis(100))
+                .schedulerName(new SchedulerName.Fixed("test"))
+                .build();
         stopScheduler.register(scheduler);
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
         scheduler.start();
@@ -179,45 +179,48 @@ public class SchedulerTest {
 
     @Test
     public void should_expose_cause_of_failure_to_completion_handler() throws InterruptedException {
-        TestTasks.ResultRegisteringFailureHandler<Void> failureHandler = new TestTasks.ResultRegisteringFailureHandler<>();
-        Task<Void> oneTimeTask = ComposableTask.customTask("cause-testing-task", Void.class, TestTasks.REMOVE_ON_COMPLETE, failureHandler,
-                (inst, ctx) -> { throw new RuntimeException("Failed!");});
+        TestTasks.ResultRegisteringFailureHandler<Void> failureHandler =
+                new TestTasks.ResultRegisteringFailureHandler<>();
+        Task<Void> oneTimeTask = ComposableTask.customTask(
+                "cause-testing-task", Void.class, TestTasks.REMOVE_ON_COMPLETE, failureHandler, (inst, ctx) -> {
+                    throw new RuntimeException("Failed!");
+                });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
         scheduler.executeDue();
-//        failureHandler.waitForNotify.await();
+        //        failureHandler.waitForNotify.await();
 
         assertThat(failureHandler.result, is(ExecutionComplete.Result.FAILED));
         assertThat(failureHandler.cause.get().getMessage(), is("Failed!"));
-
     }
 
     @Test
     public void should_only_attempt_task_when_max_retries_handler_used() throws InterruptedException {
         int maxRetries = RandomUtils.nextInt(1, 10);
-        FailureHandler.MaxRetriesFailureHandler<Void> failureHandler = new FailureHandler.MaxRetriesFailureHandler<Void>(maxRetries, new FailureHandler.OnFailureRetryLater<>(ofMinutes(1)));
+        FailureHandler.MaxRetriesFailureHandler<Void> failureHandler = new FailureHandler.MaxRetriesFailureHandler<
+                Void>(maxRetries, new FailureHandler.OnFailureRetryLater<>(ofMinutes(1)));
 
         OneTimeTask<Void> oneTimeTask = Tasks.oneTime("max-retries-task")
-            .onFailure(failureHandler)
-            .execute((inst, ctx) -> {
-                handler.execute(inst, ctx);
-                throw new RuntimeException("Failed!");
-            });
+                .onFailure(failureHandler)
+                .execute((inst, ctx) -> {
+                    handler.execute(inst, ctx);
+                    throw new RuntimeException("Failed!");
+                });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
         scheduler.schedule(oneTimeTask.instance("1"), clock.now());
         scheduler.executeDue();
 
-        //Simulate 15 minutes worth of time to validate we did not process more than we should
-        for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 15; minuteWorthOfTime ++) {
+        // Simulate 15 minutes worth of time to validate we did not process more than we should
+        for (int minuteWorthOfTime = 1; minuteWorthOfTime <= 15; minuteWorthOfTime++) {
             clock.set(clock.now().plus(ofMinutes(1)));
             scheduler.executeDue();
         }
 
-        //will always be maxRetries + 1 due to the first call always being required.
+        // will always be maxRetries + 1 due to the first call always being required.
         assertThat(handler.timesExecuted.get(), is(maxRetries + 1));
     }
 
@@ -227,13 +230,13 @@ public class SchedulerTest {
 
         Duration expectedSleepDuration = ofMinutes(1);
         OneTimeTask<Void> oneTimeTask = Tasks.oneTime("exponential-defaults-task")
-            .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration))
-            .execute((inst, ctx) -> {
-                executionTimes.add(ctx.getExecution().executionTime);
-                if(executionTimes.size() < 10){
-                    throw new RuntimeException("Failed!");
-                }
-            });
+                .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration))
+                .execute((inst, ctx) -> {
+                    executionTimes.add(ctx.getExecution().executionTime);
+                    if (executionTimes.size() < 10) {
+                        throw new RuntimeException("Failed!");
+                    }
+                });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
@@ -241,22 +244,27 @@ public class SchedulerTest {
         scheduler.schedule(oneTimeTask.instance("1"), firstExecution);
         scheduler.executeDue();
 
-        //Simulate 30 minutes worth of time to validate we did not process more than we should
-        for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 30; minuteWorthOfTime ++) {
+        // Simulate 30 minutes worth of time to validate we did not process more than we should
+        for (int minuteWorthOfTime = 1; minuteWorthOfTime <= 30; minuteWorthOfTime++) {
             clock.set(clock.now().plus(ofMinutes(1)));
             scheduler.executeDue();
         }
 
         assertThat(executionTimes.size(), is(10));
-        //Skip first execution of this b/c it was not using the exponential backoff but the first attempted call before failure
+        // Skip first execution of this b/c it was not using the exponential backoff but the first
+        // attempted call before failure
         for (int i = 1, executionTimesSize = executionTimes.size(); i < executionTimesSize; i++) {
             final Instant executionTime = executionTimes.get(i);
             long retryDurationMs = Math.round(expectedSleepDuration.toMillis() * Math.pow(1.5, i - 1));
 
             Duration scheduleTimeDifferenceFromFirstCall = between(firstExecution, executionTime);
             Duration actualExponentialBackoffDuration = ofMillis(retryDurationMs);
-            assertThat(scheduleTimeDifferenceFromFirstCall.getSeconds(), greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
-            assertThat(scheduleTimeDifferenceFromFirstCall.getSeconds(), is(actualExponentialBackoffDuration.getSeconds()));
+            assertThat(
+                    scheduleTimeDifferenceFromFirstCall.getSeconds(),
+                    greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
+            assertThat(
+                    scheduleTimeDifferenceFromFirstCall.getSeconds(),
+                    is(actualExponentialBackoffDuration.getSeconds()));
         }
     }
 
@@ -267,13 +275,13 @@ public class SchedulerTest {
 
         Duration expectedSleepDuration = ofMinutes(1);
         OneTimeTask<Void> oneTimeTask = Tasks.oneTime("exponential-custom-rate-task")
-            .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration, customRate))
-            .execute((inst, ctx) -> {
-                executionTimes.add(ctx.getExecution().executionTime);
-                if(executionTimes.size() < 10){
-                    throw new RuntimeException("Failed!");
-                }
-            });
+                .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(expectedSleepDuration, customRate))
+                .execute((inst, ctx) -> {
+                    executionTimes.add(ctx.getExecution().executionTime);
+                    if (executionTimes.size() < 10) {
+                        throw new RuntimeException("Failed!");
+                    }
+                });
 
         Scheduler scheduler = schedulerFor(oneTimeTask);
 
@@ -281,23 +289,27 @@ public class SchedulerTest {
         scheduler.schedule(oneTimeTask.instance("1"), firstExecution);
         scheduler.executeDue();
 
-        //Simulate 30 minutes worth of time to validate we did not process more than we should
-        for( int minuteWorthOfTime = 1; minuteWorthOfTime <= 30; minuteWorthOfTime ++) {
+        // Simulate 30 minutes worth of time to validate we did not process more than we should
+        for (int minuteWorthOfTime = 1; minuteWorthOfTime <= 30; minuteWorthOfTime++) {
             clock.set(clock.now().plus(ofMinutes(1)));
             scheduler.executeDue();
         }
 
         assertThat(executionTimes.size(), is(10));
-        //Skip first execution of this b/c it was not using the exponential backoff but the first attempted call before failure
+        // Skip first execution of this b/c it was not using the exponential backoff but the first
+        // attempted call before failure
         for (int i = 1, executionTimesSize = executionTimes.size(); i < executionTimesSize; i++) {
             final Instant executionTime = executionTimes.get(i);
             long retryDurationMs = Math.round(expectedSleepDuration.toMillis() * Math.pow(customRate, i - 1));
 
             Duration scheduleTimeDifferenceFromFirstCall = between(firstExecution, executionTime);
             Duration actualExponentialBackoffDuration = ofMillis(retryDurationMs);
-            assertThat(scheduleTimeDifferenceFromFirstCall.getSeconds(), greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
-            assertThat(scheduleTimeDifferenceFromFirstCall.getSeconds(), is(actualExponentialBackoffDuration.getSeconds()));
+            assertThat(
+                    scheduleTimeDifferenceFromFirstCall.getSeconds(),
+                    greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
+            assertThat(
+                    scheduleTimeDifferenceFromFirstCall.getSeconds(),
+                    is(actualExponentialBackoffDuration.getSeconds()));
         }
     }
-
 }

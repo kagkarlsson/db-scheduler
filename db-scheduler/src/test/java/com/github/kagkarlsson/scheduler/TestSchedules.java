@@ -2,7 +2,6 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-
 import java.time.Instant;
 
 public class TestSchedules {

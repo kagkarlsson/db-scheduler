@@ -1,5 +1,7 @@
 package com.github.kagkarlsson.scheduler.functional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.TestTasks;
@@ -10,18 +12,15 @@ import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Collections;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class DeleteUnresolvedTest {
 
@@ -33,7 +32,6 @@ public class DeleteUnresolvedTest {
     @RegisterExtension
     public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
 
-
     @BeforeEach
     public void setUp() {
         clock = new SettableClock();
@@ -44,7 +42,6 @@ public class DeleteUnresolvedTest {
     public void should_delete_executions_with_old_unresolved_tasknames() {
 
         OneTimeTask<Void> onetime = Tasks.oneTime("onetime").execute(TestTasks.DO_NOTHING);
-
 
         TestableRegistry testableRegistry = new TestableRegistry(false, Collections.emptyList());
         // Missing task with name 'onetime'
@@ -70,5 +67,4 @@ public class DeleteUnresolvedTest {
 
         scheduler.runDeadExecutionDetection();
     }
-
 }

@@ -1,18 +1,17 @@
 package com.github.kagkarlsson.scheduler;
 
+import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
+
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.Mappers;
 import com.opentable.db.postgres.embedded.EmbeddedPostgres;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
-
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.util.function.Consumer;
-
-import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
+import javax.sql.DataSource;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class EmbeddedPostgresqlExtension implements AfterEachCallback {
 
@@ -31,7 +30,6 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
         this.cleanupAfter = cleanupAfter;
         try {
             synchronized (this) {
-
                 if (embeddedPostgresql == null) {
                     embeddedPostgresql = initPostgres();
 
@@ -58,16 +56,19 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
     }
 
     private EmbeddedPostgres initPostgres() throws IOException {
-        final EmbeddedPostgres newEmbeddedPostgresql = EmbeddedPostgres.builder().start();
+        final EmbeddedPostgres newEmbeddedPostgresql =
+                EmbeddedPostgres.builder().start();
 
         final JdbcRunner postgresJdbc = new JdbcRunner(newEmbeddedPostgresql.getPostgresDatabase());
 
-        final Boolean databaseExists = postgresJdbc.query("SELECT 1 FROM pg_database WHERE datname = 'test'", NOOP, Mappers.NON_EMPTY_RESULTSET);
+        final Boolean databaseExists = postgresJdbc.query(
+                "SELECT 1 FROM pg_database WHERE datname = 'test'", NOOP, Mappers.NON_EMPTY_RESULTSET);
         if (!databaseExists) {
             postgresJdbc.execute("CREATE DATABASE test", NOOP);
         }
 
-        final Boolean userExists = postgresJdbc.query("SELECT 1 FROM pg_catalog.pg_user WHERE usename = 'test'", NOOP, Mappers.NON_EMPTY_RESULTSET);
+        final Boolean userExists = postgresJdbc.query(
+                "SELECT 1 FROM pg_catalog.pg_user WHERE usename = 'test'", NOOP, Mappers.NON_EMPTY_RESULTSET);
         if (!userExists) {
             postgresJdbc.execute("CREATE ROLE test LOGIN PASSWORD ''", NOOP);
         }
@@ -80,6 +81,5 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
     @Override
     public void afterEach(ExtensionContext extensionContext) throws Exception {
         cleanupAfter.accept(getDataSource());
-
     }
 }

@@ -1,13 +1,13 @@
 /**
  * Copyright (C) Gustav Karlsson
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * <p>Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * <p>Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -18,10 +18,7 @@ package com.github.kagkarlsson.scheduler.task.helper;
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.*;
-import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-
-import java.io.ObjectStreamClass;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Function;
@@ -41,11 +38,15 @@ public class Tasks {
         return new RecurringTaskBuilder<>(descriptor.getTaskName(), schedule, descriptor.getDataClass());
     }
 
-    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(String name, Class<T> dataClass) {
+    public static <T extends ScheduleAndData>
+            RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(
+                    String name, Class<T> dataClass) {
         return recurringWithPersistentSchedule(TaskDescriptor.of(name, dataClass));
     }
 
-    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(TaskDescriptor<T> descriptor) {
+    public static <T extends ScheduleAndData>
+            RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(
+                    TaskDescriptor<T> descriptor) {
         return new RecurringTaskWithPersistentScheduleBuilder<>(descriptor.getTaskName(), descriptor.getDataClass());
     }
 
@@ -68,7 +69,6 @@ public class Tasks {
     public static <T> TaskBuilder<T> custom(TaskDescriptor<T> taskDescriptor) {
         return new TaskBuilder<>(taskDescriptor.getTaskName(), taskDescriptor.getDataClass());
     }
-
 
     public static class RecurringTaskBuilder<T> {
         private final String name;
@@ -176,16 +176,15 @@ public class Tasks {
 
                     return (executionComplete, executionOperations) -> {
                         executionOperations.reschedule(
-                            executionComplete,
-                            taskInstance.getData().getSchedule().getNextExecutionTime(executionComplete)
-                        );
+                                executionComplete,
+                                taskInstance.getData().getSchedule().getNextExecutionTime(executionComplete));
                     };
-
                 }
             };
         }
 
-        public RecurringTaskWithPersistentSchedule<T> executeStateful(StateReturningExecutionHandler<T> executionHandler) {
+        public RecurringTaskWithPersistentSchedule<T> executeStateful(
+                StateReturningExecutionHandler<T> executionHandler) {
             return new RecurringTaskWithPersistentSchedule<T>(name, dataClass, onFailure) {
 
                 @Override
@@ -194,16 +193,14 @@ public class Tasks {
 
                     return (executionComplete, executionOperations) -> {
                         executionOperations.reschedule(
-                            executionComplete,
-                            nextData.getSchedule().getNextExecutionTime(executionComplete),
-                            nextData
-                        );
+                                executionComplete,
+                                nextData.getSchedule().getNextExecutionTime(executionComplete),
+                                nextData);
                     };
                 }
             };
         }
     }
-
 
     public static class OneTimeTaskBuilder<T> {
         private final String name;
@@ -283,20 +280,21 @@ public class Tasks {
             return this;
         }
 
-        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData, Function<Instant,Instant> firstExecutionTime) {
+        public TaskBuilder<T> scheduleOnStartup(
+                String instance, T initialData, Function<Instant, Instant> firstExecutionTime) {
             this.onStartup = new ScheduleOnceOnStartup<T>(instance, initialData, firstExecutionTime);
             return this;
         }
 
         public TaskBuilder<T> scheduleOnStartup(String instance, T initialData, Schedule schedule) {
             this.onStartup = new ScheduleOnceOnStartup<T>(
-                instance,
-                initialData,
-                now -> schedule.getNextExecutionTime(ExecutionComplete.simulatedSuccess(now)));
+                    instance,
+                    initialData,
+                    now -> schedule.getNextExecutionTime(ExecutionComplete.simulatedSuccess(now)));
             return this;
         }
 
-        public TaskBuilder<T> defaultExecutionTime(Function<Instant,Instant> defaultExecutionTime) {
+        public TaskBuilder<T> defaultExecutionTime(Function<Instant, Instant> defaultExecutionTime) {
             this.defaultExecutionTime = defaultExecutionTime;
             return this;
         }
@@ -309,7 +307,5 @@ public class Tasks {
                 }
             };
         }
-
     }
-
 }

@@ -1,20 +1,5 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
-import com.github.kagkarlsson.scheduler.ScheduledExecution;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-
 import static co.unruly.matchers.OptionalMatchers.empty;
 import static com.github.kagkarlsson.scheduler.task.helper.ScheduleRecurringOnStartup.differenceGreaterThan;
 import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.daily;
@@ -23,12 +8,27 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.github.kagkarlsson.scheduler.ScheduledExecution;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 class ScheduleRecurringOnStartupTest {
 
     private static final ZoneId ZONE = ZoneId.systemDefault();
     private static final LocalDate DATE = LocalDate.of(2018, 3, 1);
     private static final LocalTime TIME_INSTANT_A = LocalTime.of(8, 0);
-    private static final Instant UPCOMING_INSTANT_A = ZonedDateTime.of(DATE, TIME_INSTANT_A, ZONE).toInstant();
+    private static final Instant UPCOMING_INSTANT_A =
+            ZonedDateTime.of(DATE, TIME_INSTANT_A, ZONE).toInstant();
     private static final Instant NOW = UPCOMING_INSTANT_A.minus(Duration.ofHours(1));
 
     private static final String INSTANCE = "instance";
@@ -50,7 +50,9 @@ class ScheduleRecurringOnStartupTest {
     @Test
     void checkForNewExecutionTime_updated_if_deterministic_schedule_change() {
         assertNotUpdatedExecutionTime(scheduled(UPCOMING_INSTANT_A), daily(TIME_INSTANT_A));
-        assertNotUpdatedExecutionTime(scheduled(UPCOMING_INSTANT_A), daily(TIME_INSTANT_A.plus(Duration.ofMillis(20)))); // requires 1s diff between instants
+        assertNotUpdatedExecutionTime(
+                scheduled(UPCOMING_INSTANT_A),
+                daily(TIME_INSTANT_A.plus(Duration.ofMillis(20)))); // requires 1s diff between instants
         assertUpdatedExecutionTime(scheduled(UPCOMING_INSTANT_A), daily(TIME_INSTANT_A.plus(Duration.ofSeconds(20))));
         assertUpdatedExecutionTime(scheduled(UPCOMING_INSTANT_A), daily(TIME_INSTANT_A.minus(Duration.ofSeconds(20))));
     }

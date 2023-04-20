@@ -1,21 +1,18 @@
 package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.task.schedule.Daily;
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.github.kagkarlsson.scheduler.task.schedule.Daily;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class DailyTest {
 
@@ -43,7 +40,7 @@ public class DailyTest {
     @Test
     public void should_not_allow_null_zone_id() {
         Assertions.assertThrows(NullPointerException.class, () -> {
-            new Daily(null, new LocalTime[]{LocalTime.MIDNIGHT});
+            new Daily(null, new LocalTime[] {LocalTime.MIDNIGHT});
         });
     }
 
@@ -52,14 +49,26 @@ public class DailyTest {
         LocalDate currentDate = Instant.now().atZone(ZONE).toLocalDate();
         LocalDate nextDay = currentDate.plusDays(1);
 
-        assertThat(new Daily(HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0))), is(instant(currentDate, HOUR_8)));
-        assertThat(new Daily(HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_8))), is(instant(nextDay, HOUR_8)));
+        assertThat(
+                new Daily(HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0))),
+                is(instant(currentDate, HOUR_8)));
+        assertThat(
+                new Daily(HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_8))),
+                is(instant(nextDay, HOUR_8)));
 
-        assertThat(new Daily(HOUR_8, HOUR_12).getNextExecutionTime(complete(instant(currentDate, HOUR_0))), is(instant(currentDate, HOUR_8)));
-        assertThat(new Daily(HOUR_8, HOUR_12).getNextExecutionTime(complete(instant(currentDate, HOUR_8))), is(instant(currentDate, HOUR_12)));
-        assertThat(new Daily(HOUR_8, HOUR_12).getNextExecutionTime(complete(instant(currentDate, HOUR_12))), is(instant(nextDay, HOUR_8)));
-        //order should be irrelevant
-        assertThat(new Daily(HOUR_12, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0))), is(instant(currentDate, HOUR_8)));
+        assertThat(
+                new Daily(HOUR_8, HOUR_12).getNextExecutionTime(complete(instant(currentDate, HOUR_0))),
+                is(instant(currentDate, HOUR_8)));
+        assertThat(
+                new Daily(HOUR_8, HOUR_12).getNextExecutionTime(complete(instant(currentDate, HOUR_8))),
+                is(instant(currentDate, HOUR_12)));
+        assertThat(
+                new Daily(HOUR_8, HOUR_12).getNextExecutionTime(complete(instant(currentDate, HOUR_12))),
+                is(instant(nextDay, HOUR_8)));
+        // order should be irrelevant
+        assertThat(
+                new Daily(HOUR_12, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0))),
+                is(instant(currentDate, HOUR_8)));
     }
 
     @Test
@@ -68,8 +77,12 @@ public class DailyTest {
         LocalDate currentDate = LocalDate.of(2020, 12, 12);
         LocalDate nextDay = currentDate.plusDays(1);
 
-        assertThat(new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_7, UTC)));
-        assertThat(new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_7, UTC))), is(instant(nextDay, HOUR_7, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
+                is(instant(currentDate, HOUR_7, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_7, UTC))),
+                is(instant(nextDay, HOUR_7, UTC)));
     }
 
     @Test
@@ -78,8 +91,12 @@ public class DailyTest {
         LocalDate currentDate = LocalDate.of(2020, 7, 12);
         LocalDate nextDay = currentDate.plusDays(1);
 
-        assertThat(new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_6, UTC)));
-        assertThat(new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_6, UTC))), is(instant(nextDay, HOUR_6, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
+                is(instant(currentDate, HOUR_6, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_6, UTC))),
+                is(instant(nextDay, HOUR_6, UTC)));
     }
 
     @Test
@@ -90,8 +107,12 @@ public class DailyTest {
         LocalDate currentDate = LocalDate.of(2020, 3, 28);
         LocalDate nextDay = currentDate.plusDays(1);
 
-        assertThat(new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_7, UTC)));
-        assertThat(new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_7, UTC))), is(instant(nextDay, HOUR_6, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
+                is(instant(currentDate, HOUR_7, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_7, UTC))),
+                is(instant(nextDay, HOUR_6, UTC)));
     }
 
     @Test
@@ -102,8 +123,12 @@ public class DailyTest {
         LocalDate currentDate = LocalDate.of(2020, 10, 24);
         LocalDate nextDay = currentDate.plusDays(1);
 
-        assertThat(new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_6, UTC)));
-        assertThat(new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_6, UTC))), is(instant(nextDay, HOUR_7, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
+                is(instant(currentDate, HOUR_6, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_8).getNextExecutionTime(complete(instant(currentDate, HOUR_6, UTC))),
+                is(instant(nextDay, HOUR_7, UTC)));
     }
 
     @Test
@@ -114,8 +139,12 @@ public class DailyTest {
         LocalDate currentDate = LocalDate.of(2020, 3, 29);
         LocalDate nextDay = currentDate.plusDays(1);
 
-        assertThat(new Daily(ROME, HOUR_2).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_1, UTC)));
-        assertThat(new Daily(ROME, HOUR_3).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_1, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_2).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
+                is(instant(currentDate, HOUR_1, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_3).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
+                is(instant(currentDate, HOUR_1, UTC)));
     }
 
     @Test
@@ -126,8 +155,12 @@ public class DailyTest {
         LocalDate currentDate = LocalDate.of(2020, 10, 25);
         LocalDate previousDay = currentDate.minusDays(1);
 
-        assertThat(new Daily(ROME, HOUR_2).getNextExecutionTime(complete(instant(previousDay, HOUR_23, UTC))), is(instant(currentDate, HOUR_0, UTC)));
-        assertThat(new Daily(ROME, HOUR_3).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))), is(instant(currentDate, HOUR_2, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_2).getNextExecutionTime(complete(instant(previousDay, HOUR_23, UTC))),
+                is(instant(currentDate, HOUR_0, UTC)));
+        assertThat(
+                new Daily(ROME, HOUR_3).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
+                is(instant(currentDate, HOUR_2, UTC)));
     }
 
     @Test
@@ -137,7 +170,9 @@ public class DailyTest {
 
     @Test
     public void to_string() {
-        assertEquals("Daily times=[01:00, 02:00], zone=Europe/Rome", new Daily(ZoneId.of("Europe/Rome"), HOUR_1, HOUR_2).toString());
+        assertEquals(
+                "Daily times=[01:00, 02:00], zone=Europe/Rome",
+                new Daily(ZoneId.of("Europe/Rome"), HOUR_1, HOUR_2).toString());
     }
 
     private Instant instant(LocalDate date, LocalTime time) {

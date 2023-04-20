@@ -1,13 +1,13 @@
 /**
  * Copyright (C) Gustav Karlsson
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * <p>Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * <p>Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -54,9 +53,9 @@ public class PlainScheduleAndData implements ScheduleAndData, Serializable {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData that = (com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData) o;
-        return Objects.equals(schedule, that.schedule) &&
-            Objects.equals(data, that.data);
+        com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData that =
+                (com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData) o;
+        return Objects.equals(schedule, that.schedule) && Objects.equals(data, that.data);
     }
 
     @Override
@@ -66,9 +65,6 @@ public class PlainScheduleAndData implements ScheduleAndData, Serializable {
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + "{" +
-            "schedule=" + schedule +
-            ", data=" + data +
-            '}';
+        return this.getClass().getSimpleName() + "{" + "schedule=" + schedule + ", data=" + data + '}';
     }
 }

@@ -1,13 +1,13 @@
 /**
  * Copyright (C) Gustav Karlsson
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * <p>Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
+ * <p>Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
@@ -22,7 +22,6 @@ import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -36,19 +35,19 @@ public class GsonSerializer implements Serializer {
     private final Gson gson;
 
     public static GsonBuilder getDefaultGson() {
-        RuntimeTypeAdapterFactory<Schedule> runtimeTypeAdapterFactory = RuntimeTypeAdapterFactory
-            .of(Schedule.class, "type")
-            .registerSubtype(CronSchedule.class, "cron")
-            .registerSubtype(FixedDelay.class, "fixedDelay")
-            .registerSubtype(Daily.class, "daily");
+        RuntimeTypeAdapterFactory<Schedule> runtimeTypeAdapterFactory = RuntimeTypeAdapterFactory.of(
+                        Schedule.class, "type")
+                .registerSubtype(CronSchedule.class, "cron")
+                .registerSubtype(FixedDelay.class, "fixedDelay")
+                .registerSubtype(Daily.class, "daily");
 
         return new GsonBuilder()
-            .serializeNulls()
-            .registerTypeAdapter(Instant.class, new InstantAdapter())
-            .registerTypeAdapter(Duration.class, new DurationAdapter())
-            .registerTypeAdapter(LocalTime.class, new LocalTimeAdapter())
-            .registerTypeHierarchyAdapter(ZoneId.class, new ZoneIdAdapter())
-            .registerTypeAdapterFactory(runtimeTypeAdapterFactory);
+                .serializeNulls()
+                .registerTypeAdapter(Instant.class, new InstantAdapter())
+                .registerTypeAdapter(Duration.class, new DurationAdapter())
+                .registerTypeAdapter(LocalTime.class, new LocalTimeAdapter())
+                .registerTypeHierarchyAdapter(ZoneId.class, new ZoneIdAdapter())
+                .registerTypeAdapterFactory(runtimeTypeAdapterFactory);
     }
 
     public GsonSerializer() {
@@ -74,5 +73,4 @@ public class GsonSerializer implements Serializer {
     public <T> T deserialize(Class<T> clazz, byte[] serializedData) {
         return gson.fromJson(new String(serializedData, CHARSET), clazz);
     }
-
 }

@@ -1,29 +1,7 @@
 package com.github.kagkarlsson.scheduler;
 
-import co.unruly.matchers.OptionalMatchers;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
-import com.github.kagkarlsson.scheduler.helper.TimeHelper;
-import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
-import com.github.kagkarlsson.scheduler.task.*;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.stream.IntStream;
-
-import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
@@ -34,12 +12,33 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import co.unruly.matchers.OptionalMatchers;
+import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TimeHelper;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
+import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @SuppressWarnings("unchecked")
 public class JdbcTaskRepositoryTest {
 
     public static final String SCHEDULER_NAME = "scheduler1";
     private static final int POLLING_LIMIT = 10_000;
+
     @RegisterExtension
     public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
@@ -61,7 +60,13 @@ public class JdbcTaskRepositoryTest {
         knownTasks.add(alternativeOneTimeTask);
         testableRegistry = new TestableRegistry(true, Collections.emptyList());
         taskResolver = new TaskResolver(testableRegistry, knownTasks);
-        taskRepository = new JdbcTaskRepository(DB.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed(SCHEDULER_NAME), new SystemClock());
+        taskRepository = new JdbcTaskRepository(
+                DB.getDataSource(),
+                false,
+                DEFAULT_TABLE_NAME,
+                taskResolver,
+                new SchedulerName.Fixed(SCHEDULER_NAME),
+                new SystemClock());
     }
 
     @Test
@@ -89,7 +94,8 @@ public class JdbcTaskRepositoryTest {
         assertEquals(1, scheduled.taskInstance.getData());
 
         taskRepository.replace(scheduled, instance2);
-        Execution replaced = taskRepository.getExecution(instance2.getTaskInstance()).get();
+        Execution replaced =
+                taskRepository.getExecution(instance2.getTaskInstance()).get();
         assertEquals(2, replaced.taskInstance.getData());
         assertEquals("id2", replaced.taskInstance.getId());
     }
@@ -116,9 +122,9 @@ public class JdbcTaskRepositoryTest {
     @Test
     public void get_due_should_be_sorted() {
         Instant now = TimeHelper.truncatedInstantNow();
-        IntStream.range(0, 100).forEach(i ->
-                        taskRepository.createIfNotExists(new SchedulableTaskInstance<>(oneTimeTask.instance("id" + i), now.minusSeconds(new Random().nextInt(10000))))
-        );
+        IntStream.range(0, 100)
+                .forEach(i -> taskRepository.createIfNotExists(new SchedulableTaskInstance<>(
+                        oneTimeTask.instance("id" + i), now.minusSeconds(new Random().nextInt(10000)))));
         List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
         assertThat(due, hasSize(100));
 
@@ -144,8 +150,10 @@ public class JdbcTaskRepositoryTest {
 
         assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
         assertThat(taskResolver.getUnresolved(), hasSize(1));
-        assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK),
-            "Execution should not have have been in the ResultSet");
+        assertEquals(
+                1,
+                testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK),
+                "Execution should not have have been in the ResultSet");
 
         // 1, 2
         taskRepository.createIfNotExists(new SchedulableTaskInstance<>(unresolved2.instance("id"), now));
@@ -289,9 +297,9 @@ public class JdbcTaskRepositoryTest {
     @Test
     public void get_scheduled_executions() {
         Instant now = TimeHelper.truncatedInstantNow();
-        IntStream.range(0, 100).forEach(i ->
-                taskRepository.createIfNotExists(new SchedulableTaskInstance<>(oneTimeTask.instance("id" + i), now.plus(new Random().nextInt(10), ChronoUnit.HOURS)))
-        );
+        IntStream.range(0, 100)
+                .forEach(i -> taskRepository.createIfNotExists(new SchedulableTaskInstance<>(
+                        oneTimeTask.instance("id" + i), now.plus(new Random().nextInt(10), ChronoUnit.HOURS))));
         final List<Execution> beforePick = getScheduledExecutions(all().withPicked(false));
         assertThat(beforePick, hasSize(100));
 
@@ -310,12 +318,16 @@ public class JdbcTaskRepositoryTest {
     @Test
     public void get_scheduled_by_task_name() {
         Instant now = TimeHelper.truncatedInstantNow();
-        final SchedulableTaskInstance<Void> execution1 = new SchedulableTaskInstance<>(oneTimeTask.instance("id" + 1), now.plus(new Random().nextInt(10), ChronoUnit.HOURS));
+        final SchedulableTaskInstance<Void> execution1 = new SchedulableTaskInstance<>(
+                oneTimeTask.instance("id" + 1), now.plus(new Random().nextInt(10), ChronoUnit.HOURS));
         taskRepository.createIfNotExists(execution1);
-        taskRepository.createIfNotExists(new SchedulableTaskInstance<>(oneTimeTask.instance("id" + 2), now.plus(new Random().nextInt(10), ChronoUnit.HOURS)));
-        taskRepository.createIfNotExists(new SchedulableTaskInstance<>(alternativeOneTimeTask.instance("id" + 3), now.plus(new Random().nextInt(10), ChronoUnit.HOURS)));
+        taskRepository.createIfNotExists(new SchedulableTaskInstance<>(
+                oneTimeTask.instance("id" + 2), now.plus(new Random().nextInt(10), ChronoUnit.HOURS)));
+        taskRepository.createIfNotExists(new SchedulableTaskInstance<>(
+                alternativeOneTimeTask.instance("id" + 3), now.plus(new Random().nextInt(10), ChronoUnit.HOURS)));
 
-        taskRepository.pick(taskRepository.getExecution(execution1.getTaskInstance()).get(), Instant.now());
+        taskRepository.pick(
+                taskRepository.getExecution(execution1.getTaskInstance()).get(), Instant.now());
         assertThat(getScheduledExecutions(all().withPicked(true), oneTimeTask.getName()), hasSize(1));
         assertThat(getScheduledExecutions(all().withPicked(false), oneTimeTask.getName()), hasSize(1));
         assertThat(getScheduledExecutions(all(), oneTimeTask.getName()), hasSize(2));
@@ -339,7 +351,13 @@ public class JdbcTaskRepositoryTest {
         createDeadExecution(oneTimeTask.instance("id1"), timeDied);
 
         TaskResolver taskResolverMissingTask = new TaskResolver(testableRegistry);
-        JdbcTaskRepository repoMissingTask = new JdbcTaskRepository(DB.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolverMissingTask, new SchedulerName.Fixed(SCHEDULER_NAME), new SystemClock());
+        JdbcTaskRepository repoMissingTask = new JdbcTaskRepository(
+                DB.getDataSource(),
+                false,
+                DEFAULT_TABLE_NAME,
+                taskResolverMissingTask,
+                new SchedulerName.Fixed(SCHEDULER_NAME),
+                new SystemClock());
 
         assertThat(taskResolverMissingTask.getUnresolved(), hasSize(0));
         assertEquals(0, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
@@ -368,7 +386,8 @@ public class JdbcTaskRepositoryTest {
     @Test
     public void lockAndGetDue_should_pick_due() {
         Instant now = Instant.now();
-        taskRepository.createIfNotExists(new SchedulableTaskInstance<>(oneTimeTask.instance("future1"), now.plusSeconds(10)));
+        taskRepository.createIfNotExists(
+                new SchedulableTaskInstance<>(oneTimeTask.instance("future1"), now.plusSeconds(10)));
         taskRepository.createIfNotExists(new SchedulableTaskInstance<>(oneTimeTask.instance("id1"), now));
         List<Execution> picked = taskRepository.lockAndGetDue(now, POLLING_LIMIT);
         assertThat(picked, hasSize(1));
@@ -391,7 +410,6 @@ public class JdbcTaskRepositoryTest {
         assertThat(taskResolver.getUnresolved(), hasSize(1));
         assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
     }
-
 
     private void createDeadExecution(TaskInstance<Void> taskInstance, Instant timeDied) {
         taskRepository.createIfNotExists(new SchedulableTaskInstance<>(taskInstance, timeDied));

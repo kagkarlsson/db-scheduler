@@ -1,13 +1,12 @@
 package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import java.io.*;
 import java.time.Instant;
 import java.time.ZoneId;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 public class SerializableSchedulesTest {
 
@@ -27,7 +26,7 @@ public class SerializableSchedulesTest {
 
     private static <T extends Serializable> byte[] serialize(T obj) {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
+                ObjectOutputStream oos = new ObjectOutputStream(baos)) {
             oos.writeObject(obj);
             return baos.toByteArray();
         } catch (IOException e) {
@@ -37,12 +36,11 @@ public class SerializableSchedulesTest {
 
     private static <T extends Serializable> T deserialize(byte[] b, Class<T> cl) {
         try (ByteArrayInputStream bais = new ByteArrayInputStream(b);
-             ObjectInputStream ois = new ObjectInputStream(bais)) {
+                ObjectInputStream ois = new ObjectInputStream(bais)) {
             Object o = ois.readObject();
             return cl.cast(o);
         } catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
-
 }

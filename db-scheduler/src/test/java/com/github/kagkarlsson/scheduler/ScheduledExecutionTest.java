@@ -1,15 +1,14 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
-import org.junit.jupiter.api.Test;
-
-import java.time.Instant;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
 
 public class ScheduledExecutionTest {
 
@@ -40,15 +39,15 @@ public class ScheduledExecutionTest {
     @Test
     public void test_data_class_type_not_equals() {
         DataClassMismatchException dataClassMismatchException = assertThrows(DataClassMismatchException.class, () -> {
-
             Instant now = Instant.now();
-            OneTimeTask<Integer> task = TestTasks.oneTime("OneTime", Integer.class, (instance, executionContext) -> {
-            });
+            OneTimeTask<Integer> task = TestTasks.oneTime("OneTime", Integer.class, (instance, executionContext) -> {});
             Execution execution = new Execution(now, task.instance("id1", new Integer(1))); // Data class is an integer
 
             new ScheduledExecution<>(String.class, execution).getData(); // Instantiate with incorrect type
         });
 
-        assertEquals("Task data mismatch. Expected class : class java.lang.String, actual : class java.lang.Integer", dataClassMismatchException.getMessage());
+        assertEquals(
+                "Task data mismatch. Expected class : class java.lang.String, actual : class java.lang.Integer",
+                dataClassMismatchException.getMessage());
     }
 }
