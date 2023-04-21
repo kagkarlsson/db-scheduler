@@ -15,16 +15,11 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import com.github.kagkarlsson.scheduler.task.Execution;
-
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Calendar;
-import java.util.List;
-import java.util.Optional;
 import java.util.TimeZone;
 
 public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
@@ -42,5 +37,12 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
     @Override
     public boolean supportsLockAndFetchGeneric() {
         return true;
+    }
+
+    @Override
+    public String createGenericSelectForUpdateQuery(String tableName, int limit, String requiredAndCondition) {
+        return "select TOP "+limit+" * from " + tableName +
+            " WITH (readpast,rowlock) where picked = ? and execution_time <= ? " + requiredAndCondition +
+            " order by execution_time asc ";
     }
 }

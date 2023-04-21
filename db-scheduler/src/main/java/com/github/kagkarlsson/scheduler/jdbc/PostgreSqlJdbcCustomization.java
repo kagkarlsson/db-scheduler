@@ -59,6 +59,13 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
     }
 
     @Override
+    public String createGenericSelectForUpdateQuery(String tableName, int limit, String requiredAndCondition) {
+        return "select * from " + tableName +
+            " where picked = ? and execution_time <= ? " + requiredAndCondition +
+            " order by execution_time asc for update skip locked limit " + limit;
+    }
+
+    @Override
     public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
         final JdbcTaskRepository.UnresolvedFilter unresolvedFilter = new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
 

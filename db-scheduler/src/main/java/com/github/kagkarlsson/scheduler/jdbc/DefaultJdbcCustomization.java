@@ -73,6 +73,11 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
 
     @Override
+    public String createGenericSelectForUpdateQuery(String tableName, int limit, String requiredAndCondition) {
+        throw new UnsupportedOperationException("method must be implemented when supporting generic lock-and-fetch");
+    }
+
+    @Override
     public String getName() {
         return "Default";
     }

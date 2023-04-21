@@ -103,6 +103,11 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     }
 
     @Override
+    public String createGenericSelectForUpdateQuery(String tableName, int limit, String requiredAndCondition) {
+        return jdbcCustomization.createGenericSelectForUpdateQuery(tableName, limit, requiredAndCondition);
+    }
+
+    @Override
     public String getName() {
         return jdbcCustomization.getName();
     }

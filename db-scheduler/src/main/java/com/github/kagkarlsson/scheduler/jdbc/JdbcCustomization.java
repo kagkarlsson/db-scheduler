@@ -41,4 +41,6 @@ public interface JdbcCustomization {
     List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit);
 
     boolean supportsLockAndFetchGeneric();
+
+    String createGenericSelectForUpdateQuery(String tableName, int limit, String requiredAndCondition);
 }

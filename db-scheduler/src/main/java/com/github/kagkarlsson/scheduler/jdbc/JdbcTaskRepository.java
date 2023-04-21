@@ -218,11 +218,8 @@ public class JdbcTaskRepository implements TaskRepository {
         return jdbcRunner.inTransaction(txRunner -> {
 
             final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
-            final String explicitLimit = jdbcCustomization.supportsExplicitQueryLimitPart() ? jdbcCustomization.getQueryLimitPart(limit) : "";
-            List<Execution> candidates = txRunner.query(
-                "select * from " + tableName +
-                    " where picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() +
-                    " order by execution_time asc for update skip locked " + explicitLimit,
+            String selectForUpdateQuery = jdbcCustomization.createGenericSelectForUpdateQuery(tableName, limit, unresolvedFilter.andCondition());
+            List<Execution> candidates = txRunner.query(selectForUpdateQuery,
                 (PreparedStatement p) -> {
                     int index = 1;
                     p.setBoolean(index++, false);
