@@ -17,7 +17,7 @@ import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_T
 public class DbUtils {
 
     public static void dropTables(DataSource dataSource) {
-        new JdbcRunner(dataSource, true).execute("drop table " + DEFAULT_TABLE_NAME, NOOP);
+        new JdbcRunner(dataSource, true).execute("drop table if exists " + DEFAULT_TABLE_NAME, NOOP);
     }
 
     public static void clearTables(DataSource dataSource) {
