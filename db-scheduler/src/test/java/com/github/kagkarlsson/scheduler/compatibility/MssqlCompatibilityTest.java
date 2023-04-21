@@ -17,7 +17,6 @@ import java.util.Properties;
 @SuppressWarnings("rawtypes")
 @Tag("compatibility")
 @Testcontainers
-@Disabled
 public class MssqlCompatibilityTest extends CompatibilityTest {
 
     @Container
