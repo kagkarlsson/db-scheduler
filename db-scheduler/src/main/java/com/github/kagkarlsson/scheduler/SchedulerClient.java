@@ -17,6 +17,7 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
+import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
@@ -206,7 +207,7 @@ public interface SchedulerClient {
             TaskRepository taskRepository = new JdbcTaskRepository(
                 dataSource,
                 false,
-                ofNullable(jdbcCustomization).orElse(new DefaultJdbcCustomization()),
+                ofNullable(jdbcCustomization).orElse(new AutodetectJdbcCustomization(dataSource)),
                 tableName,
                 taskResolver,
                 new SchedulerClientName(),

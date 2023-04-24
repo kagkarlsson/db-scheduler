@@ -29,8 +29,8 @@ import java.util.Properties;
 @Testcontainers
 public class MssqlCompatibilityTest extends CompatibilityTest {
 
-    @Container
-    private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer();
+//    @Container
+//    private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer();
     private static DataSource pooledDatasource;
 
     public MssqlCompatibilityTest() {
@@ -39,11 +39,11 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
 
     @BeforeAll
     static void initSchema() {
-//        String jdbcUrl = "jdbc:sqlserver://localhost:1433";
-//        DataSource datasource = new DriverDataSource(jdbcUrl, "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-//            new Properties(), "SA", "bigSt%rongPwd");
-        final DriverDataSource datasource = new DriverDataSource(MSSQL.getJdbcUrl(), "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-            new Properties(), MSSQL.getUsername(), MSSQL.getPassword());
+        String jdbcUrl = "jdbc:sqlserver://localhost:1433";
+        DataSource datasource = new DriverDataSource(jdbcUrl, "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+            new Properties(), "SA", "bigSt%rongPwd");
+//        final DriverDataSource datasource = new DriverDataSource(MSSQL.getJdbcUrl(), "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+//            new Properties(), MSSQL.getUsername(), MSSQL.getPassword());
 
 //        datasource = ProxyDataSourceBuilder.create(datasource)
 //            .logQueryBySlf4j()

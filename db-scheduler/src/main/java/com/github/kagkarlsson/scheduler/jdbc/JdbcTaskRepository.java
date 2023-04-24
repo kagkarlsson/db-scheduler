@@ -199,7 +199,7 @@ public class JdbcTaskRepository implements TaskRepository {
         final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
         final String explicitLimit = jdbcCustomization.supportsExplicitQueryLimitPart() ? jdbcCustomization.getQueryLimitPart(limit) : "";
         return jdbcRunner.query(
-                "select * from " + tableName + " where picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() + " order by execution_time asc" + explicitLimit,
+                "select TOP "+limit+" * from " + tableName + " with (readpast) where picked = ? and execution_time <= ? " + unresolvedFilter.andCondition() + " order by execution_time asc" + explicitLimit,
                 (PreparedStatement p) -> {
                     int index = 1;
                     p.setBoolean(index++, false);

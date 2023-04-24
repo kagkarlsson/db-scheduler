@@ -21,6 +21,7 @@ import com.google.common.collect.Lists;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.LoggerFactory;
@@ -93,6 +94,7 @@ public abstract class CompatibilityTest {
     }
 
     @Test
+    @RepeatedTest(4)
     public void test_compatibility_fetch_and_lock_on_execute() {
         Scheduler scheduler = Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
