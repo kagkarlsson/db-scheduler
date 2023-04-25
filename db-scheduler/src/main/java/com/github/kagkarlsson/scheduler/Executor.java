@@ -21,16 +21,15 @@ import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+// TODO: make super-class of the polling-strategies instead
 public class Executor {
     private static final Logger LOG = LoggerFactory.getLogger(Executor.class);
 
@@ -38,33 +37,57 @@ public class Executor {
     private AtomicInteger currentlyInQueueOrProcessing = new AtomicInteger(0);
     private final ExecutorService executorService;
     private final Clock clock;
+    private Map<CompletableFuture<Void>, CompletableFuture<Void>> ongoingWork = new ConcurrentHashMap<>();
 
     public Executor(ExecutorService executorService, Clock clock) {
         this.executorService = executorService;
         this.clock = clock;
     }
 
-    public void addToQueue(Runnable r, Runnable afterDone) {
+    // TODO: remove
+    public void addToQueue(Supplier<CompletableFuture<Void>> toRun, Runnable afterDone) {
         currentlyInQueueOrProcessing.incrementAndGet(); // if we always had a ThreadPoolExecutor we could check queue-size using getQueue()
-        executorService.execute(() -> {
-            // Execute
-            try {
-                r.run();
-            } finally {
-                currentlyInQueueOrProcessing.decrementAndGet();
-                // Run callbacks after decrementing currentlyInQueueOrProcessing
-                afterDone.run();
-            }
+
+        toRun.get().thenAccept(v -> {
+            // For async, these callbacks are run before complete,
+            //  thus allowing queue of ongoing executions to grow without bound
+            currentlyInQueueOrProcessing.decrementAndGet();
+            // Run callbacks after decrementing currentlyInQueueOrProcessing
+            afterDone.run();
         });
+
+    }
+
+    public void incrementInQueue() {
+        currentlyInQueueOrProcessing.incrementAndGet(); // if we always had a ThreadPoolExecutor we could check queue-size using getQueue()
+    }
+    public void decrementInQueue() {
+        currentlyInQueueOrProcessing.decrementAndGet();
+    }
+
+    public void addOngoingWork(CompletableFuture<Void> work) {
+        ongoingWork.put(work, work);
     }
 
     public List<CurrentlyExecuting> getCurrentlyExecuting() {
         return new ArrayList<>(currentlyProcessing.values());
     }
 
+    @SuppressWarnings("rawtypes")
+    public void awaitCurrentlyExecuting() {
+        CompletableFuture[] ongoingWork = this.ongoingWork.keySet().toArray(new CompletableFuture[0]);
+        CompletableFuture.allOf(ongoingWork).join();
+    }
+
     public void stop(Duration shutdownMaxWait) {
+
         LOG.info("Letting running executions finish. Will wait up to 2x{}.", shutdownMaxWait);
+        // TODO: upper timelimit for completable futures as well
+        // Wait for futures explicitly, as we can no longer rely on executorService.shutdown()
+        awaitCurrentlyExecuting();
+
         final Instant startShutdown = clock.now();
+
         if (ExecutorUtils.shutdownAndAwaitTermination(executorService, shutdownMaxWait, shutdownMaxWait)) {
             LOG.info("Scheduler stopped.");
         } else {
@@ -98,5 +121,9 @@ public class Executor {
         if (currentlyProcessing.remove(executionId) == null) {
             LOG.warn("Released execution was not found in collection of executions currently being processed. Should never happen. Execution-id: " + executionId);
         }
+    }
+
+    public java.util.concurrent.Executor getExecutorService() {
+        return executorService;
     }
 }

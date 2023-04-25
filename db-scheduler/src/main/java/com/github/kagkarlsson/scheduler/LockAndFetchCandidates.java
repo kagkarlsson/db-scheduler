@@ -17,12 +17,16 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.task.AsyncExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class LockAndFetchCandidates implements PollStrategy {
@@ -88,16 +92,34 @@ public class LockAndFetchCandidates implements PollStrategy {
         }
 
         for (Execution picked : pickedExecutions) {
-            executor.addToQueue(
-                new ExecutePicked(executor, taskRepository, earlyExecutionListener, schedulerClient, statsRegistry,
-                    taskResolver, schedulerState, failureLogger,
-                    clock, picked),
-                () -> {
+            CompletableFuture<Void> future = CompletableFuture
+                .runAsync(executor::incrementInQueue, executor.getExecutorService())
+                .thenComposeAsync((_ignored) -> {
+                    // Experimental support for async execution. Peek at Task to see if support async
+                    // Unresolved tasks will be handled further in
+                    final Optional<Task> task = taskResolver.resolve(picked.taskInstance.getTaskName());
+                    if (task.isPresent() && task.get() instanceof AsyncExecutionHandler) {
+
+                        return new AsyncExecutePicked(executor, taskRepository, earlyExecutionListener,
+                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                            clock, picked).toCompletableFuture();
+                    } else {
+
+                        return CompletableFuture.runAsync(new ExecutePicked(executor, taskRepository, earlyExecutionListener,
+                            schedulerClient, statsRegistry, taskResolver, schedulerState, failureLogger,
+                            clock, picked), executor.getExecutorService());
+                    }
+
+                }, executor.getExecutorService())
+                .thenAccept(x -> {
+                    executor.decrementInQueue();
                     if (moreExecutionsInDatabase.get()
                         && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
                         triggerCheckForNewExecutions.run();
                     }
                 });
+
+            executor.addOngoingWork(future);
         }
         statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }

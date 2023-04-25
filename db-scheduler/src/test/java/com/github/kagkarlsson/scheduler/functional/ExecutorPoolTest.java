@@ -72,7 +72,6 @@ public class ExecutorPoolTest {
         testExecuteUntilNoneLeft(12, 4, 200);
     }
 
-
     private void testExecuteUntilNoneLeft(int pollingLimit, int threads, int executionsToRun) {
         Instant now = Instant.now();
         OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);

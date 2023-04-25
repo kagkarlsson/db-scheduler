@@ -76,6 +76,7 @@ public class TestHelper {
             final JdbcTaskRepository schedulerTaskRepository = new JdbcTaskRepository(dataSource, true, new DefaultJdbcCustomization(), tableName, taskResolver, new SchedulerName.Fixed("manual"), serializer, clock);
             final JdbcTaskRepository clientTaskRepository = new JdbcTaskRepository(dataSource, commitWhenAutocommitDisabled, new DefaultJdbcCustomization(), tableName, taskResolver, new SchedulerName.Fixed("manual"), serializer, clock);
 
+            // TODO: new DirectExecutorService() will not work after starting to execute work async
             return new ManualScheduler(clock, schedulerTaskRepository, clientTaskRepository, taskResolver, executorThreads,
                 new DirectExecutorService(), schedulerName, waiter, heartbeatInterval, enableImmediateExecution,
                 statsRegistry, Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
