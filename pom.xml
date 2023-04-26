@@ -154,17 +154,12 @@
 					<configuration>
 						<header>${license.dir}/license-header.txt</header>
 						<strictCheck>true</strictCheck>
+						<includes>
+							<include>**/*.java</include>
+						</includes>
 						<excludes>
-							<exclude>pom.xml</exclude>
-							<exclude>LICENSE*</exclude>
-							<exclude>todo.txt</exclude>
-							<exclude>.java-version</exclude>
-							<exclude>.license/**</exclude>
-							<exclude>src/test/**</exclude>
-							<exclude>**/*.properties</exclude>
-							<exclude>**/*.sql</exclude>
 							<exclude>.github/**</exclude>
-							<exclude>test/**</exclude>
+							<exclude>**/src/test/**</exclude>
 							<exclude>**/RuntimeTypeAdapterFactory.java</exclude>
 						</excludes>
 						<failIfMissing>${failOnMissingHeader}</failIfMissing>
