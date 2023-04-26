@@ -4,7 +4,6 @@ import com.github.kagkarlsson.scheduler.DbUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
-
 import java.time.Duration;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -20,37 +19,47 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @Disabled
 public class Oracle11gCompatibilityTest extends CompatibilityTest {
-    @Container
-    private static final OracleContainer ORACLE = new OracleContainer("oracleinanutshell/oracle-xe-11g:1.0.0");
-    private static HikariDataSource pooledDatasource;
+  @Container
+  private static final OracleContainer ORACLE =
+      new OracleContainer("oracleinanutshell/oracle-xe-11g:1.0.0");
 
-    public Oracle11gCompatibilityTest() { super(false);}
+  private static HikariDataSource pooledDatasource;
 
-    @BeforeAll
-    static void initSchema() {
-        final DriverDataSource datasource = new DriverDataSource(ORACLE.getJdbcUrl(), "oracle.jdbc.OracleDriver", new Properties(), ORACLE.getUsername(), ORACLE.getPassword());
+  public Oracle11gCompatibilityTest() {
+    super(false);
+  }
 
-        final HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setDataSource(datasource);
-        hikariConfig.setMaximumPoolSize(10);
-        pooledDatasource = new HikariDataSource(hikariConfig);
+  @BeforeAll
+  static void initSchema() {
+    final DriverDataSource datasource =
+        new DriverDataSource(
+            ORACLE.getJdbcUrl(),
+            "oracle.jdbc.OracleDriver",
+            new Properties(),
+            ORACLE.getUsername(),
+            ORACLE.getPassword());
 
-        // init schema
-        DbUtils.runSqlResource("/oracle_tables.sql").accept(pooledDatasource);
-    }
+    final HikariConfig hikariConfig = new HikariConfig();
+    hikariConfig.setDataSource(datasource);
+    hikariConfig.setMaximumPoolSize(10);
+    pooledDatasource = new HikariDataSource(hikariConfig);
 
-    @BeforeEach
-    void overrideSchedulerShutdown() {
-        stopScheduler.setWaitBeforeInterrupt(Duration.ofMillis(100));
-    }
+    // init schema
+    DbUtils.runSqlResource("/oracle_tables.sql").accept(pooledDatasource);
+  }
 
-    @Override
-    public DataSource getDataSource() {
-        return pooledDatasource;
-    }
+  @BeforeEach
+  void overrideSchedulerShutdown() {
+    stopScheduler.setWaitBeforeInterrupt(Duration.ofMillis(100));
+  }
 
-    @Override
-    public boolean commitWhenAutocommitDisabled() {
-        return false;
-    }
+  @Override
+  public DataSource getDataSource() {
+    return pooledDatasource;
+  }
+
+  @Override
+  public boolean commitWhenAutocommitDisabled() {
+    return false;
+  }
 }
