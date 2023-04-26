@@ -107,6 +107,11 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
+  public String createSelectDueQuery(String tableName, int limit, String andCondition) {
+    return jdbcCustomization.createSelectDueQuery(tableName, limit, andCondition);
+  }
+
+  @Override
   public String getName() {
     return jdbcCustomization.getName();
   }

@@ -261,18 +261,13 @@ public class JdbcTaskRepository implements TaskRepository {
 
   @Override
   public List<Execution> getDue(Instant now, int limit) {
+    LOG.trace("Using generic fetch-then-lock query");
     final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
-    final String explicitLimit =
-        jdbcCustomization.supportsExplicitQueryLimitPart()
-            ? jdbcCustomization.getQueryLimitPart(limit)
-            : "";
+    String selectDueQuery =
+        jdbcCustomization.createSelectDueQuery(tableName, limit, unresolvedFilter.andCondition());
+
     return jdbcRunner.query(
-        "select * from "
-            + tableName
-            + " where picked = ? and execution_time <= ? "
-            + unresolvedFilter.andCondition()
-            + " order by execution_time asc"
-            + explicitLimit,
+        selectDueQuery,
         (PreparedStatement p) -> {
           int index = 1;
           p.setBoolean(index++, false);

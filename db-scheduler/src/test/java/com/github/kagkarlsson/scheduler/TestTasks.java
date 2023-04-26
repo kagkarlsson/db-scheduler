@@ -176,7 +176,9 @@ public class TestTasks {
     @Override
     public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
       try {
-        Thread.sleep(millis);
+        if (millis > 0) {
+          Thread.sleep(millis);
+        }
       } catch (InterruptedException e) {
         LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
       }

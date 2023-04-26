@@ -36,14 +36,15 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
 
   @BeforeAll
   static void initSchema() {
-    //    String jdbcUrl = "jdbc:sqlserver://localhost:1433";
-    //    DataSource datasource =
-    //        new DriverDataSource(
-    //            jdbcUrl,
-    //            "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-    //            new Properties(),
-    //            "SA",
-    //            "bigSt%rongPwd");
+    //      For MANUAL testing, see javadoc comment
+    //        String jdbcUrl = "jdbc:sqlserver://localhost:1433";
+    //        DataSource datasource =
+    //            new DriverDataSource(
+    //                jdbcUrl,
+    //                "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+    //                new Properties(),
+    //                "SA",
+    //                "bigSt%rongPwd");
     final DriverDataSource datasource =
         new DriverDataSource(
             MSSQL.getJdbcUrl(),
@@ -52,6 +53,7 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
             MSSQL.getUsername(),
             MSSQL.getPassword());
 
+    //    for debugging SQL
     //            datasource = ProxyDataSourceBuilder.create(datasource)
     //                .logQueryBySlf4j()
     //                .build();

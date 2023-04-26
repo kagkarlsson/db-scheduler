@@ -41,6 +41,23 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
+  public String getQueryLimitPart(int limit) {
+    return " TOP " + limit;
+  }
+
+  @Override
+  public String createSelectDueQuery(String tableName, int limit, String andCondition) {
+    final String explicitLimit = supportsExplicitQueryLimitPart() ? getQueryLimitPart(limit) : "";
+    return "SELECT "
+        + explicitLimit
+        + " * FROM "
+        + tableName
+        + " WITH (READPAST) WHERE picked = ? AND execution_time <= ? "
+        + andCondition
+        + " ORDER BY execution_time ASC ";
+  }
+
+  @Override
   public String createGenericSelectForUpdateQuery(
       String tableName, int limit, String requiredAndCondition) {
     return "select TOP "

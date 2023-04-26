@@ -45,4 +45,6 @@ public interface JdbcCustomization {
 
   String createGenericSelectForUpdateQuery(
       String tableName, int limit, String requiredAndCondition);
+
+  String createSelectDueQuery(String tableName, int limit, String andCondition);
 }

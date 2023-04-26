@@ -78,6 +78,17 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
+  public String createSelectDueQuery(String tableName, int limit, String andCondition) {
+    final String explicitLimit = supportsExplicitQueryLimitPart() ? getQueryLimitPart(limit) : "";
+    return "select * from "
+        + tableName
+        + " where picked = ? and execution_time <= ? "
+        + andCondition
+        + " order by execution_time asc "
+        + explicitLimit;
+  }
+
+  @Override
   public String getName() {
     return "Default";
   }
