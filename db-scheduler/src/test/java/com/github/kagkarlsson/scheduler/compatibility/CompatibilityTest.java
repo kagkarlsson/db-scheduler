@@ -5,12 +5,23 @@ import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_T
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.*;
+import com.github.kagkarlsson.scheduler.DbUtils;
+import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerName;
+import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
+import com.github.kagkarlsson.scheduler.SystemClock;
+import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
 import com.github.kagkarlsson.scheduler.helper.ExecutionCompletedCondition;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;

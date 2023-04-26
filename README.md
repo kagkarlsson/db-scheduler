@@ -192,10 +192,11 @@ Number of threads. Default `10`.
 How often the scheduler checks the database for due executions. Default `10s`.<br/>
 
 :gear: `.enableImmediateExecution()`<br/>
-If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled to `now()`, or a time in
-the past. For this to work _reliably_, the call to `schedule(..)` should not occur from within a transaction, because
-the record may not yet be visible to the scheduler (if this is a requirement, see the
-method `scheduler.triggerCheckForDueExecutions()`). Default `false`.
+If this is enabled, the scheduler will attempt to hint to the local `Scheduler` that there are executions to be executed after they are scheduled to 
+run `now()`, or a time in the past. **NB:** If the call to `schedule(..)`/`reschedule(..)` occur from within a transaction, the scheduler might attempt to run 
+it before the update is visible (transaction has not committed). It is still persisted though, so even if it is a miss, it will run before the 
+next `polling-interval`. You may also programmatically trigger an early check for due executions using the 
+Scheduler-method `scheduler.triggerCheckForDueExecutions()`). Default `false`.
 
 :gear: `.registerShutdownHook()`<br/>
 Registers a shutdown-hook that will call `Scheduler.stop()` on shutdown. Stop should always be called for a
