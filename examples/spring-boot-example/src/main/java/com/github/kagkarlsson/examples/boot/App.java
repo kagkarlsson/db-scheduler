@@ -18,8 +18,6 @@ package com.github.kagkarlsson.examples.boot;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.Task;
 import java.time.Instant;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -27,7 +25,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 @SpringBootApplication
 public class App {
@@ -40,15 +37,13 @@ public class App {
     }
 
     /**
-     * Example hack: use a {@link CommandLineRunner} to trigger scheduling of a one-time task.
+     * Example hack: use a {@link CommandLineRunner} to trigger scheduling of a
+     * one-time task.
      */
     @Bean
     CommandLineRunner executeOnStartup(Scheduler scheduler, Task<Void> sampleOneTimeTask) {
         log.info("Scheduling one time task to now!");
 
-        return ignored -> scheduler.schedule(
-            sampleOneTimeTask.instance("command-line-runner"),
-            Instant.now()
-        );
+        return ignored -> scheduler.schedule(sampleOneTimeTask.instance("command-line-runner"), Instant.now());
     }
 }

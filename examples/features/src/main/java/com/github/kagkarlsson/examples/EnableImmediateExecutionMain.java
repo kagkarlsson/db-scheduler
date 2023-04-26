@@ -15,17 +15,16 @@
  */
 package com.github.kagkarlsson.examples;
 
+import static com.github.kagkarlsson.examples.helpers.ExampleHelpers.sleep;
+
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.examples.helpers.ExampleHelpers;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-
-import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
-
-import static com.github.kagkarlsson.examples.helpers.ExampleHelpers.sleep;
+import javax.sql.DataSource;
 
 public class EnableImmediateExecutionMain extends Example {
 
@@ -36,16 +35,12 @@ public class EnableImmediateExecutionMain extends Example {
     @Override
     public void run(DataSource dataSource) {
 
-        OneTimeTask<Void> onetimeTask = Tasks.oneTime("my_task")
-            .execute((taskInstance, executionContext) -> {
-                System.out.println("Executed!");
-            });
+        OneTimeTask<Void> onetimeTask = Tasks.oneTime("my_task").execute((taskInstance, executionContext) -> {
+            System.out.println("Executed!");
+        });
 
-        final Scheduler scheduler = Scheduler
-            .create(dataSource, onetimeTask)
-            .pollingInterval(Duration.ofSeconds(20))
-            .enableImmediateExecution()
-            .build();
+        final Scheduler scheduler = Scheduler.create(dataSource, onetimeTask).pollingInterval(Duration.ofSeconds(20))
+                .enableImmediateExecution().build();
 
         ExampleHelpers.registerShutdownHook(scheduler);
 
@@ -54,7 +49,8 @@ public class EnableImmediateExecutionMain extends Example {
         sleep(2000);
         System.out.println("Scheduling task to executed immediately.");
         scheduler.schedule(onetimeTask.instance("1"), Instant.now());
-//        scheduler.triggerCheckForDueExecutions();  // another option for triggering execution directly
+        // scheduler.triggerCheckForDueExecutions(); // another option for triggering
+        // execution directly
     }
 
 }

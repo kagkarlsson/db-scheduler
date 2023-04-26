@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 public abstract class LoggingRunnable implements Runnable {
     private final Logger LOG = LoggerFactory.getLogger(getClass());
+
     public abstract void runButLogExceptions();
 
     @Override

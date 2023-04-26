@@ -41,26 +41,19 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-
 public class DbSchedulerAutoConfigurationTest {
     private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfigurationTest.class);
     private final ApplicationContextRunner ctxRunner;
 
     public DbSchedulerAutoConfigurationTest() {
         ctxRunner = new ApplicationContextRunner()
-            .withPropertyValues(
-                "spring.application.name=db-scheduler-boot-starter-test",
-                "spring.profiles.active=integration-test"
-            ).withConfiguration(AutoConfigurations.of(
-                DataSourceAutoConfiguration.class,
-                SqlInitializationAutoConfiguration.class,
-                MetricsAutoConfiguration.class,
-                CompositeMeterRegistryAutoConfiguration.class,
-                HealthContributorAutoConfiguration.class,
-                DbSchedulerMetricsAutoConfiguration.class,
-                DbSchedulerActuatorAutoConfiguration.class,
-                DbSchedulerAutoConfiguration.class
-            ));
+                .withPropertyValues("spring.application.name=db-scheduler-boot-starter-test",
+                        "spring.profiles.active=integration-test")
+                .withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class,
+                        SqlInitializationAutoConfiguration.class, MetricsAutoConfiguration.class,
+                        CompositeMeterRegistryAutoConfiguration.class, HealthContributorAutoConfiguration.class,
+                        DbSchedulerMetricsAutoConfiguration.class, DbSchedulerActuatorAutoConfiguration.class,
+                        DbSchedulerAutoConfiguration.class));
     }
 
     @Test
@@ -90,133 +83,120 @@ public class DbSchedulerAutoConfigurationTest {
 
     @Test
     public void it_should_initialize_a_scheduler_with_a_single_task() {
-        ctxRunner
-            .withUserConfiguration(SingleTaskConfiguration.class)
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(Scheduler.class);
-                assertThat(ctx).hasSingleBean(Task.class);
-                assertThat(ctx).getBean("singleStringTask", Task.class).isNotNull();
-            });
+        ctxRunner.withUserConfiguration(SingleTaskConfiguration.class).run((AssertableApplicationContext ctx) -> {
+            assertThat(ctx).hasSingleBean(Scheduler.class);
+            assertThat(ctx).hasSingleBean(Task.class);
+            assertThat(ctx).getBean("singleStringTask", Task.class).isNotNull();
+        });
     }
 
     @Test
     public void it_should_initialize_a_scheduler_with_a_multiple_tasks() {
-        ctxRunner
-            .withUserConfiguration(MultipleTasksConfiguration.class)
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(Scheduler.class);
+        ctxRunner.withUserConfiguration(MultipleTasksConfiguration.class).run((AssertableApplicationContext ctx) -> {
+            assertThat(ctx).hasSingleBean(Scheduler.class);
 
-                ImmutableList.of("firstTask", "secondTask", "thirdTask").forEach(beanName -> {
-                    assertThat(ctx).getBean(beanName, Task.class).isNotNull();
-                });
+            ImmutableList.of("firstTask", "secondTask", "thirdTask").forEach(beanName -> {
+                assertThat(ctx).getBean(beanName, Task.class).isNotNull();
             });
+        });
     }
 
     @Test
     public void it_should_autoconfigure_a_health_check() {
-        ctxRunner
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(DbSchedulerHealthIndicator.class);
-            });
+        ctxRunner.run((AssertableApplicationContext ctx) -> {
+            assertThat(ctx).hasSingleBean(DbSchedulerHealthIndicator.class);
+        });
     }
 
     @Test
     public void it_should_not_autoconfigure_a_health_check_when_actuator_is_absent() {
-        ctxRunner
-            .with(classesRemovedFromClasspath(HealthContributorAutoConfiguration.class))
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).doesNotHaveBean(DbSchedulerHealthIndicator.class);
-            });
+        ctxRunner.with(classesRemovedFromClasspath(HealthContributorAutoConfiguration.class))
+                .run((AssertableApplicationContext ctx) -> {
+                    assertThat(ctx).doesNotHaveBean(DbSchedulerHealthIndicator.class);
+                });
     }
 
     @Test
     public void it_should_skip_autoconfiguration_if_explicitly_disabled() {
-        ctxRunner
-            .withPropertyValues("db-scheduler.enabled=false")
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).doesNotHaveBean(Scheduler.class);
-                assertThat(ctx).doesNotHaveBean(DbSchedulerStarter.class);
-                assertThat(ctx).doesNotHaveBean(DbSchedulerCustomizer.class);
-                assertThat(ctx).doesNotHaveBean(DbSchedulerHealthIndicator.class);
-                assertThat(ctx).doesNotHaveBean(StatsRegistry.class);
-            });
+        ctxRunner.withPropertyValues("db-scheduler.enabled=false").run((AssertableApplicationContext ctx) -> {
+            assertThat(ctx).doesNotHaveBean(Scheduler.class);
+            assertThat(ctx).doesNotHaveBean(DbSchedulerStarter.class);
+            assertThat(ctx).doesNotHaveBean(DbSchedulerCustomizer.class);
+            assertThat(ctx).doesNotHaveBean(DbSchedulerHealthIndicator.class);
+            assertThat(ctx).doesNotHaveBean(StatsRegistry.class);
+        });
     }
 
     @Test
     public void it_should_start_as_soon_as_possible() {
-        ctxRunner
-            .withPropertyValues("db-scheduler.delay-startup-until-context-ready=false")
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(Scheduler.class);
+        ctxRunner.withPropertyValues("db-scheduler.delay-startup-until-context-ready=false")
+                .run((AssertableApplicationContext ctx) -> {
+                    assertThat(ctx).hasSingleBean(Scheduler.class);
 
-                assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
-                assertThat(ctx).hasSingleBean(ImmediateStart.class);
-                assertThat(ctx).doesNotHaveBean(ContextReadyStart.class);
+                    assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
+                    assertThat(ctx).hasSingleBean(ImmediateStart.class);
+                    assertThat(ctx).doesNotHaveBean(ContextReadyStart.class);
 
-            });
+                });
     }
 
     @Test
     public void it_should_start_when_the_context_is_ready() {
-        ctxRunner
-            .withPropertyValues("db-scheduler.delay-startup-until-context-ready=true")
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(Scheduler.class);
+        ctxRunner.withPropertyValues("db-scheduler.delay-startup-until-context-ready=true")
+                .run((AssertableApplicationContext ctx) -> {
+                    assertThat(ctx).hasSingleBean(Scheduler.class);
 
-                assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
-                assertThat(ctx).hasSingleBean(ContextReadyStart.class);
-                assertThat(ctx).doesNotHaveBean(ImmediateStart.class);
+                    assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
+                    assertThat(ctx).hasSingleBean(ContextReadyStart.class);
+                    assertThat(ctx).doesNotHaveBean(ImmediateStart.class);
 
-            });
+                });
     }
 
     @Test
     public void it_should_support_custom_starting_strategies() {
-        ctxRunner
-            .withUserConfiguration(CustomStarterConfiguration.class)
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(Scheduler.class);
+        ctxRunner.withUserConfiguration(CustomStarterConfiguration.class).run((AssertableApplicationContext ctx) -> {
+            assertThat(ctx).hasSingleBean(Scheduler.class);
 
-                assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
-                assertThat(ctx).doesNotHaveBean(ContextReadyStart.class);
-                assertThat(ctx).doesNotHaveBean(ImmediateStart.class);
-            });
+            assertThat(ctx).hasSingleBean(DbSchedulerStarter.class);
+            assertThat(ctx).doesNotHaveBean(ContextReadyStart.class);
+            assertThat(ctx).doesNotHaveBean(ImmediateStart.class);
+        });
     }
 
     @Test
     public void it_should_provide_micrometer_registry_if_micrometer_is_present() {
-        ctxRunner.withUserConfiguration(SingleTaskConfiguration.class)
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(MicrometerStatsRegistry.class);
-            });
+        ctxRunner.withUserConfiguration(SingleTaskConfiguration.class).run((AssertableApplicationContext ctx) -> {
+            assertThat(ctx).hasSingleBean(MicrometerStatsRegistry.class);
+        });
     }
 
     @Test
     public void it_should_provide_noop_registry_if_micrometer_not_present() {
         ctxRunner.withUserConfiguration(SingleTaskConfiguration.class)
-            .with(classesRemovedFromClasspath(Meter.class, MeterRegistry.class))
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(DefaultStatsRegistry.class);
-            });
+                .with(classesRemovedFromClasspath(Meter.class, MeterRegistry.class))
+                .run((AssertableApplicationContext ctx) -> {
+                    assertThat(ctx).hasSingleBean(DefaultStatsRegistry.class);
+                });
     }
 
     @Test
     public void it_should_provide_noop_registry_if_actuator_not_present() {
         ctxRunner.withUserConfiguration(SingleTaskConfiguration.class)
-            .with(classesRemovedFromClasspath(MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class))
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(DefaultStatsRegistry.class);
-            });
+                .with(classesRemovedFromClasspath(MetricsAutoConfiguration.class,
+                        CompositeMeterRegistryAutoConfiguration.class))
+                .run((AssertableApplicationContext ctx) -> {
+                    assertThat(ctx).hasSingleBean(DefaultStatsRegistry.class);
+                });
     }
 
     @Test
     public void it_should_use_custom_stats_registry_if_present_in_context() {
-        ctxRunner.withUserConfiguration(CustomStatsRegistry.class)
-            .run((AssertableApplicationContext ctx) -> {
-                assertThat(ctx).hasSingleBean(StatsRegistry.class);
-                assertThat(ctx).doesNotHaveBean(DefaultStatsRegistry.class);
-                assertThat(ctx).doesNotHaveBean(MicrometerStatsRegistry.class);
-            });
+        ctxRunner.withUserConfiguration(CustomStatsRegistry.class).run((AssertableApplicationContext ctx) -> {
+            assertThat(ctx).hasSingleBean(StatsRegistry.class);
+            assertThat(ctx).doesNotHaveBean(DefaultStatsRegistry.class);
+            assertThat(ctx).doesNotHaveBean(MicrometerStatsRegistry.class);
+        });
     }
 
     @Configuration
@@ -273,16 +253,20 @@ public class DbSchedulerAutoConfigurationTest {
         StatsRegistry customStatsRegistry() {
             return new StatsRegistry() {
                 @Override
-                public void register(SchedulerStatsEvent e) {}
+                public void register(SchedulerStatsEvent e) {
+                }
 
                 @Override
-                public void register(CandidateStatsEvent e) {}
+                public void register(CandidateStatsEvent e) {
+                }
 
                 @Override
-                public void register(ExecutionStatsEvent e) {}
+                public void register(ExecutionStatsEvent e) {
+                }
 
                 @Override
-                public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {}
+                public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {
+                }
             };
         }
     }
@@ -290,14 +274,13 @@ public class DbSchedulerAutoConfigurationTest {
     private static Task<String> namedStringTask(String name) {
         Objects.requireNonNull(name);
 
-        return Tasks
-            .oneTime(name, String.class)
-            .execute((instance, context) -> {
-                log.info("Executed task: {}, ctx: {}", instance, context);
-            });
+        return Tasks.oneTime(name, String.class).execute((instance, context) -> {
+            log.info("Executed task: {}, ctx: {}", instance, context);
+        });
     }
 
-    private static Function<ApplicationContextRunner, ApplicationContextRunner> classesRemovedFromClasspath(Class<?>... classesToHide) {
+    private static Function<ApplicationContextRunner, ApplicationContextRunner> classesRemovedFromClasspath(
+            Class<?>... classesToHide) {
         return ctxRunner -> ctxRunner.withClassLoader(new FilteredClassLoader(classesToHide));
     }
 }

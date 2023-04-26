@@ -18,11 +18,11 @@ package com.github.kagkarlsson.scheduler.exceptions;
 public abstract class DbSchedulerException extends RuntimeException {
     static final long serialVersionUID = -2132850112553296790L;
 
-    public DbSchedulerException(String message){
+    public DbSchedulerException(String message) {
         super(message);
     }
 
-    public DbSchedulerException(String message, Throwable e){
+    public DbSchedulerException(String message, Throwable e) {
         super(message, e);
     }
 }

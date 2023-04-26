@@ -18,14 +18,13 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FetchCandidates implements PollStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(FetchCandidates.class);
@@ -45,9 +44,9 @@ public class FetchCandidates implements PollStrategy {
     private final int upperLimit;
 
     public FetchCandidates(Executor executor, TaskRepository taskRepository, SchedulerClient schedulerClient,
-                           SchedulerClientEventListener earlyExecutionListener, int threadpoolSize, StatsRegistry statsRegistry, SchedulerState schedulerState,
-                           ConfigurableLogger failureLogger, TaskResolver taskResolver, Clock clock,
-                           PollingStrategyConfig pollingStrategyConfig, Runnable triggerCheckForNewExecutions) {
+            SchedulerClientEventListener earlyExecutionListener, int threadpoolSize, StatsRegistry statsRegistry,
+            SchedulerState schedulerState, ConfigurableLogger failureLogger, TaskResolver taskResolver, Clock clock,
+            PollingStrategyConfig pollingStrategyConfig, Runnable triggerCheckForNewExecutions) {
         this.executor = executor;
         this.taskRepository = taskRepository;
         this.schedulerClient = schedulerClient;
@@ -60,7 +59,8 @@ public class FetchCandidates implements PollStrategy {
         this.pollingStrategyConfig = pollingStrategyConfig;
         this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
         lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
-        //FIXLATER: this is not "upper limit", but rather nr of executions to get. those already in queue will become stale
+        // FIXLATER: this is not "upper limit", but rather nr of executions to get.
+        // those already in queue will become stale
         upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
     }
 
@@ -68,29 +68,26 @@ public class FetchCandidates implements PollStrategy {
     public void run() {
         Instant now = clock.now();
 
-        // Fetch new candidates for execution. Old ones still in ExecutorService will become stale and be discarded
+        // Fetch new candidates for execution. Old ones still in ExecutorService will
+        // become stale and be discarded
         final int executionsToFetch = upperLimit;
         List<Execution> fetchedDueExecutions = taskRepository.getDue(now, executionsToFetch);
         LOG.trace("Fetched {} task instances due for execution at {}", fetchedDueExecutions.size(), now);
 
         currentGenerationNumber.incrementAndGet();
-        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(
-            currentGenerationNumber.get(),
-            fetchedDueExecutions.size(),
-            executionsToFetch == fetchedDueExecutions.size(),
-            (Integer leftInBatch) -> leftInBatch <= lowerLimit);
+        DueExecutionsBatch newDueBatch = new DueExecutionsBatch(currentGenerationNumber.get(),
+                fetchedDueExecutions.size(), executionsToFetch == fetchedDueExecutions.size(),
+                (Integer leftInBatch) -> leftInBatch <= lowerLimit);
 
         for (Execution e : fetchedDueExecutions) {
-            executor.addToQueue(
-                () -> {
-                    final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
-                    candidate.ifPresent(picked -> new ExecutePicked(executor, taskRepository, earlyExecutionListener, schedulerClient, statsRegistry,
-                        taskResolver, schedulerState, failureLogger,
-                        clock, picked).run());
-                },
-                () -> {
-                    newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);
-                });
+            executor.addToQueue(() -> {
+                final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
+                candidate.ifPresent(
+                        picked -> new ExecutePicked(executor, taskRepository, earlyExecutionListener, schedulerClient,
+                                statsRegistry, taskResolver, schedulerState, failureLogger, clock, picked).run());
+            }, () -> {
+                newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);
+            });
         }
         statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }
@@ -107,7 +104,8 @@ public class FetchCandidates implements PollStrategy {
         @Override
         public Optional<Execution> call() {
             if (schedulerState.isShuttingDown()) {
-                LOG.info("Scheduler has been shutdown. Skipping fetched due execution: " + candidate.taskInstance.getTaskAndInstance());
+                LOG.info("Scheduler has been shutdown. Skipping fetched due execution: "
+                        + candidate.taskInstance.getTaskAndInstance());
                 return Optional.empty();
             }
 
@@ -115,7 +113,8 @@ public class FetchCandidates implements PollStrategy {
                 // skipping execution due to it being stale
                 addedDueExecutionsBatch.markBatchAsStale();
                 statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
-                LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})", currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
+                LOG.trace("Skipping queued execution (current generationNumber: {}, execution generationNumber: {})",
+                        currentGenerationNumber, addedDueExecutionsBatch.getGenerationNumber());
                 return Optional.empty();
             }
 

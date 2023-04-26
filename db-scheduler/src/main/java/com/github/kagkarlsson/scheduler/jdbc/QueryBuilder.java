@@ -15,14 +15,13 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
+import static java.util.Optional.empty;
+import static java.util.stream.Collectors.joining;
 
+import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import static java.util.Optional.empty;
-import static java.util.stream.Collectors.joining;
 
 class QueryBuilder {
     private final String tableName;

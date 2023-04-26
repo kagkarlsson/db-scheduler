@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,17 +25,21 @@ import java.util.List;
 public interface JdbcCustomization {
 
     String getName();
+
     void setInstant(PreparedStatement p, int index, Instant value) throws SQLException;
+
     Instant getInstant(ResultSet rs, String columnName) throws SQLException;
 
     void setTaskData(PreparedStatement p, int index, byte[] value) throws SQLException;
+
     byte[] getTaskData(ResultSet rs, String columnName) throws SQLException;
 
-
     boolean supportsExplicitQueryLimitPart();
+
     String getQueryLimitPart(int limit);
 
     boolean supportsLockAndFetch();
+
     List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit);
 
 }

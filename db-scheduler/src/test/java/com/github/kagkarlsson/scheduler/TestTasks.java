@@ -20,7 +20,8 @@ import org.slf4j.LoggerFactory;
 public class TestTasks {
 
     public static final CompletionHandler<Void> REMOVE_ON_COMPLETE = new CompletionHandler.OnCompleteRemove<>();
-    public static final VoidExecutionHandler<Void> DO_NOTHING = (taskInstance, executionContext) -> {};
+    public static final VoidExecutionHandler<Void> DO_NOTHING = (taskInstance, executionContext) -> {
+    };
 
     public static <T> OneTimeTask<T> oneTime(String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {
         return new OneTimeTask<T>(name, dataClass) {
@@ -49,7 +50,8 @@ public class TestTasks {
         };
     }
 
-    public static <T> RecurringTask<T> recurringWithData(String name, Class<T> dataClass, T initialData, FixedDelay schedule, VoidExecutionHandler<T> handler) {
+    public static <T> RecurringTask<T> recurringWithData(String name, Class<T> dataClass, T initialData,
+            FixedDelay schedule, VoidExecutionHandler<T> handler) {
         return new RecurringTask<T>(name, schedule, dataClass, initialData) {
             @Override
             public void executeRecurringly(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
@@ -93,6 +95,7 @@ public class TestTasks {
         public CountingHandler() {
             wait = Duration.ofMillis(0);
         }
+
         public CountingHandler(Duration wait) {
             this.wait = wait;
         }

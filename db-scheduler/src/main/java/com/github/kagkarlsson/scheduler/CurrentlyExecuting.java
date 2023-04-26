@@ -17,7 +17,6 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-
 import java.time.Duration;
 import java.time.Instant;
 

@@ -17,15 +17,13 @@ package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
-import com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTaskWithPersistentSchedule;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
-
-import javax.sql.DataSource;
 import java.time.Duration;
+import javax.sql.DataSource;
 
 public class StatefulRecurringTaskWithPersistentScheduleMain extends Example {
 
@@ -36,26 +34,23 @@ public class StatefulRecurringTaskWithPersistentScheduleMain extends Example {
     @Override
     public void run(DataSource dataSource) {
 
-        final RecurringTaskWithPersistentSchedule<ScheduleAndInteger> task =
-            Tasks.recurringWithPersistentSchedule("dynamic-recurring-task", ScheduleAndInteger.class)
+        final RecurringTaskWithPersistentSchedule<ScheduleAndInteger> task = Tasks
+                .recurringWithPersistentSchedule("dynamic-recurring-task", ScheduleAndInteger.class)
                 .executeStateful((taskInstance, executionContext) -> {
-                    System.out.printf("Instance: '%s' ran using persistent schedule '%s' and data '%s'\n", taskInstance.getId(), taskInstance.getData().getSchedule(), taskInstance.getData().getData());
+                    System.out.printf("Instance: '%s' ran using persistent schedule '%s' and data '%s'\n",
+                            taskInstance.getId(), taskInstance.getData().getSchedule(),
+                            taskInstance.getData().getData());
                     return taskInstance.getData().returnIncremented();
                 });
 
-        final Scheduler scheduler = Scheduler
-            .create(dataSource, task)
-            .pollingInterval(Duration.ofSeconds(1))
-            .registerShutdownHook()
-            .build();
+        final Scheduler scheduler = Scheduler.create(dataSource, task).pollingInterval(Duration.ofSeconds(1))
+                .registerShutdownHook().build();
 
         scheduler.start();
         sleep(2_000);
 
         scheduler.schedule(task.schedulableInstance("id1",
-            new ScheduleAndInteger(
-                Schedules.fixedDelay(Duration.ofSeconds(3)),
-                1)));
+                new ScheduleAndInteger(Schedules.fixedDelay(Duration.ofSeconds(3)), 1)));
     }
 
     public static class ScheduleAndInteger implements ScheduleAndData {

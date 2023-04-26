@@ -22,13 +22,13 @@ public class TaskInstanceException extends DbSchedulerException {
     private final String taskName;
     private final String instanceId;
 
-    public TaskInstanceException(String message, String taskName, String instanceId, Throwable ex){
+    public TaskInstanceException(String message, String taskName, String instanceId, Throwable ex) {
         super(message + String.format(TASK_NAME_INSTANCE_MESSAGE_PART, taskName, instanceId), ex);
         this.taskName = taskName;
         this.instanceId = instanceId;
     }
 
-    public TaskInstanceException(String message, String taskName, String instanceId){
+    public TaskInstanceException(String message, String taskName, String instanceId) {
         super(message + String.format(TASK_NAME_INSTANCE_MESSAGE_PART, taskName, instanceId));
         this.taskName = taskName;
         this.instanceId = instanceId;

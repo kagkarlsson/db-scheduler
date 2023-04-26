@@ -15,24 +15,21 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import static java.util.function.Function.identity;
+
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Task;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
-import static java.util.function.Function.identity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("rawtypes")
 public class TaskResolver {
@@ -61,7 +58,9 @@ public class TaskResolver {
         if (task == null) {
             addUnresolved(taskName);
             statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK);
-            LOG.info("Found execution with unknown task-name '{}'. Adding it to the list of known unresolved task-names.", taskName);
+            LOG.info(
+                    "Found execution with unknown task-name '{}'. Adding it to the list of known unresolved task-names.",
+                    taskName);
         }
         return Optional.ofNullable(task);
     }
@@ -80,9 +79,9 @@ public class TaskResolver {
 
     public List<String> getUnresolvedTaskNames(Duration unresolvedFor) {
         return unresolvedTasks.values().stream()
-            .filter(unresolved -> Duration.between(unresolved.firstUnresolved, clock.now()).toMillis() > unresolvedFor.toMillis())
-            .map(UnresolvedTask::getTaskName)
-            .collect(Collectors.toList());
+                .filter(unresolved -> Duration.between(unresolved.firstUnresolved, clock.now())
+                        .toMillis() > unresolvedFor.toMillis())
+                .map(UnresolvedTask::getTaskName).collect(Collectors.toList());
     }
 
     public void clearUnresolved(String taskName) {

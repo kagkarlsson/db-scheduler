@@ -1,10 +1,25 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import static java.util.Collections.emptyList;
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import com.github.kagkarlsson.jdbc.JdbcRunner;
+import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
+import com.github.kagkarlsson.jdbc.ResultSetMapper;
+import com.github.kagkarlsson.jdbc.SQLRuntimeException;
+import com.github.kagkarlsson.scheduler.SystemClock;
+import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.google.common.collect.Lists;
 import java.time.Instant;
 import java.util.List;
-
-import com.github.kagkarlsson.scheduler.SystemClock;
-import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,23 +28,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.github.kagkarlsson.jdbc.JdbcRunner;
-import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
-import com.github.kagkarlsson.jdbc.ResultSetMapper;
-import com.github.kagkarlsson.jdbc.SQLRuntimeException;
-import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.google.common.collect.Lists;
-
-import static java.util.Collections.emptyList;
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class JdbcTaskRepositoryExceptionsTest {
@@ -43,7 +41,8 @@ public class JdbcTaskRepositoryExceptionsTest {
     @BeforeEach
     public void setup() {
         expectedTableName = randomAlphanumeric(5);
-        jdbcTaskRepository = new JdbcTaskRepository(null, expectedTableName, null, null, null, mockJdbcRunner, new SystemClock());
+        jdbcTaskRepository = new JdbcTaskRepository(null, expectedTableName, null, null, null, mockJdbcRunner,
+                new SystemClock());
     }
 
     @Test
@@ -69,14 +68,20 @@ public class JdbcTaskRepositoryExceptionsTest {
     public void getExecutionIsMoreThanOne() {
         TaskInstance<Void> expectedTaskInstance = new TaskInstance<>(randomAlphanumeric(10), randomAlphanumeric(10));
 
-        when(mockJdbcRunner.query(ArgumentMatchers.eq("select * from " + expectedTableName + " where task_name = ? and task_instance = ?"), any(PreparedStatementSetter.class), (ResultSetMapper<List<Execution>>) any(ResultSetMapper.class)))
-            .thenReturn(Lists.newArrayList(new Execution(Instant.now(), expectedTaskInstance), new Execution(Instant.now(), expectedTaskInstance)));
+        when(mockJdbcRunner.query(
+                ArgumentMatchers
+                        .eq("select * from " + expectedTableName + " where task_name = ? and task_instance = ?"),
+                any(PreparedStatementSetter.class), (ResultSetMapper<List<Execution>>) any(ResultSetMapper.class)))
+                .thenReturn(Lists.newArrayList(new Execution(Instant.now(), expectedTaskInstance),
+                        new Execution(Instant.now(), expectedTaskInstance)));
 
         TaskInstanceException actualException = assertThrows(TaskInstanceException.class, () -> {
             jdbcTaskRepository.getExecution(expectedTaskInstance);
         });
-        assertEquals("Found more than one matching execution for task name/id combination. (task name: " + expectedTaskInstance.getTaskName() + ", instance id: " + expectedTaskInstance.getId() + ")",
-            actualException.getMessage());
+        assertEquals(
+                "Found more than one matching execution for task name/id combination. (task name: "
+                        + expectedTaskInstance.getTaskName() + ", instance id: " + expectedTaskInstance.getId() + ")",
+                actualException.getMessage());
     }
 
     @ParameterizedTest(name = "Remove ends up removing {0} records")

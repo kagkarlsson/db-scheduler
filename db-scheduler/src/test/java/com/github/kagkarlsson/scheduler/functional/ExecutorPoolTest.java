@@ -1,5 +1,9 @@
 package com.github.kagkarlsson.scheduler.functional;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.core.Is.is;
+
 import co.unruly.matchers.TimeMatchers;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
@@ -10,24 +14,18 @@ import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.core.Is.is;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExecutorPoolTest {
     private static final Logger DEBUG_LOG = LoggerFactory.getLogger(ExecutorPoolTest.class);
@@ -37,13 +35,16 @@ public class ExecutorPoolTest {
     public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
     @RegisterExtension
     public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
-//    Enable if test gets flaky!
-//    @RegisterExtension
-//    public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
-//        new LogLevelOverride("com.github.kagkarlsson.scheduler.DueExecutionsBatch", Level.TRACE),
-//        new LogLevelOverride("com.github.kagkarlsson.scheduler.Waiter", Level.DEBUG),
-//        new LogLevelOverride("com.github.kagkarlsson.scheduler.Scheduler", Level.DEBUG)
-//    );
+    // Enable if test gets flaky!
+    // @RegisterExtension
+    // public ChangeLogLevelsExtension changeLogLevels = new
+    // ChangeLogLevelsExtension(
+    // new LogLevelOverride("com.github.kagkarlsson.scheduler.DueExecutionsBatch",
+    // Level.TRACE),
+    // new LogLevelOverride("com.github.kagkarlsson.scheduler.Waiter", Level.DEBUG),
+    // new LogLevelOverride("com.github.kagkarlsson.scheduler.Scheduler",
+    // Level.DEBUG)
+    // );
 
     @BeforeEach
     public void setUp() {
@@ -72,22 +73,19 @@ public class ExecutorPoolTest {
         testExecuteUntilNoneLeft(12, 4, 200);
     }
 
-
     private void testExecuteUntilNoneLeft(int pollingLimit, int threads, int executionsToRun) {
         Instant now = Instant.now();
         OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
         TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(executionsToRun);
         TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
 
-        Scheduler scheduler = Scheduler.create(postgres.getDataSource(), task)
-            .threads(threads)
-            .pollingInterval(Duration.ofMinutes(1))
-            .schedulerName(new SchedulerName.Fixed("test"))
-            .statsRegistry(registry)
-            .build();
+        Scheduler scheduler = Scheduler.create(postgres.getDataSource(), task).threads(threads)
+                .pollingInterval(Duration.ofMinutes(1)).schedulerName(new SchedulerName.Fixed("test"))
+                .statsRegistry(registry).build();
         stopScheduler.register(scheduler);
 
-        IntStream.range(0, executionsToRun).forEach(i -> scheduler.schedule(task.instance(String.valueOf(i)), clock.now()));
+        IntStream.range(0, executionsToRun)
+                .forEach(i -> scheduler.schedule(task.instance(String.valueOf(i)), clock.now()));
 
         Assertions.assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
             scheduler.start();
@@ -106,15 +104,14 @@ public class ExecutorPoolTest {
 
     private String waitingForConditionTimedOut(Scheduler scheduler) {
         final String currentlyExecuting = scheduler.getCurrentlyExecuting().stream()
-            .map(ce -> ce.getTaskInstance().getTaskAndInstance())
-            .collect(Collectors.joining(","));
+                .map(ce -> ce.getTaskInstance().getTaskAndInstance()).collect(Collectors.joining(","));
 
         List<String> scheduled = new ArrayList<>();
-        scheduler.fetchScheduledExecutions(se -> scheduled.add(se.getTaskInstance().getTaskName() + "_" + se.getTaskInstance().getId()));
+        scheduler.fetchScheduledExecutions(
+                se -> scheduled.add(se.getTaskInstance().getTaskName() + "_" + se.getTaskInstance().getId()));
 
-        return "Gave up waiting for condition. \n" +
-            "Currently executing:\n" + currentlyExecuting +
-            "scheduled:\n" + String.join(",", scheduled);
+        return "Gave up waiting for condition. \n" + "Currently executing:\n" + currentlyExecuting + "scheduled:\n"
+                + String.join(",", scheduled);
     }
 
 }

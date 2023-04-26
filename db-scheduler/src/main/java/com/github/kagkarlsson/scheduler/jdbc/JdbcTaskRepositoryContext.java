@@ -20,7 +20,6 @@ import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.task.Execution;
-
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -31,11 +30,8 @@ class JdbcTaskRepositoryContext {
     final JdbcRunner jdbcRunner;
     final Supplier<ResultSetMapper<List<Execution>>> resultSetMapper;
 
-    JdbcTaskRepositoryContext(TaskResolver taskResolver,
-                                     String tableName,
-                                     SchedulerName schedulerName,
-                                     JdbcRunner jdbcRunner,
-                                     Supplier<ResultSetMapper<List<Execution>>> resultSetMapper) {
+    JdbcTaskRepositoryContext(TaskResolver taskResolver, String tableName, SchedulerName schedulerName,
+            JdbcRunner jdbcRunner, Supplier<ResultSetMapper<List<Execution>>> resultSetMapper) {
         this.taskResolver = taskResolver;
         this.tableName = tableName;
         this.schedulerName = schedulerName;

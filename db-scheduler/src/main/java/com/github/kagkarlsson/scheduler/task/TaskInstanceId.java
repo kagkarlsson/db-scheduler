@@ -20,7 +20,9 @@ import java.util.Objects;
 public interface TaskInstanceId extends HasTaskName {
     @Override
     String getTaskName();
+
     String getId();
+
     static TaskInstanceId of(String taskName, String id) {
         return new StandardTaskInstanceId(taskName, id);
     }
@@ -46,11 +48,12 @@ public interface TaskInstanceId extends HasTaskName {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             StandardTaskInstanceId that = (StandardTaskInstanceId) o;
-            return Objects.equals(taskName, that.taskName) &&
-                    Objects.equals(id, that.id);
+            return Objects.equals(taskName, that.taskName) && Objects.equals(id, that.id);
         }
 
         @Override

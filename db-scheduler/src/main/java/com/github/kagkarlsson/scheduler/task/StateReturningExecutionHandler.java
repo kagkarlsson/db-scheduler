@@ -18,8 +18,9 @@ package com.github.kagkarlsson.scheduler.task;
 public interface StateReturningExecutionHandler<T> {
 
     /**
-     * ExecutionHandler for RecurringTasks that returns the value the task_data should be updated to when
-     * scheduling the next execution for this task
+     * ExecutionHandler for RecurringTasks that returns the value the task_data
+     * should be updated to when scheduling the next execution for this task
+     *
      * @param taskInstance
      * @param executionContext
      * @return

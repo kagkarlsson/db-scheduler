@@ -15,9 +15,9 @@
  */
 package com.github.kagkarlsson.examples.helpers;
 
-import com.github.kagkarlsson.scheduler.Scheduler;
-
 import static org.slf4j.LoggerFactory.getLogger;
+
+import com.github.kagkarlsson.scheduler.Scheduler;
 
 public class ExampleHelpers {
 

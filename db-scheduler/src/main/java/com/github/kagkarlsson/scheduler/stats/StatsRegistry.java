@@ -20,29 +20,21 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 public interface StatsRegistry {
 
     enum SchedulerStatsEvent {
-        UNEXPECTED_ERROR,
-        COMPLETIONHANDLER_ERROR,
-        FAILUREHANDLER_ERROR,
-        DEAD_EXECUTION,
-        RAN_UPDATE_HEARTBEATS,
-        RAN_DETECT_DEAD,
-        RAN_EXECUTE_DUE,
-        UNRESOLVED_TASK
+        UNEXPECTED_ERROR, COMPLETIONHANDLER_ERROR, FAILUREHANDLER_ERROR, DEAD_EXECUTION, RAN_UPDATE_HEARTBEATS, RAN_DETECT_DEAD, RAN_EXECUTE_DUE, UNRESOLVED_TASK
     }
 
     enum CandidateStatsEvent {
-        STALE,
-        ALREADY_PICKED,
-        EXECUTED
+        STALE, ALREADY_PICKED, EXECUTED
     }
 
     enum ExecutionStatsEvent {
-        COMPLETED,
-        FAILED
+        COMPLETED, FAILED
     }
 
     void register(SchedulerStatsEvent e);
+
     void register(CandidateStatsEvent e);
+
     void register(ExecutionStatsEvent e);
 
     void registerSingleCompletedExecution(ExecutionComplete completeEvent);

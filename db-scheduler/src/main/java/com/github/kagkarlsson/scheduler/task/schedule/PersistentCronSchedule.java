@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
-
 import java.time.ZoneId;
 
 public class PersistentCronSchedule implements ScheduleAndData {

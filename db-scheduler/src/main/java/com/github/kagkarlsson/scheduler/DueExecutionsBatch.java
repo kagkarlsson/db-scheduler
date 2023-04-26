@@ -15,12 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class DueExecutionsBatch {
 
@@ -33,7 +31,7 @@ class DueExecutionsBatch {
     private boolean triggeredExecuteDue;
 
     public DueExecutionsBatch(int generationNumber, int executionsAdded, boolean possiblyMoreExecutionsInDb,
-                              Predicate<Integer> whenToTriggerCheckForNewBatch) {
+            Predicate<Integer> whenToTriggerCheckForNewBatch) {
         this.generationNumber = generationNumber;
         this.possiblyMoreExecutionsInDb = possiblyMoreExecutionsInDb;
         this.executionsLeftInBatch = new AtomicInteger(executionsAdded);
@@ -46,19 +44,21 @@ class DueExecutionsBatch {
 
     /**
      *
-     * @param triggerCheckForNewBatch may be triggered more than one in racy conditions
+     * @param triggerCheckForNewBatch
+     *            may be triggered more than one in racy conditions
      */
     public void oneExecutionDone(Runnable triggerCheckForNewBatch) {
         // May be called concurrently by multiple threads
         executionsLeftInBatch.decrementAndGet();
 
-        LOG.trace("Batch state: generationNumber:{}, stale:{}, triggeredExecuteDue:{}, possiblyMoreExecutionsInDb:{}, executionsLeftInBatch:{}",
+        LOG.trace(
+                "Batch state: generationNumber:{}, stale:{}, triggeredExecuteDue:{}, possiblyMoreExecutionsInDb:{}, executionsLeftInBatch:{}",
                 generationNumber, stale, triggeredExecuteDue, possiblyMoreExecutionsInDb, executionsLeftInBatch.get());
-        // Will not synchronize this method as it is not a big problem if two threads manage to call triggerCheckForNewBatch.run() at the same time.
-        // There is synchronization further in, when waking the thread that will do the fetching.
-        if (!stale
-                && !triggeredExecuteDue
-                && possiblyMoreExecutionsInDb
+        // Will not synchronize this method as it is not a big problem if two threads
+        // manage to call triggerCheckForNewBatch.run() at the same time.
+        // There is synchronization further in, when waking the thread that will do the
+        // fetching.
+        if (!stale && !triggeredExecuteDue && possiblyMoreExecutionsInDb
                 && whenToTriggerCheckForNewBatch.test(executionsLeftInBatch.get())) {
             LOG.trace("Triggering check for new batch.");
             triggerCheckForNewBatch.run();

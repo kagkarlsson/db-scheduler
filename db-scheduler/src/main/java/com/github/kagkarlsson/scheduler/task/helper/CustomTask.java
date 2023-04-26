@@ -25,7 +25,6 @@ import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-
 import java.time.Instant;
 import java.util.function.Function;
 
@@ -33,8 +32,9 @@ public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup
     private ScheduleOnStartup<T> scheduleOnStartup;
     private final NextExecutionTime defaultExecutionTime;
 
-    public CustomTask(String name, Class<T> dataClass, ScheduleOnStartup<T> scheduleOnStartup, Function<Instant,Instant> defaultExecutionTime,
-                      FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
+    public CustomTask(String name, Class<T> dataClass, ScheduleOnStartup<T> scheduleOnStartup,
+            Function<Instant, Instant> defaultExecutionTime, FailureHandler<T> failureHandler,
+            DeadExecutionHandler<T> deadExecutionHandler) {
         super(name, dataClass, failureHandler, deadExecutionHandler);
         this.scheduleOnStartup = scheduleOnStartup;
         this.defaultExecutionTime = NextExecutionTime.from(defaultExecutionTime);
@@ -53,7 +53,7 @@ public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup
     @Override
     public void onStartup(SchedulerClient scheduler, Clock clock) {
         if (scheduleOnStartup != null) {
-                scheduleOnStartup.apply(scheduler, clock, this);
+            scheduleOnStartup.apply(scheduler, clock, this);
         }
     }
 

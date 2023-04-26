@@ -16,12 +16,11 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-
 import java.io.Serializable;
-import java.util.Objects;
 
 public interface ScheduleAndData extends Serializable {
     Schedule getSchedule();
+
     Object getData();
 
     static PlainScheduleAndData of(Schedule schedule, Object data) {

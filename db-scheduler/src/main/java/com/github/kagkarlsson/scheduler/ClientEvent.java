@@ -16,15 +16,12 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
-
 import java.time.Instant;
 
 public class ClientEvent {
 
     public enum EventType {
-        SCHEDULE,
-        RESCHEDULE,
-        CANCEL
+        SCHEDULE, RESCHEDULE, CANCEL
     }
 
     private ClientEventContext ctx;

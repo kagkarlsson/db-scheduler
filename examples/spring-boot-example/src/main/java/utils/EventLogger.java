@@ -27,6 +27,7 @@ public class EventLogger {
     public static void logTask(String taskName, String message) {
         logTask(new SimpleTaskName(taskName), message);
     }
+
     public static void logTask(HasTaskName taskName, String message) {
         EVENT_LOG.info(taskName.getTaskName() + ": " + message);
     }

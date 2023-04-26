@@ -1,13 +1,12 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.util.Arrays;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
+import java.util.Arrays;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 class PostgreSqlJdbcCustomizationTest {
     @RegisterExtension
@@ -18,8 +17,7 @@ class PostgreSqlJdbcCustomizationTest {
     @Test
     void test() {
         assertTrue(jdbcCustomization.supportsExplicitQueryLimitPart());
-        Arrays.asList(1, 5, 20, 100).forEach(
-            it -> assertEquals(jdbcCustomization.getQueryLimitPart(it), " LIMIT " + it)
-        );
+        Arrays.asList(1, 5, 20, 100)
+                .forEach(it -> assertEquals(jdbcCustomization.getQueryLimitPart(it), " LIMIT " + it));
     }
 }

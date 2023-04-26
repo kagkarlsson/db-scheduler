@@ -26,8 +26,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 final class DailyParser extends RegexBasedParser {
-    private static final Pattern DAILY_PATTERN_WITH_TIMEZONE = Pattern.compile("^DAILY\\|((\\d{2}:\\d{2})(,\\d{2}:\\d{2})*)(\\|(.+))?$");
-    private static final List<String> EXAMPLES = Arrays.asList("DAILY|12:00", "DAILY|12:00,13:45", "DAILY|12:00,13:45|Europe/Rome");
+    private static final Pattern DAILY_PATTERN_WITH_TIMEZONE = Pattern
+            .compile("^DAILY\\|((\\d{2}:\\d{2})(,\\d{2}:\\d{2})*)(\\|(.+))?$");
+    private static final List<String> EXAMPLES = Arrays.asList("DAILY|12:00", "DAILY|12:00,13:45",
+            "DAILY|12:00,13:45|Europe/Rome");
 
     DailyParser() {
         super(DAILY_PATTERN_WITH_TIMEZONE, EXAMPLES);
@@ -35,9 +37,8 @@ final class DailyParser extends RegexBasedParser {
 
     @Override
     protected Schedule matchedSchedule(MatchResult matchResult) {
-        return maybeTimeZone(matchResult)
-            .map(timeZone -> new Daily(ZoneId.of(timeZone), scheduleTimes(matchResult)))
-            .orElseGet(() -> new Daily(scheduleTimes(matchResult)));
+        return maybeTimeZone(matchResult).map(timeZone -> new Daily(ZoneId.of(timeZone), scheduleTimes(matchResult)))
+                .orElseGet(() -> new Daily(scheduleTimes(matchResult)));
     }
 
     private Optional<String> maybeTimeZone(MatchResult matchResult) {

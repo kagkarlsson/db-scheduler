@@ -15,16 +15,15 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
-import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.time.Duration;
-import java.time.Instant;
-
 import static java.lang.Math.pow;
 import static java.lang.Math.round;
+
+import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import java.time.Duration;
+import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface FailureHandler<T> {
 
@@ -36,21 +35,24 @@ public interface FailureHandler<T> {
         private final Duration sleepDuration;
         private final double exponentialRate;
 
-        public ExponentialBackoffFailureHandler(Duration sleepDuration){
+        public ExponentialBackoffFailureHandler(Duration sleepDuration) {
             this.sleepDuration = sleepDuration;
             this.exponentialRate = DEFAULT_MULTIPLIER;
         }
 
-        public ExponentialBackoffFailureHandler(Duration sleepDuration, double exponentialRate){
+        public ExponentialBackoffFailureHandler(Duration sleepDuration, double exponentialRate) {
             this.sleepDuration = sleepDuration;
             this.exponentialRate = exponentialRate;
         }
 
         @Override
-        public void onFailure(final ExecutionComplete executionComplete, final ExecutionOperations<T> executionOperations) {
-            long retryDurationMs = round(sleepDuration.toMillis() * pow(exponentialRate, executionComplete.getExecution().consecutiveFailures));
+        public void onFailure(final ExecutionComplete executionComplete,
+                final ExecutionOperations<T> executionOperations) {
+            long retryDurationMs = round(sleepDuration.toMillis()
+                    * pow(exponentialRate, executionComplete.getExecution().consecutiveFailures));
             Instant nextTry = Instant.now().plusMillis(retryDurationMs);
-            LOG.debug("Execution failed. Retrying task {} at {}", executionComplete.getExecution().taskInstance, nextTry);
+            LOG.debug("Execution failed. Retrying task {} at {}", executionComplete.getExecution().taskInstance,
+                    nextTry);
             executionOperations.reschedule(executionComplete, nextTry);
         }
     }
@@ -60,19 +62,21 @@ public interface FailureHandler<T> {
         private final int maxRetries;
         private final FailureHandler<T> failureHandler;
 
-        public MaxRetriesFailureHandler(int maxRetries, FailureHandler<T> failureHandler){
+        public MaxRetriesFailureHandler(int maxRetries, FailureHandler<T> failureHandler) {
             this.maxRetries = maxRetries;
             this.failureHandler = failureHandler;
         }
 
         @Override
-        public void onFailure(final ExecutionComplete executionComplete, final ExecutionOperations<T> executionOperations) {
+        public void onFailure(final ExecutionComplete executionComplete,
+                final ExecutionOperations<T> executionOperations) {
             int consecutiveFailures = executionComplete.getExecution().consecutiveFailures;
             int totalNumberOfFailures = consecutiveFailures + 1;
-            if(totalNumberOfFailures > maxRetries){
-                LOG.error("Execution has failed {} times for task instance {}. Cancelling execution.", totalNumberOfFailures, executionComplete.getExecution().taskInstance);
+            if (totalNumberOfFailures > maxRetries) {
+                LOG.error("Execution has failed {} times for task instance {}. Cancelling execution.",
+                        totalNumberOfFailures, executionComplete.getExecution().taskInstance);
                 executionOperations.stop();
-            }else{
+            } else {
                 this.failureHandler.onFailure(executionComplete, executionOperations);
             }
         }
@@ -89,7 +93,8 @@ public interface FailureHandler<T> {
         @Override
         public void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
             Instant nextTry = Instant.now().plus(sleepDuration);
-            LOG.debug("Execution failed. Retrying task {} at {}", executionComplete.getExecution().taskInstance, nextTry);
+            LOG.debug("Execution failed. Retrying task {} at {}", executionComplete.getExecution().taskInstance,
+                    nextTry);
             executionOperations.reschedule(executionComplete, nextTry);
         }
     }
@@ -105,7 +110,8 @@ public interface FailureHandler<T> {
         @Override
         public void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
             Instant nextExecution = schedule.getNextExecutionTime(executionComplete);
-            LOG.debug("Execution failed. Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecution);
+            LOG.debug("Execution failed. Rescheduling task {} to {}", executionComplete.getExecution().taskInstance,
+                    nextExecution);
             executionOperations.reschedule(executionComplete, nextExecution);
         }
     }
@@ -116,9 +122,10 @@ public interface FailureHandler<T> {
 
         @Override
         public void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-            final T data = (T)executionComplete.getExecution().taskInstance.getData();
+            final T data = (T) executionComplete.getExecution().taskInstance.getData();
             final Instant nextExecutionTime = data.getSchedule().getNextExecutionTime(executionComplete);
-            LOG.debug("Execution failed. Rescheduling task {} to {}", executionComplete.getExecution().taskInstance, nextExecutionTime);
+            LOG.debug("Execution failed. Rescheduling task {} to {}", executionComplete.getExecution().taskInstance,
+                    nextExecutionTime);
             executionOperations.reschedule(executionComplete, nextExecutionTime);
         }
     }

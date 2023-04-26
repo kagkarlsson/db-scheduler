@@ -22,10 +22,9 @@ import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
-
-import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
+import javax.sql.DataSource;
 
 public class CronMain extends Example {
 
@@ -37,16 +36,12 @@ public class CronMain extends Example {
     public void run(DataSource dataSource) {
 
         Schedule cron = Schedules.cron("*/10 * * * * ?");
-        RecurringTask<Void> cronTask = Tasks.recurring("cron-task", cron)
-            .execute((taskInstance, executionContext) -> {
-                System.out.println(Instant.now().getEpochSecond() + "s  -  Cron-schedule!");
-            });
+        RecurringTask<Void> cronTask = Tasks.recurring("cron-task", cron).execute((taskInstance, executionContext) -> {
+            System.out.println(Instant.now().getEpochSecond() + "s  -  Cron-schedule!");
+        });
 
-        final Scheduler scheduler = Scheduler
-            .create(dataSource)
-            .startTasks(cronTask)
-            .pollingInterval(Duration.ofSeconds(1))
-            .build();
+        final Scheduler scheduler = Scheduler.create(dataSource).startTasks(cronTask)
+                .pollingInterval(Duration.ofSeconds(1)).build();
 
         ExampleHelpers.registerShutdownHook(scheduler);
 

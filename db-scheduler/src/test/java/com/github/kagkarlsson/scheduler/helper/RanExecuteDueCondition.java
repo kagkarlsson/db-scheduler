@@ -1,9 +1,8 @@
 package com.github.kagkarlsson.scheduler.helper;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.CountDownLatch;
+import org.slf4j.LoggerFactory;
 
 public class RanExecuteDueCondition implements TestableRegistry.Condition {
 
@@ -18,7 +17,8 @@ public class RanExecuteDueCondition implements TestableRegistry.Condition {
     @Override
     public void waitFor() {
         try {
-            LoggerFactory.getLogger(RanExecuteDueCondition.class).info("Starting await for "+waitForCount+" ExecutionCompleted");
+            LoggerFactory.getLogger(RanExecuteDueCondition.class)
+                    .info("Starting await for " + waitForCount + " ExecutionCompleted");
             count.await();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);

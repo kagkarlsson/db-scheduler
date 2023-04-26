@@ -23,14 +23,13 @@ import com.github.kagkarlsson.scheduler.task.schedule.Daily;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSubTypes({
-    @JsonSubTypes.Type(value = CronSchedule.class, name = "cron"),
-    @JsonSubTypes.Type(value = FixedDelay.class, name = "fixedDelay"),
-    @JsonSubTypes.Type(value = Daily.class, name = "daily")
-})
+@JsonSubTypes({ @JsonSubTypes.Type(value = CronSchedule.class, name = "cron"),
+        @JsonSubTypes.Type(value = FixedDelay.class, name = "fixedDelay"),
+        @JsonSubTypes.Type(value = Daily.class, name = "daily") })
 public abstract class ScheduleMixin {
     @JsonIgnore
     abstract boolean isDeterministic();
+
     @JsonIgnore
     abstract boolean isDisabled();
 }

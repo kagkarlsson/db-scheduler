@@ -1,11 +1,9 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FixedDelayTest {
     @Test

@@ -15,8 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
+import static java.util.Optional.ofNullable;
+
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
@@ -27,26 +29,25 @@ import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-
-import static java.util.Optional.ofNullable;
+import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface SchedulerClient {
 
     /**
      * Schedule a new execution.
      *
-     * @param taskInstance  Task-instance, optionally with data
-     * @param executionTime Instant it should run
+     * @param taskInstance
+     *            Task-instance, optionally with data
+     * @param executionTime
+     *            Instant it should run
      * @return void
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstance
@@ -56,33 +57,39 @@ public interface SchedulerClient {
     <T> void schedule(SchedulableInstance<T> schedulableInstance);
 
     /**
-     * Update an existing execution to a new execution-time. If the execution does not exist or if it is currently
-     * running, an exception is thrown.
+     * Update an existing execution to a new execution-time. If the execution does
+     * not exist or if it is currently running, an exception is thrown.
      *
      * @param taskInstanceId
-     * @param newExecutionTime the new execution-time
+     * @param newExecutionTime
+     *            the new execution-time
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      */
     void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
     /**
-     * Update an existing execution with a new execution-time and new task-data. If the execution does not exist or if
-     * it is currently running, an exception is thrown.
+     * Update an existing execution with a new execution-time and new task-data. If
+     * the execution does not exist or if it is currently running, an exception is
+     * thrown.
      *
      * @param taskInstanceId
-     * @param newExecutionTime the new execution-time
-     * @param newData          the new task-data
+     * @param newExecutionTime
+     *            the new execution-time
+     * @param newData
+     *            the new task-data
      * @see java.time.Instant
      * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
      */
     <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
 
     /**
-     * Update an existing execution with a new execution-time and new task-data. If the execution does not exist or if
-     * it is currently running, an exception is thrown.
+     * Update an existing execution with a new execution-time and new task-data. If
+     * the execution does not exist or if it is currently running, an exception is
+     * thrown.
      *
-     * @param schedulableInstance the updated instance
+     * @param schedulableInstance
+     *            the updated instance
      */
     <T> void reschedule(SchedulableInstance<T> schedulableInstance);
 
@@ -96,13 +103,16 @@ public interface SchedulerClient {
     void cancel(TaskInstanceId taskInstanceId);
 
     /**
-     * Gets all scheduled executions and supplies them to the provided Consumer. A Consumer is used to
-     * avoid forcing the SchedulerClient to load all executions in memory. Currently running executions are not returned.
+     * Gets all scheduled executions and supplies them to the provided Consumer. A
+     * Consumer is used to avoid forcing the SchedulerClient to load all executions
+     * in memory. Currently running executions are not returned.
      *
-     * @param consumer Consumer for the executions
+     * @param consumer
+     *            Consumer for the executions
      * @return void
      */
     void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
+
     void fetchScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer);
 
     /**
@@ -124,16 +134,23 @@ public interface SchedulerClient {
     }
 
     /**
-     * Gets all scheduled executions for a task and supplies them to the provided Consumer. A Consumer is used to
-     * avoid forcing the SchedulerClient to load all executions in memory. Currently running executions are not returned.
+     * Gets all scheduled executions for a task and supplies them to the provided
+     * Consumer. A Consumer is used to avoid forcing the SchedulerClient to load all
+     * executions in memory. Currently running executions are not returned.
      *
-     * @param taskName  the name of the task to get scheduled-executions for
-     * @param dataClass the task data-class the data will be serialized and cast to
-     * @param consumer  Consumer for the executions
+     * @param taskName
+     *            the name of the task to get scheduled-executions for
+     * @param dataClass
+     *            the task data-class the data will be serialized and cast to
+     * @param consumer
+     *            Consumer for the executions
      * @return void
      */
-    <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);
-    <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<T>> consumer);
+    <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass,
+            Consumer<ScheduledExecution<T>> consumer);
+
+    <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter,
+            Consumer<ScheduledExecution<T>> consumer);
 
     /**
      * @see #fetchScheduledExecutionsForTask(String, Class, Consumer)
@@ -147,14 +164,16 @@ public interface SchedulerClient {
     /**
      * @see #fetchScheduledExecutionsForTask(String, Class, Consumer)
      */
-    default <T> List<ScheduledExecution<T>> getScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter) {
+    default <T> List<ScheduledExecution<T>> getScheduledExecutionsForTask(String taskName, Class<T> dataClass,
+            ScheduledExecutionsFilter filter) {
         List<ScheduledExecution<T>> executions = new ArrayList<>();
         fetchScheduledExecutionsForTask(taskName, dataClass, filter, executions::add);
         return executions;
     }
 
     /**
-     * Gets the details for a specific scheduled execution. Currently running executions are also returned.
+     * Gets the details for a specific scheduled execution. Currently running
+     * executions are also returned.
      *
      * @param taskInstanceId
      * @return Optional.empty() if no matching execution found
@@ -203,15 +222,9 @@ public interface SchedulerClient {
             TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, knownTasks);
             final SystemClock clock = new SystemClock();
 
-            TaskRepository taskRepository = new JdbcTaskRepository(
-                dataSource,
-                false,
-                ofNullable(jdbcCustomization).orElse(new DefaultJdbcCustomization()),
-                tableName,
-                taskResolver,
-                new SchedulerClientName(),
-                serializer,
-                clock);
+            TaskRepository taskRepository = new JdbcTaskRepository(dataSource, false,
+                    ofNullable(jdbcCustomization).orElse(new DefaultJdbcCustomization()), tableName, taskResolver,
+                    new SchedulerClientName(), serializer, clock);
 
             return new StandardSchedulerClient(taskRepository, clock);
         }
@@ -228,7 +241,8 @@ public interface SchedulerClient {
             this(taskRepository, SchedulerClientEventListener.NOOP, clock);
         }
 
-        StandardSchedulerClient(TaskRepository taskRepository, SchedulerClientEventListener schedulerClientEventListener, Clock clock) {
+        StandardSchedulerClient(TaskRepository taskRepository,
+                SchedulerClientEventListener schedulerClientEventListener, Clock clock) {
             this.taskRepository = taskRepository;
             this.schedulerClientEventListener = schedulerClientEventListener;
             this.clock = clock;
@@ -241,6 +255,7 @@ public interface SchedulerClient {
                 notifyListeners(ClientEvent.EventType.SCHEDULE, taskInstance, executionTime);
             }
         }
+
         @Override
         public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
             schedule(schedulableInstance.getTaskInstance(), schedulableInstance.getNextExecutionTime(clock.now()));
@@ -253,7 +268,8 @@ public interface SchedulerClient {
 
         @Override
         public <T> void reschedule(SchedulableInstance<T> schedulableInstance) {
-            reschedule(schedulableInstance, schedulableInstance.getNextExecutionTime(clock.now()), schedulableInstance.getTaskInstance().getData());
+            reschedule(schedulableInstance, schedulableInstance.getNextExecutionTime(clock.now()),
+                    schedulableInstance.getTaskInstance().getData());
         }
 
         @Override
@@ -304,21 +320,24 @@ public interface SchedulerClient {
         }
 
         @Override
-        public void fetchScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer) {
+        public void fetchScheduledExecutions(ScheduledExecutionsFilter filter,
+                Consumer<ScheduledExecution<Object>> consumer) {
             taskRepository.getScheduledExecutions(filter,
-                execution -> consumer.accept(new ScheduledExecution<>(Object.class, execution)));
+                    execution -> consumer.accept(new ScheduledExecution<>(Object.class, execution)));
         }
 
         @Override
-        public <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
-            fetchScheduledExecutionsForTask(taskName, dataClass, ScheduledExecutionsFilter.all().withPicked(false), consumer);
+        public <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass,
+                Consumer<ScheduledExecution<T>> consumer) {
+            fetchScheduledExecutionsForTask(taskName, dataClass, ScheduledExecutionsFilter.all().withPicked(false),
+                    consumer);
         }
 
         @Override
-        public <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass, ScheduledExecutionsFilter filter,
-                                                        Consumer<ScheduledExecution<T>> consumer) {
+        public <T> void fetchScheduledExecutionsForTask(String taskName, Class<T> dataClass,
+                ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<T>> consumer) {
             taskRepository.getScheduledExecutions(filter, taskName,
-                execution -> consumer.accept(new ScheduledExecution<>(dataClass, execution)));
+                    execution -> consumer.accept(new ScheduledExecution<>(dataClass, execution)));
         }
 
         @Override
@@ -327,15 +346,16 @@ public interface SchedulerClient {
             return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
         }
 
-        private void notifyListeners(ClientEvent.EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {
+        private void notifyListeners(ClientEvent.EventType eventType, TaskInstanceId taskInstanceId,
+                Instant executionTime) {
             try {
-                schedulerClientEventListener.newEvent(new ClientEvent(new ClientEvent.ClientEventContext(eventType, taskInstanceId, executionTime)));
+                schedulerClientEventListener.newEvent(
+                        new ClientEvent(new ClientEvent.ClientEventContext(eventType, taskInstanceId, executionTime)));
             } catch (Exception e) {
                 LOG.error("Error when notifying SchedulerClientEventListener.", e);
             }
         }
     }
-
 
     class SchedulerClientName implements SchedulerName {
         @Override

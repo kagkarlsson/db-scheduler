@@ -15,10 +15,9 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.Instant;
 
 public interface DeadExecutionHandler<T> {
     void deadExecution(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);

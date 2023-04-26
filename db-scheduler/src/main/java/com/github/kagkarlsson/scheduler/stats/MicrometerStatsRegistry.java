@@ -21,7 +21,6 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,31 +94,22 @@ public class MicrometerStatsRegistry implements StatsRegistry {
 
         MetricsHolder(String taskName) {
             Gauge.builder("dbscheduler_task_last_run_duration", lastDurationForTask::get)
-                .description("Duration in seconds for last execution of this task")
-                .tag("task", taskName)
-                .register(meterRegistry);
+                    .description("Duration in seconds for last execution of this task").tag("task", taskName)
+                    .register(meterRegistry);
 
             Gauge.builder("dbscheduler_task_last_run_timestamp_seconds", lastRunTimestampForTask::get)
-                .description("Time when last run completed")
-                .tag("task", taskName)
-                .register(meterRegistry);
+                    .description("Time when last run completed").tag("task", taskName).register(meterRegistry);
 
             successesForTask = Counter.builder("dbscheduler_task_completions")
-                .description("Successes and failures by task")
-                .tag("task", taskName)
-                .tag("result", RESULT_SUCCESS)
-                .register(meterRegistry);
+                    .description("Successes and failures by task").tag("task", taskName).tag("result", RESULT_SUCCESS)
+                    .register(meterRegistry);
 
             failuresForTask = Counter.builder("dbscheduler_task_completions")
-                .description("Successes and failures by task")
-                .tag("task", taskName)
-                .tag("result", RESULT_FAILURE)
-                .register(meterRegistry);
+                    .description("Successes and failures by task").tag("task", taskName).tag("result", RESULT_FAILURE)
+                    .register(meterRegistry);
 
-            durationsForTask = Timer.builder("dbscheduler_task_duration")
-                .description("Duration of executions")
-                .tag("task", taskName)
-                .register(meterRegistry);
+            durationsForTask = Timer.builder("dbscheduler_task_duration").description("Duration of executions")
+                    .tag("task", taskName).register(meterRegistry);
         }
 
         void registerExecution(ExecutionComplete completeEvent) {

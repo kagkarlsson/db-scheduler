@@ -1,14 +1,13 @@
 package com.github.kagkarlsson.scheduler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import java.time.Duration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.time.Duration;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class RunUntilShutdownTest {
 
@@ -22,8 +21,7 @@ public class RunUntilShutdownTest {
         schedulerState = new SchedulerState.SettableSchedulerState();
         runnable = new TimeLimitedRunnable(2, schedulerState);
         countingWaiter = new CountingWaiter();
-        runUntilShutdown = new RunUntilShutdown(runnable, countingWaiter,
-                schedulerState, StatsRegistry.NOOP);
+        runUntilShutdown = new RunUntilShutdown(runnable, countingWaiter, schedulerState, StatsRegistry.NOOP);
     }
 
     @Test
@@ -46,7 +44,6 @@ public class RunUntilShutdownTest {
         });
     }
 
-
     private static class TimeLimitedRunnable implements Runnable {
         private int times;
         private final SchedulerState.SettableSchedulerState schedulerState;
@@ -67,7 +64,8 @@ public class RunUntilShutdownTest {
             if (times <= 0) {
                 schedulerState.setIsShuttingDown();
             }
-            if (action != null) action.run();
+            if (action != null)
+                action.run();
         }
     }
 

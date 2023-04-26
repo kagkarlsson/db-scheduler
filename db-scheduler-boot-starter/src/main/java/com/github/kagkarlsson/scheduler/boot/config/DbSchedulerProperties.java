@@ -15,16 +15,15 @@
  */
 package com.github.kagkarlsson.scheduler.boot.config;
 
-import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import static java.time.temporal.ChronoUnit.*;
+
 import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
-import java.time.Duration;
-
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.convert.DurationUnit;
-
-import static java.time.temporal.ChronoUnit.*;
 
 @ConfigurationProperties("db-scheduler")
 public class DbSchedulerProperties {
@@ -34,7 +33,8 @@ public class DbSchedulerProperties {
     private boolean enabled = true;
 
     /***
-     * <p>Number of threads.
+     * <p>
+     * Number of threads.
      */
     private int threads = 10;
 
@@ -45,77 +45,102 @@ public class DbSchedulerProperties {
     private Duration heartbeatInterval = SchedulerBuilder.DEFAULT_HEARTBEAT_INTERVAL;
 
     /**
-     * <p>Name of this scheduler-instance. The name is stored in the database when an execution is
-     * picked by a scheduler.
+     * <p>
+     * Name of this scheduler-instance. The name is stored in the database when an
+     * execution is picked by a scheduler.
      *
-     * <p>If the name is {@code null} or not configured, the hostname of the running machine will be
-     * used.
+     * <p>
+     * If the name is {@code null} or not configured, the hostname of the running
+     * machine will be used.
      */
     private String schedulerName;
 
     /**
-     * <p>Name of the table used to track task-executions. Must match the database. Change name in the
-     * table definitions accordingly when creating or modifying the table.
+     * <p>
+     * Name of the table used to track task-executions. Must match the database.
+     * Change name in the table definitions accordingly when creating or modifying
+     * the table.
      */
     private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
 
     /**
-     * <p>If this is enabled, the scheduler will attempt to directly execute tasks that are scheduled
-     * to {@code now()}, or a time in the past. For this to work, the call to {@code schedule(..)}
-     * must not occur from within a transaction, because the record will not yet be visible to the
-     * scheduler (if this is a requirement, see the method
-     * {@code scheduler.triggerCheckForDueExecutions())}
+     * <p>
+     * If this is enabled, the scheduler will attempt to directly execute tasks that
+     * are scheduled to {@code now()}, or a time in the past. For this to work, the
+     * call to {@code schedule(..)} must not occur from within a transaction,
+     * because the record will not yet be visible to the scheduler (if this is a
+     * requirement, see the method {@code scheduler.triggerCheckForDueExecutions())}
      */
     private boolean immediateExecutionEnabled = false;
 
     /**
-     * <p>How often the scheduler checks the database for due executions.
+     * <p>
+     * How often the scheduler checks the database for due executions.
      */
     @DurationUnit(SECONDS)
     private Duration pollingInterval = SchedulerBuilder.DEFAULT_POLLING_INTERVAL;
 
     /**
-     * <p> What polling-strategy to use. Valid values are: FETCH,LOCK_AND_FETCH
+     * <p>
+     * What polling-strategy to use. Valid values are: FETCH,LOCK_AND_FETCH
      */
     private PollingStrategyConfig.Type pollingStrategy = SchedulerBuilder.DEFAULT_POLLING_STRATEGY.type;
     /**
-     * <p> The limit at which more executions are fetched from the database after fetching a full batch.</p>
+     * <p>
+     * The limit at which more executions are fetched from the database after
+     * fetching a full batch.
+     * </p>
      */
     private double pollingStrategyLowerLimitFractionOfThreads = SchedulerBuilder.DEFAULT_POLLING_STRATEGY.lowerLimitFractionOfThreads;
     /**
-     * <p> For Type=FETCH, the number of due executions fetched from the database in each batch.</p>
-     * <p> For Type=LOCK_AND_FETCH, the maximum number of executions to pick and queue for execution.</p>
+     * <p>
+     * For Type=FETCH, the number of due executions fetched from the database in
+     * each batch.
+     * </p>
+     * <p>
+     * For Type=LOCK_AND_FETCH, the maximum number of executions to pick and queue
+     * for execution.
+     * </p>
      */
     private double pollingStrategyUpperLimitFractionOfThreads = SchedulerBuilder.DEFAULT_POLLING_STRATEGY.upperLimitFractionOfThreads;
 
     /**
-     * <p>Whether to start the scheduler when the application context has been loaded or as soon as
-     * possible.
+     * <p>
+     * Whether to start the scheduler when the application context has been loaded
+     * or as soon as possible.
      */
     private boolean delayStartupUntilContextReady = false;
 
     /**
-     * <p>The time after which executions with unknown tasks are automatically deleted.</p>
+     * <p>
+     * The time after which executions with unknown tasks are automatically deleted.
+     * </p>
      */
     @DurationUnit(HOURS)
     private Duration deleteUnresolvedAfter = SchedulerBuilder.DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
 
-
     /**
-     * How long the scheduler will wait before interrupting executor-service threads.
-     * If you find yourself using this, consider if it is possible to instead regularly check
-     * <code>executionContext.getSchedulerState().isShuttingDown()</code> in the ExecutionHandler and abort long-running task.
+     * How long the scheduler will wait before interrupting executor-service
+     * threads. If you find yourself using this, consider if it is possible to
+     * instead regularly check
+     * <code>executionContext.getSchedulerState().isShuttingDown()</code> in the
+     * ExecutionHandler and abort long-running task.
      */
     @DurationUnit(SECONDS)
     private Duration shutdownMaxWait = SchedulerBuilder.SHUTDOWN_MAX_WAIT;
 
     /**
-     * <p>Which log level to use when logging task failures. Defaults to {@link LogLevel#DEBUG}.</p>
+     * <p>
+     * Which log level to use when logging task failures. Defaults to
+     * {@link LogLevel#DEBUG}.
+     * </p>
      */
     private LogLevel failureLoggerLevel = SchedulerBuilder.DEFAULT_FAILURE_LOG_LEVEL;
 
     /**
-     * <p>Whether or not to log the {@link Throwable} that caused a task to fail.</p>
+     * <p>
+     * Whether or not to log the {@link Throwable} that caused a task to fail.
+     * </p>
      */
     private boolean failureLoggerLogStackTrace = SchedulerBuilder.LOG_STACK_TRACE_ON_FAILURE;
 

@@ -15,16 +15,11 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import com.github.kagkarlsson.scheduler.task.Execution;
-
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Calendar;
-import java.util.List;
-import java.util.Optional;
 import java.util.TimeZone;
 
 public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
@@ -36,7 +31,8 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
 
     @Override
     public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
-        p.setTimestamp(index, value != null ? Timestamp.from(value) : null, Calendar.getInstance(TimeZone.getTimeZone("UTC")));
+        p.setTimestamp(index, value != null ? Timestamp.from(value) : null,
+                Calendar.getInstance(TimeZone.getTimeZone("UTC")));
     }
 
 }

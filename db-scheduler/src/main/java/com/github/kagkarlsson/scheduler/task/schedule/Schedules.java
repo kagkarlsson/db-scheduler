@@ -21,7 +21,8 @@ import java.time.ZoneId;
 import java.util.List;
 
 public class Schedules {
-    private static final Parser SCHEDULE_PARSER = CompositeParser.of(new FixedDelayParser(), new DailyParser(), new DisabledScheduleParser());
+    private static final Parser SCHEDULE_PARSER = CompositeParser.of(new FixedDelayParser(), new DailyParser(),
+            new DisabledScheduleParser());
 
     public static Daily daily(LocalTime... times) {
         return new Daily(times);
@@ -45,16 +46,25 @@ public class Schedules {
 
     /**
      * Currently supports Daily- and FixedDelay-schedule on the formats:
-     * <pre>DAILY|hh:mm,hh:mm,...,hh:mm(|TIME_ZONE)</pre><br/>
-     * <pre>FIXED_DELAY|xxxs  (xxx is number of seconds)</pre>
+     *
+     * <pre>
+     * DAILY|hh:mm,hh:mm,...,hh:mm(|TIME_ZONE)
+     * </pre>
+     *
+     * <br/>
+     *
+     * <pre>
+     * FIXED_DELAY|xxxs  (xxx is number of seconds)
+     * </pre>
      *
      * @param scheduleString
      * @return A new schedule
-     * @throws UnrecognizableSchedule When the scheduleString cannot be parsed
+     * @throws UnrecognizableSchedule
+     *             When the scheduleString cannot be parsed
      */
     public static Schedule parseSchedule(String scheduleString) {
         return SCHEDULE_PARSER.parse(scheduleString)
-            .orElseThrow(() -> new UnrecognizableSchedule(scheduleString, SCHEDULE_PARSER.examples()));
+                .orElseThrow(() -> new UnrecognizableSchedule(scheduleString, SCHEDULE_PARSER.examples()));
     }
 
     public static class UnrecognizableSchedule extends RuntimeException {

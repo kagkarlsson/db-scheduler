@@ -29,7 +29,8 @@ public class ConfigurableLogger {
         }
 
         @Override
-        public void log(String format, Throwable cause, Object... arguments) { }
+        public void log(String format, Throwable cause, Object... arguments) {
+        }
     }
 
     private final LogMethod logMethod;
@@ -43,13 +44,15 @@ public class ConfigurableLogger {
     }
 
     public static ConfigurableLogger create(Logger logger, LogLevel logLevel, boolean logStackTrace) {
-        return logLevel == LogLevel.OFF ?
-            NO_OP_LOGGER : new ConfigurableLogger(getLogMethod(logger, logLevel), logStackTrace);
+        return logLevel == LogLevel.OFF
+                ? NO_OP_LOGGER
+                : new ConfigurableLogger(getLogMethod(logger, logLevel), logStackTrace);
     }
 
     public void log(String format, Throwable cause, Object... arguments) {
-        if(logStackTrace) {
-            // to log stack trace, throwable must be the very last parameter passed to the log method
+        if (logStackTrace) {
+            // to log stack trace, throwable must be the very last parameter passed to the
+            // log method
             Object[] newArguments = new Object[arguments.length + 1];
             System.arraycopy(arguments, 0, newArguments, 0, arguments.length);
             newArguments[newArguments.length - 1] = cause;

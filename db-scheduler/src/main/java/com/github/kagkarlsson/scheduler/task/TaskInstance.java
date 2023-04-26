@@ -56,12 +56,15 @@ public final class TaskInstance<T> implements TaskInstanceId {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         TaskInstance<?> that = (TaskInstance<?>) o;
 
-        if (!taskName.equals(that.taskName)) return false;
+        if (!taskName.equals(that.taskName))
+            return false;
         return id.equals(that.id);
     }
 
@@ -74,9 +77,7 @@ public final class TaskInstance<T> implements TaskInstanceId {
 
     @Override
     public String toString() {
-        return "TaskInstance: " +
-                "task=" + taskName +
-                ", id=" + id;
+        return "TaskInstance: " + "task=" + taskName + ", id=" + id;
     }
 
 }

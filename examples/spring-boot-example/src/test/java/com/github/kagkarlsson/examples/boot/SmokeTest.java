@@ -9,8 +9,6 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
-import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -86,5 +84,6 @@ public class SmokeTest {
         assertFalse(scheduler.getScheduledExecution(instance2).isPresent(), "instance2 should have been rolled back");
     }
 
-    static class SimulatedException extends RuntimeException {}
+    static class SimulatedException extends RuntimeException {
+    }
 }

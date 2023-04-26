@@ -28,6 +28,7 @@ public class SerializerWithFallbackDeserializers implements Serializer {
         this.serializer = serializer;
         this.fallbackDeserializer = fallbackDeserializer;
     }
+
     @Override
     public byte[] serialize(Object data) {
         return serializer.serialize(data);

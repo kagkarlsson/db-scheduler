@@ -18,6 +18,7 @@ package com.github.kagkarlsson.scheduler.task;
 public interface TaskDescriptor<T> extends HasTaskName {
 
     String getTaskName();
+
     Class<T> getDataClass();
 
     static <T> TaskDescriptor<T> of(String name, Class<T> dataClass) {

@@ -21,7 +21,6 @@ import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
-
 import javax.sql.DataSource;
 
 public class FailureLoggingMain extends Example {
@@ -33,17 +32,15 @@ public class FailureLoggingMain extends Example {
     @Override
     public void run(DataSource dataSource) {
         RecurringTask<Void> hourlyTask = Tasks.recurring("my-failing-task", FixedDelay.ofSeconds(10))
-            .execute((inst, ctx) -> {
-                throw new RuntimeException("Simulated failure!");
-            });
+                .execute((inst, ctx) -> {
+                    throw new RuntimeException("Simulated failure!");
+                });
 
-        final Scheduler scheduler = Scheduler
-            .create(dataSource)
-            .startTasks(hourlyTask)
-            .failureLogging(LogLevel.INFO, true)
-            .build();
+        final Scheduler scheduler = Scheduler.create(dataSource).startTasks(hourlyTask)
+                .failureLogging(LogLevel.INFO, true).build();
 
-        // hourlyTask is automatically scheduled on startup if not already started (i.e. exists in the db)
+        // hourlyTask is automatically scheduled on startup if not already started (i.e.
+        // exists in the db)
         scheduler.start();
     }
 }

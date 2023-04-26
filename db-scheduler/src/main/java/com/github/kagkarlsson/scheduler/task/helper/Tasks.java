@@ -18,10 +18,7 @@ package com.github.kagkarlsson.scheduler.task.helper;
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.*;
-import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-
-import java.io.ObjectStreamClass;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.function.Function;
@@ -41,11 +38,13 @@ public class Tasks {
         return new RecurringTaskBuilder<>(descriptor.getTaskName(), schedule, descriptor.getDataClass());
     }
 
-    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(String name, Class<T> dataClass) {
+    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(
+            String name, Class<T> dataClass) {
         return recurringWithPersistentSchedule(TaskDescriptor.of(name, dataClass));
     }
 
-    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(TaskDescriptor<T> descriptor) {
+    public static <T extends ScheduleAndData> RecurringTaskWithPersistentScheduleBuilder<T> recurringWithPersistentSchedule(
+            TaskDescriptor<T> descriptor) {
         return new RecurringTaskWithPersistentScheduleBuilder<>(descriptor.getTaskName(), descriptor.getDataClass());
     }
 
@@ -68,7 +67,6 @@ public class Tasks {
     public static <T> TaskBuilder<T> custom(TaskDescriptor<T> taskDescriptor) {
         return new TaskBuilder<>(taskDescriptor.getTaskName(), taskDescriptor.getDataClass());
     }
-
 
     public static class RecurringTaskBuilder<T> {
         private final String name;
@@ -113,8 +111,8 @@ public class Tasks {
         }
 
         /**
-         * Disable 'scheduleOnStartup' to get control over when and show the executions is scheduled.
-         * Schedules will not be updated etc, so not really recommended.
+         * Disable 'scheduleOnStartup' to get control over when and show the executions
+         * is scheduled. Schedules will not be updated etc, so not really recommended.
          */
         public RecurringTaskBuilder<T> doNotScheduleOnStartup() {
             this.scheduleOnStartup = new ScheduleRecurringOnStartup<T>(RecurringTask.INSTANCE, null, null) {
@@ -175,17 +173,16 @@ public class Tasks {
                     executionHandler.execute(taskInstance, executionContext);
 
                     return (executionComplete, executionOperations) -> {
-                        executionOperations.reschedule(
-                            executionComplete,
-                            taskInstance.getData().getSchedule().getNextExecutionTime(executionComplete)
-                        );
+                        executionOperations.reschedule(executionComplete,
+                                taskInstance.getData().getSchedule().getNextExecutionTime(executionComplete));
                     };
 
                 }
             };
         }
 
-        public RecurringTaskWithPersistentSchedule<T> executeStateful(StateReturningExecutionHandler<T> executionHandler) {
+        public RecurringTaskWithPersistentSchedule<T> executeStateful(
+                StateReturningExecutionHandler<T> executionHandler) {
             return new RecurringTaskWithPersistentSchedule<T>(name, dataClass, onFailure) {
 
                 @Override
@@ -193,17 +190,13 @@ public class Tasks {
                     final T nextData = executionHandler.execute(taskInstance, executionContext);
 
                     return (executionComplete, executionOperations) -> {
-                        executionOperations.reschedule(
-                            executionComplete,
-                            nextData.getSchedule().getNextExecutionTime(executionComplete),
-                            nextData
-                        );
+                        executionOperations.reschedule(executionComplete,
+                                nextData.getSchedule().getNextExecutionTime(executionComplete), nextData);
                     };
                 }
             };
         }
     }
-
 
     public static class OneTimeTaskBuilder<T> {
         private final String name;
@@ -283,20 +276,19 @@ public class Tasks {
             return this;
         }
 
-        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData, Function<Instant,Instant> firstExecutionTime) {
+        public TaskBuilder<T> scheduleOnStartup(String instance, T initialData,
+                Function<Instant, Instant> firstExecutionTime) {
             this.onStartup = new ScheduleOnceOnStartup<T>(instance, initialData, firstExecutionTime);
             return this;
         }
 
         public TaskBuilder<T> scheduleOnStartup(String instance, T initialData, Schedule schedule) {
-            this.onStartup = new ScheduleOnceOnStartup<T>(
-                instance,
-                initialData,
-                now -> schedule.getNextExecutionTime(ExecutionComplete.simulatedSuccess(now)));
+            this.onStartup = new ScheduleOnceOnStartup<T>(instance, initialData,
+                    now -> schedule.getNextExecutionTime(ExecutionComplete.simulatedSuccess(now)));
             return this;
         }
 
-        public TaskBuilder<T> defaultExecutionTime(Function<Instant,Instant> defaultExecutionTime) {
+        public TaskBuilder<T> defaultExecutionTime(Function<Instant, Instant> defaultExecutionTime) {
             this.defaultExecutionTime = defaultExecutionTime;
             return this;
         }

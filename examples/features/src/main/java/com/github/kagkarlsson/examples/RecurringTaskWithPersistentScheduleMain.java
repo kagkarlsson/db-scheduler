@@ -21,9 +21,8 @@ import com.github.kagkarlsson.scheduler.task.helper.RecurringTaskWithPersistentS
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.*;
-
-import javax.sql.DataSource;
 import java.time.Duration;
+import javax.sql.DataSource;
 
 public class RecurringTaskWithPersistentScheduleMain extends Example {
 
@@ -34,23 +33,23 @@ public class RecurringTaskWithPersistentScheduleMain extends Example {
     @Override
     public void run(DataSource dataSource) {
 
-        final RecurringTaskWithPersistentSchedule<ScheduleAndNoData> task =
-            Tasks.recurringWithPersistentSchedule("dynamic-recurring-task", ScheduleAndNoData.class)
+        final RecurringTaskWithPersistentSchedule<ScheduleAndNoData> task = Tasks
+                .recurringWithPersistentSchedule("dynamic-recurring-task", ScheduleAndNoData.class)
                 .execute((taskInstance, executionContext) -> {
-                    System.out.println("Instance: '" + taskInstance.getId() + "' ran using persistent schedule: " + taskInstance.getData().getSchedule());
+                    System.out.println("Instance: '" + taskInstance.getId() + "' ran using persistent schedule: "
+                            + taskInstance.getData().getSchedule());
                 });
 
-        final Scheduler scheduler = Scheduler
-            .create(dataSource, task)
-            .pollingInterval(Duration.ofSeconds(1))
-            .registerShutdownHook()
-            .build();
+        final Scheduler scheduler = Scheduler.create(dataSource, task).pollingInterval(Duration.ofSeconds(1))
+                .registerShutdownHook().build();
 
         scheduler.start();
         sleep(2_000);
 
-        scheduler.schedule(task.schedulableInstance("id1", new ScheduleAndNoData(Schedules.fixedDelay(Duration.ofSeconds(1)))));
-        scheduler.schedule(task.schedulableInstance("id2", new ScheduleAndNoData(Schedules.fixedDelay(Duration.ofSeconds(6)))));
+        scheduler.schedule(
+                task.schedulableInstance("id1", new ScheduleAndNoData(Schedules.fixedDelay(Duration.ofSeconds(1)))));
+        scheduler.schedule(
+                task.schedulableInstance("id2", new ScheduleAndNoData(Schedules.fixedDelay(Duration.ofSeconds(6)))));
     }
 
     public static class ScheduleAndNoData implements ScheduleAndData {

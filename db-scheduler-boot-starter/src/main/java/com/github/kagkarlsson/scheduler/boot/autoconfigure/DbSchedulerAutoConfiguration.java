@@ -19,18 +19,17 @@ import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
-import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
-import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
+import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
+import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInput;
@@ -41,7 +40,6 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
@@ -60,9 +58,7 @@ import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 @Configuration
 @EnableConfigurationProperties(DbSchedulerProperties.class)
 @AutoConfigurationPackage
-@AutoConfigureAfter({
-    DataSourceAutoConfiguration.class,
-})
+@AutoConfigureAfter({ DataSourceAutoConfiguration.class, })
 @ConditionalOnBean(DataSource.class)
 @ConditionalOnProperty(value = "db-scheduler.enabled", matchIfMissing = true)
 public class DbSchedulerAutoConfiguration {
@@ -73,9 +69,10 @@ public class DbSchedulerAutoConfiguration {
     private final DataSource existingDataSource;
     private final List<Task<?>> configuredTasks;
 
-    public DbSchedulerAutoConfiguration(DbSchedulerProperties dbSchedulerProperties,
-                                        DataSource dataSource, List<Task<?>> configuredTasks) {
-        this.config = Objects.requireNonNull(dbSchedulerProperties, "Can't configure db-scheduler without required configuration");
+    public DbSchedulerAutoConfiguration(DbSchedulerProperties dbSchedulerProperties, DataSource dataSource,
+            List<Task<?>> configuredTasks) {
+        this.config = Objects.requireNonNull(dbSchedulerProperties,
+                "Can't configure db-scheduler without required configuration");
         this.existingDataSource = Objects.requireNonNull(dataSource, "An existing javax.sql.DataSource is required");
         this.configuredTasks = Objects.requireNonNull(configuredTasks, "At least one Task must be configured");
     }
@@ -120,13 +117,11 @@ public class DbSchedulerAutoConfiguration {
 
         // Polling strategy
         if (config.getPollingStrategy() == PollingStrategyConfig.Type.FETCH) {
-            builder.pollUsingFetchAndLockOnExecute(
-                config.getPollingStrategyLowerLimitFractionOfThreads(),
-                config.getPollingStrategyUpperLimitFractionOfThreads());
+            builder.pollUsingFetchAndLockOnExecute(config.getPollingStrategyLowerLimitFractionOfThreads(),
+                    config.getPollingStrategyUpperLimitFractionOfThreads());
         } else if (config.getPollingStrategy() == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
-            builder.pollUsingLockAndFetch(
-                config.getPollingStrategyLowerLimitFractionOfThreads(),
-                config.getPollingStrategyUpperLimitFractionOfThreads());
+            builder.pollUsingLockAndFetch(config.getPollingStrategyLowerLimitFractionOfThreads(),
+                    config.getPollingStrategyUpperLimitFractionOfThreads());
         } else {
             throw new IllegalArgumentException("Unknown polling-strategy: " + config.getPollingStrategy());
         }
@@ -134,7 +129,8 @@ public class DbSchedulerAutoConfiguration {
         builder.heartbeatInterval(config.getHeartbeatInterval());
 
         // Use scheduler name implementation from customizer if available, otherwise use
-        // configured scheduler name (String). If both is absent, use the library default
+        // configured scheduler name (String). If both is absent, use the library
+        // default
         if (customizer.schedulerName().isPresent()) {
             builder.schedulerName(customizer.schedulerName().get());
         } else if (config.getSchedulerName() != null) {
@@ -143,13 +139,13 @@ public class DbSchedulerAutoConfiguration {
 
         builder.tableName(config.getTableName());
 
-        // Use custom serializer if provided. Otherwise use devtools friendly serializer.
+        // Use custom serializer if provided. Otherwise use devtools friendly
+        // serializer.
         builder.serializer(customizer.serializer().orElse(SPRING_JAVA_SERIALIZER));
 
         // Use custom JdbcCustomizer if provided.
         builder.jdbcCustomization(
-            customizer.jdbcCustomization()
-                .orElse(new AutodetectJdbcCustomization(transactionalDataSource)));
+                customizer.jdbcCustomization().orElse(new AutodetectJdbcCustomization(transactionalDataSource)));
 
         if (config.isImmediateExecutionEnabled()) {
             builder.enableImmediateExecution();
@@ -192,23 +188,20 @@ public class DbSchedulerAutoConfiguration {
             return existingDataSource;
         }
 
-        log.debug("The configured DataSource is not transaction aware: '{}'. Wrapping in TransactionAwareDataSourceProxy.", existingDataSource);
+        log.debug(
+                "The configured DataSource is not transaction aware: '{}'. Wrapping in TransactionAwareDataSourceProxy.",
+                existingDataSource);
 
         return new TransactionAwareDataSourceProxy(existingDataSource);
     }
 
     @SuppressWarnings("unchecked")
     private static <T extends Task<?> & OnStartup> List<T> startupTasks(List<Task<?>> tasks) {
-        return tasks.stream()
-            .filter(shouldBeStarted)
-            .map(task -> (T) task)
-            .collect(Collectors.toList());
+        return tasks.stream().filter(shouldBeStarted).map(task -> (T) task).collect(Collectors.toList());
     }
 
     private static List<Task<?>> nonStartupTasks(List<Task<?>> tasks) {
-        return tasks.stream()
-            .filter(shouldBeStarted.negate())
-            .collect(Collectors.toList());
+        return tasks.stream().filter(shouldBeStarted.negate()).collect(Collectors.toList());
     }
 
     /**
@@ -224,7 +217,7 @@ public class DbSchedulerAutoConfiguration {
             if (data == null)
                 return null;
             try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                 ObjectOutput out = new ObjectOutputStream(bos)) {
+                    ObjectOutput out = new ObjectOutputStream(bos)) {
                 out.writeObject(data);
                 return bos.toByteArray();
             } catch (Exception e) {
@@ -236,7 +229,8 @@ public class DbSchedulerAutoConfiguration {
             if (serializedData == null)
                 return null;
             try (ByteArrayInputStream bis = new ByteArrayInputStream(serializedData);
-                 ObjectInput in = new ConfigurableObjectInputStream(bis, Thread.currentThread().getContextClassLoader())) {
+                    ObjectInput in = new ConfigurableObjectInputStream(bis,
+                            Thread.currentThread().getContextClassLoader())) {
                 return clazz.cast(in.readObject());
             } catch (Exception e) {
                 throw new SerializationException("Failed to deserialize object", e);

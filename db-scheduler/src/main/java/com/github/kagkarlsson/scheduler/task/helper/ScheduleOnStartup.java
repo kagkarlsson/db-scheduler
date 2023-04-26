@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.Clock;
-import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.Task;
 

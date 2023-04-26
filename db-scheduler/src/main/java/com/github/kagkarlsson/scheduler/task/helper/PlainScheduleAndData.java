@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
-
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -52,11 +51,12 @@ public class PlainScheduleAndData implements ScheduleAndData, Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData that = (com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData) o;
-        return Objects.equals(schedule, that.schedule) &&
-            Objects.equals(data, that.data);
+        return Objects.equals(schedule, that.schedule) && Objects.equals(data, that.data);
     }
 
     @Override
@@ -66,9 +66,6 @@ public class PlainScheduleAndData implements ScheduleAndData, Serializable {
 
     @Override
     public String toString() {
-        return this.getClass().getSimpleName() + "{" +
-            "schedule=" + schedule +
-            ", data=" + data +
-            '}';
+        return this.getClass().getSimpleName() + "{" + "schedule=" + schedule + ", data=" + data + '}';
     }
 }

@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
-
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -82,11 +81,12 @@ public class Daily implements Schedule, Serializable {
 
     @Override
     public final boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Daily)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Daily))
+            return false;
         Daily that = (Daily) o;
-        return Objects.equals(this.times, that.times) &&
-            Objects.equals(this.zone, that.zone);
+        return Objects.equals(this.times, that.times) && Objects.equals(this.zone, that.zone);
     }
 
     @Override
@@ -96,8 +96,6 @@ public class Daily implements Schedule, Serializable {
 
     @Override
     public String toString() {
-        return "Daily " +
-            "times=" + times +
-            ", zone=" + zone;
+        return "Daily " + "times=" + times + ", zone=" + zone;
     }
 }

@@ -1,23 +1,5 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.logging.LogLevel;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
-import com.github.kagkarlsson.scheduler.task.*;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
-import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
-import com.google.common.util.concurrent.MoreExecutors;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -25,6 +7,22 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
+import com.google.common.util.concurrent.MoreExecutors;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class DeadExecutionsTest {
 
@@ -47,29 +45,19 @@ public class DeadExecutionsTest {
         oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
         nonCompletingExecutionHandler = new TestTasks.CountingHandler<>();
         deadExecutionHandler = new ReviveDead<>();
-        nonCompleting = new NonCompletingTask<>("NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
+        nonCompleting = new NonCompletingTask<>("NonCompleting", Void.class, nonCompletingExecutionHandler,
+                deadExecutionHandler);
 
         TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, oneTimeTask, nonCompleting);
 
-        jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver, new SchedulerName.Fixed("scheduler1"), settableClock);
+        jdbcTaskRepository = new JdbcTaskRepository(DB.getDataSource(), false, DEFAULT_TABLE_NAME, taskResolver,
+                new SchedulerName.Fixed("scheduler1"), settableClock);
 
-        scheduler = new Scheduler(settableClock,
-            jdbcTaskRepository,
-            jdbcTaskRepository,
-            taskResolver,
-            1,
-            MoreExecutors.newDirectExecutorService(),
-            new SchedulerName.Fixed("test-scheduler"),
-            new Waiter(Duration.ZERO),
-            Duration.ofMinutes(1),
-            false,
-            StatsRegistry.NOOP,
-            PollingStrategyConfig.DEFAULT_FETCH,
-            Duration.ofDays(14),
-            Duration.ZERO,
-            LogLevel.DEBUG,
-            true,
-            new ArrayList<>());
+        scheduler = new Scheduler(settableClock, jdbcTaskRepository, jdbcTaskRepository, taskResolver, 1,
+                MoreExecutors.newDirectExecutorService(), new SchedulerName.Fixed("test-scheduler"),
+                new Waiter(Duration.ZERO), Duration.ofMinutes(1), false, StatsRegistry.NOOP,
+                PollingStrategyConfig.DEFAULT_FETCH, Duration.ofDays(14), Duration.ZERO, LogLevel.DEBUG, true,
+                new ArrayList<>());
 
     }
 
@@ -78,7 +66,8 @@ public class DeadExecutionsTest {
         final Instant now = settableClock.now();
 
         final TaskInstance<Void> taskInstance = oneTimeTask.instance("id1");
-        final SchedulableTaskInstance<Void> execution1 = new SchedulableTaskInstance<>(taskInstance, now.minus(Duration.ofDays(1)));
+        final SchedulableTaskInstance<Void> execution1 = new SchedulableTaskInstance<>(taskInstance,
+                now.minus(Duration.ofDays(1)));
         jdbcTaskRepository.createIfNotExists(execution1);
 
         final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
@@ -127,7 +116,8 @@ public class DeadExecutionsTest {
     public static class NonCompletingTask<T> extends OneTimeTask<T> {
         private final VoidExecutionHandler<T> handler;
 
-        public NonCompletingTask(String name, Class<T> dataClass, VoidExecutionHandler<T> handler, DeadExecutionHandler<T> deadExecutionHandler) {
+        public NonCompletingTask(String name, Class<T> dataClass, VoidExecutionHandler<T> handler,
+                DeadExecutionHandler<T> deadExecutionHandler) {
             super(name, dataClass, (executionComplete, executionOperations) -> {
             }, deadExecutionHandler);
             this.handler = handler;

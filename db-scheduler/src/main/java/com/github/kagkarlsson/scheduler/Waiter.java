@@ -15,11 +15,10 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Waiter {
     private static final Logger LOG = LoggerFactory.getLogger(Waiter.class);
@@ -65,7 +64,8 @@ public class Waiter {
                     lock.wait(millis);
                     this.isWaiting = false;
                     if (woken) {
-                        LOG.debug("Waiter woken, it had {}ms left to wait.", (waitUntil.toEpochMilli() - clock.now().toEpochMilli()));
+                        LOG.debug("Waiter woken, it had {}ms left to wait.",
+                                (waitUntil.toEpochMilli() - clock.now().toEpochMilli()));
                         return;
                     }
                 }
@@ -86,7 +86,8 @@ public class Waiter {
     }
 
     public void wakeOrSkipNextWait() {
-        // Take early lock to avoid race-conditions. Lock is also taken in wake() (lock is re-entrant)
+        // Take early lock to avoid race-conditions. Lock is also taken in wake() (lock
+        // is re-entrant)
         synchronized (lock) {
             final boolean awoken = wake();
             if (!awoken) {

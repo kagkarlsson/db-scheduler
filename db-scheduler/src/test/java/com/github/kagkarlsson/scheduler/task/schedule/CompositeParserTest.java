@@ -1,12 +1,5 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
-import com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.FakeParser;
-import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
-
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.ANY_SCHEDULE_STRING;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.DAILY_AT_MIDNIGHT;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.DAILY_AT_NOON;
@@ -20,6 +13,11 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
+import com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.FakeParser;
+import java.util.Optional;
+import org.hamcrest.CoreMatchers;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class CompositeParserTest {
     private final Parser MATCHING_PARSER_MIDNIGHT = FakeParser.withMatchingSchedule(DAILY_AT_MIDNIGHT);
@@ -41,13 +39,15 @@ public class CompositeParserTest {
 
     @Test
     public void fails_when_no_successful_parsers() {
-        assertScheduleNotPresent(CompositeParser.of(NON_MATCHING_PARSER, ANOTHER_NON_MATCHING_PARSER), ANY_SCHEDULE_STRING);
+        assertScheduleNotPresent(CompositeParser.of(NON_MATCHING_PARSER, ANOTHER_NON_MATCHING_PARSER),
+                ANY_SCHEDULE_STRING);
     }
 
     @Test
     public void fails_when_one_required_delegate_fails() {
         Assertions.assertThrows(Exception.class, () -> {
-            CompositeParser.of(NON_MATCHING_PARSER, THROWING_PARSER, MATCHING_PARSER_MIDNIGHT).parse(ANY_SCHEDULE_STRING);
+            CompositeParser.of(NON_MATCHING_PARSER, THROWING_PARSER, MATCHING_PARSER_MIDNIGHT)
+                    .parse(ANY_SCHEDULE_STRING);
         });
     }
 

@@ -21,7 +21,8 @@ public abstract class AbstractTask<T> implements Task<T> {
     private final DeadExecutionHandler<T> deadExecutionHandler;
     private final Class<T> dataClass;
 
-    public AbstractTask(String name, Class<T> dataClass, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
+    public AbstractTask(String name, Class<T> dataClass, FailureHandler<T> failureHandler,
+            DeadExecutionHandler<T> deadExecutionHandler) {
         this.name = name;
         this.dataClass = dataClass;
         this.failureHandler = failureHandler;

@@ -19,9 +19,7 @@ import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler.OnCompleteRemove;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.ReviveDeadExecution;
 import com.github.kagkarlsson.scheduler.task.FailureHandler.OnFailureRetryLater;
-
 import java.time.Duration;
-import java.time.Instant;
 
 public abstract class OneTimeTask<T> extends AbstractTask<T> {
 
@@ -33,7 +31,8 @@ public abstract class OneTimeTask<T> extends AbstractTask<T> {
         this(name, dataClass, failureHandler, new ReviveDeadExecution<>());
     }
 
-    public OneTimeTask(String name, Class<T> dataClass, FailureHandler<T> failureHandler, DeadExecutionHandler<T> deadExecutionHandler) {
+    public OneTimeTask(String name, Class<T> dataClass, FailureHandler<T> failureHandler,
+            DeadExecutionHandler<T> deadExecutionHandler) {
         super(name, dataClass, failureHandler, deadExecutionHandler);
     }
 

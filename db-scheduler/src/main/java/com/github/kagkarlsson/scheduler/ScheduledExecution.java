@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 package com.github.kagkarlsson.scheduler;
+
 import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Instant;
 import java.util.Objects;
+
 public class ScheduledExecution<DATA_TYPE> {
     private final Class<DATA_TYPE> dataClass;
     private final Execution execution;
+
     public ScheduledExecution(Class<DATA_TYPE> dataClass, Execution execution) {
         this.dataClass = dataClass;
         this.execution = execution;
@@ -68,8 +71,10 @@ public class ScheduledExecution<DATA_TYPE> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ScheduledExecution<?> that = (ScheduledExecution<?>) o;
         return Objects.equals(execution, that.execution);
     }
@@ -81,8 +86,6 @@ public class ScheduledExecution<DATA_TYPE> {
 
     @Override
     public String toString() {
-        return "ScheduledExecution{" +
-            "execution=" + execution +
-            '}';
+        return "ScheduledExecution{" + "execution=" + execution + '}';
     }
 }

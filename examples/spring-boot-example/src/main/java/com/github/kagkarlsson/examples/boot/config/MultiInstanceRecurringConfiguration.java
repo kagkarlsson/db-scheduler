@@ -23,19 +23,18 @@ import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
+import java.io.Serializable;
+import java.time.Instant;
+import java.util.Random;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import utils.EventLogger;
 
-import java.io.Serializable;
-import java.time.Instant;
-import java.util.Random;
-
 @Configuration
 public class MultiInstanceRecurringConfiguration {
 
-    public static final TaskWithDataDescriptor<ScheduleAndCustomer> MULTI_INSTANCE_RECURRING_TASK = new TaskWithDataDescriptor<>("multi-instance-recurring-task", ScheduleAndCustomer.class);
-
+    public static final TaskWithDataDescriptor<ScheduleAndCustomer> MULTI_INSTANCE_RECURRING_TASK = new TaskWithDataDescriptor<>(
+            "multi-instance-recurring-task", ScheduleAndCustomer.class);
 
     /** Start the example */
     public static void start(ExampleContext ctx) {
@@ -43,25 +42,25 @@ public class MultiInstanceRecurringConfiguration {
         Customer customer = new Customer(String.valueOf(new Random().nextInt(10000)));
         ScheduleAndCustomer data = new ScheduleAndCustomer(cron, customer);
 
-        ctx.log("Scheduling instance of recurring task "+ MULTI_INSTANCE_RECURRING_TASK.getTaskName()+" with data: " + data);
+        ctx.log("Scheduling instance of recurring task " + MULTI_INSTANCE_RECURRING_TASK.getTaskName() + " with data: "
+                + data);
 
-        ctx.schedulerClient.schedule(
-            MULTI_INSTANCE_RECURRING_TASK.instance(customer.id, data),
-            cron.getInitialExecutionTime(Instant.now())
-        );
+        ctx.schedulerClient.schedule(MULTI_INSTANCE_RECURRING_TASK.instance(customer.id, data),
+                cron.getInitialExecutionTime(Instant.now()));
     }
 
     /** Bean definition */
     @Bean
     public Task<ScheduleAndCustomer> multiInstanceRecurring() {
-        // This task will only start running when at least one instance of the task has been scheduled
+        // This task will only start running when at least one instance of the task has
+        // been scheduled
         return Tasks.recurringWithPersistentSchedule(MULTI_INSTANCE_RECURRING_TASK)
-            .execute((TaskInstance<ScheduleAndCustomer> taskInstance, ExecutionContext executionContext) -> {
+                .execute((TaskInstance<ScheduleAndCustomer> taskInstance, ExecutionContext executionContext) -> {
 
-                ScheduleAndCustomer data = taskInstance.getData();
-                EventLogger.logTask(MULTI_INSTANCE_RECURRING_TASK,
-                    String.format("Ran according to schedule '%s' for customer %s", data.getSchedule(), data.getData()));
-            });
+                    ScheduleAndCustomer data = taskInstance.getData();
+                    EventLogger.logTask(MULTI_INSTANCE_RECURRING_TASK, String.format(
+                            "Ran according to schedule '%s' for customer %s", data.getSchedule(), data.getData()));
+                });
     }
 
     public static class ScheduleAndCustomer implements ScheduleAndData {
@@ -69,7 +68,10 @@ public class MultiInstanceRecurringConfiguration {
         private final CronSchedule schedule;
         private final Customer customer;
 
-        private ScheduleAndCustomer(){ this(null, null);} //
+        private ScheduleAndCustomer() {
+            this(null, null);
+        } //
+
         public ScheduleAndCustomer(CronSchedule schedule, Customer customer) {
             this.schedule = schedule;
             this.customer = customer;
@@ -87,10 +89,7 @@ public class MultiInstanceRecurringConfiguration {
 
         @Override
         public String toString() {
-            return "ScheduleAndCustomer{" +
-                "schedule=" + schedule +
-                ", customer=" + customer +
-                '}';
+            return "ScheduleAndCustomer{" + "schedule=" + schedule + ", customer=" + customer + '}';
         }
     }
 
@@ -98,16 +97,17 @@ public class MultiInstanceRecurringConfiguration {
         private static final long serialVersionUID = 1L; // recommended when using Java serialization
         public final String id;
 
-        private Customer() {this(null);}
+        private Customer() {
+            this(null);
+        }
+
         public Customer(String id) {
             this.id = id;
         }
 
         @Override
         public String toString() {
-            return "Customer{" +
-                "id='" + id + '\'' +
-                '}';
+            return "Customer{" + "id='" + id + '\'' + '}';
         }
     }
 }

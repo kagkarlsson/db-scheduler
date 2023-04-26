@@ -34,14 +34,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnClass({
-    MetricsAutoConfiguration.class,
-    CompositeMeterRegistryAutoConfiguration.class,
-})
-@AutoConfigureAfter({
-    MetricsAutoConfiguration.class,
-    CompositeMeterRegistryAutoConfiguration.class,
-})
+@ConditionalOnClass({ MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class, })
+@AutoConfigureAfter({ MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class, })
 @AutoConfigureBefore(DbSchedulerAutoConfiguration.class)
 @ConditionalOnProperty(value = "db-scheduler.enabled", matchIfMissing = true)
 public class DbSchedulerMetricsAutoConfiguration {
@@ -57,8 +51,8 @@ public class DbSchedulerMetricsAutoConfiguration {
     @ConditionalOnMissingBean(StatsRegistry.class)
     @Bean
     StatsRegistry micrometerStatsRegistry(MeterRegistry registry) {
-        log.debug("Spring Boot Actuator and Micrometer detected. Will use: {} for StatsRegistry", registry.getClass().getName());
+        log.debug("Spring Boot Actuator and Micrometer detected. Will use: {} for StatsRegistry",
+                registry.getClass().getName());
         return new MicrometerStatsRegistry(registry, configuredTasks);
     }
 }
-

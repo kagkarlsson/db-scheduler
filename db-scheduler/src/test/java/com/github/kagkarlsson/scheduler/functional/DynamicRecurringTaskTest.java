@@ -1,24 +1,23 @@
 package com.github.kagkarlsson.scheduler.functional;
 
+import static co.unruly.matchers.OptionalMatchers.contains;
+import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTaskWithPersistentSchedule;
-import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Daily;
-import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -26,13 +25,10 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-
-import static co.unruly.matchers.OptionalMatchers.contains;
-import static java.util.Collections.singletonList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class DynamicRecurringTaskTest {
 
@@ -54,10 +50,10 @@ public class DynamicRecurringTaskTest {
     public void should_schedule_multiple_instances_with_different_schedules() {
 
         final String taskName = "dynamic-recurring";
-        final RecurringTaskWithPersistentSchedule<PlainScheduleAndData> task =
-            Tasks.recurringWithPersistentSchedule(taskName, PlainScheduleAndData.class)
-            .execute((taskInstance, executionContext) -> {
-            });
+        final RecurringTaskWithPersistentSchedule<PlainScheduleAndData> task = Tasks
+                .recurringWithPersistentSchedule(taskName, PlainScheduleAndData.class)
+                .execute((taskInstance, executionContext) -> {
+                });
 
         ManualScheduler scheduler = manualSchedulerFor(singletonList(task));
         scheduler.start();
@@ -78,13 +74,15 @@ public class DynamicRecurringTaskTest {
 
     @Test
     public void should_support_statechanging_tasks() {
-        final PersistentFixedDelaySchedule scheduleAndData1 = new PersistentFixedDelaySchedule(Schedules.fixedDelay(Duration.ofSeconds(10)), 1);
+        final PersistentFixedDelaySchedule scheduleAndData1 = new PersistentFixedDelaySchedule(
+                Schedules.fixedDelay(Duration.ofSeconds(10)), 1);
 
         final String taskName = "dynamic-recurring";
-        final RecurringTaskWithPersistentSchedule<PersistentFixedDelaySchedule> task =
-            Tasks.recurringWithPersistentSchedule(taskName, PersistentFixedDelaySchedule.class)
+        final RecurringTaskWithPersistentSchedule<PersistentFixedDelaySchedule> task = Tasks
+                .recurringWithPersistentSchedule(taskName, PersistentFixedDelaySchedule.class)
                 .executeStateful((taskInstance, executionContext) -> {
-                    final PersistentFixedDelaySchedule persistentFixedDelaySchedule = taskInstance.getData().returnIncremented();
+                    final PersistentFixedDelaySchedule persistentFixedDelaySchedule = taskInstance.getData()
+                            .returnIncremented();
                     System.out.println(persistentFixedDelaySchedule);
                     return persistentFixedDelaySchedule;
                 });
@@ -92,35 +90,35 @@ public class DynamicRecurringTaskTest {
         ManualScheduler scheduler = manualSchedulerFor(singletonList(task));
         scheduler.start();
 
-
         scheduler.schedule(task.schedulableInstance("id1", scheduleAndData1));
 
-        assertScheduled(scheduler, task.instanceId("id1"), clock.now(), scheduleAndData1); // FixedDelay has initial execution-time now()
+        assertScheduled(scheduler, task.instanceId("id1"), clock.now(), scheduleAndData1); // FixedDelay has initial
+                                                                                           // execution-time now()
         scheduler.runAnyDueExecutions();
 
-        assertScheduled(scheduler, task.instanceId("id1"), clock.now().plus(Duration.ofSeconds(10)), scheduleAndData1.returnIncremented());
+        assertScheduled(scheduler, task.instanceId("id1"), clock.now().plus(Duration.ofSeconds(10)),
+                scheduleAndData1.returnIncremented());
     }
 
-    private void assertScheduled(ManualScheduler scheduler, TaskInstanceId instanceId, LocalTime expectedExecutionTime, Object taskData) {
-        assertScheduled(scheduler, instanceId, ZonedDateTime.of(DATE, expectedExecutionTime, ZONE).toInstant(), taskData);
+    private void assertScheduled(ManualScheduler scheduler, TaskInstanceId instanceId, LocalTime expectedExecutionTime,
+            Object taskData) {
+        assertScheduled(scheduler, instanceId, ZonedDateTime.of(DATE, expectedExecutionTime, ZONE).toInstant(),
+                taskData);
     }
 
     @SuppressWarnings("OptionalGetWithoutIsPresent")
-    private void assertScheduled(ManualScheduler scheduler, TaskInstanceId instanceId, Instant expectedExecutionTime, Object taskData) {
+    private void assertScheduled(ManualScheduler scheduler, TaskInstanceId instanceId, Instant expectedExecutionTime,
+            Object taskData) {
         Optional<ScheduledExecution<Object>> firstExecution = scheduler.getScheduledExecution(instanceId);
-        assertThat(firstExecution.map(ScheduledExecution::getExecutionTime),
-            contains(expectedExecutionTime));
+        assertThat(firstExecution.map(ScheduledExecution::getExecutionTime), contains(expectedExecutionTime));
         if (taskData != null) {
             assertEquals(taskData, firstExecution.get().getData());
         }
     }
 
     private ManualScheduler manualSchedulerFor(List<Task<?>> recurringTasks) {
-        return TestHelper.createManualScheduler(postgres.getDataSource(), recurringTasks)
-            .clock(clock)
-            .build();
+        return TestHelper.createManualScheduler(postgres.getDataSource(), recurringTasks).clock(clock).build();
     }
-
 
     public static class PersistentFixedDelaySchedule extends PlainScheduleAndData {
         public PersistentFixedDelaySchedule(Schedule schedule, Integer data) {
@@ -128,9 +126,8 @@ public class DynamicRecurringTaskTest {
         }
 
         public PersistentFixedDelaySchedule returnIncremented() {
-            return new PersistentFixedDelaySchedule(super.getSchedule(), ((Integer)super.getData()) + 1);
+            return new PersistentFixedDelaySchedule(super.getSchedule(), ((Integer) super.getData()) + 1);
         }
     }
-
 
 }

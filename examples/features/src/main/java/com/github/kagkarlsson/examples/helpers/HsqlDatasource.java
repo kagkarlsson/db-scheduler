@@ -17,8 +17,6 @@ package com.github.kagkarlsson.examples.helpers;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-
-import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -26,6 +24,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.function.Consumer;
+import javax.sql.DataSource;
 
 public class HsqlDatasource {
 
@@ -35,7 +34,7 @@ public class HsqlDatasource {
         config.setUsername("sa");
         config.setPassword("");
 
-        HikariDataSource dataSource  = new HikariDataSource(config);
+        HikariDataSource dataSource = new HikariDataSource(config);
 
         doWithConnection(dataSource, c -> {
 
@@ -51,7 +50,8 @@ public class HsqlDatasource {
     }
 
     private static String readFile(String resource) throws IOException {
-        try (BufferedReader in = new BufferedReader(new InputStreamReader(HsqlDatasource.class.getResourceAsStream(resource)))) {
+        try (BufferedReader in = new BufferedReader(
+                new InputStreamReader(HsqlDatasource.class.getResourceAsStream(resource)))) {
             String line;
             StringBuilder createTables = new StringBuilder();
             while ((line = in.readLine()) != null) {

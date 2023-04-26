@@ -20,6 +20,7 @@ import java.time.Instant;
 public interface SchedulableInstance<T> extends TaskInstanceId {
 
     TaskInstance<T> getTaskInstance();
+
     Instant getNextExecutionTime(Instant currentTime);
 
     default String getTaskName() {

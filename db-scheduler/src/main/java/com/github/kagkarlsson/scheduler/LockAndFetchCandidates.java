@@ -18,12 +18,11 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LockAndFetchCandidates implements PollStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(LockAndFetchCandidates.class);
@@ -43,9 +42,9 @@ public class LockAndFetchCandidates implements PollStrategy {
     private AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
 
     public LockAndFetchCandidates(Executor executor, TaskRepository taskRepository, SchedulerClient schedulerClient,
-                                  SchedulerClientEventListener earlyExecutionListener, int threadpoolSize, StatsRegistry statsRegistry, SchedulerState schedulerState,
-                                  ConfigurableLogger failureLogger, TaskResolver taskResolver, Clock clock,
-                                  PollingStrategyConfig pollingStrategyConfig, Runnable triggerCheckForNewExecutions) {
+            SchedulerClientEventListener earlyExecutionListener, int threadpoolSize, StatsRegistry statsRegistry,
+            SchedulerState schedulerState, ConfigurableLogger failureLogger, TaskResolver taskResolver, Clock clock,
+            PollingStrategyConfig pollingStrategyConfig, Runnable triggerCheckForNewExecutions) {
         this.executor = executor;
         this.taskRepository = taskRepository;
         this.schedulerClient = schedulerClient;
@@ -78,7 +77,8 @@ public class LockAndFetchCandidates implements PollStrategy {
         LOG.trace("Picked {} taskinstances due for execution", pickedExecutions.size());
 
         // Shared indicator for if there are more due executions in the database.
-        // As soon as we know there are not more executions in the database, we can stop triggering checks for more (and vice versa)
+        // As soon as we know there are not more executions in the database, we can stop
+        // triggering checks for more (and vice versa)
         moreExecutionsInDatabase.set(pickedExecutions.size() == executionsToFetch);
 
         if (pickedExecutions.size() == 0) {
@@ -88,16 +88,12 @@ public class LockAndFetchCandidates implements PollStrategy {
         }
 
         for (Execution picked : pickedExecutions) {
-            executor.addToQueue(
-                new ExecutePicked(executor, taskRepository, earlyExecutionListener, schedulerClient, statsRegistry,
-                    taskResolver, schedulerState, failureLogger,
-                    clock, picked),
-                () -> {
-                    if (moreExecutionsInDatabase.get()
-                        && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
-                        triggerCheckForNewExecutions.run();
-                    }
-                });
+            executor.addToQueue(new ExecutePicked(executor, taskRepository, earlyExecutionListener, schedulerClient,
+                    statsRegistry, taskResolver, schedulerState, failureLogger, clock, picked), () -> {
+                        if (moreExecutionsInDatabase.get() && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
+                            triggerCheckForNewExecutions.run();
+                        }
+                    });
         }
         statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
     }

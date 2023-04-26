@@ -1,9 +1,16 @@
 package com.github.kagkarlsson.scheduler.logging;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.core.Is.is;
+import static org.hamcrest.core.IsNull.notNullValue;
+
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxy;
 import ch.qos.logback.core.read.ListAppender;
+import java.util.EnumSet;
+import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,17 +18,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.LoggerFactory;
 
-import java.util.EnumSet;
-import java.util.Set;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-
 public class ConfigurableLoggerTest {
 
-    private static class TestException extends RuntimeException {}
+    private static class TestException extends RuntimeException {
+    }
 
     private final Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
     private final ListAppender<ILoggingEvent> appender = new ListAppender<>();
@@ -64,7 +64,8 @@ public class ConfigurableLoggerTest {
         assertThat(logEvent.getLevel().levelStr, is(level.name()));
         assertThat(logEvent.getFormattedMessage(), is("test test"));
 
-        // use Logback's implementation directly since the supertype doesn't have a method for returning the throwable
+        // use Logback's implementation directly since the supertype doesn't have a
+        // method for returning the throwable
         ThrowableProxy throwableProxy = (ThrowableProxy) logEvent.getThrowableProxy();
         assertThat(throwableProxy, is(notNullValue()));
         assertThat(throwableProxy.getThrowable(), is(cause));

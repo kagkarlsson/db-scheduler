@@ -35,7 +35,8 @@ public class ExecutionContext {
     }
 
     /**
-     * Primarily enables ExecutionHandlers to schedule new tasks. Can not be used to modify the "current" execution.
+     * Primarily enables ExecutionHandlers to schedule new tasks. Can not be used to
+     * modify the "current" execution.
      */
     public SchedulerClient getSchedulerClient() {
         return schedulerClient;

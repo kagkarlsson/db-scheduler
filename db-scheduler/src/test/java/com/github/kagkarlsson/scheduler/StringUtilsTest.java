@@ -1,10 +1,10 @@
 package com.github.kagkarlsson.scheduler;
 
-import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
+
+import org.hamcrest.CoreMatchers;
+import org.junit.jupiter.api.Test;
 
 public class StringUtilsTest {
 

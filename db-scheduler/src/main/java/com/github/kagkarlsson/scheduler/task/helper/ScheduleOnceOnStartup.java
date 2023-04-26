@@ -19,7 +19,6 @@ import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-
 import java.time.Instant;
 import java.util.function.Function;
 

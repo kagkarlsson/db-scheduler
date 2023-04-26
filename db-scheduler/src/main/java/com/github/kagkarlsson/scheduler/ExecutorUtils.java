@@ -15,21 +15,20 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.time.Duration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ExecutorUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(ExecutorUtils.class);
 
     public static boolean shutdownAndAwaitTermination(ExecutorService executorService, Duration waitBeforeInterrupt,
-                                                      Duration waitAfterInterrupt) {
+            Duration waitAfterInterrupt) {
         executorService.shutdown();
         boolean successfulShutdown = awaitTermination(executorService, waitBeforeInterrupt);
         if (!successfulShutdown) {

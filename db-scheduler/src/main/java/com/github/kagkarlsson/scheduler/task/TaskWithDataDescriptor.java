@@ -23,7 +23,7 @@ public class TaskWithDataDescriptor<T> implements TaskDescriptor<T> {
     private final String taskName;
     private final Class<T> dataClass;
 
-    public TaskWithDataDescriptor(String taskName, Class<T> dataClass) { //TODO: not used?
+    public TaskWithDataDescriptor(String taskName, Class<T> dataClass) { // TODO: not used?
         this.taskName = taskName;
         this.dataClass = dataClass;
     }

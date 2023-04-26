@@ -21,40 +21,37 @@ import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskWithoutDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-import org.springframework.transaction.TransactionStatus;
-import utils.EventLogger;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.Random;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.transaction.TransactionStatus;
+import utils.EventLogger;
 
 @Configuration
 public class TransactionallyStagedJobConfiguration {
 
-    public static final TaskWithoutDataDescriptor TRANSACTIONALLY_STAGED_TASK = new TaskWithoutDataDescriptor("transactionally-staged-task");
+    public static final TaskWithoutDataDescriptor TRANSACTIONALLY_STAGED_TASK = new TaskWithoutDataDescriptor(
+            "transactionally-staged-task");
     private static int ID = 1;
-
 
     /** Start the example */
     public static void start(ExampleContext ctx) {
-        ctx.log("Scheduling a one-time task in a transaction. If the transaction rolls back, the insert of the task also " +
-            "rolls back, i.e. it will never run."
-        );
+        ctx.log("Scheduling a one-time task in a transaction. If the transaction rolls back, the insert of the task also "
+                + "rolls back, i.e. it will never run.");
 
         ctx.tx.executeWithoutResult((TransactionStatus status) -> {
-            // Since it is scheduled in a transaction, the scheduler will not run it until the tx commits
-            // If the tx rolls back, the insert of the new job will also roll back, i.e. not run.
-            ctx.schedulerClient.schedule(
-                TRANSACTIONALLY_STAGED_TASK.instance(String.valueOf(ID++)),
-                Instant.now()
-            );
+            // Since it is scheduled in a transaction, the scheduler will not run it until
+            // the tx commits
+            // If the tx rolls back, the insert of the new job will also roll back, i.e. not
+            // run.
+            ctx.schedulerClient.schedule(TRANSACTIONALLY_STAGED_TASK.instance(String.valueOf(ID++)), Instant.now());
 
             // Do additional database-operations here
 
             if (new Random().nextBoolean()) {
-                throw new RuntimeException("Simulated failure happening after task was scheduled. Scheduled task will never run.");
+                throw new RuntimeException(
+                        "Simulated failure happening after task was scheduled. Scheduled task will never run.");
             }
         });
     }
@@ -63,9 +60,10 @@ public class TransactionallyStagedJobConfiguration {
     @Bean
     public Task<Void> transactionallyStagedTask() {
         return Tasks.oneTime(TRANSACTIONALLY_STAGED_TASK)
-            .execute((TaskInstance<Void> taskInstance, ExecutionContext executionContext) -> {
-                EventLogger.logTask(TRANSACTIONALLY_STAGED_TASK, "Ran. Will only run if transactions it was scheduled commits. ");
-            });
+                .execute((TaskInstance<Void> taskInstance, ExecutionContext executionContext) -> {
+                    EventLogger.logTask(TRANSACTIONALLY_STAGED_TASK,
+                            "Ran. Will only run if transactions it was scheduled commits. ");
+                });
     }
 
 }

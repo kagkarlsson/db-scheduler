@@ -1,14 +1,12 @@
 package com.github.kagkarlsson.scheduler;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.concurrent.*;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class WaiterTest {
     private ExecutorService executor;
@@ -26,7 +24,7 @@ public class WaiterTest {
     @Test
     public void should_wait_at_least_duration() throws ExecutionException, InterruptedException {
         Future<Long> waitTime = executor.submit(new WaitForWaiter(new Waiter(Duration.ofMillis(100))));
-        assertTrue(waitTime.get() >= 100L,"Waited: " + waitTime.get());
+        assertTrue(waitTime.get() >= 100L, "Waited: " + waitTime.get());
     }
 
     @Test
@@ -46,7 +44,8 @@ public class WaiterTest {
     }
 
     @Test
-    public void should_wait_for_duration_even_if_prematurely_notified() throws ExecutionException, InterruptedException {
+    public void should_wait_for_duration_even_if_prematurely_notified()
+            throws ExecutionException, InterruptedException {
         Object lock = new Object();
 
         Waiter waiter = new Waiter(Duration.ofMillis(200), new SystemClock(), lock);
@@ -63,7 +62,7 @@ public class WaiterTest {
     @Test
     public void should_not_wait_if_instructed_to_skip_next() throws ExecutionException, InterruptedException {
         Waiter waiter = new Waiter(Duration.ofMillis(1000));
-        waiter.wakeOrSkipNextWait(); //set skip
+        waiter.wakeOrSkipNextWait(); // set skip
         Future<Long> waitTime = executor.submit(new WaitForWaiter(waiter));
 
         assertTrue(waitTime.get() < 100L, "Waited: " + waitTime.get());
@@ -90,6 +89,5 @@ public class WaiterTest {
             return System.currentTimeMillis() - start;
         }
     }
-
 
 }

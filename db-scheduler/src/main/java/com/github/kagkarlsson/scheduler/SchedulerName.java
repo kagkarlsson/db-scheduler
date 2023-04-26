@@ -15,16 +15,14 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface SchedulerName {
 
     String getName();
-
 
     class Fixed implements SchedulerName {
         private final String name;
@@ -38,7 +36,6 @@ public interface SchedulerName {
             return name;
         }
     }
-
 
     class Hostname implements SchedulerName {
         private static final Logger LOG = LoggerFactory.getLogger(Hostname.class);

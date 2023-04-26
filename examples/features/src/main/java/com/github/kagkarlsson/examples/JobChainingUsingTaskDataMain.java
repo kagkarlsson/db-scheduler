@@ -20,11 +20,10 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-
-import javax.sql.DataSource;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
+import javax.sql.DataSource;
 
 public class JobChainingUsingTaskDataMain extends Example {
 
@@ -36,38 +35,45 @@ public class JobChainingUsingTaskDataMain extends Example {
     public void run(DataSource dataSource) {
 
         final CustomTask<JobState> chainingTask = Tasks.custom("job-chain-poc", JobState.class)
-            .execute((taskInstance, executionContext) -> {
+                .execute((taskInstance, executionContext) -> {
 
-                // For illustration, can be made less verbose using suitable abstractions etc
-                if (taskInstance.getData().currentStep == Step.STEP1) {
-                    System.out.println("Step1 ran. Job: " + taskInstance.getData());
-                    return (executionComplete, executionOperations) -> {
-                        JobState nextJobState = taskInstance.getData().nextStep(Step.STEP2);
-                        executionOperations.reschedule(executionComplete, Instant.now(), nextJobState);
-                        // Feature: Optionally expose a method executionContext.triggerCheckForDueExecutions() to hint at immediate execution
-                    };
+                    // For illustration, can be made less verbose using suitable abstractions etc
+                    if (taskInstance.getData().currentStep == Step.STEP1) {
+                        System.out.println("Step1 ran. Job: " + taskInstance.getData());
+                        return (executionComplete, executionOperations) -> {
+                            JobState nextJobState = taskInstance.getData().nextStep(Step.STEP2);
+                            executionOperations.reschedule(executionComplete, Instant.now(), nextJobState);
+                            // Feature: Optionally expose a method
+                            // executionContext.triggerCheckForDueExecutions() to hint at immediate
+                            // execution
+                        };
 
-                } else if (taskInstance.getData().currentStep == Step.STEP2) {
-                    System.out.println("Step2 ran. Job: " + taskInstance.getData());
-                    return (executionComplete, executionOperations) -> {
-                        JobState nextJobState = taskInstance.getData().nextStep(Step.STEP3);
-                        executionOperations.reschedule(executionComplete, Instant.now(), nextJobState);
-                    };
+                    } else if (taskInstance.getData().currentStep == Step.STEP2) {
+                        System.out.println("Step2 ran. Job: " + taskInstance.getData());
+                        return (executionComplete, executionOperations) -> {
+                            JobState nextJobState = taskInstance.getData().nextStep(Step.STEP3);
+                            executionOperations.reschedule(executionComplete, Instant.now(), nextJobState);
+                        };
 
-                } else if (taskInstance.getData().currentStep == Step.STEP3) {
-                    System.out.println("Step3 ran. Removing multistep-job. Job: " + taskInstance.getData());
-                    return new CompletionHandler.OnCompleteRemove<>();
+                    } else if (taskInstance.getData().currentStep == Step.STEP3) {
+                        System.out.println("Step3 ran. Removing multistep-job. Job: " + taskInstance.getData());
+                        return new CompletionHandler.OnCompleteRemove<>();
 
-                } else {
-                    throw new RuntimeException("Unknown step: " + taskInstance.getData());
-                }
-            });
+                    } else {
+                        throw new RuntimeException("Unknown step: " + taskInstance.getData());
+                    }
+                });
 
-        final Scheduler scheduler = Scheduler
-            .create(dataSource, chainingTask)
-            .enableImmediateExecution() // Bug: currently no effect, only works when using schedulerClient
-            .pollingInterval(Duration.ofSeconds(1))
-            .build();
+        final Scheduler scheduler = Scheduler.create(dataSource, chainingTask).enableImmediateExecution() // Bug:
+                                                                                                          // currently
+                                                                                                          // no
+                                                                                                          // effect,
+                                                                                                          // only
+                                                                                                          // works
+                                                                                                          // when
+                                                                                                          // using
+                                                                                                          // schedulerClient
+                .pollingInterval(Duration.ofSeconds(1)).build();
 
         scheduler.start();
 
@@ -77,7 +83,9 @@ public class JobChainingUsingTaskDataMain extends Example {
         scheduler.schedule(chainingTask.instance("job-507", JobState.newJob(507)), Instant.now().plusSeconds(1));
     }
 
-    public enum Step {STEP1, STEP2, STEP3}
+    public enum Step {
+        STEP1, STEP2, STEP3
+    }
 
     public static class JobState implements Serializable {
         private static long serialVersionUID = 1L;
@@ -99,10 +107,7 @@ public class JobChainingUsingTaskDataMain extends Example {
 
         @Override
         public String toString() {
-            return "JobState{" +
-                "currentStep=" + currentStep +
-                ", id=" + id +
-                '}';
+            return "JobState{" + "currentStep=" + currentStep + ", id=" + id + '}';
         }
     }
 }

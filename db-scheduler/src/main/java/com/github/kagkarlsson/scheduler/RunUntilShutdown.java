@@ -26,7 +26,8 @@ class RunUntilShutdown implements Runnable {
     private final SchedulerState schedulerState;
     private final StatsRegistry statsRegistry;
 
-    public RunUntilShutdown(Runnable toRun, Waiter waitBetweenRuns, SchedulerState schedulerState, StatsRegistry statsRegistry) {
+    public RunUntilShutdown(Runnable toRun, Waiter waitBetweenRuns, SchedulerState schedulerState,
+            StatsRegistry statsRegistry) {
         this.toRun = toRun;
         this.waitBetweenRuns = waitBetweenRuns;
         this.schedulerState = schedulerState;

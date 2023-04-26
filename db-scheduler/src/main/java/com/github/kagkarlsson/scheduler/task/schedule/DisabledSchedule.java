@@ -16,10 +16,9 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
-
 import java.time.Instant;
 
-public class DisabledSchedule implements Schedule{
+public class DisabledSchedule implements Schedule {
 
     @Override
     public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
@@ -42,6 +41,7 @@ public class DisabledSchedule implements Schedule{
     }
 
     private UnsupportedOperationException unsupportedException() {
-        return new UnsupportedOperationException("DisabledSchedule does not support any other operations than 'isDisabled()'. This appears to be a bug.");
+        return new UnsupportedOperationException(
+                "DisabledSchedule does not support any other operations than 'isDisabled()'. This appears to be a bug.");
     }
 }

@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler.testhelper;
 
 import com.github.kagkarlsson.scheduler.Clock;
-
 import java.time.Instant;
 
 public class SettableClock implements Clock {

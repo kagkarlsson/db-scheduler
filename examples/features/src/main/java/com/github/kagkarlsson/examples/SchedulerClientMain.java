@@ -20,9 +20,8 @@ import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-
-import javax.sql.DataSource;
 import java.time.Instant;
+import javax.sql.DataSource;
 
 public class SchedulerClientMain extends Example {
 
@@ -33,10 +32,9 @@ public class SchedulerClientMain extends Example {
     @Override
     public void run(DataSource dataSource) {
 
-        final OneTimeTask<Void> task = Tasks.oneTime("task-a")
-            .execute((taskInstance, executionContext) -> {
-                System.out.println("Task a executed");
-            });
+        final OneTimeTask<Void> task = Tasks.oneTime("task-a").execute((taskInstance, executionContext) -> {
+            System.out.println("Task a executed");
+        });
 
         final SchedulerClient client = SchedulerClient.Builder.create(dataSource, task).build();
 
@@ -46,14 +44,11 @@ public class SchedulerClientMain extends Example {
         }
 
         System.out.println("Listing scheduled executions");
-        client.getScheduledExecutions(ScheduledExecutionsFilter.all())
-            .forEach(execution -> {
-                System.out.printf(
-                    "Scheduled execution: taskName=%s, instance=%s, executionTime=%s%n",
-                    execution.getTaskInstance().getTaskName(),
-                    execution.getTaskInstance().getId(),
+        client.getScheduledExecutions(ScheduledExecutionsFilter.all()).forEach(execution -> {
+            System.out.printf("Scheduled execution: taskName=%s, instance=%s, executionTime=%s%n",
+                    execution.getTaskInstance().getTaskName(), execution.getTaskInstance().getId(),
                     execution.getExecutionTime());
-            });
+        });
 
     }
 }

@@ -21,76 +21,78 @@ import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
-import utils.EventLogger;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import utils.EventLogger;
 
 @Configuration
 public class JobChainingConfiguration {
 
-    public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_1_TASK = new TaskWithDataDescriptor<>("chained-step-1", JobState.class);
-    public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_2_TASK = new TaskWithDataDescriptor<>("chained-step-2", JobState.class);
-    public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_3_TASK = new TaskWithDataDescriptor<>("chained-step-3", JobState.class);
+    public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_1_TASK = new TaskWithDataDescriptor<>(
+            "chained-step-1", JobState.class);
+    public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_2_TASK = new TaskWithDataDescriptor<>(
+            "chained-step-2", JobState.class);
+    public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_3_TASK = new TaskWithDataDescriptor<>(
+            "chained-step-3", JobState.class);
     private static int CHAINED_JOB_ID = 1;
-
 
     /** Start the example */
     public static void start(ExampleContext ctx) {
         ctx.log("Scheduling a chained one-time task to run.");
 
         int id = CHAINED_JOB_ID++;
-        ctx.schedulerClient.schedule(
-            CHAINED_STEP_1_TASK.instance("chain-" + id, new JobState(id, 0)),
-            Instant.now()
-        );
+        ctx.schedulerClient.schedule(CHAINED_STEP_1_TASK.instance("chain-" + id, new JobState(id, 0)), Instant.now());
     }
 
     /** Bean definition */
     @Bean
     public CustomTask<JobState> chainedStep1() {
-        return Tasks.custom(CHAINED_STEP_1_TASK)
-            .execute((taskInstance, executionContext) -> {
-                JobState data = taskInstance.getData();
-                EventLogger.logTask(CHAINED_STEP_1_TASK, "Ran step1. Schedules step2 after successful run. Data: " + data);
+        return Tasks.custom(CHAINED_STEP_1_TASK).execute((taskInstance, executionContext) -> {
+            JobState data = taskInstance.getData();
+            EventLogger.logTask(CHAINED_STEP_1_TASK, "Ran step1. Schedules step2 after successful run. Data: " + data);
 
-                JobState nextJobState = new JobState(data.id, data.counter + 1);
-                EventLogger.logTask(CHAINED_STEP_1_TASK, "Ran step1. Schedules step2 after successful run. Data: " + nextJobState);
-                return new CompletionHandler.OnCompleteReplace<>(CHAINED_STEP_2_TASK, nextJobState);
-            });
+            JobState nextJobState = new JobState(data.id, data.counter + 1);
+            EventLogger.logTask(CHAINED_STEP_1_TASK,
+                    "Ran step1. Schedules step2 after successful run. Data: " + nextJobState);
+            return new CompletionHandler.OnCompleteReplace<>(CHAINED_STEP_2_TASK, nextJobState);
+        });
     }
 
     /** Bean definition */
     @Bean
     public CustomTask<JobState> chainedStep2() {
-        return Tasks.custom(CHAINED_STEP_2_TASK)
-            .execute((taskInstance, executionContext) -> {
-                JobState data = taskInstance.getData();
-                JobState nextJobState = new JobState(data.id, data.counter + 1);
+        return Tasks.custom(CHAINED_STEP_2_TASK).execute((taskInstance, executionContext) -> {
+            JobState data = taskInstance.getData();
+            JobState nextJobState = new JobState(data.id, data.counter + 1);
 
-                // simulate we are waiting for some condition to be fulfilled before continuing to next step
-                if (nextJobState.counter >= 5) {
-                    EventLogger.logTask(CHAINED_STEP_2_TASK, "Ran step2. Condition met. Schedules final step (step3) after successful run. Data: " + data);
-                    return new CompletionHandler.OnCompleteReplace<>(CHAINED_STEP_3_TASK, nextJobState);
-                } else {
-                    EventLogger.logTask(CHAINED_STEP_2_TASK, "Ran step2. Condition for progressing not yet met, rescheduling. Data: " + data);
-                    return new CompletionHandler.OnCompleteReschedule<>(Schedules.fixedDelay(Duration.ofSeconds(5)), nextJobState);
-                }
-            });
+            // simulate we are waiting for some condition to be fulfilled before continuing
+            // to next step
+            if (nextJobState.counter >= 5) {
+                EventLogger.logTask(CHAINED_STEP_2_TASK,
+                        "Ran step2. Condition met. Schedules final step (step3) after successful run. Data: " + data);
+                return new CompletionHandler.OnCompleteReplace<>(CHAINED_STEP_3_TASK, nextJobState);
+            } else {
+                EventLogger.logTask(CHAINED_STEP_2_TASK,
+                        "Ran step2. Condition for progressing not yet met, rescheduling. Data: " + data);
+                return new CompletionHandler.OnCompleteReschedule<>(Schedules.fixedDelay(Duration.ofSeconds(5)),
+                        nextJobState);
+            }
+        });
     }
 
     /** Bean definition */
     @Bean
     public CustomTask<JobState> chainedStep3() {
-        return Tasks.custom(CHAINED_STEP_3_TASK)
-            .execute((taskInstance, executionContext) -> {
-                EventLogger.logTask(CHAINED_STEP_3_TASK, "Ran step3. This was the final step in the processing, removing. Data: " + taskInstance.getData());
-                return new CompletionHandler.OnCompleteRemove<>(); // same as for one-time tasks
-            });
+        return Tasks.custom(CHAINED_STEP_3_TASK).execute((taskInstance, executionContext) -> {
+            EventLogger.logTask(CHAINED_STEP_3_TASK,
+                    "Ran step3. This was the final step in the processing, removing. Data: " + taskInstance.getData());
+            return new CompletionHandler.OnCompleteRemove<>(); // same as for one-time tasks
+        });
     }
+
     public static class JobState implements Serializable {
 
         private static final long serialVersionUID = 1L; // recommended when using Java serialization
@@ -108,10 +110,7 @@ public class JobChainingConfiguration {
 
         @Override
         public String toString() {
-            return "JobState{" +
-                "id=" + id +
-                ", counter=" + counter +
-                '}';
+            return "JobState{" + "id=" + id + ", counter=" + counter + '}';
         }
     }
 

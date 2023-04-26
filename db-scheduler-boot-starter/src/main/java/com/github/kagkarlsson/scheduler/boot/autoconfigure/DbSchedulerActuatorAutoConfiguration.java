@@ -30,10 +30,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConditionalOnClass(HealthContributorAutoConfiguration.class)
-@AutoConfigureAfter({
-    HealthContributorAutoConfiguration.class,
-    DbSchedulerAutoConfiguration.class,
-})
+@AutoConfigureAfter({ HealthContributorAutoConfiguration.class, DbSchedulerAutoConfiguration.class, })
 public class DbSchedulerActuatorAutoConfiguration {
     private static final Logger log = LoggerFactory.getLogger(DbSchedulerActuatorAutoConfiguration.class);
 

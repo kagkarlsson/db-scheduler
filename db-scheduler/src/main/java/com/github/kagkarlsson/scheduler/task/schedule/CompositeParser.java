@@ -29,17 +29,13 @@ final class CompositeParser implements Parser {
 
     @Override
     public Optional<Schedule> parse(String scheduleString) {
-        return delegates.stream()
-            .map(it -> it.parse(scheduleString))
-            .filter(Optional::isPresent).map(Optional::get)
-            .findFirst();
+        return delegates.stream().map(it -> it.parse(scheduleString)).filter(Optional::isPresent).map(Optional::get)
+                .findFirst();
     }
 
     @Override
     public List<String> examples() {
-        return delegates.stream()
-            .flatMap(it -> it.examples().stream())
-            .collect(Collectors.toList());
+        return delegates.stream().flatMap(it -> it.examples().stream()).collect(Collectors.toList());
     }
 
     static CompositeParser of(Parser... parsers) {

@@ -20,12 +20,12 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 
 public class ContextReadyStart extends AbstractSchedulerStarter {
-  public ContextReadyStart(Scheduler scheduler) {
-    super(scheduler);
-  }
+    public ContextReadyStart(Scheduler scheduler) {
+        super(scheduler);
+    }
 
-  @EventListener(ContextRefreshedEvent.class)
-  public void whenContextIsReady() {
-    doStart();
-  }
+    @EventListener(ContextRefreshedEvent.class)
+    public void whenContextIsReady() {
+        doStart();
+    }
 }

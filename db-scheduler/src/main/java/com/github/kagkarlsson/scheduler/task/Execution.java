@@ -35,7 +35,7 @@ public final class Execution {
     }
 
     public Execution(Instant executionTime, TaskInstance taskInstance, boolean picked, String pickedBy,
-                     Instant lastSuccess, Instant lastFailure, int consecutiveFailures, Instant lastHeartbeat, long version) {
+            Instant lastSuccess, Instant lastFailure, int consecutiveFailures, Instant lastHeartbeat, long version) {
         this.executionTime = executionTime;
         this.taskInstance = taskInstance;
         this.picked = picked;
@@ -57,29 +57,24 @@ public final class Execution {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Execution execution = (Execution) o;
-        return Objects.equals(executionTime, execution.executionTime) &&
-                Objects.equals(taskInstance, execution.taskInstance);
+        return Objects.equals(executionTime, execution.executionTime)
+                && Objects.equals(taskInstance, execution.taskInstance);
     }
-
 
     @Override
     public int hashCode() {
         return Objects.hash(executionTime, taskInstance);
     }
 
-
     @Override
     public String toString() {
-        return "Execution: " +
-                "task=" + taskInstance.getTaskName() +
-                ", id=" + taskInstance.getId() +
-                ", executionTime=" + executionTime +
-                ", picked=" + picked +
-                ", pickedBy=" + pickedBy +
-                ", lastHeartbeat=" + lastHeartbeat +
-                ", version=" + version;
+        return "Execution: " + "task=" + taskInstance.getTaskName() + ", id=" + taskInstance.getId()
+                + ", executionTime=" + executionTime + ", picked=" + picked + ", pickedBy=" + pickedBy
+                + ", lastHeartbeat=" + lastHeartbeat + ", version=" + version;
     }
 }

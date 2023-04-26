@@ -20,11 +20,10 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.serializer.GsonSerializer;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-
-import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import javax.sql.DataSource;
 
 public class JsonSerializerMain extends Example {
 
@@ -35,27 +34,28 @@ public class JsonSerializerMain extends Example {
     @Override
     public void run(DataSource dataSource) {
 
-        OneTimeTask<JsonData> myAdhocTask = Tasks.oneTime("json-task", JsonData.class)
-            .execute((inst, ctx) -> {
-                System.out.println("Executed! Custom data: " + inst.getData());
-            });
+        OneTimeTask<JsonData> myAdhocTask = Tasks.oneTime("json-task", JsonData.class).execute((inst, ctx) -> {
+            System.out.println("Executed! Custom data: " + inst.getData());
+        });
 
-        final Scheduler scheduler = Scheduler
-            .create(dataSource, myAdhocTask)
-            .serializer(new GsonSerializer()) // also try .serializer(new JacksonSerializer())
-            .registerShutdownHook()
-            .pollingInterval(Duration.ofSeconds(1))
-            .build();
+        final Scheduler scheduler = Scheduler.create(dataSource, myAdhocTask).serializer(new GsonSerializer()) // also
+                                                                                                               // try
+                                                                                                               // .serializer(new
+                                                                                                               // JacksonSerializer())
+                .registerShutdownHook().pollingInterval(Duration.ofSeconds(1)).build();
 
         scheduler.start();
 
-        scheduler.schedule(myAdhocTask.instance("id1", new JsonData(1001L, Instant.now())), Instant.now().plusSeconds(1));
+        scheduler.schedule(myAdhocTask.instance("id1", new JsonData(1001L, Instant.now())),
+                Instant.now().plusSeconds(1));
     }
 
     public static class JsonData {
         public long id;
         private Instant time;
-        private JsonData() {}
+
+        private JsonData() {
+        }
 
         public JsonData(long id, Instant time) {
             this.id = id;
@@ -68,11 +68,12 @@ public class JsonSerializerMain extends Example {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             JsonData jsonData = (JsonData) o;
-            return id == jsonData.id &&
-                Objects.equals(time, jsonData.time);
+            return id == jsonData.id && Objects.equals(time, jsonData.time);
         }
 
         @Override
@@ -82,10 +83,7 @@ public class JsonSerializerMain extends Example {
 
         @Override
         public String toString() {
-            return "JsonData{" +
-                "id=" + id +
-                ", time=" + time +
-                '}';
+            return "JsonData{" + "id=" + id + ", time=" + time + '}';
         }
     }
 

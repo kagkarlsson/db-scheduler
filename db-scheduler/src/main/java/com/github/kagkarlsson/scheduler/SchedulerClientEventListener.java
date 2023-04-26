@@ -19,7 +19,6 @@ public interface SchedulerClientEventListener {
 
     void newEvent(ClientEvent event);
 
-
     SchedulerClientEventListener NOOP = new SchedulerClientEventListener() {
 
         @Override

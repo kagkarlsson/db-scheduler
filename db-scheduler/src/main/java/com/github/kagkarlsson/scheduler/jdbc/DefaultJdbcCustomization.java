@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;

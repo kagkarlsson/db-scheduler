@@ -1,16 +1,14 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.util.Optional;
-
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertScheduleNotPresent;
 import static com.github.kagkarlsson.scheduler.task.schedule.ScheduleParsersHelper.assertSchedulePresent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.Optional;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class DailyParserTest {
     private final static LocalTime HOUR_9_30 = LocalTime.of(9, 30);
@@ -24,16 +22,16 @@ public class DailyParserTest {
     @Test
     public void should_return_empty_for_non_matching_string() {
         assertScheduleNotPresent(parser, null);
-        assertScheduleNotPresent(parser,"");
-        assertScheduleNotPresent(parser,"LALA|123s");
-        assertScheduleNotPresent(parser,"DAILY|");
-        assertScheduleNotPresent(parser,"DAILY|1200");
-        assertScheduleNotPresent(parser,"DAILY|12:00;13:00");
-        assertScheduleNotPresent(parser,"DAILY|12:00,13:00,");
-        assertScheduleNotPresent(parser,"DAILY|UTC|12:00,13:00");
-        assertScheduleNotPresent(parser,"DAILY|UTC");
-        assertScheduleNotPresent(parser,"DAILY|1200|UTC");
-        assertScheduleNotPresent(parser,"DAILY|12:00,13:00|");
+        assertScheduleNotPresent(parser, "");
+        assertScheduleNotPresent(parser, "LALA|123s");
+        assertScheduleNotPresent(parser, "DAILY|");
+        assertScheduleNotPresent(parser, "DAILY|1200");
+        assertScheduleNotPresent(parser, "DAILY|12:00;13:00");
+        assertScheduleNotPresent(parser, "DAILY|12:00,13:00,");
+        assertScheduleNotPresent(parser, "DAILY|UTC|12:00,13:00");
+        assertScheduleNotPresent(parser, "DAILY|UTC");
+        assertScheduleNotPresent(parser, "DAILY|1200|UTC");
+        assertScheduleNotPresent(parser, "DAILY|12:00,13:00|");
     }
 
     @Test
@@ -47,16 +45,21 @@ public class DailyParserTest {
     public void should_recognize_correct_schedule_string_without_timezone() {
         assertEquals(Optional.of(new Daily(HOUR_9_30)), parser.parse("DAILY|09:30"));
         assertEquals(Optional.of(new Daily(HOUR_9_30, HOUR_16_30)), parser.parse("DAILY|09:30,16:30"));
-        assertEquals(Optional.of(new Daily(HOUR_9_30, HOUR_16_30, HOUR_18_30)), parser.parse("DAILY|09:30,16:30,18:30"));
-        assertEquals(Optional.of(new Daily(HOUR_9_30, HOUR_16_30, HOUR_18_30, HOUR_20_30)), parser.parse("DAILY|09:30,16:30,18:30,20:30"));
+        assertEquals(Optional.of(new Daily(HOUR_9_30, HOUR_16_30, HOUR_18_30)),
+                parser.parse("DAILY|09:30,16:30,18:30"));
+        assertEquals(Optional.of(new Daily(HOUR_9_30, HOUR_16_30, HOUR_18_30, HOUR_20_30)),
+                parser.parse("DAILY|09:30,16:30,18:30,20:30"));
     }
 
     @Test
     public void should_recognize_correct_schedule_with_timezone_string() {
         assertEquals(Optional.of(new Daily(ROME, HOUR_9_30)), parser.parse("DAILY|09:30|Europe/Rome"));
-        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30, HOUR_16_30)), parser.parse("DAILY|09:30,16:30|Europe/Rome"));
-        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30, HOUR_16_30, HOUR_18_30)), parser.parse("DAILY|09:30,16:30,18:30|Europe/Rome"));
-        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30, HOUR_16_30, HOUR_18_30, HOUR_20_30)), parser.parse("DAILY|09:30,16:30,18:30,20:30|Europe/Rome"));
+        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30, HOUR_16_30)),
+                parser.parse("DAILY|09:30,16:30|Europe/Rome"));
+        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30, HOUR_16_30, HOUR_18_30)),
+                parser.parse("DAILY|09:30,16:30,18:30|Europe/Rome"));
+        assertEquals(Optional.of(new Daily(ROME, HOUR_9_30, HOUR_16_30, HOUR_18_30, HOUR_20_30)),
+                parser.parse("DAILY|09:30,16:30,18:30,20:30|Europe/Rome"));
     }
 
     @Test

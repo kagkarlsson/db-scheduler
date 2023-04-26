@@ -1,9 +1,8 @@
 package com.github.kagkarlsson.scheduler.helper;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.CountDownLatch;
+import org.slf4j.LoggerFactory;
 
 public class ExecutionCompletedCondition implements TestableRegistry.Condition {
 
@@ -18,7 +17,8 @@ public class ExecutionCompletedCondition implements TestableRegistry.Condition {
     @Override
     public void waitFor() {
         try {
-            LoggerFactory.getLogger(ExecutionCompletedCondition.class).debug("Starting await for "+numberCompleted+" ExecutionCompleted");
+            LoggerFactory.getLogger(ExecutionCompletedCondition.class)
+                    .debug("Starting await for " + numberCompleted + " ExecutionCompleted");
             completed.await();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -36,7 +36,8 @@ public class ExecutionCompletedCondition implements TestableRegistry.Condition {
     @Override
     public void apply(StatsRegistry.ExecutionStatsEvent e) {
         if (e == StatsRegistry.ExecutionStatsEvent.COMPLETED) {
-            LoggerFactory.getLogger(ExecutionCompletedCondition.class).debug("Received event execution-completed, counting down");
+            LoggerFactory.getLogger(ExecutionCompletedCondition.class)
+                    .debug("Received event execution-completed, counting down");
             completed.countDown();
         }
     }

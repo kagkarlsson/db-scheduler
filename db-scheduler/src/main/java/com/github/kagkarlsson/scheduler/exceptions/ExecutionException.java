@@ -21,12 +21,12 @@ public class ExecutionException extends TaskInstanceException {
     private static final long serialVersionUID = -4732028463501966553L;
     private final long version;
 
-    public ExecutionException(String message, Execution execution){
+    public ExecutionException(String message, Execution execution) {
         super(message, execution.taskInstance.getTaskName(), execution.taskInstance.getId());
         this.version = execution.version;
     }
 
-    public ExecutionException(String message, Execution execution, Throwable ex){
+    public ExecutionException(String message, Execution execution, Throwable ex) {
         super(message, execution.taskInstance.getTaskName(), execution.taskInstance.getId(), ex);
         this.version = execution.version;
     }

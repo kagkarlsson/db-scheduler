@@ -19,12 +19,12 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import org.springframework.beans.factory.InitializingBean;
 
 public class ImmediateStart extends AbstractSchedulerStarter implements InitializingBean {
-  public ImmediateStart(final Scheduler scheduler) {
-    super(scheduler);
-  }
+    public ImmediateStart(final Scheduler scheduler) {
+        super(scheduler);
+    }
 
-  @Override
-  public void afterPropertiesSet() throws Exception {
-    doStart();
-  }
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        doStart();
+    }
 }

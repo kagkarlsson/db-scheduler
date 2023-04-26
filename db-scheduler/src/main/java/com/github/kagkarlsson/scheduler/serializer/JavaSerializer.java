@@ -16,7 +16,6 @@
 package com.github.kagkarlsson.scheduler.serializer;
 
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInput;
@@ -29,8 +28,7 @@ public class JavaSerializer implements Serializer {
     public byte[] serialize(Object data) {
         if (data == null)
             return null;
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             ObjectOutput out = new ObjectOutputStream(bos)) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); ObjectOutput out = new ObjectOutputStream(bos)) {
             out.writeObject(data);
             return bos.toByteArray();
         } catch (Exception e) {
@@ -42,7 +40,7 @@ public class JavaSerializer implements Serializer {
         if (serializedData == null)
             return null;
         try (ByteArrayInputStream bis = new ByteArrayInputStream(serializedData);
-             ObjectInput in = new ObjectInputStream(bis)) {
+                ObjectInput in = new ObjectInputStream(bis)) {
             return clazz.cast(in.readObject());
         } catch (Exception e) {
             throw new SerializationException("Failed to deserialize object", e);

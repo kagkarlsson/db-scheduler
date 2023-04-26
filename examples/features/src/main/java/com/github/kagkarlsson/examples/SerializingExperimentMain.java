@@ -22,13 +22,12 @@ import com.github.kagkarlsson.scheduler.serializer.SerializerWithFallbackDeseria
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
-import org.postgresql.ds.PGSimpleDataSource;
-
-import javax.sql.DataSource;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import javax.sql.DataSource;
+import org.postgresql.ds.PGSimpleDataSource;
 
 /*
 
@@ -49,34 +48,32 @@ public class SerializingExperimentMain {
 
     public static void main(String[] args) {
         final PGSimpleDataSource ds = new PGSimpleDataSource();
-        ds.setServerNames(new String[]{ "localhost" });
+        ds.setServerNames(new String[] { "localhost" });
         ds.setDatabaseName("postgres");
         ds.setUser("postgres");
         ds.setPassword("my_password");
-        ds.setPortNumbers(new int[] { 54320});
+        ds.setPortNumbers(new int[] { 54320 });
 
         new SerializingExperimentMain().run(ds);
     }
 
     public void run(DataSource dataSource) {
 
-        final RecurringTask<MyData> task = Tasks.recurring("serializing-task", Schedules.fixedDelay(Duration.ofSeconds(1)), MyData.class)
-            .executeStateful((inst, ctx) -> {
-                System.out.println("Executed! Custom data: " + inst.getData());
-                return new MyData(1002L, Instant.now()); // same, just triggering serialization
-            });
+        final RecurringTask<MyData> task = Tasks
+                .recurring("serializing-task", Schedules.fixedDelay(Duration.ofSeconds(1)), MyData.class)
+                .executeStateful((inst, ctx) -> {
+                    System.out.println("Executed! Custom data: " + inst.getData());
+                    return new MyData(1002L, Instant.now()); // same, just triggering serialization
+                });
 
-        final Scheduler scheduler = Scheduler
-            .create(dataSource)
-            .startTasks(task)
-            .pollingInterval(Duration.ofSeconds(1))
-            .heartbeatInterval(Duration.ofSeconds(3))
-//            .serializer(new GsonSerializer())
-//            .serializer(new JavaSerializer())
-//            .serializer(new SerializerWithFallbackDeserializers(new GsonSerializer(), new JavaSerializer()))
-            .serializer(new SerializerWithFallbackDeserializers(new JavaSerializer(), new GsonSerializer()))
-            .registerShutdownHook()
-            .build();
+        final Scheduler scheduler = Scheduler.create(dataSource).startTasks(task).pollingInterval(Duration.ofSeconds(1))
+                .heartbeatInterval(Duration.ofSeconds(3))
+                // .serializer(new GsonSerializer())
+                // .serializer(new JavaSerializer())
+                // .serializer(new SerializerWithFallbackDeserializers(new GsonSerializer(), new
+                // JavaSerializer()))
+                .serializer(new SerializerWithFallbackDeserializers(new JavaSerializer(), new GsonSerializer()))
+                .registerShutdownHook().build();
 
         scheduler.start();
     }
@@ -97,11 +94,12 @@ public class SerializingExperimentMain {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             MyData myData = (MyData) o;
-            return id == myData.id &&
-                Objects.equals(time, myData.time);
+            return id == myData.id && Objects.equals(time, myData.time);
         }
 
         @Override
@@ -111,10 +109,7 @@ public class SerializingExperimentMain {
 
         @Override
         public String toString() {
-            return "JsonData{" +
-                "id=" + id +
-                ", time=" + time +
-                '}';
+            return "JsonData{" + "id=" + id + ", time=" + time + '}';
         }
     }
 

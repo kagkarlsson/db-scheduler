@@ -1,23 +1,19 @@
 package com.github.kagkarlsson.scheduler.serializer.gson;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.github.kagkarlsson.scheduler.serializer.GsonSerializer;
 import com.github.kagkarlsson.scheduler.serializer.jackson.ScheduleAndDataForTest;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
-import com.github.kagkarlsson.scheduler.task.helper.PlainScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Daily;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
-import com.google.gson.Gson;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class GsonSerializerTest {
 
@@ -38,7 +34,8 @@ public class GsonSerializerTest {
     @Test
     public void serialize_cron() {
         CronSchedule cronSchedule = new CronSchedule("* * * * * *");
-        assertEquals(cronSchedule.getPattern(), serializer.deserialize(CronSchedule.class, serializer.serialize(cronSchedule)).getPattern());
+        assertEquals(cronSchedule.getPattern(),
+                serializer.deserialize(CronSchedule.class, serializer.serialize(cronSchedule)).getPattern());
     }
 
     @Test
@@ -48,7 +45,8 @@ public class GsonSerializerTest {
 
         Daily daily = Schedules.daily(LocalTime.MIDNIGHT);
         Daily deserialized = serializer.deserialize(Daily.class, serializer.serialize(daily));
-        assertEquals(daily.getNextExecutionTime(executionComplete), deserialized.getNextExecutionTime(executionComplete));
+        assertEquals(daily.getNextExecutionTime(executionComplete),
+                deserialized.getNextExecutionTime(executionComplete));
     }
 
     @Test
@@ -59,7 +57,8 @@ public class GsonSerializerTest {
         FixedDelay fixedDelay = Schedules.fixedDelay(Duration.ofHours(1));
         FixedDelay deserialized = serializer.deserialize(FixedDelay.class, serializer.serialize(fixedDelay));
 
-        assertEquals(fixedDelay.getNextExecutionTime(executionComplete), deserialized.getNextExecutionTime(executionComplete));
+        assertEquals(fixedDelay.getNextExecutionTime(executionComplete),
+                deserialized.getNextExecutionTime(executionComplete));
     }
 
     @Test
@@ -68,9 +67,11 @@ public class GsonSerializerTest {
         CronSchedule cronSchedule = new CronSchedule("* * * * * *");
 
         ScheduleAndDataForTest scheduleAndData = new ScheduleAndDataForTest(cronSchedule, 50L);
-        ScheduleAndDataForTest deserialized = serializer.deserialize(ScheduleAndDataForTest.class, serializer.serialize(scheduleAndData));
+        ScheduleAndDataForTest deserialized = serializer.deserialize(ScheduleAndDataForTest.class,
+                serializer.serialize(scheduleAndData));
 
-        assertEquals(scheduleAndData.getSchedule().getInitialExecutionTime(now), deserialized.getSchedule().getInitialExecutionTime(now));
+        assertEquals(scheduleAndData.getSchedule().getInitialExecutionTime(now),
+                deserialized.getSchedule().getInitialExecutionTime(now));
         assertEquals(50, deserialized.getData());
     }
 

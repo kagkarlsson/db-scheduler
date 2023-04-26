@@ -19,6 +19,7 @@ public class TaskInstanceCurrentlyExecutingException extends TaskInstanceExcepti
     private static final long serialVersionUID = 6016933189040296444L;
 
     public TaskInstanceCurrentlyExecutingException(String taskName, String instanceId) {
-        super("Cannot use SchedulerClient to modify a task-instance that is currently executing. If this occurs often, consider only modifying executions not picked that has the next execution-time a certain time into the future.", taskName, instanceId);
+        super("Cannot use SchedulerClient to modify a task-instance that is currently executing. If this occurs often, consider only modifying executions not picked that has the next execution-time a certain time into the future.",
+                taskName, instanceId);
     }
 }

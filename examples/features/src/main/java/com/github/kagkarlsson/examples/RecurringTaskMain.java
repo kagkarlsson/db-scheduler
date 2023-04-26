@@ -20,33 +20,26 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import java.time.Duration;
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
-import java.time.Duration;
 
 public class RecurringTaskMain extends Example {
     private static final Logger LOG = LoggerFactory.getLogger(RecurringTaskMain.class);
 
-
     @Override
     public void run(DataSource dataSource) {
 
-        RecurringTask<Void> myTask = Tasks.recurring("my-task", FixedDelay.ofSeconds(5))
-            .execute((inst, ctx) -> {
-                LOG.info("Executed!");
-            });
+        RecurringTask<Void> myTask = Tasks.recurring("my-task", FixedDelay.ofSeconds(5)).execute((inst, ctx) -> {
+            LOG.info("Executed!");
+        });
 
-        final Scheduler scheduler = Scheduler
-            .create(dataSource)
-            .startTasks(myTask)
-            .pollingInterval(Duration.ofSeconds(1))
-            .registerShutdownHook()
-            .build();
+        final Scheduler scheduler = Scheduler.create(dataSource).startTasks(myTask)
+                .pollingInterval(Duration.ofSeconds(1)).registerShutdownHook().build();
 
-        // myTask is automatically scheduled on startup if not already started (i.e. exists in the db)
+        // myTask is automatically scheduled on startup if not already started (i.e.
+        // exists in the db)
         scheduler.start();
     }
 }
-

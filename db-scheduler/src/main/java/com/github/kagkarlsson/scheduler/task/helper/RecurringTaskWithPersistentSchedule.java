@@ -25,33 +25,29 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 public abstract class RecurringTaskWithPersistentSchedule<T extends ScheduleAndData> extends AbstractTask<T> {
 
     public RecurringTaskWithPersistentSchedule(String name, Class<T> dataClass) {
-        this(
-            name,
-            dataClass,
-            new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>());
+        this(name, dataClass, new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>());
     }
 
     public RecurringTaskWithPersistentSchedule(String name, Class<T> dataClass, FailureHandler<T> onFailure) {
-        super(
-            name,
-            dataClass,
-            onFailure,
-            new DeadExecutionHandler.ReviveDeadExecution<>());
+        super(name, dataClass, onFailure, new DeadExecutionHandler.ReviveDeadExecution<>());
     }
 
     @Override
     public TaskInstance<T> instance(String id) {
-        throw new UnsupportedOperationException("Cannot instatiate a RecurringTaskWithPersistentSchedule without 'data' since that holds the schedule.");
+        throw new UnsupportedOperationException(
+                "Cannot instatiate a RecurringTaskWithPersistentSchedule without 'data' since that holds the schedule.");
     }
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id) {
-        throw new UnsupportedOperationException("Cannot instatiate a RecurringTaskWithPersistentSchedule without 'data' since that holds the schedule.");
+        throw new UnsupportedOperationException(
+                "Cannot instatiate a RecurringTaskWithPersistentSchedule without 'data' since that holds the schedule.");
     }
 
     @Override
     public SchedulableInstance<T> schedulableInstance(String id, T data) {
-        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data), data.getSchedule()::getInitialExecutionTime);
+        return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id, data),
+                data.getSchedule()::getInitialExecutionTime);
     }
 
     @Override
