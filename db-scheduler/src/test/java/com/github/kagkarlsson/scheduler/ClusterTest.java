@@ -157,7 +157,7 @@ public class ClusterTest {
         Scheduler.create(DB.getDataSource(), Lists.newArrayList(task))
             .schedulerName(new SchedulerName.Fixed(name))
             .threads(NUMBER_OF_THREADS)
-            .pollingInterval(Duration.ofMillis(50))
+            .pollingInterval(Duration.ofMillis(50)) // also runs fine with 5s
             .heartbeatInterval(Duration.ofMillis(2_000))
             .statsRegistry(stats);
     schedulerCustomization.accept(builder);
