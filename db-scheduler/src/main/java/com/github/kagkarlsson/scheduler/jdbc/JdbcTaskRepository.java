@@ -267,11 +267,9 @@ public class JdbcTaskRepository implements TaskRepository {
             ? jdbcCustomization.getQueryLimitPart(limit)
             : "";
     return jdbcRunner.query(
-        "select TOP "
-            + limit
-            + " * from "
+        "select * from "
             + tableName
-            + " with (readpast) where picked = ? and execution_time <= ? "
+            + " where picked = ? and execution_time <= ? "
             + unresolvedFilter.andCondition()
             + " order by execution_time asc"
             + explicitLimit,

@@ -106,7 +106,6 @@ public abstract class CompatibilityTest {
   }
 
   @Test
-  @RepeatedTest(4)
   public void test_compatibility_fetch_and_lock_on_execute() {
     Scheduler scheduler =
         Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
