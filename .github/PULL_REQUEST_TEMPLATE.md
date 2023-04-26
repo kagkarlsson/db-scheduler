@@ -8,6 +8,7 @@
 ## Reminders
 - [ ] Added/ran automated tests
 - [ ] Update README and/or examples
+- [ ] Ran `mvn spotless:apply`
 
 ---
 cc @kagkarlsson

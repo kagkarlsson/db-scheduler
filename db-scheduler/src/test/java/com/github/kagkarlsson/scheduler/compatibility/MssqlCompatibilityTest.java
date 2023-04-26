@@ -4,6 +4,8 @@ import com.github.kagkarlsson.scheduler.DbUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
+import java.util.Properties;
+import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
@@ -11,40 +13,44 @@ import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import javax.sql.DataSource;
-import java.util.Properties;
-
 @SuppressWarnings("rawtypes")
 @Tag("compatibility")
 @Testcontainers
 @Disabled
 public class MssqlCompatibilityTest extends CompatibilityTest {
 
-    @Container
-    private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer();
-    private static HikariDataSource pooledDatasource;
+  @Container private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer();
+  private static HikariDataSource pooledDatasource;
 
-    public MssqlCompatibilityTest() { super(false);}
+  public MssqlCompatibilityTest() {
+    super(false);
+  }
 
-    @BeforeAll
-    static void initSchema() {
-        final DriverDataSource datasource = new DriverDataSource(MSSQL.getJdbcUrl(), "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-            new Properties(), MSSQL.getUsername(), MSSQL.getPassword());
+  @BeforeAll
+  static void initSchema() {
+    final DriverDataSource datasource =
+        new DriverDataSource(
+            MSSQL.getJdbcUrl(),
+            "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+            new Properties(),
+            MSSQL.getUsername(),
+            MSSQL.getPassword());
 
-        final HikariConfig hikariConfig = new HikariConfig();
-        hikariConfig.setDataSource(datasource);
-        pooledDatasource = new HikariDataSource(hikariConfig);
+    final HikariConfig hikariConfig = new HikariConfig();
+    hikariConfig.setDataSource(datasource);
+    pooledDatasource = new HikariDataSource(hikariConfig);
 
-        // init schema
-        DbUtils.runSqlResource("/mssql_tables.sql").accept(pooledDatasource);
-    }
-    @Override
-    public DataSource getDataSource() {
-        return pooledDatasource;
-    }
+    // init schema
+    DbUtils.runSqlResource("/mssql_tables.sql").accept(pooledDatasource);
+  }
 
-    @Override
-    public boolean commitWhenAutocommitDisabled() {
-        return false;
-    }
+  @Override
+  public DataSource getDataSource() {
+    return pooledDatasource;
+  }
+
+  @Override
+  public boolean commitWhenAutocommitDisabled() {
+    return false;
+  }
 }
