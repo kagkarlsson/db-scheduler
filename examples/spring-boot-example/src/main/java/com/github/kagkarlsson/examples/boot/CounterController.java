@@ -1,16 +1,14 @@
 /**
  * Copyright (C) Gustav Karlsson
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
 package com.github.kagkarlsson.examples.boot;
@@ -24,17 +22,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/counter")
 public class CounterController {
-    private final CounterService counter;
+  private final CounterService counter;
 
-    public CounterController(CounterService counter) {
-        this.counter = counter;
-    }
+  public CounterController(CounterService counter) {
+    this.counter = counter;
+  }
 
-    @GetMapping
-    public Map<String, Long> displayCounter() {
-        Map<String, Long> data = new HashMap<>();
-        data.put("recurring_executions", counter.read());
+  @GetMapping
+  public Map<String, Long> displayCounter() {
+    Map<String, Long> data = new HashMap<>();
+    data.put("recurring_executions", counter.read());
 
-        return data;
-    }
+    return data;
+  }
 }
