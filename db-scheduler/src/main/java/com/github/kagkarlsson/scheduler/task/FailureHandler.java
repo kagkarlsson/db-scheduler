@@ -52,9 +52,10 @@ public interface FailureHandler<T> {
           round(
               sleepDuration.toMillis()
                   * pow(exponentialRate, executionComplete.getExecution().consecutiveFailures));
-      Instant nextTry = Instant.now().plusMillis(retryDurationMs);
+      Instant nextTry = executionComplete.getTimeDone().plusMillis(retryDurationMs);
       LOG.debug(
-          "Execution failed. Retrying task {} at {}",
+          "Execution failed {}. Retrying task {} at {}",
+          executionComplete.getTimeDone(),
           executionComplete.getExecution().taskInstance,
           nextTry);
       executionOperations.reschedule(executionComplete, nextTry);
@@ -101,7 +102,7 @@ public interface FailureHandler<T> {
     @Override
     public void onFailure(
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-      Instant nextTry = Instant.now().plus(sleepDuration);
+      Instant nextTry = executionComplete.getTimeDone().plus(sleepDuration);
       LOG.debug(
           "Execution failed. Retrying task {} at {}",
           executionComplete.getExecution().taskInstance,
