@@ -1,11 +1,11 @@
 name: spring-boot-compatibility
-on: [push, pull_request]
+on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        spring-boot: [ '2.5.14', '2.6.12', '2.7.4', '3.0.0-M5' ]
+        spring-boot: [ '2.5.14', '2.6.12', '2.7.4', '3.0.6' ]
     name: Spring Boot ${{ matrix.spring-boot }}
     steps:
       - uses: actions/checkout@v3

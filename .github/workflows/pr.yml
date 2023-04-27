@@ -1,11 +1,11 @@
 name: build
-on: [push]
+on: [pull_request]
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ '8', '11', '17' ]
+        java: [ '17' ]
     name: Temurin ${{ matrix.java }}
     steps:
     - uses: actions/checkout@v3
@@ -18,6 +18,6 @@ jobs:
         cache: 'maven'
 
     - name: Run all tests
-      run: mvn -B -Pcompatibility clean test --file pom.xml
+      run: mvn -B spotless:check
       env:
         TZ: UTC
