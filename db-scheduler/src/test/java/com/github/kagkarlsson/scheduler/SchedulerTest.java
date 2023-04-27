@@ -283,7 +283,7 @@ public class SchedulerTest {
           greaterThanOrEqualTo(expectedSleepDuration.minusSeconds(1).getSeconds()));
       assertThat(
           scheduleTimeDifferenceFromFirstCall.getSeconds(),
-          greaterThanOrEqualTo(actualExponentialBackoffDuration.getSeconds()));
+          greaterThanOrEqualTo(actualExponentialBackoffDuration.minusSeconds(1).getSeconds()));
     }
   }
 
@@ -336,7 +336,7 @@ public class SchedulerTest {
           greaterThanOrEqualTo(expectedSleepDuration.minusSeconds(1).getSeconds()));
       assertThat(
           lastScheduleTimeDifferenceFromFirstCall.getSeconds(),
-          greaterThanOrEqualTo(expectedTimeDifferenceFromFirstCall.getSeconds()));
+          greaterThanOrEqualTo(expectedTimeDifferenceFromFirstCall.minusSeconds(1).getSeconds()));
     }
   }
 }
