@@ -7,6 +7,7 @@
     </appender>
 
     <logger level="INFO" name="com.github.kagkarlsson"/>
+    <logger level="DEBUG" name="com.github.kagkarlsson.scheduler.task.FailureHandler$ExponentialBackoffFailureHandler"/>
 
     <root level="WARN">
         <appender-ref ref="STDOUT"/>

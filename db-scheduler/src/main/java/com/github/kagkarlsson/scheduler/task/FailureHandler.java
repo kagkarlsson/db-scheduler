@@ -54,7 +54,8 @@ public interface FailureHandler<T> {
                   * pow(exponentialRate, executionComplete.getExecution().consecutiveFailures));
       Instant nextTry = executionComplete.getTimeDone().plusMillis(retryDurationMs);
       LOG.debug(
-          "Execution failed. Retrying task {} at {}",
+          "Execution failed {}. Retrying task {} at {}",
+          executionComplete.getTimeDone(),
           executionComplete.getExecution().taskInstance,
           nextTry);
       executionOperations.reschedule(executionComplete, nextTry);

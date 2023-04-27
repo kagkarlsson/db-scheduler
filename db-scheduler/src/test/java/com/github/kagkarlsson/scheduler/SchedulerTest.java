@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
@@ -239,6 +240,7 @@ public class SchedulerTest {
   }
 
   @Test
+  @RepeatedTest(10)
   public void should_reschedule_failure_on_exponential_backoff_with_default_rate()
       throws InterruptedException {
     List<Instant> executionTimes = new ArrayList<>();
