@@ -89,7 +89,7 @@ public class CronSchedule implements Schedule, Serializable {
           cronExecutionTime = new CronSchedule.DisabledScheduleExecutionTime();
         } else {
           CronParser parser =
-              new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING));
+              new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING53));
           Cron cron = parser.parse(pattern);
           cronExecutionTime = ExecutionTime.forCron(cron);
         }
