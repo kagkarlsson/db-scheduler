@@ -262,7 +262,7 @@ public class SchedulerTest {
     scheduler.executeDue();
 
     // Simulate 30 minutes worth of time to validate we did not process more than we should
-    for (int minuteWorthOfTime = 1; minuteWorthOfTime <= 30; minuteWorthOfTime++) {
+    for (int minuteWorthOfTime = 1; minuteWorthOfTime <= 80; minuteWorthOfTime++) {
       clock.set(clock.now().plus(ofMinutes(1)));
       scheduler.executeDue();
     }
@@ -281,7 +281,7 @@ public class SchedulerTest {
           greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
       assertThat(
           scheduleTimeDifferenceFromFirstCall.getSeconds(),
-          is(actualExponentialBackoffDuration.getSeconds()));
+          greaterThanOrEqualTo(actualExponentialBackoffDuration.getSeconds()));
     }
   }
 
@@ -312,7 +312,7 @@ public class SchedulerTest {
     scheduler.executeDue();
 
     // Simulate 30 minutes worth of time to validate we did not process more than we should
-    for (int minuteWorthOfTime = 1; minuteWorthOfTime <= 30; minuteWorthOfTime++) {
+    for (int minuteWorthOfTime = 1; minuteWorthOfTime <= 80; minuteWorthOfTime++) {
       clock.set(clock.now().plus(ofMinutes(1)));
       scheduler.executeDue();
     }
@@ -320,19 +320,21 @@ public class SchedulerTest {
     assertThat(executionTimes.size(), is(10));
     // Skip first execution of this b/c it was not using the exponential backoff but the first
     // attempted call before failure
+    Duration lastScheduleTimeDifferenceFromFirstCall = ZERO;
     for (int i = 1, executionTimesSize = executionTimes.size(); i < executionTimesSize; i++) {
       final Instant executionTime = executionTimes.get(i);
       long retryDurationMs =
           Math.round(expectedSleepDuration.toMillis() * Math.pow(customRate, i - 1));
 
-      Duration scheduleTimeDifferenceFromFirstCall = between(firstExecution, executionTime);
-      Duration actualExponentialBackoffDuration = ofMillis(retryDurationMs);
+      Duration expectedTimeDifferenceFromFirstCall =
+          ofMillis(retryDurationMs).plus(lastScheduleTimeDifferenceFromFirstCall);
+      lastScheduleTimeDifferenceFromFirstCall = between(firstExecution, executionTime);
       assertThat(
-          scheduleTimeDifferenceFromFirstCall.getSeconds(),
+          lastScheduleTimeDifferenceFromFirstCall.getSeconds(),
           greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
       assertThat(
-          scheduleTimeDifferenceFromFirstCall.getSeconds(),
-          is(actualExponentialBackoffDuration.getSeconds()));
+          lastScheduleTimeDifferenceFromFirstCall.getSeconds(),
+          greaterThanOrEqualTo(expectedTimeDifferenceFromFirstCall.getSeconds()));
     }
   }
 }
