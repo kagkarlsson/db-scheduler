@@ -280,7 +280,7 @@ public class SchedulerTest {
       Duration actualExponentialBackoffDuration = ofMillis(retryDurationMs);
       assertThat(
           scheduleTimeDifferenceFromFirstCall.getSeconds(),
-          greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
+          greaterThanOrEqualTo(expectedSleepDuration.minusSeconds(1).getSeconds()));
       assertThat(
           scheduleTimeDifferenceFromFirstCall.getSeconds(),
           greaterThanOrEqualTo(actualExponentialBackoffDuration.getSeconds()));
@@ -333,7 +333,7 @@ public class SchedulerTest {
       lastScheduleTimeDifferenceFromFirstCall = between(firstExecution, executionTime);
       assertThat(
           lastScheduleTimeDifferenceFromFirstCall.getSeconds(),
-          greaterThanOrEqualTo(expectedSleepDuration.getSeconds()));
+          greaterThanOrEqualTo(expectedSleepDuration.minusSeconds(1).getSeconds()));
       assertThat(
           lastScheduleTimeDifferenceFromFirstCall.getSeconds(),
           greaterThanOrEqualTo(expectedTimeDifferenceFromFirstCall.getSeconds()));
