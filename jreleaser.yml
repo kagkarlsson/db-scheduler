@@ -1,0 +1,33 @@
+# Generated with JReleaser 1.5.0 at 2023-04-28T09:57:07.620704+02:00
+project:
+  name: db-scheduler
+  version: master-SNAPSHOT
+  description: Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.
+  longDescription: Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.
+  authors:
+    - Gustav Karlsson
+  license: Apache-2.0
+  links:
+    homepage: https://github.com/kagkarlsson/db-scheduler
+  java:
+    groupId: com.github.kagkarlsson
+  inceptionYear: 2015
+
+release:
+  github:
+    owner: kagkarlsson
+
+signing:
+  active: ALWAYS
+  armored: true
+
+deploy:
+  maven:
+    nexus2:
+      maven-central:
+        active: ALWAYS
+        url: https://s01.oss.sonatype.org/service/local
+        closeRepository: true
+        releaseRepository: false
+        stagingRepositories:
+          - target/staging-deploy
