@@ -4,12 +4,13 @@
 
 	<groupId>com.github.kagkarlsson</groupId>
 	<artifactId>db-scheduler-parent</artifactId>
-	<version>master-SNAPSHOT</version>
+	<version>12.0.1</version>
     <packaging>pom</packaging>
 
 	<name>db-scheduler: Parent</name>
 	<description>Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.</description>
 	<url>https://github.com/kagkarlsson/db-scheduler</url>
+	<inceptionYear>2015</inceptionYear>
 	<developers>
 		<developer>
 			<name>Gustav Karlsson</name>
@@ -270,16 +271,21 @@
 						</execution>
 					</executions>
 				</plugin>
+<!--				<plugin>-->
+<!--					<groupId>org.sonatype.plugins</groupId>-->
+<!--					<artifactId>nexus-staging-maven-plugin</artifactId>-->
+<!--					<version>1.6.8</version>-->
+<!--					<extensions>true</extensions>-->
+<!--					<configuration>-->
+<!--						<serverId>ossrh</serverId>-->
+<!--						<nexusUrl>https://oss.sonatype.org/</nexusUrl>-->
+<!--						<autoReleaseAfterClose>true</autoReleaseAfterClose>-->
+<!--					</configuration>-->
+<!--				</plugin>-->
 				<plugin>
-					<groupId>org.sonatype.plugins</groupId>
-					<artifactId>nexus-staging-maven-plugin</artifactId>
-					<version>1.6.8</version>
-					<extensions>true</extensions>
-					<configuration>
-						<serverId>ossrh</serverId>
-						<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-						<autoReleaseAfterClose>true</autoReleaseAfterClose>
-					</configuration>
+					<groupId>org.jreleaser</groupId>
+					<artifactId>jreleaser-maven-plugin</artifactId>
+					<version>1.5.1</version>
 				</plugin>
 			</plugins>
 		</pluginManagement>
@@ -313,7 +319,51 @@
 					</java>
 				</configuration>
 			</plugin>
-
+			<plugin>
+				<groupId>org.jreleaser</groupId>
+				<artifactId>jreleaser-maven-plugin</artifactId>
+				<inherited>false</inherited>
+				<configuration>
+					<jreleaser>
+						<!--								<project>-->
+						<!--									<java>-->
+						<!--										<mainClass>${app.main.class}</mainClass>-->
+						<!--									</java>-->
+						<!--								</project>-->
+						<release>
+							<github>
+								<!--									<enabled>false</enabled>-->
+								<owner>kagkarlsson</owner>
+								<overwrite>true</overwrite>
+								<skipRelease>true</skipRelease>
+								<skipTag>true</skipTag>
+								<changelog>
+									<formatted>ALWAYS</formatted>
+									<preset>conventional-commits</preset>
+								</changelog>
+							</github>
+						</release>
+						<signing>
+							<active>ALWAYS</active>
+							<armored>true</armored>
+						</signing>
+						<deploy>
+							<maven>
+								<nexus2>
+									<maven-central>
+										<active>ALWAYS</active>
+										<url>https://s01.oss.sonatype.org/service/local</url>
+										<snapshotUrl>https://s01.oss.sonatype.org/content/repositories/snapshots/</snapshotUrl>
+										<closeRepository>true</closeRepository>
+										<releaseRepository>false</releaseRepository>
+										<stagingRepositories>target/staging-deploy</stagingRepositories>
+									</maven-central>
+								</nexus2>
+							</maven>
+						</deploy>
+					</jreleaser>
+				</configuration>
+			</plugin>
 		</plugins>
 
 	</build>
@@ -358,6 +408,47 @@
 					</plugin>
 					<plugin>
 						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>publication</id>
+			<properties>
+				<altDeploymentRepository>local::file:./target/staging-deploy</altDeploymentRepository>
+			</properties>
+			<build>
+				<defaultGoal>deploy</defaultGoal>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+								<configuration>
+									<attach>true</attach>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+								<configuration>
+									<attach>true</attach>
+								</configuration>
+							</execution>
+						</executions>
 					</plugin>
 				</plugins>
 			</build>
