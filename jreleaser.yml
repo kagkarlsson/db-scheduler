@@ -1,7 +1,7 @@
 # Generated with JReleaser 1.5.0 at 2023-04-28T09:57:07.620704+02:00
 project:
   name: db-scheduler
-  version: master-SNAPSHOT
+  version: 12.0.1
   description: Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.
   longDescription: Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.
   authors:
@@ -32,7 +32,7 @@ deploy:
     nexus2:
       maven-central:
         active: ALWAYS
-        url: https://s01.oss.sonatype.org/service/local
+        url: https://oss.sonatype.org/service/local
         closeRepository: true
         releaseRepository: false
         stagingRepositories:

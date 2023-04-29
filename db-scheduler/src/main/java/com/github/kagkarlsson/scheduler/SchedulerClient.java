@@ -44,7 +44,6 @@ public interface SchedulerClient {
    *
    * @param taskInstance Task-instance, optionally with data
    * @param executionTime Instant it should run
-   * @return void
    * @see java.time.Instant
    * @see com.github.kagkarlsson.scheduler.task.TaskInstance
    */
@@ -87,7 +86,6 @@ public interface SchedulerClient {
    * Removes/Cancels an execution.
    *
    * @param taskInstanceId
-   * @return void
    * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
    */
   void cancel(TaskInstanceId taskInstanceId);
@@ -98,7 +96,6 @@ public interface SchedulerClient {
    * executions are not returned.
    *
    * @param consumer Consumer for the executions
-   * @return void
    */
   void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer);
 
@@ -132,7 +129,6 @@ public interface SchedulerClient {
    * @param taskName the name of the task to get scheduled-executions for
    * @param dataClass the task data-class the data will be serialized and cast to
    * @param consumer Consumer for the executions
-   * @return void
    */
   <T> void fetchScheduledExecutionsForTask(
       String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer);

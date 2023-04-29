@@ -9,6 +9,8 @@
 
     <artifactId>db-scheduler</artifactId>
     <name>db-scheduler: Core</name>
+    <description>Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.</description>
+    <url>https://github.com/kagkarlsson/db-scheduler</url>
 
     <properties>
         <license.dir>${project.parent.basedir}/.license</license.dir>
