@@ -153,16 +153,19 @@
 					<artifactId>license-maven-plugin</artifactId>
 					<version>4.2</version>
 					<configuration>
-						<header>${license.dir}/license-header.txt</header>
-						<strictCheck>true</strictCheck>
-						<includes>
-							<include>**/*.java</include>
-						</includes>
-						<excludes>
-							<exclude>.github/**</exclude>
-							<exclude>**/src/test/**</exclude>
-							<exclude>**/RuntimeTypeAdapterFactory.java</exclude>
-						</excludes>
+						<licenseSets>
+							<licenseSet>
+								<header>${license.dir}/license-header.txt</header>
+								<includes>
+									<include>**/*.java</include>
+								</includes>
+								<excludes>
+									<exclude>.github/**</exclude>
+									<exclude>**/src/test/**</exclude>
+									<exclude>**/RuntimeTypeAdapterFactory.java</exclude>
+								</excludes>
+							</licenseSet>
+						</licenseSets>
 						<failIfMissing>${failOnMissingHeader}</failIfMissing>
 					</configuration>
 					<executions>
