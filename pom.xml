@@ -196,6 +196,7 @@
 								<excludes>
 									<exclude>CronUtilsI18N*.properties</exclude>
 									<exclude>checkstyle.xml</exclude>
+									<exclude>META-INF/MANIFEST.MF</exclude>
 								</excludes>
 							</filter>
 						</filters>

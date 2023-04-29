@@ -18,7 +18,7 @@
         <hikaricp.version>4.0.3</hikaricp.version>
         <hsqldb.version>2.7.1</hsqldb.version>
         <java8-matchers.version>1.6</java8-matchers.version>
-        <equals-verifier.version>3.10.1</equals-verifier.version>
+        <equals-verifier.version>3.14.1</equals-verifier.version>
         <bytebuddy.version>1.12.16</bytebuddy.version>
         <micro-jdbc.version>0.3</micro-jdbc.version>
         <otj-pg-embedded.version>1.0.1</otj-pg-embedded.version>
