@@ -1,0 +1,23 @@
+name: build
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [ '8', '11', '17' ]
+    name: Temurin ${{ matrix.java }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Java ${{ matrix.java }}
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ matrix.java }}
+        distribution: 'temurin'
+        cache: 'maven'
+
+    - name: Run all tests
+      run: mvn -B -Pcompatibility clean test --file pom.xml
+      env:
+        TZ: UTC
