@@ -17,11 +17,16 @@ release:
   github:
     owner: kagkarlsson
     overwrite: true
-    skipRelease: true
-    skipTag: true
+    skipRelease: false
+    skipTag: false
     changelog:
       formatted: ALWAYS
       preset: conventional-commits
+      contributors:
+        format: '- {{contributorName}}{{#contributorUsernameAsLink}} ({{.}}){{/contributorUsernameAsLink}}'
+      hide:
+        contributors:
+          - 'GitHub'
 
 signing:
   active: ALWAYS
