@@ -10,6 +10,7 @@
     <artifactId>features</artifactId>
     <name>db-scheduler: Examples: Features</name>
     <description>Show cases the different features of db-scheduler</description>
+    <url>https://github.com/kagkarlsson/db-scheduler</url>
 
     <properties>
         <license.dir>${project.parent.parent.basedir}/.license</license.dir>

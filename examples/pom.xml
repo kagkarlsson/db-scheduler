@@ -12,6 +12,7 @@
     <artifactId>examples</artifactId>
     <name>db-scheduler: Examples</name>
     <description>Examples for how to use db-scheduler</description>
+    <url>https://github.com/kagkarlsson/db-scheduler</url>
 
     <properties>
         <license.dir>${project.parent.basedir}/.license</license.dir>

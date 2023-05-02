@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) Gustav Karlsson
  *
  * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
@@ -11,5 +11,4 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** Spring Boot related autoconfiguration and glue code. */
 package com.github.kagkarlsson.scheduler.boot;
