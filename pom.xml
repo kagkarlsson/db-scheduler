@@ -4,7 +4,7 @@
 
 	<groupId>com.github.kagkarlsson</groupId>
 	<artifactId>db-scheduler-parent</artifactId>
-	<version>12.0.1</version>
+	<version>master-SNAPSHOT</version>
     <packaging>pom</packaging>
 
 	<name>db-scheduler: Parent</name>
