@@ -1,7 +1,6 @@
 # Generated with JReleaser 1.5.0 at 2023-04-28T09:57:07.620704+02:00
 project:
   name: db-scheduler
-  version: 12.0.1
   description: Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.
   longDescription: Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.
   authors:
