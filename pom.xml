@@ -40,7 +40,7 @@
 		<dependency-plugin.failOnWarning>true</dependency-plugin.failOnWarning>
 
 		<!-- Dependency versions -->
-		<spring-boot.version>2.7.3</spring-boot.version>
+		<spring-boot.version>3.0.6</spring-boot.version>
 		<logback-classic.version>1.4.7</logback-classic.version>
 	</properties>
 
