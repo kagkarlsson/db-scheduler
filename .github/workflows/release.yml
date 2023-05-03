@@ -6,9 +6,6 @@ on:
       version:
         description: 'Release version'
         required: true
-      nextVersion:
-        description: 'Next version after release (-SNAPSHOT will be added automatically)'
-        required: true
 
 jobs:
   build:
