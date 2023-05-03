@@ -167,6 +167,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>co.unruly</groupId>
             <artifactId>java-8-matchers</artifactId>
             <version>${java8-matchers.version}</version>
