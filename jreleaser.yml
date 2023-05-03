@@ -19,7 +19,7 @@ release:
     overwrite: true
     skipRelease: false
     draft: true
-    skipTag: true
+    skipTag: false
     changelog:
       formatted: ALWAYS
       preset: conventional-commits
