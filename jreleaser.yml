@@ -19,6 +19,7 @@ release:
     skipRelease: false
     draft: true
     skipTag: false
+    releaseName: '{{tagName}}'
     changelog:
       formatted: ALWAYS
       preset: conventional-commits
@@ -27,6 +28,8 @@ release:
       hide:
         contributors:
           - 'GitHub'
+    issues:
+      enabled: true
 
 signing:
   active: ALWAYS
