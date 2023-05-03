@@ -15,7 +15,7 @@ project:
 release:
   github:
     owner: kagkarlsson
-    overwrite: true
+    overwrite: false
     skipRelease: false
     draft: true
     skipTag: false
