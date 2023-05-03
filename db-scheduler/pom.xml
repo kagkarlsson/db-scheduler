@@ -25,22 +25,20 @@
         <micro-jdbc.version>0.3</micro-jdbc.version>
         <zonky-pg-embedded.version>2.0.3</zonky-pg-embedded.version>
         <postgresql.version>42.5.1</postgresql.version>
-        <slf4j.version>2.0.7</slf4j.version>
         <test.excludedTags>compatibility</test.excludedTags>
     </properties>
 
     <dependencies>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        <!-- Shaded -->
+        <dependency>
             <groupId>com.github.kagkarlsson</groupId>
             <artifactId>micro-jdbc</artifactId>
             <version>${micro-jdbc.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <!-- Shaded -->
         <dependency>
             <groupId>com.cronutils</groupId>
             <artifactId>cron-utils</artifactId>
