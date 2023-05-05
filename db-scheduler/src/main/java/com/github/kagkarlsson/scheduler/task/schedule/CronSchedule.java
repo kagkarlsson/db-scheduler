@@ -39,11 +39,13 @@ public class CronSchedule implements Schedule, Serializable {
 
   private final String pattern;
   private final ZoneId zoneId;
+  private final CronType cronType;
   private transient ExecutionTime cronExecutionTime; // lazily initialized
 
   private CronSchedule() { // For serializers
     pattern = null;
     zoneId = ZoneId.systemDefault();
+    cronType = CronType.SPRING53;
   }
 
   public CronSchedule(String pattern) {
@@ -51,7 +53,12 @@ public class CronSchedule implements Schedule, Serializable {
   }
 
   public CronSchedule(String pattern, ZoneId zoneId) {
+    this(pattern, zoneId, CronType.SPRING53);
+  }
+
+  public CronSchedule(String pattern, ZoneId zoneId, CronType cronType) {
     this.pattern = pattern;
+    this.cronType = cronType != null ? cronType : CronType.SPRING53;
     if (zoneId == null) {
       throw new IllegalArgumentException("zoneId may not be null");
     }
@@ -88,8 +95,7 @@ public class CronSchedule implements Schedule, Serializable {
         if (isDisabled()) {
           cronExecutionTime = new CronSchedule.DisabledScheduleExecutionTime();
         } else {
-          CronParser parser =
-              new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING53));
+          CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(cronType));
           Cron cron = parser.parse(pattern);
           cronExecutionTime = ExecutionTime.forCron(cron);
         }
