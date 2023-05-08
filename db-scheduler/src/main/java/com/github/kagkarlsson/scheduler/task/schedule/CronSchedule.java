@@ -19,6 +19,7 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.helper.CronExpressionStyle;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
@@ -53,12 +54,13 @@ public class CronSchedule implements Schedule, Serializable {
   }
 
   public CronSchedule(String pattern, ZoneId zoneId) {
-    this(pattern, zoneId, CronType.SPRING53);
+    this(pattern, zoneId, CronExpressionStyle.SPRING53);
   }
 
-  public CronSchedule(String pattern, ZoneId zoneId, CronType cronType) {
+  public CronSchedule(String pattern, ZoneId zoneId, CronExpressionStyle cronExpressionStyle) {
     this.pattern = pattern;
-    this.cronType = cronType != null ? cronType : CronType.SPRING53;
+    this.cronType =
+        cronExpressionStyle != null ? getCronType(cronExpressionStyle) : CronType.SPRING53;
     if (zoneId == null) {
       throw new IllegalArgumentException("zoneId may not be null");
     }
@@ -100,6 +102,24 @@ public class CronSchedule implements Schedule, Serializable {
           cronExecutionTime = ExecutionTime.forCron(cron);
         }
       }
+    }
+  }
+
+  private CronType getCronType(CronExpressionStyle cronExpressionStyle) {
+    switch (cronExpressionStyle) {
+      case CRON4J:
+        return CronType.CRON4J;
+      case QUARTZ:
+        return CronType.QUARTZ;
+      case UNIX:
+        return CronType.UNIX;
+      case SPRING:
+        return CronType.SPRING;
+      case SPRING53:
+        return CronType.SPRING53;
+      default:
+        throw new IllegalArgumentException(
+            String.format("No cron definition found for %s", cronType));
     }
   }
 
