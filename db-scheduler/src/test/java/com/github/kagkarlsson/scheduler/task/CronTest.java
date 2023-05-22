@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
+import com.github.kagkarlsson.scheduler.task.schedule.CronStyle;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import java.time.Instant;
@@ -47,6 +48,27 @@ public class CronTest {
     assertNextExecutionTime(timeDone, "0 0 12 * * ?", timeDone.plusDays(1));
     assertNextExecutionTime(timeDone, "0 0 12 1 * ?", timeDone.plusMonths(1));
     assertNextExecutionTime(timeDone, "0 0 12 1 1 ?", timeDone.plusYears(1));
+  }
+
+  @Test
+  public void should_generate_next_date_correctly_with_quartz_cron() {
+    ZonedDateTime timeDone = ZonedDateTime.of(2000, 1, 1, 12, 0, 0, 0, ZoneId.systemDefault());
+
+    assertNextExecutionTime(timeDone, "0 * * * * ? *", timeDone.plusMinutes(1), CronStyle.QUARTZ);
+    assertNextExecutionTime(timeDone, "0 0 * * * ? *", timeDone.plusHours(1), CronStyle.QUARTZ);
+    assertNextExecutionTime(timeDone, "0 0 12 * * ? *", timeDone.plusDays(1), CronStyle.QUARTZ);
+    assertNextExecutionTime(timeDone, "0 0 12 1 * ? *", timeDone.plusMonths(1), CronStyle.QUARTZ);
+    assertNextExecutionTime(timeDone, "0 0 12 1 1 ? 2005", timeDone.plusYears(5), CronStyle.QUARTZ);
+  }
+
+  @Test
+  public void should_generate_next_date_correctly_with_unix_cron() {
+    ZonedDateTime timeDone = ZonedDateTime.of(2000, 1, 1, 12, 0, 0, 0, ZoneId.systemDefault());
+    assertNextExecutionTime(timeDone, "* * * * *", timeDone.plusMinutes(1), CronStyle.UNIX);
+    assertNextExecutionTime(timeDone, "0 * * * *", timeDone.plusHours(1), CronStyle.UNIX);
+    assertNextExecutionTime(timeDone, "0 12 * * *", timeDone.plusDays(1), CronStyle.UNIX);
+    assertNextExecutionTime(timeDone, "0 12 1 * *", timeDone.plusMonths(1), CronStyle.UNIX);
+    assertNextExecutionTime(timeDone, "0 12 1 1 *", timeDone.plusYears(1), CronStyle.UNIX);
   }
 
   @Test
@@ -102,6 +124,12 @@ public class CronTest {
   private void assertNextExecutionTime(
       ZonedDateTime timeDone, String cronPattern, ZonedDateTime expectedTime) {
     assertNextExecutionTime(timeDone, expectedTime, new CronSchedule(cronPattern));
+  }
+
+  private void assertNextExecutionTime(
+      ZonedDateTime timeDone, String cronPattern, ZonedDateTime expectedTime, CronStyle cronType) {
+    assertNextExecutionTime(
+        timeDone, expectedTime, new CronSchedule(cronPattern, expectedTime.getZone(), cronType));
   }
 
   private void assertNextExecutionTime(
