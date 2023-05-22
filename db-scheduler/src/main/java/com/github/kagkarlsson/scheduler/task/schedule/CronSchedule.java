@@ -19,7 +19,6 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
-
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
@@ -59,8 +58,7 @@ public class CronSchedule implements Schedule, Serializable {
 
   public CronSchedule(String pattern, ZoneId zoneId, CronStyle cronStyle) {
     this.pattern = pattern;
-    this.cronStyle =
-        cronStyle != null ? cronStyle : CronStyle.SPRING53;
+    this.cronStyle = cronStyle != null ? cronStyle : CronStyle.SPRING53;
     if (zoneId == null) {
       throw new IllegalArgumentException("zoneId may not be null");
     }
@@ -97,7 +95,12 @@ public class CronSchedule implements Schedule, Serializable {
         if (isDisabled()) {
           cronExecutionTime = new CronSchedule.DisabledScheduleExecutionTime();
         } else {
-          CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(cronStyle == null ? getCronType(CronStyle.SPRING53) : getCronType(cronStyle)));
+          CronParser parser =
+              new CronParser(
+                  CronDefinitionBuilder.instanceDefinitionFor(
+                      cronStyle == null
+                          ? getCronType(CronStyle.SPRING53)
+                          : getCronType(cronStyle)));
           Cron cron = parser.parse(pattern);
           cronExecutionTime = ExecutionTime.forCron(cron);
         }
