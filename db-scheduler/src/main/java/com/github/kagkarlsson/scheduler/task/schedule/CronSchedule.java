@@ -130,7 +130,7 @@ public class CronSchedule implements Schedule, Serializable {
 
   @Override
   public String toString() {
-    return "CronSchedule pattern=" + pattern + ", zone=" + zoneId;
+    return "CronSchedule pattern=" + pattern + ", cronStyle=" + cronStyle + ", zone=" + zoneId;
   }
 
   public String getPattern() {
