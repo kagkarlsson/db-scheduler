@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
-
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,8 +80,7 @@ public class DeadExecutionsTest {
             LogLevel.DEBUG,
             true,
             new ArrayList<>(),
-            Executors.newSingleThreadExecutor(
-                defaultThreadFactoryWithPrefix("test-execute-due-")),
+            Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix("test-execute-due-")),
             Executors.newScheduledThreadPool(
                 3, defaultThreadFactoryWithPrefix("test-housekeeper-")));
   }

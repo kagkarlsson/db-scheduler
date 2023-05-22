@@ -117,8 +117,8 @@ public class SchedulerBuilder {
   }
 
   public SchedulerBuilder housekeeperExecutor(ScheduledExecutorService housekeeperExecutor) {
-      this.housekeeperExecutor = housekeeperExecutor;
-      return this;
+    this.housekeeperExecutor = housekeeperExecutor;
+    return this;
   }
 
   public SchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
@@ -246,10 +246,10 @@ public class SchedulerBuilder {
 
     ScheduledExecutorService candidateHousekeeperExecutor = housekeeperExecutor;
     if (candidateHousekeeperExecutor == null) {
-        candidateHousekeeperExecutor =
+      candidateHousekeeperExecutor =
           Executors.newScheduledThreadPool(
               3, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-housekeeper-"));
-      }
+    }
 
     LOG.info(
         "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s enable-immediate-execution={}, table-name={}, name={}",
@@ -280,8 +280,7 @@ public class SchedulerBuilder {
             logStackTrace,
             startTasks,
             candidateDueExecutor,
-            candidateHousekeeperExecutor
-            );
+            candidateHousekeeperExecutor);
 
     if (registerShutdownHook) {
       Runtime.getRuntime()

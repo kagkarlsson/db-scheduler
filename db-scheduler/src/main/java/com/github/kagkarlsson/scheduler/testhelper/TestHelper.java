@@ -13,6 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler.testhelper;
 
+import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
+
 import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -29,8 +31,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 import javax.sql.DataSource;
-
-import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 
 public class TestHelper {
 
@@ -94,17 +94,17 @@ public class TestHelper {
               serializer,
               clock);
 
-
       ExecutorService testDueExecutor = dueExecutor;
       if (testDueExecutor == null) {
-        testDueExecutor = Executors.newSingleThreadExecutor(
-            defaultThreadFactoryWithPrefix("test-execute-due-"));
+        testDueExecutor =
+            Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix("test-execute-due-"));
       }
 
       ScheduledExecutorService testHousekeeperExecutor = housekeeperExecutor;
       if (testHousekeeperExecutor == null) {
-        testHousekeeperExecutor = Executors.newScheduledThreadPool(
-            3, defaultThreadFactoryWithPrefix("test-housekeeper-"));
+        testHousekeeperExecutor =
+            Executors.newScheduledThreadPool(
+                3, defaultThreadFactoryWithPrefix("test-housekeeper-"));
       }
 
       return new ManualScheduler(

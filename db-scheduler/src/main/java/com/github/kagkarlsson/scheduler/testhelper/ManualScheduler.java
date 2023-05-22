@@ -22,11 +22,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 
 public class ManualScheduler extends Scheduler {
   private static final Logger LOG = LoggerFactory.getLogger(ManualScheduler.class);
