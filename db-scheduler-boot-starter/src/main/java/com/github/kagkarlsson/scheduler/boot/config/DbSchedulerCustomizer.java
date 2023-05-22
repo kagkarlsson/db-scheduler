@@ -16,8 +16,10 @@ package com.github.kagkarlsson.scheduler.boot.config;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
+
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Provides functionality for customizing various aspects of the db-scheduler configuration that is
@@ -34,8 +36,20 @@ public interface DbSchedulerCustomizer {
     return Optional.empty();
   }
 
-  /** Provide an existing {@link ExecutorService} instance. */
+  /** Provide an existing {@link ExecutorService} instance. Used for processing tasks. */
   default Optional<ExecutorService> executorService() {
+    return Optional.empty();
+  }
+
+
+  /** Provide an existing {@link ExecutorService} instance. Used for handling due executions. */
+  default Optional<ExecutorService> dueExecutor() {
+    return Optional.empty();
+  }
+
+
+  /** Provide an existing {@link ScheduledExecutorService} instance. Used for housekeeping tasks. */
+  default Optional<ScheduledExecutorService> housekeeperExecutor() {
     return Optional.empty();
   }
 

@@ -27,9 +27,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.AbstractExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import javax.sql.DataSource;
+
+import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 
 public class TestHelper {
 
@@ -93,6 +94,19 @@ public class TestHelper {
               serializer,
               clock);
 
+
+      ExecutorService testDueExecutor = dueExecutor;
+      if (testDueExecutor == null) {
+        testDueExecutor = Executors.newSingleThreadExecutor(
+            defaultThreadFactoryWithPrefix("test-execute-due-"));
+      }
+
+      ScheduledExecutorService testHousekeeperExecutor = housekeeperExecutor;
+      if (testHousekeeperExecutor == null) {
+        testHousekeeperExecutor = Executors.newScheduledThreadPool(
+            3, defaultThreadFactoryWithPrefix("test-housekeeper-"));
+      }
+
       return new ManualScheduler(
           clock,
           schedulerTaskRepository,
@@ -109,7 +123,9 @@ public class TestHelper {
           deleteUnresolvedAfter,
           LogLevel.DEBUG,
           true,
-          startTasks);
+          startTasks,
+          testDueExecutor,
+          testHousekeeperExecutor);
     }
 
     public ManualScheduler start() {

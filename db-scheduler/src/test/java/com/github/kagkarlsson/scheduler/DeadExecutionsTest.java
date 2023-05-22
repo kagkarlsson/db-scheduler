@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -19,6 +20,8 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,7 +80,11 @@ public class DeadExecutionsTest {
             Duration.ZERO,
             LogLevel.DEBUG,
             true,
-            new ArrayList<>());
+            new ArrayList<>(),
+            Executors.newSingleThreadExecutor(
+                defaultThreadFactoryWithPrefix("test-execute-due-")),
+            Executors.newScheduledThreadPool(
+                3, defaultThreadFactoryWithPrefix("test-housekeeper-")));
   }
 
   @Test
