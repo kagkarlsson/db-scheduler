@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,10 +67,19 @@ public interface FailureHandler<T> {
     private static final Logger LOG = LoggerFactory.getLogger(MaxRetriesFailureHandler.class);
     private final int maxRetries;
     private final FailureHandler<T> failureHandler;
+    private final BiConsumer<ExecutionComplete, ExecutionOperations<T>> maxRetriesExceededHandler;
 
     public MaxRetriesFailureHandler(int maxRetries, FailureHandler<T> failureHandler) {
+      this(maxRetries, failureHandler, (executionComplete, executionOperations) -> {});
+    }
+
+    public MaxRetriesFailureHandler(
+        int maxRetries,
+        FailureHandler<T> failureHandler,
+        BiConsumer<ExecutionComplete, ExecutionOperations<T>> maxRetriesExceededHandler) {
       this.maxRetries = maxRetries;
       this.failureHandler = failureHandler;
+      this.maxRetriesExceededHandler = maxRetriesExceededHandler;
     }
 
     @Override
@@ -84,6 +94,7 @@ public interface FailureHandler<T> {
             totalNumberOfFailures,
             executionComplete.getExecution().taskInstance);
         executionOperations.stop();
+        maxRetriesExceededHandler.accept(executionComplete, executionOperations);
       } else {
         this.failureHandler.onFailure(executionComplete, executionOperations);
       }
