@@ -559,40 +559,32 @@ See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release
 **Upgrading to 2.x**
 * Add column `task_data` to the database schema. See table definitions for [postgresql](./b-scheduler/src/test/resources/postgresql_tables.sql), [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
 
-## Building the Source Code
+## Building the source
 
-To build the source code, you will need Java 11 and Maven.
+**Prerequisites**
+
+* Java 8+
+* Maven
 
 Follow these steps:
 
-1. Clone the repository by running the following command:
+1. Clone the repository.
    ```
    git clone https://github.com/kagkarlsson/db-scheduler
    cd db-scheduler
    ```
 
-2. Build the project using Maven:
+2. Build using Maven (skip tests by adding `-DskipTests=true`)
    ```
-   mvn package -DskipTests=true
+   mvn package
    ```
 
-   The built JAR files will be generated in the `db-scheduler/target` folder.
+**Recommended spec**
 
-### Running the Tests
+Some users have experienced intermittent test failures when running on a single-core VMs. Therefore, it is recommended to use a minimum of:
 
-To run the tests, execute the following command:
-```
-mvn test
-```
-
-### Recommended Test Environment
-
-To avoid intermittent test failures (i.e., flaky tests), it is recommended to have a machine or virtual machine with the following specifications:
-
-- Minimum of 2 CPUs.
-- Minimum of 2GB of RAM.
-
-By meeting these requirements, you can mitigate potential flaky tests and ensure a smooth testing experience.
+- 2 cores
+- 2GB RAM
 
 ## FAQ
 
