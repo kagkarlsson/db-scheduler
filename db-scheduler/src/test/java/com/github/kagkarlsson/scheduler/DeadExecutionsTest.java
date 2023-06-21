@@ -13,7 +13,9 @@ import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
+import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.time.Duration;
 import java.time.Instant;
@@ -32,7 +34,7 @@ public class DeadExecutionsTest {
 
   @RegisterExtension public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
-  private Scheduler scheduler;
+  private ManualScheduler scheduler;
   private SettableClock settableClock;
   private OneTimeTask<Void> oneTimeTask;
   private JdbcTaskRepository jdbcTaskRepository;
@@ -61,28 +63,9 @@ public class DeadExecutionsTest {
             new SchedulerName.Fixed("scheduler1"),
             settableClock);
 
-    scheduler =
-        new Scheduler(
-            settableClock,
-            jdbcTaskRepository,
-            jdbcTaskRepository,
-            taskResolver,
-            1,
-            MoreExecutors.newDirectExecutorService(),
-            new SchedulerName.Fixed("test-scheduler"),
-            new Waiter(Duration.ZERO),
-            Duration.ofMinutes(1),
-            false,
-            StatsRegistry.NOOP,
-            PollingStrategyConfig.DEFAULT_FETCH,
-            Duration.ofDays(14),
-            Duration.ZERO,
-            LogLevel.DEBUG,
-            true,
-            new ArrayList<>(),
-            Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix("test-execute-due-")),
-            Executors.newScheduledThreadPool(
-                3, defaultThreadFactoryWithPrefix("test-housekeeper-")));
+    scheduler = TestHelper.createManualScheduler(DB.getDataSource(), oneTimeTask, nonCompleting)
+        .clock(settableClock)
+        .start();
   }
 
   @Test
