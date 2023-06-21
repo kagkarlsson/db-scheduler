@@ -158,6 +158,12 @@ public class DbSchedulerAutoConfiguration {
     // Use custom executor service if provided
     customizer.executorService().ifPresent(builder::executorService);
 
+    // Use custom due executor if provided
+    customizer.dueExecutor().ifPresent(builder::dueExecutor);
+
+    // Use housekeeper executor service if provided
+    customizer.housekeeperExecutor().ifPresent(builder::housekeeperExecutor);
+
     builder.deleteUnresolvedAfter(config.getDeleteUnresolvedAfter());
 
     // Add recurring jobs and jobs that implements OnStartup

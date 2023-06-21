@@ -13,7 +13,6 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
@@ -28,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import javax.sql.DataSource;
@@ -78,7 +76,9 @@ public class Scheduler implements SchedulerClient {
       Duration shutdownMaxWait,
       LogLevel logLevel,
       boolean logStackTrace,
-      List<OnStartup> onStartup) {
+      List<OnStartup> onStartup,
+      ExecutorService dueExecutor,
+      ScheduledExecutorService housekeeperExecutor) {
     this.clock = clock;
     this.schedulerTaskRepository = schedulerTaskRepository;
     this.taskResolver = taskResolver;
@@ -92,12 +92,8 @@ public class Scheduler implements SchedulerClient {
     this.heartbeatInterval = heartbeatInterval;
     this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
     this.statsRegistry = statsRegistry;
-    this.dueExecutor =
-        Executors.newSingleThreadExecutor(
-            defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
-    this.housekeeperExecutor =
-        Executors.newScheduledThreadPool(
-            3, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-housekeeper-"));
+    this.dueExecutor = dueExecutor;
+    this.housekeeperExecutor = housekeeperExecutor;
     earlyExecutionListener =
         (enableImmediateExecution
             ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter)

@@ -8,15 +8,14 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.hamcrest.Matchers;
@@ -30,7 +29,7 @@ public class DeadExecutionsTest {
 
   @RegisterExtension public EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
-  private Scheduler scheduler;
+  private ManualScheduler scheduler;
   private SettableClock settableClock;
   private OneTimeTask<Void> oneTimeTask;
   private JdbcTaskRepository jdbcTaskRepository;
@@ -60,24 +59,9 @@ public class DeadExecutionsTest {
             settableClock);
 
     scheduler =
-        new Scheduler(
-            settableClock,
-            jdbcTaskRepository,
-            jdbcTaskRepository,
-            taskResolver,
-            1,
-            MoreExecutors.newDirectExecutorService(),
-            new SchedulerName.Fixed("test-scheduler"),
-            new Waiter(Duration.ZERO),
-            Duration.ofMinutes(1),
-            false,
-            StatsRegistry.NOOP,
-            PollingStrategyConfig.DEFAULT_FETCH,
-            Duration.ofDays(14),
-            Duration.ZERO,
-            LogLevel.DEBUG,
-            true,
-            new ArrayList<>());
+        TestHelper.createManualScheduler(DB.getDataSource(), oneTimeTask, nonCompleting)
+            .clock(settableClock)
+            .start();
   }
 
   @Test
