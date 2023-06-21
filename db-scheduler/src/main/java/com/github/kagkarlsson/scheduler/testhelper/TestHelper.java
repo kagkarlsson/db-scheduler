@@ -13,8 +13,6 @@
  */
 package com.github.kagkarlsson.scheduler.testhelper;
 
-import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
-
 import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -94,19 +92,6 @@ public class TestHelper {
               serializer,
               clock);
 
-      ExecutorService testDueExecutor = dueExecutor;
-      if (testDueExecutor == null) {
-        testDueExecutor =
-            Executors.newSingleThreadExecutor(defaultThreadFactoryWithPrefix("test-execute-due-"));
-      }
-
-      ScheduledExecutorService testHousekeeperExecutor = housekeeperExecutor;
-      if (testHousekeeperExecutor == null) {
-        testHousekeeperExecutor =
-            Executors.newScheduledThreadPool(
-                3, defaultThreadFactoryWithPrefix("test-housekeeper-"));
-      }
-
       return new ManualScheduler(
           clock,
           schedulerTaskRepository,
@@ -124,8 +109,8 @@ public class TestHelper {
           LogLevel.DEBUG,
           true,
           startTasks,
-          testDueExecutor,
-          testHousekeeperExecutor);
+          new ThrowingScheduledExecutorService(),
+          new ThrowingScheduledExecutorService());
     }
 
     public ManualScheduler start() {
@@ -135,7 +120,7 @@ public class TestHelper {
     }
   }
 
-  private static class DirectExecutorService extends AbstractExecutorService {
+  private abstract static class BaseExecutorService extends AbstractExecutorService {
 
     @Override
     public void shutdown() {}
@@ -156,13 +141,53 @@ public class TestHelper {
     }
 
     @Override
-    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+    public boolean awaitTermination(long timeout, TimeUnit unit) {
       return true;
     }
+  }
+
+  private static class DirectExecutorService extends BaseExecutorService {
 
     @Override
     public void execute(Runnable command) {
       command.run();
+    }
+  }
+
+  private static class ThrowingScheduledExecutorService extends BaseExecutorService
+      implements ScheduledExecutorService {
+
+    private RuntimeException doNotUseError() {
+      return new RuntimeException(
+          "This ExecutorService should never be used. "
+              + "The intention is to trigger the desired scheduler-operation manually, e.g scheduler.runAnyDueExecutions()");
+    }
+
+    @Override
+    public void execute(Runnable command) {
+      throw doNotUseError();
+    }
+
+    @Override
+    public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+      throw doNotUseError();
+    }
+
+    @Override
+    public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+      throw doNotUseError();
+    }
+
+    @Override
+    public ScheduledFuture<?> scheduleAtFixedRate(
+        Runnable command, long initialDelay, long period, TimeUnit unit) {
+      throw doNotUseError();
+    }
+
+    @Override
+    public ScheduledFuture<?> scheduleWithFixedDelay(
+        Runnable command, long initialDelay, long delay, TimeUnit unit) {
+      throw doNotUseError();
     }
   }
 }
