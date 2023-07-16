@@ -44,7 +44,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>11.7</version>
+    <version>12.4.0</version>
 </dependency>
 ```
 
@@ -192,10 +192,10 @@ Number of threads. Default `10`.
 How often the scheduler checks the database for due executions. Default `10s`.<br/>
 
 :gear: `.enableImmediateExecution()`<br/>
-If this is enabled, the scheduler will attempt to hint to the local `Scheduler` that there are executions to be executed after they are scheduled to 
-run `now()`, or a time in the past. **NB:** If the call to `schedule(..)`/`reschedule(..)` occur from within a transaction, the scheduler might attempt to run 
-it before the update is visible (transaction has not committed). It is still persisted though, so even if it is a miss, it will run before the 
-next `polling-interval`. You may also programmatically trigger an early check for due executions using the 
+If this is enabled, the scheduler will attempt to hint to the local `Scheduler` that there are executions to be executed after they are scheduled to
+run `now()`, or a time in the past. **NB:** If the call to `schedule(..)`/`reschedule(..)` occur from within a transaction, the scheduler might attempt to run
+it before the update is visible (transaction has not committed). It is still persisted though, so even if it is a miss, it will run before the
+next `polling-interval`. You may also programmatically trigger an early check for due executions using the
 Scheduler-method `scheduler.triggerCheckForDueExecutions()`). Default `false`.
 
 :gear: `.registerShutdownHook()`<br/>
@@ -290,11 +290,11 @@ Tasks are created using one of the builder-classes in `Tasks`. The builders have
 
 The library contains a number of Schedule-implementations for recurring tasks. See class `Schedules`.
 
-| Schedule  | Description |
-| ------------- | ------------- |
-| `.daily(LocalTime ...)`  | Runs every day at specified times. Optionally a time zone can be specified. |
-| `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)`|
-| `.cron(String)`  | Spring-style cron-expression. The pattern `-` is interpreted as a [disabled schedule](#disabled-schedules).  |
+| Schedule  | Description                                                                                                                                                                   |
+| ------------- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `.daily(LocalTime ...)`  | Runs every day at specified times. Optionally a time zone can be specified.                                                                                                   |
+| `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)` |
+| `.cron(String)`  | Spring-style cron-expression (v5.3+). The pattern `-` is interpreted as a [disabled schedule](#disabled-schedules).                                                           |
 
 Another option to configure schedules is reading string patterns with `Schedules.parse(String)`.
 
@@ -356,7 +356,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>11.7</version>
+        <version>12.4.0</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -558,6 +558,33 @@ See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release
 
 **Upgrading to 2.x**
 * Add column `task_data` to the database schema. See table definitions for [postgresql](./b-scheduler/src/test/resources/postgresql_tables.sql), [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
+
+## Building the source
+
+**Prerequisites**
+
+* Java 8+
+* Maven
+
+Follow these steps:
+
+1. Clone the repository.
+   ```
+   git clone https://github.com/kagkarlsson/db-scheduler
+   cd db-scheduler
+   ```
+
+2. Build using Maven (skip tests by adding `-DskipTests=true`)
+   ```
+   mvn package
+   ```
+
+**Recommended spec**
+
+Some users have experienced intermittent test failures when running on a single-core VMs. Therefore, it is recommended to use a minimum of:
+
+- 2 cores
+- 2GB RAM
 
 ## FAQ
 

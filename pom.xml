@@ -10,6 +10,7 @@
 	<name>db-scheduler: Parent</name>
 	<description>Simple persistent scheduler for scheduled tasks, recurring or ad-hoc.</description>
 	<url>https://github.com/kagkarlsson/db-scheduler</url>
+	<inceptionYear>2015</inceptionYear>
 	<developers>
 		<developer>
 			<name>Gustav Karlsson</name>
@@ -39,7 +40,15 @@
 		<dependency-plugin.failOnWarning>true</dependency-plugin.failOnWarning>
 
 		<!-- Dependency versions -->
-		<spring-boot.version>2.7.3</spring-boot.version>
+		<slf4j.version>1.7.36</slf4j.version>
+		<logback.version>1.2.12</logback.version>
+		<spring-boot.version>2.7.11</spring-boot.version>
+<!--		<spring-boot.version>3.0.6</spring-boot.version>-->
+		<micrometer.version>1.11.1</micrometer.version>
+		<gson.version>2.10.1</gson.version>
+		<jackson.version>2.15.2</jackson.version>
+		<postgresql.version>42.6.0</postgresql.version>
+		<guava.version>32.0.1-jre</guava.version>
 	</properties>
 
 	<modules>
@@ -48,47 +57,19 @@
         <module>examples</module>
     </modules>
 
-	<dependencies>
-		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>31.1-jre</version>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
-
 	<dependencyManagement>
 		<dependencies>
-			<dependency>
-				<groupId>com.google.code.gson</groupId>
-				<artifactId>gson</artifactId>
-				<version>2.9.1</version>
-			</dependency>
-			<dependency>
-				<groupId>com.fasterxml.jackson</groupId>
-				<artifactId>jackson-bom</artifactId>
-				<version>2.13.2</version>
-				<scope>import</scope>
-				<type>pom</type>
-			</dependency>
-			<dependency>
-				<groupId>ch.qos.logback</groupId>
-				<artifactId>logback-classic</artifactId>
-				<version>1.2.10</version>
-				<scope>test</scope>
-			</dependency>
-			<dependency>
-				<!-- Import dependency management from Spring Boot -->
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-dependencies</artifactId>
-				<version>${spring-boot.version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
 			<dependency>
 				<groupId>org.junit</groupId>
 				<artifactId>junit-bom</artifactId>
 				<version>5.9.0</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.mockito</groupId>
+				<artifactId>mockito-bom</artifactId>
+				<version>4.11.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -126,11 +107,11 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>2.22.2</version>
+					<version>3.0.0</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-dependency-plugin</artifactId>
-					<version>2.10</version>
+					<version>3.5.0</version>
 					<executions>
 						<execution>
 							<goals>
@@ -150,18 +131,21 @@
 				<plugin>
 					<groupId>com.mycila</groupId>
 					<artifactId>license-maven-plugin</artifactId>
-					<version>2.11</version>
+					<version>4.2</version>
 					<configuration>
-						<header>${license.dir}/license-header.txt</header>
-						<strictCheck>true</strictCheck>
-						<includes>
-							<include>**/*.java</include>
-						</includes>
-						<excludes>
-							<exclude>.github/**</exclude>
-							<exclude>**/src/test/**</exclude>
-							<exclude>**/RuntimeTypeAdapterFactory.java</exclude>
-						</excludes>
+						<licenseSets>
+							<licenseSet>
+								<header>${license.dir}/license-header.txt</header>
+								<includes>
+									<include>**/*.java</include>
+								</includes>
+								<excludes>
+									<exclude>.github/**</exclude>
+									<exclude>**/src/test/**</exclude>
+									<exclude>**/RuntimeTypeAdapterFactory.java</exclude>
+								</excludes>
+							</licenseSet>
+						</licenseSets>
 						<failIfMissing>${failOnMissingHeader}</failIfMissing>
 					</configuration>
 					<executions>
@@ -177,7 +161,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-shade-plugin</artifactId>
-					<version>3.2.1</version>
+					<version>3.4.1</version>
 					<configuration>
 						<createSourcesJar>true</createSourcesJar>
 						<shadeSourcesContent>true</shadeSourcesContent>
@@ -193,6 +177,7 @@
 								<excludes>
 									<exclude>CronUtilsI18N*.properties</exclude>
 									<exclude>checkstyle.xml</exclude>
+									<exclude>META-INF/**</exclude>
 								</excludes>
 							</filter>
 						</filters>
@@ -220,7 +205,7 @@
 				<!-- Release plugins -->
 				<plugin>
 					<artifactId>maven-javadoc-plugin</artifactId>
-					<version>2.10.3</version>
+					<version>3.5.0</version>
 					<executions>
 						<execution>
 							<id>attach-javadocs</id>
@@ -230,12 +215,12 @@
 						</execution>
 					</executions>
 					<configuration>
-						<additionalparam>-Xdoclint:-missing</additionalparam>
+						<doclint>none</doclint>
 					</configuration>
 				</plugin>
 				<plugin>
 					<artifactId>maven-source-plugin</artifactId>
-					<version>2.4</version>
+					<version>3.2.1</version>
 					<executions>
 						<execution>
 							<id>attach-sources</id>
@@ -247,6 +232,11 @@
 							</configuration>
 						</execution>
 					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>3.1.1</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -269,17 +259,6 @@
 							</goals>
 						</execution>
 					</executions>
-				</plugin>
-				<plugin>
-					<groupId>org.sonatype.plugins</groupId>
-					<artifactId>nexus-staging-maven-plugin</artifactId>
-					<version>1.6.8</version>
-					<extensions>true</extensions>
-					<configuration>
-						<serverId>ossrh</serverId>
-						<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-						<autoReleaseAfterClose>true</autoReleaseAfterClose>
-					</configuration>
 				</plugin>
 			</plugins>
 		</pluginManagement>
@@ -313,7 +292,6 @@
 					</java>
 				</configuration>
 			</plugin>
-
 		</plugins>
 
 	</build>
@@ -358,6 +336,19 @@
 					</plugin>
 					<plugin>
 						<artifactId>maven-gpg-plugin</artifactId>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>publication</id>
+			<build>
+				<plugins>
+					<plugin>
+						<artifactId>maven-javadoc-plugin</artifactId>
+					</plugin>
+					<plugin>
+						<artifactId>maven-source-plugin</artifactId>
 					</plugin>
 				</plugins>
 			</build>

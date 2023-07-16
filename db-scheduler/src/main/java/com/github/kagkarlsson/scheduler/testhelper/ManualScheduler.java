@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) Gustav Karlsson
  *
  * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,9 @@ public class ManualScheduler extends Scheduler {
       Duration deleteUnresolvedAfter,
       LogLevel logLevel,
       boolean logStackTrace,
-      List<OnStartup> onStartup) {
+      List<OnStartup> onStartup,
+      ExecutorService dueExecutor,
+      ScheduledExecutorService houseKeeperExecutor) {
     super(
         clock,
         schedulerTaskRepository,
@@ -62,7 +65,9 @@ public class ManualScheduler extends Scheduler {
         Duration.ZERO,
         logLevel,
         logStackTrace,
-        onStartup);
+        onStartup,
+        dueExecutor,
+        houseKeeperExecutor);
     this.clock = clock;
   }
 

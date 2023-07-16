@@ -4,9 +4,9 @@ import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.Mappers;
-import com.opentable.db.postgres.embedded.EmbeddedPostgres;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import java.io.IOException;
 import java.util.function.Consumer;
 import javax.sql.DataSource;

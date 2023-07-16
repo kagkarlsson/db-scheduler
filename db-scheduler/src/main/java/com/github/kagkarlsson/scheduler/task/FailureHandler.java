@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) Gustav Karlsson
  *
  * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,9 +53,10 @@ public interface FailureHandler<T> {
           round(
               sleepDuration.toMillis()
                   * pow(exponentialRate, executionComplete.getExecution().consecutiveFailures));
-      Instant nextTry = Instant.now().plusMillis(retryDurationMs);
+      Instant nextTry = executionComplete.getTimeDone().plusMillis(retryDurationMs);
       LOG.debug(
-          "Execution failed. Retrying task {} at {}",
+          "Execution failed {}. Retrying task {} at {}",
+          executionComplete.getTimeDone(),
           executionComplete.getExecution().taskInstance,
           nextTry);
       executionOperations.reschedule(executionComplete, nextTry);
@@ -65,10 +67,19 @@ public interface FailureHandler<T> {
     private static final Logger LOG = LoggerFactory.getLogger(MaxRetriesFailureHandler.class);
     private final int maxRetries;
     private final FailureHandler<T> failureHandler;
+    private final BiConsumer<ExecutionComplete, ExecutionOperations<T>> maxRetriesExceededHandler;
 
     public MaxRetriesFailureHandler(int maxRetries, FailureHandler<T> failureHandler) {
+      this(maxRetries, failureHandler, (executionComplete, executionOperations) -> {});
+    }
+
+    public MaxRetriesFailureHandler(
+        int maxRetries,
+        FailureHandler<T> failureHandler,
+        BiConsumer<ExecutionComplete, ExecutionOperations<T>> maxRetriesExceededHandler) {
       this.maxRetries = maxRetries;
       this.failureHandler = failureHandler;
+      this.maxRetriesExceededHandler = maxRetriesExceededHandler;
     }
 
     @Override
@@ -83,6 +94,7 @@ public interface FailureHandler<T> {
             totalNumberOfFailures,
             executionComplete.getExecution().taskInstance);
         executionOperations.stop();
+        maxRetriesExceededHandler.accept(executionComplete, executionOperations);
       } else {
         this.failureHandler.onFailure(executionComplete, executionOperations);
       }
@@ -101,7 +113,7 @@ public interface FailureHandler<T> {
     @Override
     public void onFailure(
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-      Instant nextTry = Instant.now().plus(sleepDuration);
+      Instant nextTry = executionComplete.getTimeDone().plus(sleepDuration);
       LOG.debug(
           "Execution failed. Retrying task {} at {}",
           executionComplete.getExecution().taskInstance,

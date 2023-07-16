@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) Gustav Karlsson
  *
  * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
@@ -157,6 +157,12 @@ public class DbSchedulerAutoConfiguration {
 
     // Use custom executor service if provided
     customizer.executorService().ifPresent(builder::executorService);
+
+    // Use custom due executor if provided
+    customizer.dueExecutor().ifPresent(builder::dueExecutor);
+
+    // Use housekeeper executor service if provided
+    customizer.housekeeperExecutor().ifPresent(builder::housekeeperExecutor);
 
     builder.deleteUnresolvedAfter(config.getDeleteUnresolvedAfter());
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) Gustav Karlsson
  *
  * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +64,8 @@ public class SchedulerBuilder {
   protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
   protected boolean enableImmediateExecution = false;
   protected ExecutorService executorService;
+  protected ExecutorService dueExecutor;
+  protected ScheduledExecutorService housekeeperExecutor;
   protected Duration deleteUnresolvedAfter = DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
   protected JdbcCustomization jdbcCustomization = null;
   protected Duration shutdownMaxWait = SHUTDOWN_MAX_WAIT;
@@ -105,6 +108,16 @@ public class SchedulerBuilder {
 
   public SchedulerBuilder executorService(ExecutorService executorService) {
     this.executorService = executorService;
+    return this;
+  }
+
+  public SchedulerBuilder dueExecutor(ExecutorService dueExecutor) {
+    this.dueExecutor = dueExecutor;
+    return this;
+  }
+
+  public SchedulerBuilder housekeeperExecutor(ScheduledExecutorService housekeeperExecutor) {
+    this.housekeeperExecutor = housekeeperExecutor;
     return this;
   }
 
@@ -224,6 +237,20 @@ public class SchedulerBuilder {
               executorThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
     }
 
+    ExecutorService candidateDueExecutor = dueExecutor;
+    if (candidateDueExecutor == null) {
+      candidateDueExecutor =
+          Executors.newSingleThreadExecutor(
+              defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-execute-due-"));
+    }
+
+    ScheduledExecutorService candidateHousekeeperExecutor = housekeeperExecutor;
+    if (candidateHousekeeperExecutor == null) {
+      candidateHousekeeperExecutor =
+          Executors.newScheduledThreadPool(
+              3, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-housekeeper-"));
+    }
+
     LOG.info(
         "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s enable-immediate-execution={}, table-name={}, name={}",
         executorThreads,
@@ -251,7 +278,9 @@ public class SchedulerBuilder {
             shutdownMaxWait,
             logLevel,
             logStackTrace,
-            startTasks);
+            startTasks,
+            candidateDueExecutor,
+            candidateHousekeeperExecutor);
 
     if (registerShutdownHook) {
       Runtime.getRuntime()
