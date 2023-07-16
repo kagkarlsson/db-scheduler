@@ -372,10 +372,10 @@ public class JdbcTaskRepository implements TaskRepository {
 
   @Override
   public List<Execution> lockAndGetDue(Instant now, int limit) {
-    if (jdbcCustomization.supportsLockAndFetch()) {
-      LOG.trace("Using postgres-specific lock-and-fetch");
-      return jdbcCustomization.lockAndFetch(getTaskRespositoryContext(), now, limit);
-    } else if (jdbcCustomization.supportsLockAndFetchGeneric()) {
+    if (jdbcCustomization.supportsSingleStatementLockAndFetch()) {
+      LOG.trace("Using single-statement lock-and-fetch");
+      return jdbcCustomization.lockAndFetchSingleStatement(getTaskRespositoryContext(), now, limit);
+    } else if (jdbcCustomization.supportsGenericLockAndFetch()) {
       LOG.trace("Using generic transaction-based lock-and-fetch");
       return lockAndFetchGeneric(now, limit);
     } else {
@@ -627,8 +627,8 @@ public class JdbcTaskRepository implements TaskRepository {
 
   @Override
   public void verifySupportsLockAndFetch() {
-    if (!(jdbcCustomization.supportsLockAndFetch()
-        || jdbcCustomization.supportsLockAndFetchGeneric())) {
+    if (!(jdbcCustomization.supportsSingleStatementLockAndFetch()
+        || jdbcCustomization.supportsGenericLockAndFetch())) {
       throw new IllegalArgumentException(
           "Database using jdbc-customization '"
               + jdbcCustomization.getName()

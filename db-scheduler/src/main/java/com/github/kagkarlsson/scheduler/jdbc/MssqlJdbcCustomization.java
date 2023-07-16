@@ -36,7 +36,7 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
-  public boolean supportsLockAndFetchGeneric() {
+  public boolean supportsGenericLockAndFetch() {
     return true;
   }
 

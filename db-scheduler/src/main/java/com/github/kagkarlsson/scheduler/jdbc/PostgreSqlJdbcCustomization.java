@@ -46,12 +46,12 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
-  public boolean supportsLockAndFetch() {
+  public boolean supportsSingleStatementLockAndFetch() {
     return !useGenericLockAndFetch;
   }
 
   @Override
-  public boolean supportsLockAndFetchGeneric() {
+  public boolean supportsGenericLockAndFetch() {
     return useGenericLockAndFetch;
   }
 
@@ -67,7 +67,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
-  public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+  public List<Execution> lockAndFetchSingleStatement(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
     final JdbcTaskRepository.UnresolvedFilter unresolvedFilter =
         new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
 

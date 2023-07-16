@@ -85,18 +85,18 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public boolean supportsLockAndFetch() {
-    return jdbcCustomization.supportsLockAndFetch();
+  public boolean supportsSingleStatementLockAndFetch() {
+    return jdbcCustomization.supportsSingleStatementLockAndFetch();
   }
 
   @Override
-  public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
-    return jdbcCustomization.lockAndFetch(ctx, now, limit);
+  public List<Execution> lockAndFetchSingleStatement(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+    return jdbcCustomization.lockAndFetchSingleStatement(ctx, now, limit);
   }
 
   @Override
-  public boolean supportsLockAndFetchGeneric() {
-    return jdbcCustomization.supportsLockAndFetchGeneric();
+  public boolean supportsGenericLockAndFetch() {
+    return jdbcCustomization.supportsGenericLockAndFetch();
   }
 
   @Override

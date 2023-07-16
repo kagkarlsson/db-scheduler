@@ -36,12 +36,11 @@ public interface JdbcCustomization {
 
   String getQueryLimitPart(int limit);
 
-  // TODO: rename to postgres-specific, or "all-in-one"
-  boolean supportsLockAndFetch();
+  boolean supportsSingleStatementLockAndFetch();
 
-  List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit);
+  List<Execution> lockAndFetchSingleStatement(JdbcTaskRepositoryContext ctx, Instant now, int limit);
 
-  boolean supportsLockAndFetchGeneric();
+  boolean supportsGenericLockAndFetch();
 
   String createGenericSelectForUpdateQuery(
       String tableName, int limit, String requiredAndCondition);
