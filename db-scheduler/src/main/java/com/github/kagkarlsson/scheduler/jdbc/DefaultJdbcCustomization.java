@@ -60,7 +60,8 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public List<Execution> lockAndFetchSingleStatement(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+  public List<Execution> lockAndFetchSingleStatement(
+      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
     throw new UnsupportedOperationException(
         "lockAndFetch not supported for " + this.getClass().getName());
   }

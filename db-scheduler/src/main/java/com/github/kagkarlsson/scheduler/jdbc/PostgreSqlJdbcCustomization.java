@@ -67,7 +67,8 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
-  public List<Execution> lockAndFetchSingleStatement(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+  public List<Execution> lockAndFetchSingleStatement(
+      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
     final JdbcTaskRepository.UnresolvedFilter unresolvedFilter =
         new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
 

@@ -38,7 +38,8 @@ public interface JdbcCustomization {
 
   boolean supportsSingleStatementLockAndFetch();
 
-  List<Execution> lockAndFetchSingleStatement(JdbcTaskRepositoryContext ctx, Instant now, int limit);
+  List<Execution> lockAndFetchSingleStatement(
+      JdbcTaskRepositoryContext ctx, Instant now, int limit);
 
   boolean supportsGenericLockAndFetch();
 

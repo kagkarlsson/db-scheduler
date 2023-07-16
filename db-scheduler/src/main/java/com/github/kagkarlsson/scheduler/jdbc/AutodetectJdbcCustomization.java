@@ -90,7 +90,8 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public List<Execution> lockAndFetchSingleStatement(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+  public List<Execution> lockAndFetchSingleStatement(
+      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
     return jdbcCustomization.lockAndFetchSingleStatement(ctx, now, limit);
   }
 
