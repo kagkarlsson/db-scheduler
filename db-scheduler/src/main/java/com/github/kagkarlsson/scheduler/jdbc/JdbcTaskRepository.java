@@ -280,7 +280,7 @@ public class JdbcTaskRepository implements TaskRepository {
         new ExecutionResultSetMapper());
   }
 
-  //    @Override // TODO
+  @Override
   public List<Execution> lockAndFetchGeneric(Instant now, int limit) {
     return jdbcRunner.inTransaction(
         txRunner -> {
