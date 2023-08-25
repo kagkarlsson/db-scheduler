@@ -1,12 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
-import static java.time.Duration.ofSeconds;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.TestTasks.SavingHandler;
+import com.github.kagkarlsson.scheduler.serializer.JavaSerializer;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
@@ -15,12 +11,22 @@ import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.github.kagkarlsson.scheduler.SchedulerClient.Builder.create;
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SchedulerClientTest {
 
@@ -40,6 +46,8 @@ public class SchedulerClientTest {
 
   private SavingHandler<String> savingHandler;
   private OneTimeTask<String> savingTask;
+  private OneTimeTask<Integer> oneTimeTaskC;
+  private VoidExecutionHandler<Integer> onetimeTaskHandlerC;
 
   @BeforeEach
   public void setUp() {
@@ -50,6 +58,9 @@ public class SchedulerClientTest {
 
     oneTimeTaskB = TestTasks.oneTime("OneTimeB", Void.class, onetimeTaskHandlerB);
     onetimeTaskHandlerB = new TestTasks.CountingHandler<>();
+
+    oneTimeTaskC = TestTasks.oneTime("OneTimeC", Integer.class, onetimeTaskHandlerC);
+    onetimeTaskHandlerC = new TestTasks.CountingHandler<>();
 
     scheduleAnother =
         new ScheduleAnotherTaskHandler<>(
@@ -68,7 +79,7 @@ public class SchedulerClientTest {
 
   @Test
   public void client_should_be_able_to_schedule_executions() {
-    SchedulerClient client = SchedulerClient.Builder.create(DB.getDataSource()).build();
+    SchedulerClient client = create(DB.getDataSource()).build();
     client.schedule(oneTimeTaskA.instance("1"), settableClock.now());
 
     scheduler.runAnyDueExecutions();
@@ -89,8 +100,7 @@ public class SchedulerClientTest {
 
   @Test
   public void client_should_be_able_to_fetch_executions_for_task() {
-    SchedulerClient client =
-        SchedulerClient.Builder.create(DB.getDataSource(), oneTimeTaskA, oneTimeTaskB).build();
+    SchedulerClient client = create(DB.getDataSource(), oneTimeTaskA, oneTimeTaskB).build();
     client.schedule(oneTimeTaskA.instance("1"), settableClock.now());
     client.schedule(oneTimeTaskA.instance("2"), settableClock.now());
     client.schedule(oneTimeTaskB.instance("10"), settableClock.now());
@@ -107,8 +117,7 @@ public class SchedulerClientTest {
 
   @Test
   public void client_should_be_able_to_fetch_single_scheduled_execution() {
-    SchedulerClient client =
-        SchedulerClient.Builder.create(DB.getDataSource(), oneTimeTaskA).build();
+    SchedulerClient client = create(DB.getDataSource(), oneTimeTaskA).build();
     client.schedule(oneTimeTaskA.instance("1"), settableClock.now());
 
     assertThat(
@@ -142,6 +151,35 @@ public class SchedulerClientTest {
     assertThat(savingHandler.savedData, CoreMatchers.is(data2));
   }
 
+  @SuppressWarnings("OptionalGetWithoutIsPresent")
+  @Test
+  public void raw_client_should_be_able_to_fetch_executions() {
+    TaskInstance<Integer> instance = oneTimeTaskC.instance("1", 5);
+
+    SchedulerClient clientWithTypes = create(DB.getDataSource(), oneTimeTaskC).build();
+    clientWithTypes.schedule(instance, settableClock.now());
+
+    SchedulerClient clientWithoutTypes = create(DB.getDataSource()).build();
+
+    Optional<ScheduledExecution<Object>> e1 = clientWithoutTypes.getScheduledExecution(instance);
+    assertThat(e1, not(OptionalMatchers.empty()));
+    assertRawData(e1.get(), 5);
+
+    List<ScheduledExecution<Object>> allScheduled = clientWithoutTypes.getScheduledExecutions();
+    assertThat(allScheduled, hasSize(1));
+    assertRawData(allScheduled.get(0), 5);
+
+    List<ScheduledExecution<Object>> scheduledForTask =
+        clientWithoutTypes.getScheduledExecutionsForTask(instance.getTaskName());
+    assertThat(scheduledForTask, hasSize(1));
+    assertRawData(scheduledForTask.get(0), 5);
+  }
+
+  private void assertRawData(ScheduledExecution<Object> se, Integer expectedValue) {
+    assertTrue(se.hasRawData());
+    assertEquals(expectedValue, new JavaSerializer().deserialize(Integer.class, se.getRawData()));
+  }
+
   private int countAllExecutions(SchedulerClient client) {
     AtomicInteger counter = new AtomicInteger(0);
     client.fetchScheduledExecutions(
@@ -164,9 +202,9 @@ public class SchedulerClientTest {
   }
 
   public static class ScheduleAnotherTaskHandler<T> implements VoidExecutionHandler<T> {
-    public int timesExecuted = 0;
     private final TaskInstance<Void> secondTask;
     private final Instant instant;
+    public int timesExecuted = 0;
 
     public ScheduleAnotherTaskHandler(TaskInstance<Void> secondTask, Instant instant) {
       this.secondTask = secondTask;

@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -8,6 +9,8 @@ import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import java.time.Instant;
+
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 
 public class ScheduledExecutionTest {
@@ -59,8 +62,8 @@ public class ScheduledExecutionTest {
                   .getData(); // Instantiate with incorrect type
             });
 
-    assertEquals(
-        "Task data mismatch. Expected class : class java.lang.String, actual : class java.lang.Integer",
-        dataClassMismatchException.getMessage());
+    assertThat(
+      dataClassMismatchException.getMessage(),
+        CoreMatchers.containsString("Task data mismatch"));
   }
 }

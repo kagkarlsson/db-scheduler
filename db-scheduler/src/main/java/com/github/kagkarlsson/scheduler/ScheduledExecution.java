@@ -14,8 +14,10 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
+import com.github.kagkarlsson.scheduler.exceptions.MissingRawDataException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+
 import java.time.Instant;
 import java.util.Objects;
 
@@ -45,6 +47,19 @@ public class ScheduledExecution<DATA_TYPE> {
       return (DATA_TYPE) data;
     }
     throw new DataClassMismatchException(dataClass, data.getClass());
+  }
+
+  public boolean hasRawData() {
+    Object data = this.execution.taskInstance.getData();
+    return data == null || data.getClass().equals(byte[].class);
+  }
+
+  public byte[] getRawData() {
+    if (!hasRawData()) {
+      throw new MissingRawDataException(dataClass);
+    }
+
+    return (byte[]) this.execution.taskInstance.getData();
   }
 
   public Instant getLastSuccess() {

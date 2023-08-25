@@ -16,6 +16,7 @@ package com.github.kagkarlsson.examples;
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
+import com.github.kagkarlsson.scheduler.serializer.JacksonSerializer;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Instant;
@@ -30,30 +31,50 @@ public class SchedulerClientMain extends Example {
   @Override
   public void run(DataSource dataSource) {
 
-    final OneTimeTask<Void> task =
-        Tasks.oneTime("task-a")
+    final OneTimeTask<Integer> task =
+        Tasks.oneTime("task-a", Integer.class)
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println("Task a executed");
                 });
 
-    final SchedulerClient client = SchedulerClient.Builder.create(dataSource, task).build();
+    final SchedulerClient clientWithTypeInformation = SchedulerClient.Builder
+      .create(dataSource, task)
+      .serializer(new JacksonSerializer())
+      .build();
 
     final Instant now = Instant.now();
     for (int i = 0; i < 5; i++) {
-      client.schedule(task.instance("id" + i), now.plusSeconds(i));
+      clientWithTypeInformation.schedule(task.instance("id" + i, i), now.plusSeconds(i));
     }
 
     System.out.println("Listing scheduled executions");
-    client
+    clientWithTypeInformation
         .getScheduledExecutions(ScheduledExecutionsFilter.all())
         .forEach(
             execution -> {
               System.out.printf(
-                  "Scheduled execution: taskName=%s, instance=%s, executionTime=%s%n",
+                  "Scheduled execution: taskName=%s, instance=%s, executionTime=%s, data=%s%n",
                   execution.getTaskInstance().getTaskName(),
                   execution.getTaskInstance().getId(),
-                  execution.getExecutionTime());
+                  execution.getExecutionTime(),
+                  execution.getData()
+                );
             });
+
+    final SchedulerClient rawClient = SchedulerClient.Builder.create(dataSource).build();
+    System.out.println("Listing scheduled executions for client with no known tasks (data-classes and implementations)");
+    rawClient
+      .getScheduledExecutions(ScheduledExecutionsFilter.all())
+      .forEach(
+        execution -> {
+          System.out.printf(
+            "Scheduled execution: taskName=%s, instance=%s, executionTime=%s, data=%s%n",
+            execution.getTaskInstance().getTaskName(),
+            execution.getTaskInstance().getId(),
+            execution.getExecutionTime(),
+            new String((byte[]) execution.getData())
+          );
+        });
   }
 }
