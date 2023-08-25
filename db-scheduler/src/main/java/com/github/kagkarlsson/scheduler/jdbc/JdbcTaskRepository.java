@@ -623,9 +623,8 @@ public class JdbcTaskRepository implements TaskRepository {
           if (addUnresolvedToExclusionFilter) {
             LOG.warn(
                 "Failed to find implementation for task with name '{}'. Execution will be excluded from due. "
-                    + "Either delete the execution from the database, or add an implementation for it. "
-                    + "The scheduler may be configured to automatically delete unresolved tasks "
-                    + "after a certain period of time.",
+                    + "The scheduler normally delete unresolved tasks after 14d. To handle manually, "
+                    + "either delete the execution from the database, or add an implementation for it. ",
                 taskName);
           }
           continue;
@@ -681,8 +680,6 @@ public class JdbcTaskRepository implements TaskRepository {
         return delegate.get();
       }
 
-      Supplier<T> delegate = this::firstTime;
-
       private synchronized T firstTime() {
         if (!initialized) {
           T value = original.get();
@@ -691,6 +688,8 @@ public class JdbcTaskRepository implements TaskRepository {
         }
         return delegate.get();
       }
+
+      Supplier<T> delegate = this::firstTime;
     };
   }
 

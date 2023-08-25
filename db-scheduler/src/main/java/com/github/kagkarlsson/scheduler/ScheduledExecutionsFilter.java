@@ -27,7 +27,7 @@ public class ScheduledExecutionsFilter {
   }
 
   public static ScheduledExecutionsFilter onlyResolved() {
-    return new ScheduledExecutionsFilter();
+    return new ScheduledExecutionsFilter().withIncludeUnresolved(false);
   }
 
   public ScheduledExecutionsFilter withPicked(boolean pickedValue) {
