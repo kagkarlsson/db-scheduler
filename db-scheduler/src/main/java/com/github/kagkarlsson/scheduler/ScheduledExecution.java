@@ -17,7 +17,6 @@ import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
 import com.github.kagkarlsson.scheduler.exceptions.MissingRawDataException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
-
 import java.time.Instant;
 import java.util.Objects;
 

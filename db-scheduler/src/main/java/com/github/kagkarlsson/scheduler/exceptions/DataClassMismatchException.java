@@ -19,9 +19,10 @@ public class DataClassMismatchException extends DbSchedulerException {
   public DataClassMismatchException(Class expectedClass, Class actualClass) {
     super(
         String.format(
-            "Task data mismatch. If actual data-class is byte[], it might have been fetched without" +
-              " knowledge of task-data types, and is thus not deserialized." +
-              " Use getRawData() to get non-deserialized data in that case." +
-              " Expected class : %s, actual : %s", expectedClass, actualClass));
+            "Task data mismatch. If actual data-class is byte[], it might have been fetched without"
+                + " knowledge of task-data types, and is thus not deserialized."
+                + " Use getRawData() to get non-deserialized data in that case."
+                + " Expected class : %s, actual : %s",
+            expectedClass, actualClass));
   }
 }

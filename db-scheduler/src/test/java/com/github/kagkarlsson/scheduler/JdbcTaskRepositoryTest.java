@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.IntStream;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -413,7 +412,8 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskResolver.getUnresolved(), hasSize(1));
 
     assertThat(getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved()), hasSize(0));
-    assertThat(getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved(), taskName), hasSize(0));
+    assertThat(
+        getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved(), taskName), hasSize(0));
     assertThat(getScheduledExecutions(all()), hasSize(1));
     assertThat(getScheduledExecutions(all(), taskName), hasSize(1));
   }

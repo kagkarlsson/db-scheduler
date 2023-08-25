@@ -9,7 +9,6 @@ import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import java.time.Instant;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 
@@ -63,7 +62,6 @@ public class ScheduledExecutionTest {
             });
 
     assertThat(
-      dataClassMismatchException.getMessage(),
-        CoreMatchers.containsString("Task data mismatch"));
+        dataClassMismatchException.getMessage(), CoreMatchers.containsString("Task data mismatch"));
   }
 }

@@ -38,10 +38,10 @@ public class SchedulerClientMain extends Example {
                   System.out.println("Task a executed");
                 });
 
-    final SchedulerClient clientWithTypeInformation = SchedulerClient.Builder
-      .create(dataSource, task)
-      .serializer(new JacksonSerializer())
-      .build();
+    final SchedulerClient clientWithTypeInformation =
+        SchedulerClient.Builder.create(dataSource, task)
+            .serializer(new JacksonSerializer())
+            .build();
 
     final Instant now = Instant.now();
     for (int i = 0; i < 5; i++) {
@@ -58,23 +58,22 @@ public class SchedulerClientMain extends Example {
                   execution.getTaskInstance().getTaskName(),
                   execution.getTaskInstance().getId(),
                   execution.getExecutionTime(),
-                  execution.getData()
-                );
+                  execution.getData());
             });
 
     final SchedulerClient rawClient = SchedulerClient.Builder.create(dataSource).build();
-    System.out.println("Listing scheduled executions for client with no known tasks (data-classes and implementations)");
+    System.out.println(
+        "Listing scheduled executions for client with no known tasks (data-classes and implementations)");
     rawClient
-      .getScheduledExecutions(ScheduledExecutionsFilter.all())
-      .forEach(
-        execution -> {
-          System.out.printf(
-            "Scheduled execution: taskName=%s, instance=%s, executionTime=%s, data=%s%n",
-            execution.getTaskInstance().getTaskName(),
-            execution.getTaskInstance().getId(),
-            execution.getExecutionTime(),
-            new String((byte[]) execution.getData())
-          );
-        });
+        .getScheduledExecutions(ScheduledExecutionsFilter.all())
+        .forEach(
+            execution -> {
+              System.out.printf(
+                  "Scheduled execution: taskName=%s, instance=%s, executionTime=%s, data=%s%n",
+                  execution.getTaskInstance().getTaskName(),
+                  execution.getTaskInstance().getId(),
+                  execution.getExecutionTime(),
+                  new String((byte[]) execution.getData()));
+            });
   }
 }

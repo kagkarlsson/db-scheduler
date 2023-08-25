@@ -13,6 +13,11 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
@@ -25,10 +30,6 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,11 +40,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
+import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("rawtypes")
 public class JdbcTaskRepository implements TaskRepository {
@@ -579,11 +578,11 @@ public class JdbcTaskRepository implements TaskRepository {
     private final ExecutionResultSetConsumer delegate;
 
     private ExecutionResultSetMapper(
-      boolean includeUnresolved, boolean addUnresolvedToExclusionFilter) {
+        boolean includeUnresolved, boolean addUnresolvedToExclusionFilter) {
       this.executions = new ArrayList<>();
       this.delegate =
-        new ExecutionResultSetConsumer(
-          executions::add, includeUnresolved, addUnresolvedToExclusionFilter);
+          new ExecutionResultSetConsumer(
+              executions::add, includeUnresolved, addUnresolvedToExclusionFilter);
     }
 
     @Override
@@ -605,9 +604,9 @@ public class JdbcTaskRepository implements TaskRepository {
     }
 
     private ExecutionResultSetConsumer(
-      Consumer<Execution> consumer,
-      boolean includeUnresolved,
-      boolean addUnresolvedToExclusionFilter) {
+        Consumer<Execution> consumer,
+        boolean includeUnresolved,
+        boolean addUnresolvedToExclusionFilter) {
       this.consumer = consumer;
       this.includeUnresolved = includeUnresolved;
       this.addUnresolvedToExclusionFilter = addUnresolvedToExclusionFilter;
@@ -623,11 +622,11 @@ public class JdbcTaskRepository implements TaskRepository {
         if (!task.isPresent() && !includeUnresolved) {
           if (addUnresolvedToExclusionFilter) {
             LOG.warn(
-              "Failed to find implementation for task with name '{}'. Execution will be excluded from due. "
-                + "Either delete the execution from the database, or add an implementation for it. "
-                + "The scheduler may be configured to automatically delete unresolved tasks "
-                + "after a certain period of time.",
-              taskName);
+                "Failed to find implementation for task with name '{}'. Execution will be excluded from due. "
+                    + "Either delete the execution from the database, or add an implementation for it. "
+                    + "The scheduler may be configured to automatically delete unresolved tasks "
+                    + "after a certain period of time.",
+                taskName);
           }
           continue;
         }
@@ -642,32 +641,32 @@ public class JdbcTaskRepository implements TaskRepository {
         Instant lastSuccess = jdbcCustomization.getInstant(rs, "last_success");
         Instant lastFailure = jdbcCustomization.getInstant(rs, "last_failure");
         int consecutiveFailures =
-          rs.getInt("consecutive_failures"); // null-value is returned as 0 which is the preferred
+            rs.getInt("consecutive_failures"); // null-value is returned as 0 which is the preferred
         // default
         Instant lastHeartbeat = jdbcCustomization.getInstant(rs, "last_heartbeat");
         long version = rs.getLong("version");
 
         Supplier dataSupplier =
-          memoize(
-            () -> {
-              if (!task.isPresent()) {
-                // return the data raw if the type is not known
-                //  a case for standalone clients, with no "known tasks"
-                return data;
-              }
-              return serializer.deserialize(task.get().getDataClass(), data);
-            });
+            memoize(
+                () -> {
+                  if (!task.isPresent()) {
+                    // return the data raw if the type is not known
+                    //  a case for standalone clients, with no "known tasks"
+                    return data;
+                  }
+                  return serializer.deserialize(task.get().getDataClass(), data);
+                });
         this.consumer.accept(
-          new Execution(
-            executionTime,
-            new TaskInstance(taskName, instanceId, dataSupplier),
-            picked,
-            pickedBy,
-            lastSuccess,
-            lastFailure,
-            consecutiveFailures,
-            lastHeartbeat,
-            version));
+            new Execution(
+                executionTime,
+                new TaskInstance(taskName, instanceId, dataSupplier),
+                picked,
+                pickedBy,
+                lastSuccess,
+                lastFailure,
+                consecutiveFailures,
+                lastHeartbeat,
+                version));
       }
 
       return null;
@@ -680,7 +679,9 @@ public class JdbcTaskRepository implements TaskRepository {
 
       public T get() {
         return delegate.get();
-      }      Supplier<T> delegate = this::firstTime;
+      }
+
+      Supplier<T> delegate = this::firstTime;
 
       private synchronized T firstTime() {
         if (!initialized) {
@@ -690,8 +691,6 @@ public class JdbcTaskRepository implements TaskRepository {
         }
         return delegate.get();
       }
-
-
     };
   }
 
