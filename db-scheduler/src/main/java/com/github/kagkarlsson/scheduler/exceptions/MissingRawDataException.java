@@ -13,16 +13,13 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
-public class DataClassMismatchException extends DbSchedulerException {
-  private static final long serialVersionUID = 6333316294241471977L;
+public class MissingRawDataException extends DbSchedulerException {
+  private static final long serialVersionUID = 1L;
 
-  public DataClassMismatchException(Class expectedClass, Class actualClass) {
+  public MissingRawDataException(Class<?> dataClass) {
     super(
         String.format(
-            "Task data mismatch. If actual data-class is byte[], it might have been fetched without"
-                + " knowledge of task-data types, and is thus not deserialized."
-                + " Use getRawData() to get non-deserialized data in that case."
-                + " Expected class : %s, actual : %s",
-            expectedClass, actualClass));
+            "Scheduled execution has typed data, use getData() to read the deserialized object. Data-class : %s",
+            dataClass));
   }
 }

@@ -21,11 +21,7 @@ import static java.util.stream.Collectors.toList;
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
-import com.github.kagkarlsson.scheduler.Clock;
-import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
-import com.github.kagkarlsson.scheduler.SchedulerName;
-import com.github.kagkarlsson.scheduler.TaskRepository;
-import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.*;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
@@ -244,22 +240,31 @@ public class JdbcTaskRepository implements TaskRepository {
     UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
 
     QueryBuilder q = queryForFilter(filter);
-    if (unresolvedFilter.isActive()) {
+    if (unresolvedFilter.isActive() && !filter.getIncludeUnresolved()) {
       q.andCondition(unresolvedFilter);
     }
 
     jdbcRunner.query(
-        q.getQuery(), q.getPreparedStatementSetter(), new ExecutionResultSetConsumer(consumer));
+        q.getQuery(),
+        q.getPreparedStatementSetter(),
+        new ExecutionResultSetConsumer(consumer, filter.getIncludeUnresolved(), false));
   }
 
   @Override
   public void getScheduledExecutions(
       ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer) {
+    UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
+
     QueryBuilder q = queryForFilter(filter);
+    if (unresolvedFilter.isActive() && !filter.getIncludeUnresolved()) {
+      q.andCondition(unresolvedFilter);
+    }
     q.andCondition(new TaskCondition(taskName));
 
     jdbcRunner.query(
-        q.getQuery(), q.getPreparedStatementSetter(), new ExecutionResultSetConsumer(consumer));
+        q.getQuery(),
+        q.getPreparedStatementSetter(),
+        new ExecutionResultSetConsumer(consumer, filter.getIncludeUnresolved(), false));
   }
 
   @Override
@@ -285,7 +290,7 @@ public class JdbcTaskRepository implements TaskRepository {
             p.setMaxRows(limit);
           }
         },
-        new ExecutionResultSetMapper());
+        new ExecutionResultSetMapper(false, true));
   }
 
   @Override
@@ -377,6 +382,7 @@ public class JdbcTaskRepository implements TaskRepository {
               jdbcCustomization.setInstant(ps, index++, nextExecutionTime);
               if (newData != null) {
                 // may cause datbase-specific problems, might have to use setNull instead
+                // FIXLATER: optionally support bypassing serializer if byte[] already
                 ps.setObject(index++, serializer.serialize(newData.data));
               }
               ps.setString(index++, execution.taskInstance.getTaskName());
@@ -449,7 +455,7 @@ public class JdbcTaskRepository implements TaskRepository {
           jdbcCustomization.setInstant(p, index++, olderThan);
           unresolvedFilter.setParameters(p, index);
         },
-        new ExecutionResultSetMapper());
+        new ExecutionResultSetMapper(false, true));
   }
 
   @Override
@@ -497,7 +503,7 @@ public class JdbcTaskRepository implements TaskRepository {
           jdbcCustomization.setInstant(p, index++, Instant.now().minus(interval));
           unresolvedFilter.setParameters(p, index);
         },
-        new ExecutionResultSetMapper());
+        new ExecutionResultSetMapper(false, false));
   }
 
   public Optional<Execution> getExecution(TaskInstance taskInstance) {
@@ -512,7 +518,7 @@ public class JdbcTaskRepository implements TaskRepository {
               p.setString(1, taskName);
               p.setString(2, taskInstanceId);
             },
-            new ExecutionResultSetMapper());
+            new ExecutionResultSetMapper(true, false));
     if (executions.size() > 1) {
       throw new TaskInstanceException(
           "Found more than one matching execution for task name/id combination.",
@@ -544,7 +550,11 @@ public class JdbcTaskRepository implements TaskRepository {
 
   private JdbcTaskRepositoryContext getTaskRespositoryContext() {
     return new JdbcTaskRepositoryContext(
-        taskResolver, tableName, schedulerSchedulerName, jdbcRunner, ExecutionResultSetMapper::new);
+        taskResolver,
+        tableName,
+        schedulerSchedulerName,
+        jdbcRunner,
+        () -> new ExecutionResultSetMapper(false, true));
   }
 
   private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
@@ -567,9 +577,12 @@ public class JdbcTaskRepository implements TaskRepository {
 
     private final ExecutionResultSetConsumer delegate;
 
-    private ExecutionResultSetMapper() {
+    private ExecutionResultSetMapper(
+        boolean includeUnresolved, boolean addUnresolvedToExclusionFilter) {
       this.executions = new ArrayList<>();
-      this.delegate = new ExecutionResultSetConsumer(executions::add);
+      this.delegate =
+          new ExecutionResultSetConsumer(
+              executions::add, includeUnresolved, addUnresolvedToExclusionFilter);
     }
 
     @Override
@@ -583,9 +596,20 @@ public class JdbcTaskRepository implements TaskRepository {
   private class ExecutionResultSetConsumer implements ResultSetMapper<Void> {
 
     private final Consumer<Execution> consumer;
+    private final boolean includeUnresolved;
+    private boolean addUnresolvedToExclusionFilter;
 
     private ExecutionResultSetConsumer(Consumer<Execution> consumer) {
+      this(consumer, false, true);
+    }
+
+    private ExecutionResultSetConsumer(
+        Consumer<Execution> consumer,
+        boolean includeUnresolved,
+        boolean addUnresolvedToExclusionFilter) {
       this.consumer = consumer;
+      this.includeUnresolved = includeUnresolved;
+      this.addUnresolvedToExclusionFilter = addUnresolvedToExclusionFilter;
     }
 
     @Override
@@ -593,12 +617,16 @@ public class JdbcTaskRepository implements TaskRepository {
 
       while (rs.next()) {
         String taskName = rs.getString("task_name");
-        Optional<Task> task = taskResolver.resolve(taskName);
+        Optional<Task> task = taskResolver.resolve(taskName, addUnresolvedToExclusionFilter);
 
-        if (!task.isPresent()) {
-          LOG.warn(
-              "Failed to find implementation for task with name '{}'. Execution will be excluded from due. Either delete the execution from the database, or add an implementation for it. The scheduler may be configured to automatically delete unresolved tasks after a certain period of time.",
-              taskName);
+        if (!task.isPresent() && !includeUnresolved) {
+          if (addUnresolvedToExclusionFilter) {
+            LOG.warn(
+                "Failed to find implementation for task with name '{}'. Execution will be excluded from due. "
+                    + "The scheduler normally delete unresolved tasks after 14d. To handle manually, "
+                    + "either delete the execution from the database, or add an implementation for it. ",
+                taskName);
+          }
           continue;
         }
 
@@ -618,7 +646,15 @@ public class JdbcTaskRepository implements TaskRepository {
         long version = rs.getLong("version");
 
         Supplier dataSupplier =
-            memoize(() -> serializer.deserialize(task.get().getDataClass(), data));
+            memoize(
+                () -> {
+                  if (!task.isPresent()) {
+                    // return the data raw if the type is not known
+                    //  a case for standalone clients, with no "known tasks"
+                    return data;
+                  }
+                  return serializer.deserialize(task.get().getDataClass(), data);
+                });
         this.consumer.accept(
             new Execution(
                 executionTime,
@@ -638,7 +674,6 @@ public class JdbcTaskRepository implements TaskRepository {
 
   private static <T> Supplier<T> memoize(Supplier<T> original) {
     return new Supplier<T>() {
-      Supplier<T> delegate = this::firstTime;
       boolean initialized;
 
       public T get() {
@@ -653,6 +688,8 @@ public class JdbcTaskRepository implements TaskRepository {
         }
         return delegate.get();
       }
+
+      Supplier<T> delegate = this::firstTime;
     };
   }
 

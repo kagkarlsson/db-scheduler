@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.onlyResolved;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -402,15 +403,19 @@ public class JdbcTaskRepositoryTest {
   @Test
   public void get_scheduled_executions_should_work_with_unresolved() {
     Instant now = TimeHelper.truncatedInstantNow();
+    String taskName = "unresolved1";
     final OneTimeTask<Void> unresolved1 =
-        TestTasks.oneTime("unresolved1", Void.class, TestTasks.DO_NOTHING);
+        TestTasks.oneTime(taskName, Void.class, TestTasks.DO_NOTHING);
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(unresolved1.instance("id"), now));
     assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
 
-    taskRepository.getScheduledExecutions(ScheduledExecutionsFilter.all(), e -> {});
-    taskRepository.getScheduledExecutions(ScheduledExecutionsFilter.all(), "sometask", e -> {});
+    assertThat(getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved()), hasSize(0));
+    assertThat(
+        getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved(), taskName), hasSize(0));
+    assertThat(getScheduledExecutions(all()), hasSize(1));
+    assertThat(getScheduledExecutions(all(), taskName), hasSize(1));
   }
 
   @Test
@@ -459,7 +464,7 @@ public class JdbcTaskRepositoryTest {
 
   private Execution getSingleExecution() {
     List<Execution> executions = new ArrayList<>();
-    taskRepository.getScheduledExecutions(all().withPicked(false), executions::add);
+    taskRepository.getScheduledExecutions(onlyResolved().withPicked(false), executions::add);
     return executions.get(0);
   }
 }

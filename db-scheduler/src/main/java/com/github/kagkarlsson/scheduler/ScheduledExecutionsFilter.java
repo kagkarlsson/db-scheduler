@@ -18,11 +18,16 @@ import java.util.Optional;
 public class ScheduledExecutionsFilter {
 
   private Boolean pickedValue;
+  private boolean includeUnresolved = false;
 
   private ScheduledExecutionsFilter() {}
 
   public static ScheduledExecutionsFilter all() {
-    return new ScheduledExecutionsFilter();
+    return new ScheduledExecutionsFilter().withIncludeUnresolved(true);
+  }
+
+  public static ScheduledExecutionsFilter onlyResolved() {
+    return new ScheduledExecutionsFilter().withIncludeUnresolved(false);
   }
 
   public ScheduledExecutionsFilter withPicked(boolean pickedValue) {
@@ -30,7 +35,16 @@ public class ScheduledExecutionsFilter {
     return this;
   }
 
+  public ScheduledExecutionsFilter withIncludeUnresolved(boolean includeUnresolved) {
+    this.includeUnresolved = includeUnresolved;
+    return this;
+  }
+
   public Optional<Boolean> getPickedValue() {
     return Optional.ofNullable(pickedValue);
+  }
+
+  public boolean getIncludeUnresolved() {
+    return includeUnresolved;
   }
 }

@@ -142,6 +142,15 @@ public interface SchedulerClient {
   /**
    * @see #fetchScheduledExecutionsForTask(String, Class, Consumer)
    */
+  default <T> List<ScheduledExecution<Object>> getScheduledExecutionsForTask(String taskName) {
+    List<ScheduledExecution<Object>> executions = new ArrayList<>();
+    fetchScheduledExecutionsForTask(taskName, Object.class, executions::add);
+    return executions;
+  }
+
+  /**
+   * @see #fetchScheduledExecutionsForTask(String, Class, Consumer)
+   */
   default <T> List<ScheduledExecution<T>> getScheduledExecutionsForTask(
       String taskName, Class<T> dataClass) {
     List<ScheduledExecution<T>> executions = new ArrayList<>();

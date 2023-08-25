@@ -52,8 +52,12 @@ public class TaskResolver {
   }
 
   public Optional<Task> resolve(String taskName) {
+    return resolve(taskName, true);
+  }
+
+  public Optional<Task> resolve(String taskName, boolean addUnresolvedToExclusionFilter) {
     Task task = taskMap.get(taskName);
-    if (task == null) {
+    if (task == null && addUnresolvedToExclusionFilter) {
       addUnresolved(taskName);
       statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK);
       LOG.info(
