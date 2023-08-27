@@ -47,6 +47,7 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
     return "SELECT "
         + " * FROM "
         + tableName
+        // try reading past locked rows to see if that helps on deadlock-warnings
         + " WITH (READPAST) WHERE picked = ? AND execution_time <= ? "
         + andCondition
         + " ORDER BY execution_time ASC "

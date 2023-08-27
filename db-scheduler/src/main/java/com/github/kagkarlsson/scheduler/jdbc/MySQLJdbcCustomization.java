@@ -17,7 +17,7 @@ public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String getName() {
-    return "MySQL";
+    return "MySQL < v8";
   }
 
   @Override
