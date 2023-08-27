@@ -46,12 +46,12 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public boolean supportsExplicitQueryLimitPart() {
-    return false;
+    return true;
   }
 
   @Override
   public String getQueryLimitPart(int limit) {
-    return "";
+    return Queries.ansiSqlLimitPart(limit);
   }
 
   @Override

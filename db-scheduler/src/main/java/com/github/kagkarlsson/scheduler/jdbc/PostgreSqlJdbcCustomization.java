@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
+import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
 import java.time.Instant;
@@ -36,16 +37,6 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
-  public boolean supportsExplicitQueryLimitPart() {
-    return true;
-  }
-
-  @Override
-  public String getQueryLimitPart(int limit) {
-    return " LIMIT " + limit;
-  }
-
-  @Override
   public boolean supportsSingleStatementLockAndFetch() {
     return !useGenericLockAndFetch;
   }
@@ -58,12 +49,8 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
   @Override
   public String createGenericSelectForUpdateQuery(
       String tableName, int limit, String requiredAndCondition) {
-    return "select * from "
-        + tableName
-        + " where picked = ? and execution_time <= ? "
-        + requiredAndCondition
-        + " order by execution_time asc for update skip locked limit "
-        + limit;
+    return selectForUpdate(
+        tableName, limit, requiredAndCondition, " FOR UPDATE SKIP LOCKED ", null);
   }
 
   @Override
@@ -76,13 +63,15 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
         " UPDATE "
             + ctx.tableName
             + " st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 "
-            + " WHERE (st1.task_name, st1.task_instance) IN ("
-            + "   SELECT st2.task_name, st2.task_instance FROM "
+            + " WHERE (st1.task_name, st1.task_instance) IN "
+            + "(SELECT st2.task_name, st2.task_instance FROM "
             + ctx.tableName
             + " st2 "
-            + "   WHERE picked = ? and execution_time <= ? "
+            + " WHERE picked = ? and execution_time <= ? "
             + unresolvedFilter.andCondition()
-            + " order by execution_time asc FOR UPDATE SKIP LOCKED LIMIT ?)"
+            + " ORDER BY execution_time ASC FOR UPDATE SKIP LOCKED "
+            + getQueryLimitPart(limit)
+            + ")"
             + " RETURNING st1.*";
 
     return ctx.jdbcRunner.query(
@@ -97,7 +86,6 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
           ps.setBoolean(index++, false); // picked (old)
           setInstant(ps, index++, now); // execution_time
           index = unresolvedFilter.setParameters(ps, index);
-          ps.setInt(index++, limit); // limit
         },
         ctx.resultSetMapper.get());
   }

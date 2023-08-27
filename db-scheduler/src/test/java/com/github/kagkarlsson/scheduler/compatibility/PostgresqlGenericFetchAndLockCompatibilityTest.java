@@ -11,17 +11,6 @@ public class PostgresqlGenericFetchAndLockCompatibilityTest extends Compatibilit
 
   @RegisterExtension
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
-  //    Enable if test gets flaky!
-  //    @RegisterExtension
-  //    public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
-  //        new
-  // ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson.scheduler.DueExecutionsBatch", Level.TRACE),
-  //        new ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson.scheduler.Waiter",
-  // Level.DEBUG),
-  //        new
-  // ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson.scheduler.Scheduler",
-  // Level.DEBUG)
-  //    );
 
   public PostgresqlGenericFetchAndLockCompatibilityTest() {
     super(true);

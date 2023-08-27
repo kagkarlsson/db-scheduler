@@ -13,28 +13,18 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import com.github.kagkarlsson.scheduler.task.Execution;
 import java.time.Instant;
-import java.util.Calendar;
-import java.util.TimeZone;
+import java.util.List;
 
-public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
+public class OracleJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String getName() {
-    return "MSSQL";
-  }
-
-  @Override
-  public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
-    p.setTimestamp(
-        index,
-        value != null ? Timestamp.from(value) : null,
-        Calendar.getInstance(TimeZone.getTimeZone("UTC")));
+    return "Oracle";
   }
 
   @Override
@@ -43,20 +33,10 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
-  public String createSelectDueQuery(String tableName, int limit, String andCondition) {
-    return "SELECT "
-        + " * FROM "
-        + tableName
-        + " WITH (READPAST) WHERE picked = ? AND execution_time <= ? "
-        + andCondition
-        + " ORDER BY execution_time ASC "
-        + getQueryLimitPart(limit);
-  }
-
-  @Override
   public String createGenericSelectForUpdateQuery(
       String tableName, int limit, String requiredAndCondition) {
     return selectForUpdate(
-        tableName, limit, requiredAndCondition, null, " WITH (READPAST,ROWLOCK) ");
+        tableName, limit, requiredAndCondition, " FOR UPDATE SKIP LOCKED ", null);
   }
+
 }

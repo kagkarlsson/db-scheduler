@@ -19,6 +19,9 @@ class PostgreSqlJdbcCustomizationTest {
   void test() {
     assertTrue(jdbcCustomization.supportsExplicitQueryLimitPart());
     Arrays.asList(1, 5, 20, 100)
-        .forEach(it -> assertEquals(jdbcCustomization.getQueryLimitPart(it), " LIMIT " + it));
+        .forEach(
+            it ->
+                assertEquals(
+                    " FETCH FIRST " + it + " ROWS ONLY ", jdbcCustomization.getQueryLimitPart(it)));
   }
 }

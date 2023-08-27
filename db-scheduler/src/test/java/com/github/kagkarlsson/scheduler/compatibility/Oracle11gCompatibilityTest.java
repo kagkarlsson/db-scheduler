@@ -19,14 +19,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @Disabled
 public class Oracle11gCompatibilityTest extends CompatibilityTest {
-  @Container
-  private static final OracleContainer ORACLE =
-      new OracleContainer("oracleinanutshell/oracle-xe-11g:1.0.0");
+  @Container private static final OracleContainer ORACLE = new OracleContainer("gvenzl/oracle-xe");
 
   private static HikariDataSource pooledDatasource;
 
   public Oracle11gCompatibilityTest() {
-    super(false);
+    super(true);
   }
 
   @BeforeAll
