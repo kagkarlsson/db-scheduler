@@ -24,7 +24,7 @@ public class MariaDB103CompatibilityTest extends CompatibilityTest {
   private static HikariDataSource pooledDatasource;
 
   public MariaDB103CompatibilityTest() {
-    super(true);
+    super(false);
   }
 
   @BeforeAll

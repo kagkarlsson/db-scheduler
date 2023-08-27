@@ -14,15 +14,16 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
-import javax.sql.DataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AutodetectJdbcCustomization implements JdbcCustomization {
 
@@ -53,17 +54,19 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
       } else if (databaseProductName.contains(MYSQL)) {
         int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
         String databaseProductVersion = c.getMetaData().getDatabaseProductVersion();
-        if (databaseMajorVersion >= 8) {
-          LOG.info(
-              "Using MySQL jdbc-overrides version 8 and later. (version is {})",
-              databaseProductVersion);
-          detectedCustomization = new MySQL8JdbcCustomization();
-        } else {
-          LOG.info(
-              "Using MySQL jdbc-overrides for version older than 8. (version is {})",
-              databaseProductVersion);
-          detectedCustomization = new MySQLJdbcCustomization();
-        }
+        // FIXLATER: fix syntax for FOR UPDATE SKIP LOCKED for mysql and enable Customization
+        // supporting it
+        //        if (databaseMajorVersion >= 8) {
+        //          LOG.info(
+        //              "Using MySQL jdbc-overrides version 8 and later. (version is {})",
+        //              databaseProductVersion);
+        //          detectedCustomization = new MySQL8JdbcCustomization();
+        //        } else {
+        LOG.info(
+            "Using MySQL jdbc-overrides for version older than 8. (version is {})",
+            databaseProductVersion);
+        detectedCustomization = new MySQLJdbcCustomization();
+        //        }
       }
 
       // TODO: add mariadb
