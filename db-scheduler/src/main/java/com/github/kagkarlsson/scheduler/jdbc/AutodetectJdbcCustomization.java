@@ -30,6 +30,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   public static final String MICROSOFT_SQL_SERVER = "Microsoft SQL Server";
   public static final String POSTGRESQL = "PostgreSQL";
   public static final String ORACLE = "Oracle";
+  public static final String MYSQL = "MySQL";
   private final JdbcCustomization jdbcCustomization;
 
   public AutodetectJdbcCustomization(DataSource dataSource) {
@@ -49,7 +50,23 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
       } else if (databaseProductName.contains(ORACLE)) {
         LOG.info("Using Oracle jdbc-overrides.");
         detectedCustomization = new OracleJdbcCustomization();
+      } else if (databaseProductName.contains(MYSQL)) {
+        int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
+        String databaseProductVersion = c.getMetaData().getDatabaseProductVersion();
+        if (databaseMajorVersion >= 8) {
+          LOG.info(
+              "Using MySQL jdbc-overrides version 8 and later. (version is {})",
+              databaseProductVersion);
+          detectedCustomization = new MySQL8JdbcCustomization();
+        } else {
+          LOG.info(
+              "Using MySQL jdbc-overrides for version older than 8. (version is {})",
+              databaseProductVersion);
+          detectedCustomization = new MySQLJdbcCustomization();
+        }
       }
+
+      // TODO: add mariadb
 
     } catch (SQLException e) {
       LOG.error("Failed to detect database via getDatabaseMetadata. Using default.", e);

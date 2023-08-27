@@ -51,7 +51,7 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public String getQueryLimitPart(int limit) {
-    return Queries.ansiSqlLimitPart(limit);
+    return Queries.postgresSqlLimitPart(limit);
   }
 
   @Override

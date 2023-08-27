@@ -19,7 +19,7 @@ public class Queries {
 
   public static String selectForUpdate(
       String tableName,
-      int limit,
+      String limitPart,
       String requiredAndCondition,
       String postgresOracleStyleForUpdate,
       String sqlServerStyleForUpdate) {
@@ -30,10 +30,14 @@ public class Queries {
         + requiredAndCondition
         + " ORDER BY execution_time ASC "
         + Optional.ofNullable(postgresOracleStyleForUpdate).orElse("")
-        + ansiSqlLimitPart(limit);
+        + limitPart;
+  }
+
+  public static String postgresSqlLimitPart(int limit) {
+    return " LIMIT " + limit;
   }
 
   public static String ansiSqlLimitPart(int limit) {
-    return " FETCH FIRST " + limit + " ROWS ONLY ";
+    return " OFFSET 0 ROWS FETCH FIRST " + limit + " ROWS ONLY ";
   }
 }

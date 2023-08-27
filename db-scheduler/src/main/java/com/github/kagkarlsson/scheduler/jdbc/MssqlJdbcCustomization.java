@@ -38,6 +38,11 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
+  public String getQueryLimitPart(int limit) {
+    return Queries.ansiSqlLimitPart(limit);
+  }
+
+  @Override
   public boolean supportsGenericLockAndFetch() {
     return true;
   }
@@ -57,6 +62,10 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
   public String createGenericSelectForUpdateQuery(
       String tableName, int limit, String requiredAndCondition) {
     return selectForUpdate(
-        tableName, limit, requiredAndCondition, null, " WITH (READPAST,ROWLOCK) ");
+        tableName,
+        Queries.ansiSqlLimitPart(limit),
+        requiredAndCondition,
+        null,
+        " WITH (READPAST,ROWLOCK) ");
   }
 }

@@ -7,40 +7,42 @@ import com.zaxxer.hikari.util.DriverDataSource;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 @Tag("compatibility")
 @Testcontainers
-@Disabled
-public class MysqlCompatibilityTest extends CompatibilityTest {
+public class MariaDB103CompatibilityTest extends CompatibilityTest {
 
-  @Container private static final MySQLContainer MY_SQL = new MySQLContainer();
+  @Container
+  private static final MariaDBContainer MARIADB =
+      new MariaDBContainer(DockerImageName.parse("mariadb").withTag("10.3"));
+
   private static HikariDataSource pooledDatasource;
 
-  public MysqlCompatibilityTest() {
-    super(false);
+  public MariaDB103CompatibilityTest() {
+    super(true);
   }
 
   @BeforeAll
   static void initSchema() {
     final DriverDataSource datasource =
         new DriverDataSource(
-            MY_SQL.getJdbcUrl(),
-            "com.mysql.cj.jdbc.Driver",
+            MARIADB.getJdbcUrl(),
+            "org.mariadb.jdbc.Driver",
             new Properties(),
-            MY_SQL.getUsername(),
-            MY_SQL.getPassword());
+            MARIADB.getUsername(),
+            MARIADB.getPassword());
 
     final HikariConfig hikariConfig = new HikariConfig();
     hikariConfig.setDataSource(datasource);
     pooledDatasource = new HikariDataSource(hikariConfig);
 
     // init schema
-    DbUtils.runSqlResource("/mysql_tables.sql").accept(pooledDatasource);
+    DbUtils.runSqlResource("/mariadb_tables.sql").accept(pooledDatasource);
   }
 
   @Override

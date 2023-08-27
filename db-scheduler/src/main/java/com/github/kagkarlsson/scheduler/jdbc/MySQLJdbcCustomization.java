@@ -13,28 +13,10 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
-
-public class OracleJdbcCustomization extends DefaultJdbcCustomization {
+public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String getName() {
-    return "Oracle";
-  }
-
-  @Override
-  public boolean supportsGenericLockAndFetch() {
-    return true;
-  }
-
-  @Override
-  public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition) {
-    return selectForUpdate(
-        tableName,
-        Queries.ansiSqlLimitPart(limit),
-        requiredAndCondition,
-        " FOR UPDATE SKIP LOCKED ",
-        null);
+    return "MySQL";
   }
 }

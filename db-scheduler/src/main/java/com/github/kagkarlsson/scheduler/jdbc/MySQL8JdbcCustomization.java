@@ -15,11 +15,11 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
-public class OracleJdbcCustomization extends DefaultJdbcCustomization {
+public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String getName() {
-    return "Oracle";
+    return "MySQL";
   }
 
   @Override
@@ -32,7 +32,7 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
       String tableName, int limit, String requiredAndCondition) {
     return selectForUpdate(
         tableName,
-        Queries.ansiSqlLimitPart(limit),
+        Queries.postgresSqlLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",
         null);
