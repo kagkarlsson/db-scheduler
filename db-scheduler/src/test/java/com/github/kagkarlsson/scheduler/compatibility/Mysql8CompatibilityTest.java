@@ -7,7 +7,6 @@ import com.zaxxer.hikari.util.DriverDataSource;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -16,7 +15,6 @@ import org.testcontainers.utility.DockerImageName;
 
 @Tag("compatibility")
 @Testcontainers
-@Disabled // FIXLATER: enable when SKIP LOCKED is fixed for mysql
 public class Mysql8CompatibilityTest extends CompatibilityTest {
 
   @Container
@@ -25,8 +23,9 @@ public class Mysql8CompatibilityTest extends CompatibilityTest {
 
   private static HikariDataSource pooledDatasource;
 
+  // FIXLATER: enable select-for-update tests when SKIP LOCKED is fixed for mysql
   public Mysql8CompatibilityTest() {
-    super(true);
+    super(false);
   }
 
   @BeforeAll

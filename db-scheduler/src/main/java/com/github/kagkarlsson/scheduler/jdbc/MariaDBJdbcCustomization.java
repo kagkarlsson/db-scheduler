@@ -13,15 +13,34 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
+import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
+
+public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String getName() {
-    return "MySQL";
+    return "MariaDB";
   }
 
   @Override
   public String getQueryLimitPart(int limit) {
     return Queries.postgresSqlLimitPart(limit);
+  }
+
+  @Override
+  public boolean supportsGenericLockAndFetch() {
+    // FIXLATER: enable for versions of MariaDB that supports it
+    return false;
+  }
+
+  @Override
+  public String createGenericSelectForUpdateQuery(
+      String tableName, int limit, String requiredAndCondition) {
+    return selectForUpdate(
+        tableName,
+        Queries.postgresSqlLimitPart(limit),
+        requiredAndCondition,
+        " FOR UPDATE SKIP LOCKED ",
+        null);
   }
 }

@@ -14,7 +14,6 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
-import static com.github.kagkarlsson.scheduler.jdbc.Queries.postgresSqlLimitPart;
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
@@ -38,6 +37,11 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
+  public String getQueryLimitPart(int limit) {
+    return Queries.postgresSqlLimitPart(limit);
+  }
+
+  @Override
   public boolean supportsSingleStatementLockAndFetch() {
     return !useGenericLockAndFetch;
   }
@@ -52,7 +56,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
       String tableName, int limit, String requiredAndCondition) {
     return selectForUpdate(
         tableName,
-        postgresSqlLimitPart(limit),
+        getQueryLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",
         null);

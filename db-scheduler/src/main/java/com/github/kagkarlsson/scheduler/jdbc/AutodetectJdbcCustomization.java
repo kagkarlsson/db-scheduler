@@ -31,6 +31,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   public static final String POSTGRESQL = "PostgreSQL";
   public static final String ORACLE = "Oracle";
   public static final String MYSQL = "MySQL";
+  public static final String MARIADB = "MariaDB";
   private final JdbcCustomization jdbcCustomization;
 
   public AutodetectJdbcCustomization(DataSource dataSource) {
@@ -50,25 +51,20 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
       } else if (databaseProductName.contains(ORACLE)) {
         LOG.info("Using Oracle jdbc-overrides.");
         detectedCustomization = new OracleJdbcCustomization();
+      } else if (databaseProductName.contains(MARIADB)) {
+        LOG.info("Using MariaDB jdbc-overrides.");
+        detectedCustomization = new MariaDBJdbcCustomization();
       } else if (databaseProductName.contains(MYSQL)) {
         int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
-        String databaseProductVersion = c.getMetaData().getDatabaseProductVersion();
-        // FIXLATER: fix syntax for FOR UPDATE SKIP LOCKED for mysql and enable Customization
-        // supporting it
-        //        if (databaseMajorVersion >= 8) {
-        //          LOG.info(
-        //              "Using MySQL jdbc-overrides version 8 and later. (version is {})",
-        //              databaseProductVersion);
-        //          detectedCustomization = new MySQL8JdbcCustomization();
-        //        } else {
-        LOG.info(
-            "Using MySQL jdbc-overrides for version older than 8. (version is {})",
-            databaseProductVersion);
-        detectedCustomization = new MySQLJdbcCustomization();
-        //        }
+        String dbVersion = c.getMetaData().getDatabaseProductVersion();
+        if (databaseMajorVersion >= 8) {
+          LOG.info("Using MySQL jdbc-overrides version 8 and later. (v {})", dbVersion);
+          detectedCustomization = new MySQL8JdbcCustomization();
+        } else {
+          LOG.info("Using MySQL jdbc-overrides for version older than 8. (v {})", dbVersion);
+          detectedCustomization = new MySQLJdbcCustomization();
+        }
       }
-
-      // TODO: add mariadb
 
     } catch (SQLException e) {
       LOG.error("Failed to detect database via getDatabaseMetadata. Using default.", e);

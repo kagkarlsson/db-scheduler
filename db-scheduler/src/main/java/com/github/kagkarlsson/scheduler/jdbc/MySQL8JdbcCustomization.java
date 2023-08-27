@@ -23,8 +23,14 @@ public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
+  public String getQueryLimitPart(int limit) {
+    return Queries.ansiSqlLimitPart(limit);
+  }
+
+  @Override
   public boolean supportsGenericLockAndFetch() {
-    return true;
+    // FIXLATER: enable when mysql-syntax fixed
+    return false;
   }
 
   @Override
