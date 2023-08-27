@@ -24,7 +24,7 @@ public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String getQueryLimitPart(int limit) {
-    return Queries.ansiSqlLimitPart(limit);
+    return Queries.postgresSqlLimitPart(limit);
   }
 
   @Override
