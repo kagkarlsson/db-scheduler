@@ -9,7 +9,6 @@ import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -23,7 +22,7 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
   private static HikariDataSource pooledDatasource;
 
   public Oracle11gCompatibilityTest() {
-    super(false);
+    super(true);
   }
 
   @BeforeAll
