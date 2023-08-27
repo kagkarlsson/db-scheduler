@@ -24,7 +24,8 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public boolean supportsGenericLockAndFetch() {
-    return true;
+    // FIXLATER: fix syntax and enable
+    return false;
   }
 
   @Override

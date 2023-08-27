@@ -23,9 +23,8 @@ public class Mysql8CompatibilityTest extends CompatibilityTest {
 
   private static HikariDataSource pooledDatasource;
 
-  // FIXLATER: enable select-for-update tests when SKIP LOCKED is fixed for mysql
   public Mysql8CompatibilityTest() {
-    super(false);
+    super(false); // FIXLATER: fix syntax and enable
   }
 
   @BeforeAll

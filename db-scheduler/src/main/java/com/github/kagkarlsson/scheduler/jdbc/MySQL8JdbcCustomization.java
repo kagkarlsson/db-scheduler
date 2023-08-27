@@ -29,7 +29,7 @@ public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public boolean supportsGenericLockAndFetch() {
-    // FIXLATER: enable when mysql-syntax fixed
+    // FIXLATER: fix syntax and enable
     return false;
   }
 

@@ -29,7 +29,7 @@ public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public boolean supportsGenericLockAndFetch() {
-    // FIXLATER: enable for versions of MariaDB that supports it
+    // FIXLATER: fix syntax and enable it for versions of MariaDB that supports it
     return false;
   }
 
