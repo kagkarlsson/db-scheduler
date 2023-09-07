@@ -26,7 +26,7 @@
         <zonky-pg-embedded.version>2.0.4</zonky-pg-embedded.version>
         <postgresql.version>42.5.1</postgresql.version>
         <slf4j.version>1.7.36</slf4j.version>
-        <test.excludedTags>compatibility</test.excludedTags>
+        <test.excludedTags>compatibility,compatibility-cluster</test.excludedTags>
     </properties>
 
     <dependencyManagement>
@@ -351,9 +351,21 @@
 
     <profiles>
         <profile>
-            <id>compatibility</id>
+            <id>all-tests</id>
             <properties>
                 <test.excludedTags/>
+            </properties>
+        </profile>
+        <profile>
+            <id>compatibility</id>
+            <properties>
+                <test.excludedTags>compatibility-cluster</test.excludedTags>
+            </properties>
+        </profile>
+        <profile>
+            <id>compatibility-cluster</id>
+            <properties>
+                <test.excludedTags>compatibility</test.excludedTags>
             </properties>
         </profile>
     </profiles>
