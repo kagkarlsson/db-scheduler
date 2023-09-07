@@ -23,7 +23,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-@Tag("concurrencyload")
+@Tag("compatibility-cluster")
 public class MssqlClusterTest {
   public static final int NUMBER_OF_THREADS = 10;
   private static final Logger DEBUG_LOG = LoggerFactory.getLogger(MssqlClusterTest.class);

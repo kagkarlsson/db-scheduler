@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Tag("concurrencyload")
+@Tag("compatibility-cluster")
 public class PostgresClusterTest {
 
   private static final Logger DEBUG_LOG = LoggerFactory.getLogger(PostgresClusterTest.class);

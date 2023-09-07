@@ -232,7 +232,8 @@ Fetched executions are already locked/picked for this scheduler-instance thus sa
 (i.e. keep threads busy), set to for example `1.0, 4.0`. Currently hearbeats are not updated for picked executions
 in queue (applicable if `upperLimitFractionOfThreads > 1.0`). If they stay there for more than
 `4 * hearbeat-interval` (default `20m`), not starting execution, they will be detected as _dead_ and likely be
-unlocked again (determined by `DeadExecutionHandler`).  Currently supported by **postgres**.
+unlocked again (determined by `DeadExecutionHandler`).  Currently supported by **postgres**. **sql-server** also supports
+this, but testing has shown this is prone to deadlocks and thus not recommended until understood/resolved.
 
 
 #### Less commonly tuned
