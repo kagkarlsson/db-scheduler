@@ -14,7 +14,6 @@
 package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
-import com.github.kagkarlsson.examples.helpers.ExampleHelpers;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -45,9 +44,8 @@ public class CronMain extends Example {
         Scheduler.create(dataSource)
             .startTasks(cronTask)
             .pollingInterval(Duration.ofSeconds(1))
+            .registerShutdownHook()
             .build();
-
-    ExampleHelpers.registerShutdownHook(scheduler);
 
     scheduler.start();
   }

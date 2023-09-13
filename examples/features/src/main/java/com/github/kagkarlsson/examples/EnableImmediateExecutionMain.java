@@ -13,10 +13,7 @@
  */
 package com.github.kagkarlsson.examples;
 
-import static com.github.kagkarlsson.examples.helpers.ExampleHelpers.sleep;
-
 import com.github.kagkarlsson.examples.helpers.Example;
-import com.github.kagkarlsson.examples.helpers.ExampleHelpers;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -44,9 +41,8 @@ public class EnableImmediateExecutionMain extends Example {
         Scheduler.create(dataSource, onetimeTask)
             .pollingInterval(Duration.ofSeconds(20))
             .enableImmediateExecution()
+            .registerShutdownHook()
             .build();
-
-    ExampleHelpers.registerShutdownHook(scheduler);
 
     scheduler.start();
 
