@@ -83,7 +83,7 @@ List of organizations known to be running db-scheduler in production:
 | [Monitoria](https://monitoria.ca)         | Website monitoring service.                                  |
 | [Loadster](https://loadster.app)          | Load testing for web applications.                           |
 | [Statens vegvesen](https://www.vegvesen.no/)| The Norwegian Public Roads Administration                  |
-| [Lightyear](https://golightyear.com/)     |  A simple and approachable way to invest your money globally.|
+| [Lightyear](https://lightyear.com/)       |  A simple and approachable way to invest your money globally.|
 | [NAV](https://www.nav.no/)                |  The Norwegian Labour and Welfare Administration             |
 | [ModernLoop](https://modernloop.io/)      |  Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination.             |
 | [Diffia](https://www.diffia.com/)         |  Norwegian eHealth company                                   |
