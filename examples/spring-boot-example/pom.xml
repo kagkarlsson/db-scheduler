@@ -30,6 +30,17 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.github.bekk</groupId>
+            <artifactId>db-scheduler-ui-starter</artifactId>
+            <version>main-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>4.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.github.kagkarlsson</groupId>
             <artifactId>db-scheduler-spring-boot-starter</artifactId>
             <version>${project.version}</version>
