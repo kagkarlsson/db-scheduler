@@ -26,6 +26,10 @@ import org.slf4j.LoggerFactory;
 public class RecurringTaskMain extends Example {
   private static final Logger LOG = LoggerFactory.getLogger(RecurringTaskMain.class);
 
+  public static void main(String[] args) {
+    new RecurringTaskMain().runWithDatasource();
+  }
+
   @Override
   public void run(DataSource dataSource) {
 

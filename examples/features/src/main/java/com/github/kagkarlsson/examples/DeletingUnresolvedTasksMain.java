@@ -14,7 +14,6 @@
 package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
-import com.github.kagkarlsson.examples.helpers.ExampleHelpers;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
@@ -56,9 +55,8 @@ public class DeletingUnresolvedTasksMain extends Example {
             .pollingInterval(Duration.ofSeconds(1))
             .heartbeatInterval(Duration.ofSeconds(5))
             .deleteUnresolvedAfter(Duration.ofSeconds(20))
+            .registerShutdownHook()
             .build();
-
-    ExampleHelpers.registerShutdownHook(scheduler);
 
     scheduler.start();
 

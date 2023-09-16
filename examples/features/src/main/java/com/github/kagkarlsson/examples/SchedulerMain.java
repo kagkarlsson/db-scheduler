@@ -13,10 +13,7 @@
  */
 package com.github.kagkarlsson.examples;
 
-import static com.github.kagkarlsson.examples.helpers.ExampleHelpers.sleep;
-
 import com.github.kagkarlsson.examples.helpers.Example;
-import com.github.kagkarlsson.examples.helpers.ExampleHelpers;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -118,9 +115,8 @@ public class SchedulerMain extends Example {
     final Scheduler scheduler =
         Scheduler.create(dataSource, onetime1, onetime2)
             .startTasks(recurring1, recurring2, custom1)
+            .registerShutdownHook()
             .build();
-
-    ExampleHelpers.registerShutdownHook(scheduler);
 
     scheduler.start();
 

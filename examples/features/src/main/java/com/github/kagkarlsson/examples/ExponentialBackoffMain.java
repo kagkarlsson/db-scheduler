@@ -16,7 +16,6 @@ package com.github.kagkarlsson.examples;
 import static java.time.Duration.*;
 
 import com.github.kagkarlsson.examples.helpers.Example;
-import com.github.kagkarlsson.examples.helpers.ExampleHelpers;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -41,11 +40,12 @@ public class ExponentialBackoffMain extends Example {
                 });
 
     final Scheduler scheduler =
-        Scheduler.create(dataSource, failingTask).pollingInterval(ofSeconds(2)).build();
+        Scheduler.create(dataSource, failingTask)
+            .pollingInterval(ofSeconds(2))
+            .registerShutdownHook()
+            .build();
 
     scheduler.schedule(failingTask.instance("1"), Instant.now());
-
-    ExampleHelpers.registerShutdownHook(scheduler);
 
     scheduler.start();
   }
