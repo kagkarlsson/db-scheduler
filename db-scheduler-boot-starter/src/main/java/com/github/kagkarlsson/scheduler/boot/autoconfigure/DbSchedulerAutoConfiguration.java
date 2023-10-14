@@ -20,6 +20,8 @@ import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStopper;
+import com.github.kagkarlsson.scheduler.boot.config.shutdown.ContextClosedStopper;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
@@ -100,7 +102,7 @@ public class DbSchedulerAutoConfiguration {
   @ConditionalOnBean(DataSource.class)
   @ConditionalOnMissingBean
   @DependsOnDatabaseInitialization
-  @Bean(destroyMethod = "stop")
+  @Bean
   public Scheduler scheduler(DbSchedulerCustomizer customizer, StatsRegistry registry) {
     log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
 
@@ -190,6 +192,13 @@ public class DbSchedulerAutoConfiguration {
     }
 
     return new ImmediateStart(scheduler);
+  }
+
+  @ConditionalOnBean(Scheduler.class)
+  @ConditionalOnMissingBean
+  @Bean
+  public DbSchedulerStopper dbSchedulerStopper(Scheduler scheduler) {
+    return new ContextClosedStopper(scheduler);
   }
 
   private static DataSource configureDataSource(DataSource existingDataSource) {

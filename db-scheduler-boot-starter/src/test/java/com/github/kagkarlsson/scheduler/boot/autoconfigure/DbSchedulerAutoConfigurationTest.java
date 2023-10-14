@@ -11,6 +11,9 @@ import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStopper;
+import com.github.kagkarlsson.scheduler.boot.config.shutdown.AbstractSchedulerStopper;
+import com.github.kagkarlsson.scheduler.boot.config.shutdown.ContextClosedStopper;
 import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
@@ -40,6 +43,8 @@ import org.springframework.boot.test.context.assertj.AssertableApplicationContex
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.ContextClosedEvent;
+import org.springframework.context.event.EventListener;
 
 public class DbSchedulerAutoConfigurationTest {
   private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfigurationTest.class);
@@ -196,6 +201,29 @@ public class DbSchedulerAutoConfigurationTest {
   }
 
   @Test
+  public void it_should_shut_down_with_spring_context_by_default() {
+    ctxRunner.run(
+        (AssertableApplicationContext ctx) -> {
+          assertThat(ctx).hasSingleBean(Scheduler.class);
+
+          assertThat(ctx).hasSingleBean(ContextClosedStopper.class);
+        });
+  }
+
+  @Test
+  public void it_should_support_custom_stopping_strategies() {
+    ctxRunner
+        .withUserConfiguration(CustomStopperConfiguration.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+
+              assertThat(ctx).hasSingleBean(DbSchedulerStopper.class);
+              assertThat(ctx).doesNotHaveBean(ContextClosedStopper.class);
+            });
+  }
+
+  @Test
   public void it_should_provide_micrometer_registry_if_micrometer_is_present() {
     ctxRunner
         .withUserConfiguration(SingleTaskConfiguration.class)
@@ -285,6 +313,28 @@ public class DbSchedulerAutoConfigurationTest {
         } catch (InterruptedException e) {
           e.printStackTrace();
         }
+      }
+    }
+  }
+
+  @Configuration
+  static class CustomStopperConfiguration extends SingleTaskConfiguration {
+    @Bean
+    DbSchedulerStopper someCustomStarter(Scheduler scheduler) {
+      return new SomeCustomStopper(scheduler);
+    }
+
+    static class SomeCustomStopper extends AbstractSchedulerStopper {
+      SomeCustomStopper(Scheduler scheduler) {
+        super(scheduler);
+        log.info("Creating a custom stopper");
+      }
+
+      @EventListener(ContextClosedEvent.class)
+      public void letMeThinkAboutIt() throws Exception {
+        log.info("Thinking 5 seconds before stopping the scheduler");
+        Thread.sleep(5_000);
+        doStop();
       }
     }
   }

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
+import com.github.kagkarlsson.scheduler.boot.config.shutdown.ContextClosedStopper;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.time.Instant;
@@ -48,6 +49,11 @@ public class SmokeTest {
   @Test
   public void it_should_have_a_scheduler_bean() {
     assertThat(ctx).hasSingleBean(Scheduler.class);
+  }
+
+  @Test
+  public void it_should_have_a_stopper_bean() {
+    assertThat(ctx).hasSingleBean(ContextClosedStopper.class);
   }
 
   @Test
