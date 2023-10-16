@@ -39,6 +39,7 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public boolean supportsGenericLockAndFetch() {
+    // Currently supported, but not recommended because of deadlock issues
     return true;
   }
 
