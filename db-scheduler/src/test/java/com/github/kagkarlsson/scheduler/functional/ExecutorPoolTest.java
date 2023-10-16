@@ -35,6 +35,7 @@ public class ExecutorPoolTest {
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
 
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
+
   //    Enable if test gets flaky!
   //    @RegisterExtension
   //    public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
