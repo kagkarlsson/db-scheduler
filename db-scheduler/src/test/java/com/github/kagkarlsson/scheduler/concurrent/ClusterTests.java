@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -38,8 +39,7 @@ public class ClusterTests {
   static void testConcurrencyForPollingStrategy(
       DataSource dataSource,
       Consumer<SchedulerBuilder> schedulerCustomization,
-      StopSchedulerExtension stopScheduler)
-      throws InterruptedException {
+      StopSchedulerExtension stopScheduler) {
     final List<String> ids = IntStream.range(1, 10001).mapToObj(String::valueOf).collect(toList());
 
     final CountDownLatch completeAllIds = new CountDownLatch(ids.size());
@@ -63,7 +63,9 @@ public class ClusterTests {
           scheduler1.schedule(task.instance(id), Instant.now());
         });
 
-    final boolean waitSuccessful = completeAllIds.await(30, TimeUnit.SECONDS);
+    final boolean waitSuccessful =
+        asRuntimeException(() -> completeAllIds.await(30, TimeUnit.SECONDS));
+
     if (!waitSuccessful) {
       LOG.info(
           "Failed to execute all for 10s. ok={}, failed={}, errors={}",
@@ -80,6 +82,14 @@ public class ClusterTests {
     assertThat(stats.unexpectedErrors.get(), is(0));
     assertThat(scheduler1.getCurrentlyExecuting(), hasSize(0));
     assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
+  }
+
+  private static Boolean asRuntimeException(Callable<Boolean> callable) {
+    try {
+      return callable.call();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   static void testRecurring(StopSchedulerExtension stopScheduler, DataSource datasource) {
