@@ -64,16 +64,18 @@ public class MssqlClusterTest {
   public void test_concurrency_optimistic_locking() throws InterruptedException {
     // Observed failed heartbeats due to deadlock.
     // FIXLATER: add retry of update heartbeats
-    retryOnFailed(1, () -> {
-      DEBUG_LOG.info("Starting test_concurrency_optimistic_locking");
-      ClusterTests.testConcurrencyForPollingStrategy(
-          pooledDatasource,
-          (SchedulerBuilder b) -> {
-            b.pollUsingFetchAndLockOnExecute(0, NUMBER_OF_THREADS * 3);
-            b.jdbcCustomization(new MssqlJdbcCustomization());
-          },
-          stopScheduler);
-    });
+    retryOnFailed(
+        1,
+        () -> {
+          DEBUG_LOG.info("Starting test_concurrency_optimistic_locking");
+          ClusterTests.testConcurrencyForPollingStrategy(
+              pooledDatasource,
+              (SchedulerBuilder b) -> {
+                b.pollUsingFetchAndLockOnExecute(0, NUMBER_OF_THREADS * 3);
+                b.jdbcCustomization(new MssqlJdbcCustomization());
+              },
+              stopScheduler);
+        });
   }
 
   static void retryOnFailed(int retryTimes, Runnable r) {
