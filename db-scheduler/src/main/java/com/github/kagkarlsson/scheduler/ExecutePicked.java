@@ -39,6 +39,7 @@ class ExecutePicked implements Runnable {
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
   private final Clock clock;
+  private HeartbeatConfig heartbeatConfig;
   private final Execution pickedExecution;
 
   public ExecutePicked(
@@ -51,6 +52,7 @@ class ExecutePicked implements Runnable {
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
       Clock clock,
+      HeartbeatConfig heartbeatConfig,
       Execution pickedExecution) {
     this.executor = executor;
     this.taskRepository = taskRepository;
@@ -61,6 +63,7 @@ class ExecutePicked implements Runnable {
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
     this.clock = clock;
+    this.heartbeatConfig = heartbeatConfig;
     this.pickedExecution = pickedExecution;
   }
 
@@ -68,7 +71,8 @@ class ExecutePicked implements Runnable {
   public void run() {
     // FIXLATER: need to cleanup all the references back to scheduler fields
     final UUID executionId =
-        executor.addCurrentlyProcessing(new CurrentlyExecuting(pickedExecution, clock));
+        executor.addCurrentlyProcessing(
+            new CurrentlyExecuting(pickedExecution, clock, heartbeatConfig));
     try {
       statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
       executePickedExecution(pickedExecution);

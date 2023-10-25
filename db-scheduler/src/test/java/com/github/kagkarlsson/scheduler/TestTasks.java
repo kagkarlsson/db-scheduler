@@ -158,9 +158,12 @@ public class TestTasks {
     public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
       try {
         waitForExecute.countDown();
+        LoggerFactory.getLogger(PausingHandler.class).trace("Awaiting waitInExecuteUntil.");
         waitInExecuteUntil.await();
+        LoggerFactory.getLogger(PausingHandler.class)
+            .trace("Received countdown for waitInExecuteUntil.");
       } catch (InterruptedException e) {
-        LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
+        LoggerFactory.getLogger(PausingHandler.class).info("Interrupted.");
       }
     }
   }

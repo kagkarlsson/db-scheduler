@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler.testhelper;
 
 import com.github.kagkarlsson.scheduler.Clock;
+import java.time.Duration;
 import java.time.Instant;
 
 public class SettableClock implements Clock {
@@ -27,5 +28,9 @@ public class SettableClock implements Clock {
 
   public void set(Instant newNow) {
     this.now = newNow;
+  }
+
+  public void tick(Duration toAdd) {
+    now = now.plus(toAdd);
   }
 }

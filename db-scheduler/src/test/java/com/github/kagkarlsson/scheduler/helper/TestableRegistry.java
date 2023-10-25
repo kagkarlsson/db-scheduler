@@ -173,6 +173,10 @@ public class TestableRegistry implements StatsRegistry {
       return new ExecutionCompletedCondition(numberCompleted);
     }
 
+    public static Condition ranUpdateHeartbeats(int count) {
+      return new RanUpdateHeartbeatsCondition(count);
+    }
+
     public static Condition ranExecuteDue(int count) {
       return new RanExecuteDueCondition(count);
     }
