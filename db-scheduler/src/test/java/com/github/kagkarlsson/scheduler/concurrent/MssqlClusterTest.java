@@ -3,6 +3,7 @@ package com.github.kagkarlsson.scheduler.concurrent;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
+import com.github.kagkarlsson.scheduler.Utils;
 import com.github.kagkarlsson.scheduler.jdbc.MssqlJdbcCustomization;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -64,7 +65,7 @@ public class MssqlClusterTest {
   public void test_concurrency_optimistic_locking() throws InterruptedException {
     // Observed failed heartbeats due to deadlock.
     // FIXLATER: add retry of update heartbeats
-    retryOnFailed(
+    Utils.retryOnFailed(
         1,
         () -> {
           DEBUG_LOG.info("Starting test_concurrency_optimistic_locking");
@@ -76,19 +77,6 @@ public class MssqlClusterTest {
               },
               stopScheduler);
         });
-  }
-
-  static void retryOnFailed(int retryTimes, Runnable r) {
-    try {
-      r.run();
-    } catch (RuntimeException e) {
-      if (retryTimes == 0) {
-        throw e;
-      } else {
-        DEBUG_LOG.info("Retrying test after failure.");
-        retryOnFailed(retryTimes - 1, r);
-      }
-    }
   }
 
   @Test // select-for-update does not really work for sql server, there are too many deadlocks..
