@@ -17,7 +17,7 @@ import static java.util.Optional.ofNullable;
 
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
-import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
@@ -223,7 +223,7 @@ public interface SchedulerClient {
           new JdbcTaskRepository(
               dataSource,
               false,
-              ofNullable(jdbcCustomization).orElse(new DefaultJdbcCustomization()),
+              ofNullable(jdbcCustomization).orElse(new AutodetectJdbcCustomization(dataSource)),
               tableName,
               taskResolver,
               new SchedulerClientName(),

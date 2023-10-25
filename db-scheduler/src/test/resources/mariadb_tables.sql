@@ -1,3 +1,4 @@
+-- Best-effort schema definition based on MySQL schema. Please suggest improvements.
 create table test.scheduled_tasks (
   task_name varchar(100) not null,
   task_instance varchar(100) not null,

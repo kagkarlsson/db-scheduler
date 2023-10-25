@@ -449,6 +449,21 @@ public class JdbcTaskRepositoryTest {
     assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
   }
 
+  @Test
+  public void lockAndFetchGeneric_happy() {
+    Instant now = Instant.now();
+    taskRepository.createIfNotExists(
+        new SchedulableTaskInstance<>(oneTimeTask.instance("future1"), now.plusSeconds(10)));
+    taskRepository.createIfNotExists(
+        new SchedulableTaskInstance<>(oneTimeTask.instance("id1"), now));
+    List<Execution> picked = taskRepository.lockAndFetchGeneric(now, POLLING_LIMIT);
+    assertThat(picked, hasSize(1));
+
+    // should not be able to pick the same execution twice
+    assertThat(taskRepository.lockAndFetchGeneric(now, POLLING_LIMIT), hasSize(0));
+    assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
+  }
+
   private void createDeadExecution(TaskInstance<Void> taskInstance, Instant timeDied) {
     taskRepository.createIfNotExists(new SchedulableTaskInstance<>(taskInstance, timeDied));
     final Execution due = getSingleExecution();

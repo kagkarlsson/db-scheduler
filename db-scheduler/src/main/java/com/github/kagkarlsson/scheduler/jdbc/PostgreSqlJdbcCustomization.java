@@ -14,12 +14,22 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
+import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
 import java.time.Instant;
 import java.util.List;
 
 public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
+  private final boolean useGenericLockAndFetch;
+
+  public PostgreSqlJdbcCustomization() {
+    this(false);
+  }
+
+  public PostgreSqlJdbcCustomization(boolean useGenericLockAndFetch) {
+    this.useGenericLockAndFetch = useGenericLockAndFetch;
+  }
 
   @Override
   public String getName() {
@@ -27,22 +37,34 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
-  public boolean supportsExplicitQueryLimitPart() {
-    return true;
-  }
-
-  @Override
   public String getQueryLimitPart(int limit) {
-    return " LIMIT " + limit;
+    return Queries.postgresSqlLimitPart(limit);
   }
 
   @Override
-  public boolean supportsLockAndFetch() {
-    return true;
+  public boolean supportsSingleStatementLockAndFetch() {
+    return !useGenericLockAndFetch;
   }
 
   @Override
-  public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+  public boolean supportsGenericLockAndFetch() {
+    return useGenericLockAndFetch;
+  }
+
+  @Override
+  public String createGenericSelectForUpdateQuery(
+      String tableName, int limit, String requiredAndCondition) {
+    return selectForUpdate(
+        tableName,
+        getQueryLimitPart(limit),
+        requiredAndCondition,
+        " FOR UPDATE SKIP LOCKED ",
+        null);
+  }
+
+  @Override
+  public List<Execution> lockAndFetchSingleStatement(
+      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
     final JdbcTaskRepository.UnresolvedFilter unresolvedFilter =
         new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
 
@@ -50,13 +72,15 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
         " UPDATE "
             + ctx.tableName
             + " st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 "
-            + " WHERE (st1.task_name, st1.task_instance) IN ("
-            + "   SELECT st2.task_name, st2.task_instance FROM "
+            + " WHERE (st1.task_name, st1.task_instance) IN "
+            + "(SELECT st2.task_name, st2.task_instance FROM "
             + ctx.tableName
             + " st2 "
-            + "   WHERE picked = ? and execution_time <= ? "
+            + " WHERE picked = ? and execution_time <= ? "
             + unresolvedFilter.andCondition()
-            + " order by execution_time asc FOR UPDATE SKIP LOCKED LIMIT ?)"
+            + " ORDER BY execution_time ASC FOR UPDATE SKIP LOCKED "
+            + getQueryLimitPart(limit)
+            + ")"
             + " RETURNING st1.*";
 
     return ctx.jdbcRunner.query(
@@ -71,7 +95,6 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
           ps.setBoolean(index++, false); // picked (old)
           setInstant(ps, index++, now); // execution_time
           index = unresolvedFilter.setParameters(ps, index);
-          ps.setInt(index++, limit); // limit
         },
         ctx.resultSetMapper.get());
   }

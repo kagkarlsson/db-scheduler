@@ -18,18 +18,21 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
+import com.github.kagkarlsson.jdbc.*;
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.*;
+import com.github.kagkarlsson.scheduler.Clock;
+import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
+import com.github.kagkarlsson.scheduler.SchedulerName;
+import com.github.kagkarlsson.scheduler.TaskRepository;
+import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
-import com.github.kagkarlsson.scheduler.task.Task;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.*;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -40,6 +43,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -269,18 +274,13 @@ public class JdbcTaskRepository implements TaskRepository {
 
   @Override
   public List<Execution> getDue(Instant now, int limit) {
+    LOG.trace("Using generic fetch-then-lock query");
     final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
-    final String explicitLimit =
-        jdbcCustomization.supportsExplicitQueryLimitPart()
-            ? jdbcCustomization.getQueryLimitPart(limit)
-            : "";
+    String selectDueQuery =
+        jdbcCustomization.createSelectDueQuery(tableName, limit, unresolvedFilter.andCondition());
+
     return jdbcRunner.query(
-        "select * from "
-            + tableName
-            + " where picked = ? and execution_time <= ? "
-            + unresolvedFilter.andCondition()
-            + " order by execution_time asc"
-            + explicitLimit,
+        selectDueQuery,
         (PreparedStatement p) -> {
           int index = 1;
           p.setBoolean(index++, false);
@@ -294,8 +294,109 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public List<Execution> lockAndFetchGeneric(Instant now, int limit) {
+    return jdbcRunner.inTransaction(
+        txRunner -> {
+          final UnresolvedFilter unresolvedFilter =
+              new UnresolvedFilter(taskResolver.getUnresolved());
+          String selectForUpdateQuery =
+              jdbcCustomization.createGenericSelectForUpdateQuery(
+                  tableName, limit, unresolvedFilter.andCondition());
+          List<Execution> candidates =
+              txRunner.query(
+                  selectForUpdateQuery,
+                  (PreparedStatement p) -> {
+                    int index = 1;
+                    p.setBoolean(index++, false);
+                    jdbcCustomization.setInstant(p, index++, now);
+                    unresolvedFilter.setParameters(p, index);
+                    if (!jdbcCustomization.supportsExplicitQueryLimitPart()) {
+                      p.setMaxRows(limit);
+                    }
+                  },
+                  new ExecutionResultSetMapper(false, true));
+
+          if (candidates.size() == 0) {
+            return new ArrayList<>();
+          }
+
+          String pickedBy = truncate(schedulerSchedulerName.getName(), 50);
+          Instant lastHeartbeat = clock.now();
+
+          // no need to use 'version' here since we have locked the row
+          final int[] updated =
+              txRunner.executeBatch(
+                  "update "
+                      + tableName
+                      + " set picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 "
+                      + " where task_name = ? "
+                      + " and task_instance = ? ",
+                  candidates,
+                  (value, ps) -> {
+                    ps.setBoolean(1, true);
+                    ps.setString(2, pickedBy);
+                    jdbcCustomization.setInstant(ps, 3, lastHeartbeat);
+                    ps.setString(4, value.taskInstance.getTaskName());
+                    ps.setString(5, value.taskInstance.getId());
+                  });
+          int totalUpdated = IntStream.of(updated).sum();
+          // FIXLATER: should we update picked executions with the updates to these fields?
+
+          if (totalUpdated != candidates.size()) {
+            LOG.error(
+                "Did not update same amount of executions that were locked in the transaction. "
+                    + "This might mean some assumption is wrong here, or that transaction is not working. "
+                    + "Needs to be investigated. Updated: "
+                    + totalUpdated
+                    + ", expected: "
+                    + candidates.size());
+
+            List<Execution> locked = new ArrayList<>();
+            List<Execution> noLock = new ArrayList<>();
+            for (int i = 0; i < candidates.size(); i++) {
+              if (updated[i] > 1) {
+                LOG.error("Should never happen, indicates a bug.");
+              }
+              if (updated[i] > 0) {
+                locked.add(candidates.get(i));
+              } else {
+                noLock.add(candidates.get(i));
+              }
+            }
+            String instancesNotLocked =
+                noLock.stream().map(e -> e.taskInstance.toString()).collect(joining(","));
+            LOG.warn(
+                "Returning picked executions for processing. Did not manage to pick executions: "
+                    + instancesNotLocked);
+
+            return updateToPicked(locked, pickedBy, lastHeartbeat);
+          } else {
+            return updateToPicked(candidates, pickedBy, lastHeartbeat);
+          }
+        });
+  }
+
+  private List<Execution> updateToPicked(
+      List<Execution> executions, String pickedBy, Instant lastHeartbeat) {
+    return executions.stream()
+        .map(old -> old.updateToPicked(pickedBy, lastHeartbeat))
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public List<Execution> lockAndGetDue(Instant now, int limit) {
-    return jdbcCustomization.lockAndFetch(getTaskRespositoryContext(), now, limit);
+    if (jdbcCustomization.supportsSingleStatementLockAndFetch()) {
+      LOG.trace("Using single-statement lock-and-fetch");
+      return jdbcCustomization.lockAndFetchSingleStatement(getTaskRespositoryContext(), now, limit);
+    } else if (jdbcCustomization.supportsGenericLockAndFetch()) {
+      LOG.trace("Using generic transaction-based lock-and-fetch");
+      return lockAndFetchGeneric(now, limit);
+    } else {
+      throw new UnsupportedOperationException(
+          "The JdbcCustomization in use for the database "
+              + "indicates that it does not support SELECT FOR UPDATE .. SKIP LOCKED. If it indeed does, "
+              + "please indicate so in the JdbcCustomization.");
+    }
   }
 
   @Override
@@ -539,8 +640,9 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public void checkSupportsLockAndFetch() {
-    if (!jdbcCustomization.supportsLockAndFetch()) {
+  public void verifySupportsLockAndFetch() {
+    if (!(jdbcCustomization.supportsSingleStatementLockAndFetch()
+        || jdbcCustomization.supportsGenericLockAndFetch())) {
       throw new IllegalArgumentException(
           "Database using jdbc-customization '"
               + jdbcCustomization.getName()

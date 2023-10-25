@@ -22,9 +22,11 @@
         <java8-matchers.version>1.6</java8-matchers.version>
         <equals-verifier.version>3.14.2</equals-verifier.version>
         <bytebuddy.version>1.14.5</bytebuddy.version>
-        <micro-jdbc.version>0.3</micro-jdbc.version>
+        <micro-jdbc.version>0.6.0</micro-jdbc.version>
         <zonky-pg-embedded.version>2.0.4</zonky-pg-embedded.version>
-        <test.excludedTags>compatibility</test.excludedTags>
+        <postgresql.version>42.5.1</postgresql.version>
+        <slf4j.version>1.7.36</slf4j.version>
+        <test.excludedTags>compatibility,compatibility-cluster</test.excludedTags>
     </properties>
 
     <dependencyManagement>
@@ -77,6 +79,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
         <!-- Shaded -->
         <dependency>
@@ -221,7 +224,18 @@
             <version>${hikaricp.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>net.ttddyy</groupId>
+            <artifactId>datasource-proxy</artifactId>
+            <version>1.9</version>
+            <scope>test</scope>
+        </dependency>
 
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>postgresql</artifactId>
@@ -232,6 +246,11 @@
             <artifactId>mysql</artifactId>
             <scope>test</scope>
         </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>mariadb</artifactId>
+        <scope>test</scope>
+      </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>mssqlserver</artifactId>
@@ -265,8 +284,15 @@
             <version>21.5.0.0</version>
             <scope>test</scope>
         </dependency>
+      <dependency>
+        <groupId>org.mariadb.jdbc</groupId>
+        <artifactId>mariadb-java-client</artifactId>
+        <version>3.1.4</version>
+        <scope>test</scope>
+      </dependency>
 
-        <dependency>
+
+      <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <version>4.8.0</version>
@@ -325,9 +351,21 @@
 
     <profiles>
         <profile>
-            <id>compatibility</id>
+            <id>all-tests</id>
             <properties>
                 <test.excludedTags/>
+            </properties>
+        </profile>
+        <profile>
+            <id>compatibility</id>
+            <properties>
+                <test.excludedTags>compatibility-cluster</test.excludedTags>
+            </properties>
+        </profile>
+        <profile>
+            <id>compatibility-cluster</id>
+            <properties>
+                <test.excludedTags>compatibility</test.excludedTags>
             </properties>
         </profile>
     </profiles>

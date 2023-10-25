@@ -46,23 +46,47 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public boolean supportsExplicitQueryLimitPart() {
-    return false;
+    return true;
   }
 
   @Override
   public String getQueryLimitPart(int limit) {
-    return "";
+    return Queries.ansiSqlLimitPart(limit);
   }
 
   @Override
-  public boolean supportsLockAndFetch() {
+  public boolean supportsSingleStatementLockAndFetch() {
     return false;
   }
 
   @Override
-  public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+  public List<Execution> lockAndFetchSingleStatement(
+      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
     throw new UnsupportedOperationException(
         "lockAndFetch not supported for " + this.getClass().getName());
+  }
+
+  @Override
+  public boolean supportsGenericLockAndFetch() {
+    return false;
+  }
+
+  @Override
+  public String createGenericSelectForUpdateQuery(
+      String tableName, int limit, String requiredAndCondition) {
+    throw new UnsupportedOperationException(
+        "method must be implemented when supporting generic lock-and-fetch");
+  }
+
+  @Override
+  public String createSelectDueQuery(String tableName, int limit, String andCondition) {
+    final String explicitLimit = supportsExplicitQueryLimitPart() ? getQueryLimitPart(limit) : "";
+    return "select * from "
+        + tableName
+        + " where picked = ? and execution_time <= ? "
+        + andCondition
+        + " order by execution_time asc "
+        + explicitLimit;
   }
 
   @Override

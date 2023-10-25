@@ -29,6 +29,9 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   private static final Logger LOG = LoggerFactory.getLogger(AutodetectJdbcCustomization.class);
   public static final String MICROSOFT_SQL_SERVER = "Microsoft SQL Server";
   public static final String POSTGRESQL = "PostgreSQL";
+  public static final String ORACLE = "Oracle";
+  public static final String MYSQL = "MySQL";
+  public static final String MARIADB = "MariaDB";
   private final JdbcCustomization jdbcCustomization;
 
   public AutodetectJdbcCustomization(DataSource dataSource) {
@@ -45,6 +48,22 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
       } else if (databaseProductName.equals(POSTGRESQL)) {
         LOG.info("Using PostgreSQL jdbc-overrides.");
         detectedCustomization = new PostgreSqlJdbcCustomization();
+      } else if (databaseProductName.contains(ORACLE)) {
+        LOG.info("Using Oracle jdbc-overrides.");
+        detectedCustomization = new OracleJdbcCustomization();
+      } else if (databaseProductName.contains(MARIADB)) {
+        LOG.info("Using MariaDB jdbc-overrides.");
+        detectedCustomization = new MariaDBJdbcCustomization();
+      } else if (databaseProductName.contains(MYSQL)) {
+        int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
+        String dbVersion = c.getMetaData().getDatabaseProductVersion();
+        if (databaseMajorVersion >= 8) {
+          LOG.info("Using MySQL jdbc-overrides version 8 and later. (v {})", dbVersion);
+          detectedCustomization = new MySQL8JdbcCustomization();
+        } else {
+          LOG.info("Using MySQL jdbc-overrides for version older than 8. (v {})", dbVersion);
+          detectedCustomization = new MySQLJdbcCustomization();
+        }
       }
 
     } catch (SQLException e) {
@@ -85,13 +104,31 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public boolean supportsLockAndFetch() {
-    return jdbcCustomization.supportsLockAndFetch();
+  public boolean supportsSingleStatementLockAndFetch() {
+    return jdbcCustomization.supportsSingleStatementLockAndFetch();
   }
 
   @Override
-  public List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit) {
-    return jdbcCustomization.lockAndFetch(ctx, now, limit);
+  public List<Execution> lockAndFetchSingleStatement(
+      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+    return jdbcCustomization.lockAndFetchSingleStatement(ctx, now, limit);
+  }
+
+  @Override
+  public boolean supportsGenericLockAndFetch() {
+    return jdbcCustomization.supportsGenericLockAndFetch();
+  }
+
+  @Override
+  public String createGenericSelectForUpdateQuery(
+      String tableName, int limit, String requiredAndCondition) {
+    return jdbcCustomization.createGenericSelectForUpdateQuery(
+        tableName, limit, requiredAndCondition);
+  }
+
+  @Override
+  public String createSelectDueQuery(String tableName, int limit, String andCondition) {
+    return jdbcCustomization.createSelectDueQuery(tableName, limit, andCondition);
   }
 
   @Override

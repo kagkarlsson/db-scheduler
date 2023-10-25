@@ -10,11 +10,13 @@ import io.zonky.test.db.postgres.embedded.EmbeddedPostgres;
 import java.io.IOException;
 import java.util.function.Consumer;
 import javax.sql.DataSource;
+import net.ttddyy.dsproxy.support.ProxyDataSourceBuilder;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 public class EmbeddedPostgresqlExtension implements AfterEachCallback {
 
+  private static final boolean ENABLE_DATASOURCE_LOGGING = false;
   private static EmbeddedPostgres embeddedPostgresql;
   private static DataSource dataSource;
   private final Consumer<DataSource> initializeSchema;
@@ -36,6 +38,12 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
 
           HikariConfig config = new HikariConfig();
           nonPooledDatasource = embeddedPostgresql.getDatabase("test", "test");
+          if (ENABLE_DATASOURCE_LOGGING) {
+            nonPooledDatasource =
+                ProxyDataSourceBuilder.create(nonPooledDatasource) // pass original datasource
+                    .logQueryBySlf4j()
+                    .build();
+          }
           config.setDataSource(nonPooledDatasource);
 
           dataSource = new HikariDataSource(config);

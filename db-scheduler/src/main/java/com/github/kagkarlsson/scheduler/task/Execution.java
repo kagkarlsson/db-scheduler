@@ -61,6 +61,20 @@ public final class Execution {
     return picked;
   }
 
+  public Execution updateToPicked(String newPickedBy, Instant newLastHeartbeat) {
+    return new Execution(
+        executionTime,
+        taskInstance,
+        true,
+        newPickedBy,
+        lastSuccess,
+        lastFailure,
+        consecutiveFailures,
+        newLastHeartbeat,
+        version + 1 // since this was incremented in the database when picked
+        );
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

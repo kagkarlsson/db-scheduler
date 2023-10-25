@@ -13,6 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
+
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -33,5 +35,34 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
         index,
         value != null ? Timestamp.from(value) : null,
         Calendar.getInstance(TimeZone.getTimeZone("UTC")));
+  }
+
+  @Override
+  public boolean supportsGenericLockAndFetch() {
+    // Currently supported, but not recommended because of deadlock issues
+    return true;
+  }
+
+  @Override
+  public String createSelectDueQuery(String tableName, int limit, String andCondition) {
+    return "SELECT "
+        + " * FROM "
+        + tableName
+        // try reading past locked rows to see if that helps on deadlock-warnings
+        + " WITH (READPAST) WHERE picked = ? AND execution_time <= ? "
+        + andCondition
+        + " ORDER BY execution_time ASC "
+        + getQueryLimitPart(limit);
+  }
+
+  @Override
+  public String createGenericSelectForUpdateQuery(
+      String tableName, int limit, String requiredAndCondition) {
+    return selectForUpdate(
+        tableName,
+        Queries.ansiSqlLimitPart(limit),
+        requiredAndCondition,
+        null,
+        " WITH (READPAST,ROWLOCK) ");
   }
 }

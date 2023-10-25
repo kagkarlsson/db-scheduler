@@ -34,6 +34,8 @@ public interface TaskRepository {
   void getScheduledExecutions(
       ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer);
 
+  List<Execution> lockAndFetchGeneric(Instant now, int limit);
+
   List<Execution> lockAndGetDue(Instant now, int limit);
 
   void remove(Execution execution);
@@ -65,5 +67,5 @@ public interface TaskRepository {
 
   int removeExecutions(String taskName);
 
-  void checkSupportsLockAndFetch();
+  void verifySupportsLockAndFetch();
 }

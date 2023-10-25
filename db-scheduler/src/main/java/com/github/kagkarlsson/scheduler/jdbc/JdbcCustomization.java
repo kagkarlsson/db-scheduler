@@ -36,7 +36,15 @@ public interface JdbcCustomization {
 
   String getQueryLimitPart(int limit);
 
-  boolean supportsLockAndFetch();
+  boolean supportsSingleStatementLockAndFetch();
 
-  List<Execution> lockAndFetch(JdbcTaskRepositoryContext ctx, Instant now, int limit);
+  List<Execution> lockAndFetchSingleStatement(
+      JdbcTaskRepositoryContext ctx, Instant now, int limit);
+
+  boolean supportsGenericLockAndFetch();
+
+  String createGenericSelectForUpdateQuery(
+      String tableName, int limit, String requiredAndCondition);
+
+  String createSelectDueQuery(String tableName, int limit, String andCondition);
 }

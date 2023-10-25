@@ -4,6 +4,7 @@ import static com.github.kagkarlsson.scheduler.SchedulerBuilder.UPPER_LIMIT_FRAC
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -13,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import co.unruly.matchers.OptionalMatchers;
+import com.github.kagkarlsson.scheduler.*;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -24,6 +26,8 @@ import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
 import com.github.kagkarlsson.scheduler.helper.ExecutionCompletedCondition;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
+import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
@@ -69,6 +73,10 @@ public abstract class CompatibilityTest {
   }
 
   public abstract DataSource getDataSource();
+
+  public Optional<JdbcCustomization> getJdbcCustomization() {
+    return Optional.empty();
+  }
 
   public abstract boolean commitWhenAutocommitDisabled();
 
@@ -118,15 +126,18 @@ public abstract class CompatibilityTest {
       return;
     }
 
-    Scheduler scheduler =
+    SchedulerBuilder builder =
         Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
             .pollUsingLockAndFetch(0.5, 1.0)
             .heartbeatInterval(Duration.ofMillis(500))
             .schedulerName(new SchedulerName.Fixed("test"))
             .statsRegistry(testableRegistry)
-            .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
-            .build();
+            .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled());
+
+    getJdbcCustomization().ifPresent(builder::jdbcCustomization);
+    Scheduler scheduler = builder.build();
+
     stopScheduler.register(scheduler);
 
     testCompatibilityForSchedulerConfiguration(scheduler);
@@ -181,10 +192,13 @@ public abstract class CompatibilityTest {
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
+    JdbcCustomization jdbcCustomization =
+        getJdbcCustomization().orElse(new AutodetectJdbcCustomization(dataSource));
     final JdbcTaskRepository jdbcTaskRepository =
         new JdbcTaskRepository(
             dataSource,
             commitWhenAutocommitDisabled(),
+            jdbcCustomization,
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),

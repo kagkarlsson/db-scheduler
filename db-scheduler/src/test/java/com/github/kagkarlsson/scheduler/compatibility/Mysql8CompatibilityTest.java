@@ -7,22 +7,24 @@ import com.zaxxer.hikari.util.DriverDataSource;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 @Tag("compatibility")
 @Testcontainers
-@Disabled
-public class MysqlCompatibilityTest extends CompatibilityTest {
+public class Mysql8CompatibilityTest extends CompatibilityTest {
 
-  @Container private static final MySQLContainer MY_SQL = new MySQLContainer();
+  @Container
+  private static final MySQLContainer MY_SQL =
+      new MySQLContainer(DockerImageName.parse("mysql").withTag("8"));
+
   private static HikariDataSource pooledDatasource;
 
-  public MysqlCompatibilityTest() {
-    super(false);
+  public Mysql8CompatibilityTest() {
+    super(false); // FIXLATER: fix syntax and enable
   }
 
   @BeforeAll

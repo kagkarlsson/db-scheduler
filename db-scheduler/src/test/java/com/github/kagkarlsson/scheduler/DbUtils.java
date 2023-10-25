@@ -14,6 +14,10 @@ import javax.sql.DataSource;
 
 public class DbUtils {
 
+  public static void dropTables(DataSource dataSource) {
+    new JdbcRunner(dataSource, true).execute("drop table if exists " + DEFAULT_TABLE_NAME, NOOP);
+  }
+
   public static void clearTables(DataSource dataSource) {
     new JdbcRunner(dataSource, true).execute("delete from " + DEFAULT_TABLE_NAME, NOOP);
   }
