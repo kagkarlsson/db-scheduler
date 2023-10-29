@@ -335,12 +335,12 @@ If you need to migrate from Java serialization to a `GsonSerializer`, configure 
 ```
 
 
-## Third-party task repositories
+## Third-party extensions
 
-Out of the box db-scheduler supports jdbc-compliant databases. There have however been efforts to implement support for more databases via custom task repositories. It is currently a bit cumbersome plugging in a custom repository, but there are plans for making it easier.
-This is a list of known third-party task repositories:
-
-* [db-scheduler-mongo](https://github.com/piemjean/db-scheduler-mongo)
+* [bekk/db-scheduler-ui](https://github.com/bekk/db-scheduler-ui) is admin-ui for the scheduler. It shows scheduled executions and supplies simple admin-operations such as
+  "rerun failed execution now" and "delete execution".
+* [rocketbase-io/db-scheduler-log](https://github.com/rocketbase-io/db-scheduler-log) is an extention providing a history of executions, including failures and exceptions.
+* [piemjean/db-scheduler-mongo](https://github.com/piemjean/db-scheduler-mongo) is an extension for running db-scheduler with a Mongodb database.
 
 ## Spring Boot usage
 
