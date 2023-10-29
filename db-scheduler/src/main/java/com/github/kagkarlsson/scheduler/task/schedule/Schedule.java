@@ -18,6 +18,8 @@ import java.time.Instant;
 
 public interface Schedule {
 
+  Instant NEVER = Instant.parse("2500-01-01T12:00:00.00Z");
+
   Instant getNextExecutionTime(ExecutionComplete executionComplete);
 
   /** Used to get the first execution-time for a schedule. Simulates an ExecutionComplete event. */

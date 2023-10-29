@@ -121,6 +121,13 @@ public class CronTest {
     assertFalse(Schedules.cron("0 * * * * ?").isDisabled());
   }
 
+  @Test
+  public void should_not_fail_on_cronschedule_without_next_execution_time() {
+    CronSchedule cron =
+        new CronSchedule("0 0 0 29 2 MON#1", ZoneId.systemDefault(), CronStyle.SPRING53);
+    Assertions.assertEquals(Schedule.NEVER, cron.getNextExecutionTime(complete(Instant.now())));
+  }
+
   private void assertNextExecutionTime(
       ZonedDateTime timeDone, String cronPattern, ZonedDateTime expectedTime) {
     assertNextExecutionTime(timeDone, expectedTime, new CronSchedule(cronPattern));
