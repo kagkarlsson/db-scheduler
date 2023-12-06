@@ -63,10 +63,10 @@ class HeartbeatStateTest {
   @Test
   void not_stale_until_tolerance_passed() {
     HeartbeatState state =
-      new HeartbeatState(
-        clock,
-        clock.now(),
-        new HeartbeatConfig(Duration.ofSeconds(60), 4, Duration.ofMinutes(4)));
+        new HeartbeatState(
+            clock,
+            clock.now(),
+            new HeartbeatConfig(Duration.ofSeconds(60), 4, Duration.ofMinutes(4)));
 
     assertOk(state);
 
