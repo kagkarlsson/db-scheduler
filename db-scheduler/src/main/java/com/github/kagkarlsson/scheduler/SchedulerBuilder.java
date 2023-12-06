@@ -42,6 +42,7 @@ public class SchedulerBuilder {
 
   public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMinutes(5);
+  public static final int DEFAULT_MISSED_HEARTBEATS_LIMIT = 6;
   public static final Duration DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION = Duration.ofDays(14);
   public static final Duration SHUTDOWN_MAX_WAIT = Duration.ofMinutes(30);
   public static final PollingStrategyConfig DEFAULT_POLLING_STRATEGY =
@@ -74,6 +75,7 @@ public class SchedulerBuilder {
   protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
   protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
   private boolean registerShutdownHook = false;
+  private int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
 
   public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
     this.dataSource = dataSource;
@@ -98,6 +100,14 @@ public class SchedulerBuilder {
 
   public SchedulerBuilder heartbeatInterval(Duration duration) {
     this.heartbeatInterval = duration;
+    return this;
+  }
+
+  public SchedulerBuilder missedHeartbeatLimit(int numberOfMissedHeartbeatsBeforeDead) {
+    if (numberOfMissedHeartbeatsBeforeDead <= 4) {
+      throw new IllegalArgumentException("Heartbeat-limit must be at least 4");
+    }
+    this.numberOfMissedHeartbeatsBeforeDead = numberOfMissedHeartbeatsBeforeDead;
     return this;
   }
 
@@ -271,6 +281,7 @@ public class SchedulerBuilder {
             schedulerName,
             waiter,
             heartbeatInterval,
+            numberOfMissedHeartbeatsBeforeDead,
             enableImmediateExecution,
             statsRegistry,
             pollingStrategyConfig,

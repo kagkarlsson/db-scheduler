@@ -34,8 +34,11 @@ public class HeartbeatState {
 
   public boolean hasStaleHeartbeat() {
     Duration sinceLastSuccess = Duration.between(heartbeatLastSuccess, clock.now());
+
+    long heartbeatMillis = heartbeatConfig.heartbeatInterval.toMillis();
+    long millisUntilConsideredStale = heartbeatMillis + Math.min(10_000, (int)(heartbeatMillis * 0.25));
     return heartbeatFailuresSinceLastSuccess > 0
-        || sinceLastSuccess.toMillis() > heartbeatConfig.heartbeatInterval.toMillis();
+        || sinceLastSuccess.toMillis() > millisUntilConsideredStale;
   }
 
   public double getFractionDead() {

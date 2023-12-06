@@ -46,7 +46,6 @@ public class Scheduler implements SchedulerClient {
   public static final double TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO = 0.5;
   public static final String THREAD_PREFIX = "db-scheduler";
   private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
-  public static final int MISSED_HEARTBEATS_LIMIT = 4;
   private final SchedulerClient delegate;
   final Clock clock;
   final TaskRepository schedulerTaskRepository;
@@ -55,6 +54,7 @@ public class Scheduler implements SchedulerClient {
   protected final Executor executor;
   private final ScheduledExecutorService housekeeperExecutor;
   private final HeartbeatConfig heartbeatConfig;
+  private final int numberOfMissedHeartbeatsBeforeDead;
   int threadpoolSize;
   private final Waiter executeDueWaiter;
   private final Duration deleteUnresolvedAfter;
@@ -79,6 +79,7 @@ public class Scheduler implements SchedulerClient {
       SchedulerName schedulerName,
       Waiter executeDueWaiter,
       Duration heartbeatInterval,
+      int numberOfMissedHeartbeatsBeforeDead,
       boolean enableImmediateExecution,
       StatsRegistry statsRegistry,
       PollingStrategyConfig pollingStrategyConfig,
@@ -100,10 +101,11 @@ public class Scheduler implements SchedulerClient {
     this.onStartup = onStartup;
     this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
     this.heartbeatInterval = heartbeatInterval;
+    this.numberOfMissedHeartbeatsBeforeDead = numberOfMissedHeartbeatsBeforeDead;
     this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
     this.heartbeatConfig =
         new HeartbeatConfig(
-            heartbeatInterval, MISSED_HEARTBEATS_LIMIT, getMaxAgeBeforeConsideredDead());
+            heartbeatInterval, numberOfMissedHeartbeatsBeforeDead, getMaxAgeBeforeConsideredDead());
     this.statsRegistry = statsRegistry;
     this.dueExecutor = dueExecutor;
     this.housekeeperExecutor = housekeeperExecutor;
@@ -425,7 +427,7 @@ public class Scheduler implements SchedulerClient {
   }
 
   Duration getMaxAgeBeforeConsideredDead() {
-    return heartbeatInterval.multipliedBy(MISSED_HEARTBEATS_LIMIT);
+    return heartbeatInterval.multipliedBy(numberOfMissedHeartbeatsBeforeDead);
   }
 
   public static SchedulerBuilder create(DataSource dataSource, Task<?>... knownTasks) {

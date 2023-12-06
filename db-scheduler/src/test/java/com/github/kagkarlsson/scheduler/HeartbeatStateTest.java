@@ -60,6 +60,31 @@ class HeartbeatStateTest {
     assertOk(state);
   }
 
+  @Test
+  void not_stale_until_tolerance_passed() {
+    HeartbeatState state =
+      new HeartbeatState(
+        clock,
+        clock.now(),
+        new HeartbeatConfig(Duration.ofSeconds(60), 4, Duration.ofMinutes(4)));
+
+    assertOk(state);
+
+    clock.tick(Duration.ofSeconds(60));
+    assertThat(state.hasStaleHeartbeat(), is(false));
+
+    clock.tick(Duration.ofSeconds(5));
+    assertThat(state.hasStaleHeartbeat(), is(false));
+
+    clock.tick(Duration.ofSeconds(25));
+    assertThat(state.hasStaleHeartbeat(), is(true));
+
+    state.heartbeat(true, clock.now());
+    assertThat(state.hasStaleHeartbeat(), is(false));
+
+    assertOk(state);
+  }
+
   private void assertFailing(HeartbeatState state, int timesFailed, double fractionDead) {
     assertTrue(state.hasStaleHeartbeat());
     assertThat(state.getFailedHeartbeats(), is(timesFailed));
