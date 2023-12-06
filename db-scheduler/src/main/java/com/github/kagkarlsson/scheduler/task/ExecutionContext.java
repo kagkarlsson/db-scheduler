@@ -13,6 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.CurrentlyExecuting;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.SchedulerState;
 
@@ -21,12 +22,17 @@ public class ExecutionContext {
   private final SchedulerState schedulerState;
   private final Execution execution;
   private final SchedulerClient schedulerClient;
+  private CurrentlyExecuting currentlyExecuting;
 
   public ExecutionContext(
-      SchedulerState schedulerState, Execution execution, SchedulerClient schedulerClient) {
+      SchedulerState schedulerState,
+      Execution execution,
+      SchedulerClient schedulerClient,
+      CurrentlyExecuting currentlyExecuting) {
     this.schedulerState = schedulerState;
     this.execution = execution;
     this.schedulerClient = schedulerClient;
+    this.currentlyExecuting = currentlyExecuting;
   }
 
   public SchedulerState getSchedulerState() {
@@ -43,5 +49,9 @@ public class ExecutionContext {
 
   public Execution getExecution() {
     return execution;
+  }
+
+  public CurrentlyExecuting getCurrentlyExecuting() {
+    return currentlyExecuting;
   }
 }

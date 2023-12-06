@@ -4,6 +4,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
@@ -79,7 +80,9 @@ public class ClusterTests {
     assertThat(completed.failed.size(), is(0));
     assertThat(completed.ok.size(), is(ids.size()));
     assertThat("Should contain no duplicates", new HashSet<>(completed.ok).size(), is(ids.size()));
-    assertThat(stats.unexpectedErrors.get(), is(0));
+    assertThat("No unexpected errors", stats.unexpectedErrors.get(), is(0));
+    assertThat("No dead executions", stats.deadExecutions.get(), is(0));
+    assertThat("No multiple-heartbeat-failures", stats.failedMultipleHeartbeats.get(), is(0));
     assertThat(scheduler1.getCurrentlyExecuting(), hasSize(0));
     assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
   }
@@ -114,7 +117,9 @@ public class ClusterTests {
 
     scheduler1.stop();
     scheduler2.stop();
-    assertThat(stats.unexpectedErrors.get(), is(0));
+    assertThat("No unexpected errors", stats.unexpectedErrors.get(), is(0));
+    assertThat("No dead executions", stats.deadExecutions.get(), is(0));
+    assertThat("No multiple-heartbeat-failures", stats.failedMultipleHeartbeats.get(), is(0));
     assertThat(scheduler1.getCurrentlyExecuting(), hasSize(0));
     assertThat(scheduler2.getCurrentlyExecuting(), hasSize(0));
   }
@@ -130,7 +135,7 @@ public class ClusterTests {
             .schedulerName(new Fixed(name))
             .threads(NUMBER_OF_THREADS)
             .pollingInterval(Duration.ofMillis(50)) // also runs fine with 5s
-            .heartbeatInterval(Duration.ofMillis(2_000))
+            .heartbeatInterval(Duration.ofMillis(500))
             .statsRegistry(stats);
     schedulerCustomization.accept(builder);
     return builder.build();
@@ -143,7 +148,7 @@ public class ClusterTests {
         .schedulerName(new Fixed(name))
         .threads(NUMBER_OF_THREADS)
         .pollingInterval(Duration.ofMillis(50))
-        .heartbeatInterval(Duration.ofMillis(2_000))
+        .heartbeatInterval(Duration.ofMillis(500))
         .statsRegistry(stats)
         .build();
   }

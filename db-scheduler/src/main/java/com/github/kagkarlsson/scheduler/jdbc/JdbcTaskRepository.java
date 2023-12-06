@@ -30,7 +30,10 @@ import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -567,7 +570,7 @@ public class JdbcTaskRepository implements TaskRepository {
         LOG.warn("Failed to update heartbeat. No more retries.", e);
         return false;
       } else {
-        LOG.info("Failed to update heartbeat. Will try again.", e);
+        LOG.info("Failed to update heartbeat. Remaining retries={}.", tries - 1, e);
         return updateHeartbeatWithRetry(execution, newHeartbeat, tries - 1);
       }
     }
@@ -594,15 +597,18 @@ public class JdbcTaskRepository implements TaskRepository {
     if (updated == 0) {
       // There is a race-condition: Executions are not removed from currently-executing until after
       // the execution has been updated in the database, so this might happen.
-      LOG.trace(
-          "Did not update heartbeat. Execution must have been removed or rescheduled. "
+      LOG.warn(
+          "Did not update heartbeat. Execution must have been removed or rescheduled"
+              + "(i.e. CompletionHandler ran and finished just before heartbeat-update). "
+              + "This is a race-condition that may occur, but is very unlikely. "
               + "task-instance={}",
           e.taskInstance);
       return false;
     } else {
       if (updated > 1) {
         throw new IllegalStateException(
-            "Updated multiple rows updating heartbeat for execution. Should never happen since name and id is primary key. Execution: "
+            "Updated multiple rows updating heartbeat for execution. Should never happen since "
+                + "name and id is primary key. Execution: "
                 + e);
       }
       LOG.debug("Updated heartbeat for execution: " + e);

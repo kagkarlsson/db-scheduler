@@ -401,18 +401,26 @@ public class Scheduler implements SchedulerClient {
     LOG.trace("Updating heartbeat for execution: " + e);
 
     try {
-      // update CurrentExecution if it failed, calc time remaining before problems
-
       boolean successfulHeartbeat = schedulerTaskRepository.updateHeartbeatWithRetry(e, now, 3);
       currentlyExecuting.heartbeat(successfulHeartbeat, now);
 
       if (!successfulHeartbeat) {
-        statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
+        statsRegistry.register(SchedulerStatsEvent.FAILED_HEARTBEAT);
+      }
+
+      HeartbeatState heartbeatState = currentlyExecuting.getHeartbeatState();
+      if (heartbeatState.getFailedHeartbeats() > 1) {
+        LOG.warn(
+            "Execution has more than 1 failed heartbeats. Should not happen. Risk of being"
+                + " considered dead. See heartbeat-state. Heartbeat-state={}, Execution={}",
+            heartbeatState.describe(),
+            e);
+        statsRegistry.register(SchedulerStatsEvent.FAILED_MULTIPLE_HEARTBEATS);
       }
 
     } catch (Throwable ex) { // just-in-case
       LOG.error("Unexpteced failure while while updating heartbeat for execution {}.", e, ex);
-      statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
+      statsRegistry.register(SchedulerStatsEvent.FAILED_HEARTBEAT);
     }
   }
 

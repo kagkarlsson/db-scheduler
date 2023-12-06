@@ -70,18 +70,19 @@ class ExecutePicked implements Runnable {
   @Override
   public void run() {
     // FIXLATER: need to cleanup all the references back to scheduler fields
-    final UUID executionId =
-        executor.addCurrentlyProcessing(
-            new CurrentlyExecuting(pickedExecution, clock, heartbeatConfig));
+    CurrentlyExecuting currentlyExecuting =
+        new CurrentlyExecuting(pickedExecution, clock, heartbeatConfig);
+    final UUID executionId = executor.addCurrentlyProcessing(currentlyExecuting);
+
     try {
       statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
-      executePickedExecution(pickedExecution);
+      executePickedExecution(pickedExecution, currentlyExecuting);
     } finally {
       executor.removeCurrentlyProcessing(executionId);
     }
   }
 
-  private void executePickedExecution(Execution execution) {
+  private void executePickedExecution(Execution execution, CurrentlyExecuting currentlyExecuting) {
     final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
     if (!task.isPresent()) {
       LOG.error(
@@ -98,7 +99,8 @@ class ExecutePicked implements Runnable {
           task.get()
               .execute(
                   execution.taskInstance,
-                  new ExecutionContext(schedulerState, execution, schedulerClient));
+                  new ExecutionContext(
+                      schedulerState, execution, schedulerClient, currentlyExecuting));
       LOG.debug("Execution done: " + execution);
 
       complete(completion, execution, executionStarted);
