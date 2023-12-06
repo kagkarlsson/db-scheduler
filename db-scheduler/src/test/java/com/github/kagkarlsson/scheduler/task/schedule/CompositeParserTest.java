@@ -64,7 +64,7 @@ public class CompositeParserTest {
   @Test
   public void cannot_create_from_null_or_empty_list() {
     assertUnableToCreateParser(null);
-    assertUnableToCreateParser();
+    assertUnableToCreateParser(new Parser[]{});
   }
 
   @Test
@@ -85,7 +85,7 @@ public class CompositeParserTest {
     assertEquals(Optional.of(expected), CompositeParser.of(parsers).parse(ANY_SCHEDULE_STRING));
   }
 
-  static void assertUnableToCreateParser(Parser... parsers) {
+  static void assertUnableToCreateParser(Parser[] parsers) {
     try {
       CompositeParser.of(parsers);
       fail("Should have thrown IllegalArgumentException");

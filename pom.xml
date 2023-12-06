@@ -28,9 +28,10 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<jdk.version>11</jdk.version>
-		<maven.compiler.source>${jdk.version}</maven.compiler.source>
-		<maven.compiler.target>${jdk.version}</maven.compiler.target>
+<!--		<jdk.version>11</jdk.version>-->
+<!--		<maven.compiler.source>${jdk.version}</maven.compiler.source>-->
+<!--		<maven.compiler.target>${jdk.version}</maven.compiler.target>-->
+    <maven.compiler.release>11</maven.compiler.release>
 		<compilerArgument />
 		<license.dir>${project.basedir}/.license</license.dir>
 
@@ -180,6 +181,12 @@
 									<exclude>META-INF/**</exclude>
 								</excludes>
 							</filter>
+              <filter>
+                <artifact>com.github.kagkarlsson:micro-jdbc:*</artifact>
+                <excludes>
+                  <exclude>META-INF/**</exclude>
+                </excludes>
+              </filter>
 						</filters>
 						<relocations>
 							<relocation>
