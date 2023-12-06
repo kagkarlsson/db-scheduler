@@ -51,6 +51,7 @@ public class HeartbeatMonitoringMain extends Example {
         Scheduler.create(dataSource, waitForStaleHeartbeatTask)
             .threads(5)
             .heartbeatInterval(Duration.ofSeconds(1))
+            .missedHeartbeatsLimit(8)
             .pollingInterval(Duration.ofSeconds(1))
             .build();
 
@@ -58,7 +59,7 @@ public class HeartbeatMonitoringMain extends Example {
 
     scheduler.schedule(waitForStaleHeartbeatTask.instance("1045"), Instant.now());
 
-    sleep(2000);
+    sleep(4000);
     JdbcRunner jdbcRunner = new JdbcRunner(dataSource);
 
     // simulate something that will cause heartbeating to fail

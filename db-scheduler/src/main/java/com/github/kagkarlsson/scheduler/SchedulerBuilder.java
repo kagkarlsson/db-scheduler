@@ -103,8 +103,8 @@ public class SchedulerBuilder {
     return this;
   }
 
-  public SchedulerBuilder missedHeartbeatLimit(int numberOfMissedHeartbeatsBeforeDead) {
-    if (numberOfMissedHeartbeatsBeforeDead <= 4) {
+  public SchedulerBuilder missedHeartbeatsLimit(int numberOfMissedHeartbeatsBeforeDead) {
+    if (numberOfMissedHeartbeatsBeforeDead < 4) {
       throw new IllegalArgumentException("Heartbeat-limit must be at least 4");
     }
     this.numberOfMissedHeartbeatsBeforeDead = numberOfMissedHeartbeatsBeforeDead;

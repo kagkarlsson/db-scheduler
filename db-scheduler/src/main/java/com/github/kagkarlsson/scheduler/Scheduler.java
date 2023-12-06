@@ -420,7 +420,7 @@ public class Scheduler implements SchedulerClient {
         statsRegistry.register(SchedulerStatsEvent.FAILED_MULTIPLE_HEARTBEATS);
       }
 
-    } catch (Throwable ex) { // just-in-case
+    } catch (Throwable ex) { // just-in-case to avoid any "poison-pills"
       LOG.error("Unexpteced failure while while updating heartbeat for execution {}.", e, ex);
       statsRegistry.register(SchedulerStatsEvent.FAILED_HEARTBEAT);
     }
