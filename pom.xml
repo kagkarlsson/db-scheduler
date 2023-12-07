@@ -28,10 +28,10 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-<!--		<jdk.version>11</jdk.version>-->
-<!--		<maven.compiler.source>${jdk.version}</maven.compiler.source>-->
-<!--		<maven.compiler.target>${jdk.version}</maven.compiler.target>-->
-    <maven.compiler.release>11</maven.compiler.release>
+		<jdk.version>11</jdk.version>
+		<maven.compiler.source>${jdk.version}</maven.compiler.source>
+		<maven.compiler.target>${jdk.version}</maven.compiler.target>
+    <maven.compiler.release>${jdk.version}</maven.compiler.release>
 		<compilerArgument />
 		<license.dir>${project.basedir}/.license</license.dir>
 
