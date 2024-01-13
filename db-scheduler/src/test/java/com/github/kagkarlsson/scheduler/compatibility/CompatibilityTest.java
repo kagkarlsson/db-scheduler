@@ -37,7 +37,6 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
-import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.google.common.collect.Lists;
 import java.time.Duration;
 import java.time.Instant;
@@ -230,36 +229,37 @@ public abstract class CompatibilityTest {
     defaultTaskResolver.addTask(oneTime);
 
     JdbcTaskRepository winterTaskRepo =
-      new JdbcTaskRepository(
-        getDataSource(),
-        commitWhenAutocommitDisabled(),
-        new ZoneSpecificJdbcCustomization(getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
-          GregorianCalendar.getInstance(TimeZone.getTimeZone("CET"))
-        ),
-        DEFAULT_TABLE_NAME,
-        defaultTaskResolver,
-        new SchedulerName.Fixed("scheduler1"),
-        new SystemClock());
+        new JdbcTaskRepository(
+            getDataSource(),
+            commitWhenAutocommitDisabled(),
+            new ZoneSpecificJdbcCustomization(
+                getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
+                GregorianCalendar.getInstance(TimeZone.getTimeZone("CET"))),
+            DEFAULT_TABLE_NAME,
+            defaultTaskResolver,
+            new SchedulerName.Fixed("scheduler1"),
+            new SystemClock());
 
     JdbcTaskRepository summerTaskRepo =
-      new JdbcTaskRepository(
-        getDataSource(),
-        commitWhenAutocommitDisabled(),
-        new ZoneSpecificJdbcCustomization(getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
-          GregorianCalendar.getInstance(TimeZone.getTimeZone("CEST"))
-        ),
-        DEFAULT_TABLE_NAME,
-        defaultTaskResolver,
-        new SchedulerName.Fixed("scheduler1"),
-        new SystemClock());
+        new JdbcTaskRepository(
+            getDataSource(),
+            commitWhenAutocommitDisabled(),
+            new ZoneSpecificJdbcCustomization(
+                getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
+                GregorianCalendar.getInstance(TimeZone.getTimeZone("CEST"))),
+            DEFAULT_TABLE_NAME,
+            defaultTaskResolver,
+            new SchedulerName.Fixed("scheduler1"),
+            new SystemClock());
 
     Instant noonFirstJan = Instant.parse("2020-01-01T12:00:00.00Z");
 
     TaskInstance<String> instance1 = oneTime.instance("future1");
     winterTaskRepo.createIfNotExists(SchedulableInstance.of(instance1, noonFirstJan));
 
-    assertThat(winterTaskRepo.getExecution(instance1).get().executionTime,
-      is (summerTaskRepo.getExecution(instance1).get().executionTime));
+    assertThat(
+        winterTaskRepo.getExecution(instance1).get().executionTime,
+        is(summerTaskRepo.getExecution(instance1).get().executionTime));
   }
 
   private void doJDBCRepositoryCompatibilityTestUsingData(String data) {

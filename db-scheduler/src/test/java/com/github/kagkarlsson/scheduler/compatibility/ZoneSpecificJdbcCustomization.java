@@ -33,7 +33,9 @@ public class ZoneSpecificJdbcCustomization implements JdbcCustomization {
 
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-    return Optional.ofNullable(rs.getTimestamp(columnName, zoneIfNonePresent)).map(Timestamp::toInstant).orElse(null);
+    return Optional.ofNullable(rs.getTimestamp(columnName, zoneIfNonePresent))
+        .map(Timestamp::toInstant)
+        .orElse(null);
   }
 
   @Override
@@ -62,8 +64,8 @@ public class ZoneSpecificJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public List<Execution> lockAndFetchSingleStatement(JdbcTaskRepositoryContext ctx, Instant now,
-    int limit) {
+  public List<Execution> lockAndFetchSingleStatement(
+      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
     return delegate.lockAndFetchSingleStatement(ctx, now, limit);
   }
 
@@ -73,8 +75,8 @@ public class ZoneSpecificJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public String createGenericSelectForUpdateQuery(String tableName, int limit,
-    String requiredAndCondition) {
+  public String createGenericSelectForUpdateQuery(
+      String tableName, int limit, String requiredAndCondition) {
     return delegate.createGenericSelectForUpdateQuery(tableName, limit, requiredAndCondition);
   }
 

@@ -19,7 +19,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -47,9 +46,13 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
     if (persistTimestampInUTC) {
-      return Optional.ofNullable(rs.getTimestamp(columnName, UTC)).map(Timestamp::toInstant).orElse(null);
+      return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
+          .map(Timestamp::toInstant)
+          .orElse(null);
     } else {
-      return Optional.ofNullable(rs.getTimestamp(columnName)).map(Timestamp::toInstant).orElse(null);
+      return Optional.ofNullable(rs.getTimestamp(columnName))
+          .map(Timestamp::toInstant)
+          .orElse(null);
     }
   }
 
