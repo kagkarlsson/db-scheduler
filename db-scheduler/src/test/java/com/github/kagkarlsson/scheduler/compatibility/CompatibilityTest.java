@@ -59,6 +59,7 @@ public abstract class CompatibilityTest {
 
   private static final int POLLING_LIMIT = 10_000;
   private final boolean supportsSelectForUpdate;
+  private final boolean shouldHavePersistentTimezone;
 
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
@@ -71,8 +72,9 @@ public abstract class CompatibilityTest {
   private TestableRegistry testableRegistry;
   private ExecutionCompletedCondition completed12Condition;
 
-  public CompatibilityTest(boolean supportsSelectForUpdate) {
+  public CompatibilityTest(boolean supportsSelectForUpdate, boolean shouldHavePersistentTimezone) {
     this.supportsSelectForUpdate = supportsSelectForUpdate;
+    this.shouldHavePersistentTimezone = shouldHavePersistentTimezone;
   }
 
   public abstract DataSource getDataSource();
@@ -220,7 +222,10 @@ public abstract class CompatibilityTest {
   }
 
   @Test
-  public void test_persistent_instant() {
+  public void test_has_peristent_time_zone() {
+    if (!shouldHavePersistentTimezone) {
+      return;
+    }
     TaskResolver defaultTaskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
     defaultTaskResolver.addTask(oneTime);
 
@@ -248,8 +253,6 @@ public abstract class CompatibilityTest {
         new SchedulerName.Fixed("scheduler1"),
         new SystemClock());
 
-
-    final Instant now = TimeHelper.truncatedInstantNow();
     Instant noonFirstJan = Instant.parse("2020-01-01T12:00:00.00Z");
 
     TaskInstance<String> instance1 = oneTime.instance("future1");

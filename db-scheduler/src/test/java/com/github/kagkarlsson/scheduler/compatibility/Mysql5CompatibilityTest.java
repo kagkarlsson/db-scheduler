@@ -24,7 +24,7 @@ public class Mysql5CompatibilityTest extends CompatibilityTest {
   private static HikariDataSource pooledDatasource;
 
   public Mysql5CompatibilityTest() {
-    super(false);
+    super(false, false);
   }
 
   @BeforeAll

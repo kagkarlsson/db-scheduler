@@ -19,19 +19,38 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Optional;
+import java.util.TimeZone;
 
 public class DefaultJdbcCustomization implements JdbcCustomization {
+  private static final Calendar UTC = GregorianCalendar.getInstance(TimeZone.getTimeZone("CET"));
+  private final boolean persistTimestampInUTC;
+
+  public DefaultJdbcCustomization(boolean persistTimestampInUTC) {
+
+    this.persistTimestampInUTC = persistTimestampInUTC;
+  }
 
   @Override
   public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
-    p.setTimestamp(index, value != null ? Timestamp.from(value) : null);
+    if (persistTimestampInUTC) {
+      p.setTimestamp(index, value != null ? Timestamp.from(value) : null, UTC);
+    } else {
+      p.setTimestamp(index, value != null ? Timestamp.from(value) : null);
+    }
   }
 
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-    return Optional.ofNullable(rs.getTimestamp(columnName)).map(Timestamp::toInstant).orElse(null);
+    if (persistTimestampInUTC) {
+      return Optional.ofNullable(rs.getTimestamp(columnName, UTC)).map(Timestamp::toInstant).orElse(null);
+    } else {
+      return Optional.ofNullable(rs.getTimestamp(columnName)).map(Timestamp::toInstant).orElse(null);
+    }
   }
 
   @Override

@@ -20,7 +20,7 @@ public class NoAutoCommitPostgresqlCompatibilityTest extends CompatibilityTest {
   private static HikariDataSource pooledDatasource;
 
   public NoAutoCommitPostgresqlCompatibilityTest() {
-    super(true);
+    super(true, true);
   }
 
   @BeforeAll

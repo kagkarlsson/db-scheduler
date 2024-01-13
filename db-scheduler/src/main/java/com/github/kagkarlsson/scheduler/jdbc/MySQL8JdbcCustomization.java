@@ -17,6 +17,10 @@ import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
 public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
 
+  public MySQL8JdbcCustomization(boolean persistTimestampInUTC) {
+    super(persistTimestampInUTC);
+  }
+
   @Override
   public String getName() {
     return "MySQL => v8";

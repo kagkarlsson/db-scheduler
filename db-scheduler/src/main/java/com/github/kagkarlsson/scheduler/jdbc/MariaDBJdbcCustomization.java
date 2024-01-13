@@ -17,6 +17,10 @@ import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
 public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
 
+  public MariaDBJdbcCustomization(boolean persistTimestampInUTC) {
+    super(persistTimestampInUTC);
+  }
+
   @Override
   public String getName() {
     return "MariaDB";

@@ -35,7 +35,11 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   private final JdbcCustomization jdbcCustomization;
 
   public AutodetectJdbcCustomization(DataSource dataSource) {
-    JdbcCustomization detectedCustomization = new DefaultJdbcCustomization();
+    this(dataSource, false);
+  }
+
+  public AutodetectJdbcCustomization(DataSource dataSource, boolean persistTimestampInUTC) {
+    JdbcCustomization detectedCustomization = new DefaultJdbcCustomization(persistTimestampInUTC);
 
     LOG.debug("Detecting database...");
     try (Connection c = dataSource.getConnection()) {
@@ -44,25 +48,25 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
 
       if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
         LOG.info("Using MSSQL jdbc-overrides.");
-        detectedCustomization = new MssqlJdbcCustomization();
+        detectedCustomization = new MssqlJdbcCustomization(persistTimestampInUTC);
       } else if (databaseProductName.equals(POSTGRESQL)) {
         LOG.info("Using PostgreSQL jdbc-overrides.");
-        detectedCustomization = new PostgreSqlJdbcCustomization();
+        detectedCustomization = new PostgreSqlJdbcCustomization(false, persistTimestampInUTC);
       } else if (databaseProductName.contains(ORACLE)) {
         LOG.info("Using Oracle jdbc-overrides.");
-        detectedCustomization = new OracleJdbcCustomization();
+        detectedCustomization = new OracleJdbcCustomization(persistTimestampInUTC);
       } else if (databaseProductName.contains(MARIADB)) {
         LOG.info("Using MariaDB jdbc-overrides.");
-        detectedCustomization = new MariaDBJdbcCustomization();
+        detectedCustomization = new MariaDBJdbcCustomization(persistTimestampInUTC);
       } else if (databaseProductName.contains(MYSQL)) {
         int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
         String dbVersion = c.getMetaData().getDatabaseProductVersion();
         if (databaseMajorVersion >= 8) {
           LOG.info("Using MySQL jdbc-overrides version 8 and later. (v {})", dbVersion);
-          detectedCustomization = new MySQL8JdbcCustomization();
+          detectedCustomization = new MySQL8JdbcCustomization(persistTimestampInUTC);
         } else {
           LOG.info("Using MySQL jdbc-overrides for version older than 8. (v {})", dbVersion);
-          detectedCustomization = new MySQLJdbcCustomization();
+          detectedCustomization = new MySQLJdbcCustomization(persistTimestampInUTC);
         }
       }
 

@@ -15,6 +15,10 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
 
+  public MySQLJdbcCustomization(boolean persistTimestampInUTC) {
+    super(persistTimestampInUTC);
+  }
+
   @Override
   public String getName() {
     return "MySQL < v8";
