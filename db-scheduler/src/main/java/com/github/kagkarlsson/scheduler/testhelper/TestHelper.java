@@ -75,7 +75,7 @@ public class TestHelper {
           new JdbcTaskRepository(
               dataSource,
               true,
-              new DefaultJdbcCustomization(),
+              new DefaultJdbcCustomization(false),
               tableName,
               taskResolver,
               new SchedulerName.Fixed("manual"),
@@ -85,7 +85,7 @@ public class TestHelper {
           new JdbcTaskRepository(
               dataSource,
               commitWhenAutocommitDisabled,
-              new DefaultJdbcCustomization(),
+              new DefaultJdbcCustomization(false),
               tableName,
               taskResolver,
               new SchedulerName.Fixed("manual"),

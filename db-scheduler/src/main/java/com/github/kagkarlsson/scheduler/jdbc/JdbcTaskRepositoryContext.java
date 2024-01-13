@@ -21,12 +21,12 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import java.util.List;
 import java.util.function.Supplier;
 
-class JdbcTaskRepositoryContext {
-  final TaskResolver taskResolver;
-  final String tableName;
-  final SchedulerName schedulerName;
-  final JdbcRunner jdbcRunner;
-  final Supplier<ResultSetMapper<List<Execution>>> resultSetMapper;
+public class JdbcTaskRepositoryContext {
+  public final TaskResolver taskResolver;
+  public final String tableName;
+  public final SchedulerName schedulerName;
+  public final JdbcRunner jdbcRunner;
+  public final Supplier<ResultSetMapper<List<Execution>>> resultSetMapper;
 
   JdbcTaskRepositoryContext(
       TaskResolver taskResolver,

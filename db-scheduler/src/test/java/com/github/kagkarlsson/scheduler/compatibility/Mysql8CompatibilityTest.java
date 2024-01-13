@@ -24,7 +24,7 @@ public class Mysql8CompatibilityTest extends CompatibilityTest {
   private static HikariDataSource pooledDatasource;
 
   public Mysql8CompatibilityTest() {
-    super(false); // FIXLATER: fix syntax and enable
+    super(false, false); // FIXLATER: fix syntax and enable
   }
 
   @BeforeAll

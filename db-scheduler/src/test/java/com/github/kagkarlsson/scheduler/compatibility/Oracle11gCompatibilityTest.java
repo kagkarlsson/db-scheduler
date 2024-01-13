@@ -22,7 +22,7 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
   private static HikariDataSource pooledDatasource;
 
   public Oracle11gCompatibilityTest() {
-    super(false); // FIXLATER: fix syntax and enable
+    super(false, true); // FIXLATER: fix syntax and enable
   }
 
   @BeforeAll

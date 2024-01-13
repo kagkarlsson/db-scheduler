@@ -24,6 +24,14 @@ import java.util.TimeZone;
 
 public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
 
+  public MssqlJdbcCustomization() {
+    super(false);
+  }
+
+  public MssqlJdbcCustomization(boolean persistTimestampInUTC) {
+    super(persistTimestampInUTC);
+  }
+
   @Override
   public String getName() {
     return "MSSQL";

@@ -47,7 +47,7 @@ public class PostgresClusterTest {
         DB.getDataSource(),
         (SchedulerBuilder b) -> {
           b.pollUsingLockAndFetch(((double) NUMBER_OF_THREADS) / 2, NUMBER_OF_THREADS);
-          b.jdbcCustomization(new PostgreSqlJdbcCustomization(false));
+          b.jdbcCustomization(new PostgreSqlJdbcCustomization(false, false));
         },
         stopScheduler);
   }
@@ -59,7 +59,7 @@ public class PostgresClusterTest {
         DB.getDataSource(),
         (SchedulerBuilder b) -> {
           b.pollUsingLockAndFetch(((double) NUMBER_OF_THREADS) / 2, NUMBER_OF_THREADS);
-          b.jdbcCustomization(new PostgreSqlJdbcCustomization(true));
+          b.jdbcCustomization(new PostgreSqlJdbcCustomization(true, false));
         },
         stopScheduler);
   }

@@ -13,7 +13,7 @@ public class PostgresqlGenericFetchAndLockCompatibilityTest extends Compatibilit
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
 
   public PostgresqlGenericFetchAndLockCompatibilityTest() {
-    super(true);
+    super(true, true);
   }
 
   @Override
@@ -28,6 +28,6 @@ public class PostgresqlGenericFetchAndLockCompatibilityTest extends Compatibilit
 
   @Override
   public Optional<JdbcCustomization> getJdbcCustomization() {
-    return Optional.of(new PostgreSqlJdbcCustomization(true));
+    return Optional.of(new PostgreSqlJdbcCustomization(true, false));
   }
 }

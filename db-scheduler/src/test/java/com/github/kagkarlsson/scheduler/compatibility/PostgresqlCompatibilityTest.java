@@ -21,7 +21,7 @@ public class PostgresqlCompatibilityTest extends CompatibilityTest {
   //    );
 
   public PostgresqlCompatibilityTest() {
-    super(true);
+    super(true, true);
   }
 
   @Override
