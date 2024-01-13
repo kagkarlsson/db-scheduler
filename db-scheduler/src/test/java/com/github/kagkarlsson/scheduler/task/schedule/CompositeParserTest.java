@@ -64,7 +64,7 @@ public class CompositeParserTest {
   @Test
   public void cannot_create_from_null_or_empty_list() {
     assertUnableToCreateParser(null);
-    assertUnableToCreateParser(new Parser[]{});
+    assertUnableToCreateParser(new Parser[] {});
   }
 
   @Test
