@@ -15,12 +15,6 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
-import java.util.Calendar;
-import java.util.TimeZone;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +29,9 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
     super(persistTimestampInUTC);
     if (!persistTimestampInUTC) {
       LOG.warn(
-        "{} must explicitly specify timezone when persisting a timestamp. "
-          + "Persisting timestamp with undefined timezone is not recommended and will likely cause issues",
-        getClass().getName());
+          "{} must explicitly specify timezone when persisting a timestamp. "
+              + "Persisting timestamp with undefined timezone is not recommended and will likely cause issues",
+          getClass().getName());
     }
   }
 

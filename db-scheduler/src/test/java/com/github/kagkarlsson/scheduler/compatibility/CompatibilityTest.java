@@ -47,12 +47,10 @@ import java.util.Optional;
 import java.util.TimeZone;
 import javax.sql.DataSource;
 import org.hamcrest.collection.IsCollectionWithSize;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("ConstantConditions")
 public abstract class CompatibilityTest {
@@ -328,17 +326,17 @@ public abstract class CompatibilityTest {
     assertNull(round3.taskInstance.getData());
   }
 
-  private JdbcTaskRepository createRepositoryForForZone(TaskResolver defaultTaskResolver, String zoneId) {
+  private JdbcTaskRepository createRepositoryForForZone(
+      TaskResolver defaultTaskResolver, String zoneId) {
     return new JdbcTaskRepository(
-      getDataSource(),
-      commitWhenAutocommitDisabled(),
-      new ZoneSpecificJdbcCustomization(
-        getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
-        GregorianCalendar.getInstance(TimeZone.getTimeZone(zoneId))),
-      DEFAULT_TABLE_NAME,
-      defaultTaskResolver,
-      new SchedulerName.Fixed("scheduler1"),
-      new SystemClock());
+        getDataSource(),
+        commitWhenAutocommitDisabled(),
+        new ZoneSpecificJdbcCustomization(
+            getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
+            GregorianCalendar.getInstance(TimeZone.getTimeZone(zoneId))),
+        DEFAULT_TABLE_NAME,
+        defaultTaskResolver,
+        new SchedulerName.Fixed("scheduler1"),
+        new SystemClock());
   }
-
 }

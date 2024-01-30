@@ -25,9 +25,9 @@ public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
     super(persistTimestampInUTC);
     if (!persistTimestampInUTC) {
       LOG.warn(
-        "{} does not support persistent timezones. "
-          + "It is recommended to store time in UTC to avoid issues with for example DST",
-        getClass().getName());
+          "{} does not support persistent timezones. "
+              + "It is recommended to store time in UTC to avoid issues with for example DST",
+          getClass().getName());
     }
   }
 
