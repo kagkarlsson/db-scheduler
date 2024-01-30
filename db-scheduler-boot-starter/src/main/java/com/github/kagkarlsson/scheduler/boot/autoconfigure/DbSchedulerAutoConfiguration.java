@@ -151,6 +151,10 @@ public class DbSchedulerAutoConfiguration {
             .jdbcCustomization()
             .orElse(new AutodetectJdbcCustomization(transactionalDataSource)));
 
+    if (config.isAlwaysPersistTimestampInUtc()) {
+      builder.alwaysPersistTimestampInUTC();
+    }
+
     if (config.isImmediateExecutionEnabled()) {
       builder.enableImmediateExecution();
     }
