@@ -21,28 +21,29 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Calendar;
 import java.util.TimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
+  private static final Logger LOG = LoggerFactory.getLogger(MssqlJdbcCustomization.class);
 
   public MssqlJdbcCustomization() {
-    super(false);
+    super(true);
   }
 
   public MssqlJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
+    if (!persistTimestampInUTC) {
+      LOG.warn(
+        "{} must explicitly specify timezone when persisting a timestamp. "
+          + "Persisting timestamp with undefined timezone is not recommended and will likely cause issues",
+        getClass().getName());
+    }
   }
 
   @Override
   public String getName() {
     return "MSSQL";
-  }
-
-  @Override
-  public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
-    p.setTimestamp(
-        index,
-        value != null ? Timestamp.from(value) : null,
-        Calendar.getInstance(TimeZone.getTimeZone("UTC")));
   }
 
   @Override

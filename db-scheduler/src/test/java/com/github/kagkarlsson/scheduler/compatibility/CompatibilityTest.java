@@ -47,6 +47,7 @@ import java.util.Optional;
 import java.util.TimeZone;
 import javax.sql.DataSource;
 import org.hamcrest.collection.IsCollectionWithSize;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -225,32 +226,12 @@ public abstract class CompatibilityTest {
     if (!shouldHavePersistentTimezone) {
       return;
     }
+
     TaskResolver defaultTaskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
     defaultTaskResolver.addTask(oneTime);
 
-    JdbcTaskRepository winterTaskRepo =
-        new JdbcTaskRepository(
-            getDataSource(),
-            commitWhenAutocommitDisabled(),
-            new ZoneSpecificJdbcCustomization(
-                getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
-                GregorianCalendar.getInstance(TimeZone.getTimeZone("CET"))),
-            DEFAULT_TABLE_NAME,
-            defaultTaskResolver,
-            new SchedulerName.Fixed("scheduler1"),
-            new SystemClock());
-
-    JdbcTaskRepository summerTaskRepo =
-        new JdbcTaskRepository(
-            getDataSource(),
-            commitWhenAutocommitDisabled(),
-            new ZoneSpecificJdbcCustomization(
-                getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
-                GregorianCalendar.getInstance(TimeZone.getTimeZone("CEST"))),
-            DEFAULT_TABLE_NAME,
-            defaultTaskResolver,
-            new SchedulerName.Fixed("scheduler1"),
-            new SystemClock());
+    JdbcTaskRepository winterTaskRepo = createRepositoryForForZone(defaultTaskResolver, "CET");
+    JdbcTaskRepository summerTaskRepo = createRepositoryForForZone(defaultTaskResolver, "CEST");
 
     Instant noonFirstJan = Instant.parse("2020-01-01T12:00:00.00Z");
 
@@ -347,11 +328,17 @@ public abstract class CompatibilityTest {
     assertNull(round3.taskInstance.getData());
   }
 
-  private void sleep(Duration duration) {
-    try {
-      Thread.sleep(duration.toMillis());
-    } catch (InterruptedException e) {
-      LoggerFactory.getLogger(CompatibilityTest.class).info("Interrupted");
-    }
+  private JdbcTaskRepository createRepositoryForForZone(TaskResolver defaultTaskResolver, String zoneId) {
+    return new JdbcTaskRepository(
+      getDataSource(),
+      commitWhenAutocommitDisabled(),
+      new ZoneSpecificJdbcCustomization(
+        getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
+        GregorianCalendar.getInstance(TimeZone.getTimeZone(zoneId))),
+      DEFAULT_TABLE_NAME,
+      defaultTaskResolver,
+      new SchedulerName.Fixed("scheduler1"),
+      new SystemClock());
   }
+
 }

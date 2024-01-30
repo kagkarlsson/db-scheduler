@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.TimeZone;
 
 public class DefaultJdbcCustomization implements JdbcCustomization {
-  private static final Calendar UTC = GregorianCalendar.getInstance(TimeZone.getTimeZone("CET"));
+  public static final Calendar UTC = GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"));
   private final boolean persistTimestampInUTC;
 
   public DefaultJdbcCustomization(boolean persistTimestampInUTC) {
@@ -36,6 +36,10 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
+    if (value == null) {
+      p.setTimestamp(index, null);
+    }
+
     if (persistTimestampInUTC) {
       p.setTimestamp(index, value != null ? Timestamp.from(value) : null, UTC);
     } else {
