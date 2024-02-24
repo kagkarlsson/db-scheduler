@@ -68,6 +68,10 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
           LOG.info("Using MySQL jdbc-overrides for version older than 8. (v {})", dbVersion);
           detectedCustomization = new MySQLJdbcCustomization(true);
         }
+      } else {
+        LOG.info("No database-specific jdbc-overrides applied. Assuming time-related columns "
+          + "to be of type compatibe with 'TIMESTAMP WITH TIME ZONE'. If not, consider overriding "
+          + "to always UTC via '.alwaysPersistTimestampInUTC()'.");
       }
 
     } catch (SQLException e) {
