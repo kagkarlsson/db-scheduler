@@ -275,7 +275,7 @@
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
-            <version>8.2.1.jre8</version>
+            <version>12.4.2.jre8</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -287,7 +287,7 @@
       <dependency>
         <groupId>org.mariadb.jdbc</groupId>
         <artifactId>mariadb-java-client</artifactId>
-        <version>3.1.4</version>
+        <version>3.3.2</version>
         <scope>test</scope>
       </dependency>
 
