@@ -79,6 +79,18 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
                   + "to be of type compatibe with 'TIMESTAMP WITH TIME ZONE', i.e. zone is persisted."
                   + " If not, consider overriding to always UTC via '.alwaysPersistTimestampInUTC()'.");
         }
+      } else {
+        if (persistTimestampInUTC) {
+          LOG.info(
+              "No database-specific jdbc-overrides applied. Behavior overridden to always store "
+                  + "timestamps in zone UTC");
+        } else {
+          Logger silencableLogger = LoggerFactory.getLogger(LOG.getName() + ".utc_warning");
+          silencableLogger.warn(
+              "No database-specific jdbc-overrides applied. Assuming time-related columns "
+                  + "to be of type compatibe with 'TIMESTAMP WITH TIME ZONE', i.e. zone is persisted."
+                  + " If not, consider overriding to always UTC via '.alwaysPersistTimestampInUTC()'.");
+        }
       }
 
     } catch (SQLException e) {
