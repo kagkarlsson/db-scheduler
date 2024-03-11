@@ -74,6 +74,7 @@ public class SchedulerBuilder {
   protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
   protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
   private boolean registerShutdownHook = false;
+  private boolean alwaysPersistTimestampInUTC = false;
 
   public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
     this.dataSource = dataSource;
@@ -156,6 +157,11 @@ public class SchedulerBuilder {
     return this;
   }
 
+  public SchedulerBuilder alwaysPersistTimestampInUTC() {
+    this.alwaysPersistTimestampInUTC = true;
+    return this;
+  }
+
   public SchedulerBuilder shutdownMaxWait(Duration shutdownMaxWait) {
     this.shutdownMaxWait = shutdownMaxWait;
     return this;
@@ -208,7 +214,8 @@ public class SchedulerBuilder {
     final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
     final JdbcCustomization jdbcCustomization =
         ofNullable(this.jdbcCustomization)
-            .orElseGet(() -> new AutodetectJdbcCustomization(dataSource));
+            .orElseGet(
+                () -> new AutodetectJdbcCustomization(dataSource, alwaysPersistTimestampInUTC));
     final JdbcTaskRepository schedulerTaskRepository =
         new JdbcTaskRepository(
             dataSource,

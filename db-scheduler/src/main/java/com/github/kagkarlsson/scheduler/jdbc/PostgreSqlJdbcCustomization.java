@@ -23,10 +23,6 @@ import java.util.List;
 public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
   private final boolean useGenericLockAndFetch;
 
-  public PostgreSqlJdbcCustomization() {
-    this(false, false);
-  }
-
   public PostgreSqlJdbcCustomization(
       boolean useGenericLockAndFetch, boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);

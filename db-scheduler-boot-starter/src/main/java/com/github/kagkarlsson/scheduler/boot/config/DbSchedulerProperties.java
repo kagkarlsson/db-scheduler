@@ -101,6 +101,11 @@ public class DbSchedulerProperties {
   @DurationUnit(SECONDS)
   private Duration shutdownMaxWait = SchedulerBuilder.SHUTDOWN_MAX_WAIT;
 
+  /**
+   * Store timestamps in UTC timezone even though the schema supports storing timezone information
+   */
+  private boolean alwaysPersistTimestampInUtc = false;
+
   /** Which log level to use when logging task failures. Defaults to {@link LogLevel#DEBUG}. */
   private LogLevel failureLoggerLevel = SchedulerBuilder.DEFAULT_FAILURE_LOG_LEVEL;
 
@@ -227,5 +232,13 @@ public class DbSchedulerProperties {
   public void setPollingStrategyUpperLimitFractionOfThreads(
       double pollingStrategyUpperLimitFractionOfThreads) {
     this.pollingStrategyUpperLimitFractionOfThreads = pollingStrategyUpperLimitFractionOfThreads;
+  }
+
+  public boolean isAlwaysPersistTimestampInUtc() {
+    return alwaysPersistTimestampInUtc;
+  }
+
+  public void setAlwaysPersistTimestampInUtc(boolean alwaysPersistTimestampInUTC) {
+    this.alwaysPersistTimestampInUtc = alwaysPersistTimestampInUTC;
   }
 }

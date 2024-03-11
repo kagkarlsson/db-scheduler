@@ -17,11 +17,11 @@ public class Utils {
   public static void retryOnFailed(int retryTimes, Runnable r) {
     try {
       r.run();
-    } catch (RuntimeException e) {
+    } catch (RuntimeException | AssertionError e) {
       if (retryTimes == 0) {
         throw e;
       } else {
-        LOG.info("Retrying test after failure.");
+        LOG.info("Retrying test after failure.", e);
         retryOnFailed(retryTimes - 1, r);
       }
     }

@@ -192,6 +192,13 @@ Number of threads. Default `10`.
 :gear: `.pollingInterval(Duration)`<br/>
 How often the scheduler checks the database for due executions. Default `10s`.<br/>
 
+:gear: `.alwaysPersistTimestampInUTC()`<br/>
+The Scheduler assumes that columns for persisting timestamps persist `Instant`s, not `LocalDateTime`s,
+ i.e. somehow tie the timestamp to a zone. However, some databases have limited support for such types
+ (which has no zone information) or other quirks, making "always store in UTC" a better alternative.
+Databases that always persist in UTC are: ...TODO
+To force ..
+
 :gear: `.enableImmediateExecution()`<br/>
 If this is enabled, the scheduler will attempt to hint to the local `Scheduler` that there are executions to be executed after they are scheduled to
 run `now()`, or a time in the past. **NB:** If the call to `schedule(..)`/`reschedule(..)` occur from within a transaction, the scheduler might attempt to run

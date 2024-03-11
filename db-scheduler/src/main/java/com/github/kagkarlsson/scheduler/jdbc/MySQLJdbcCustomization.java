@@ -13,10 +13,20 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
+  private static final Logger LOG = LoggerFactory.getLogger(MySQLJdbcCustomization.class);
 
   public MySQLJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
+    if (!persistTimestampInUTC) {
+      LOG.warn(
+          "{} does not support persistent timezones. "
+              + "It is recommended to store time in UTC to avoid issues with for example DST",
+          getClass().getName());
+    }
   }
 
   @Override
