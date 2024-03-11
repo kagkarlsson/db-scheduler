@@ -69,9 +69,16 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
           detectedCustomization = new MySQLJdbcCustomization(true);
         }
       } else {
-        LOG.info("No database-specific jdbc-overrides applied. Assuming time-related columns "
-          + "to be of type compatibe with 'TIMESTAMP WITH TIME ZONE'. If not, consider overriding "
-          + "to always UTC via '.alwaysPersistTimestampInUTC()'.");
+        if (persistTimestampInUTC) {
+          LOG.info(
+              "No database-specific jdbc-overrides applied. Behavior overridden to always store "
+                  + "timestamps in zone UTC");
+        } else {
+          LOG.warn(
+              "No database-specific jdbc-overrides applied. Assuming time-related columns "
+                  + "to be of type compatibe with 'TIMESTAMP WITH TIME ZONE', i.e. zone is persisted."
+                  + " If not, consider overriding to always UTC via '.alwaysPersistTimestampInUTC()'.");
+        }
       }
 
     } catch (SQLException e) {

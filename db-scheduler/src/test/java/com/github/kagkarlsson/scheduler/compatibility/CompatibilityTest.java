@@ -40,6 +40,8 @@ import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.google.common.collect.Lists;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -51,11 +53,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("ConstantConditions")
 public abstract class CompatibilityTest {
 
   private static final int POLLING_LIMIT = 10_000;
+  private Logger LOG = LoggerFactory.getLogger(getClass());
   private final boolean supportsSelectForUpdate;
   private final boolean shouldHavePersistentTimezone;
 
@@ -330,14 +335,54 @@ public abstract class CompatibilityTest {
     assertNull(round3.taskInstance.getData());
   }
 
+  /**
+   * Very uncertain on how to verify that the timestamp is stored in UTC. The asserts in this test
+   * will likely always work, but at least the code for storing in UTC is exercised.
+   */
+  @Test
+  public void test_jdbc_customization_supports_timestamps_in_utc() {
+    Optional<JdbcCustomization> jdbcCustomization = getJdbcCustomizationForUTCTimestampTest();
+
+    if (jdbcCustomization.isEmpty()) {
+      LOG.info(
+          "Skipping test_jdbc_customization_supports_timestamps_in_utc since to JdbcCustomization is spesified.");
+      return;
+    }
+    LOG.info(
+        "Running  test_jdbc_customization_supports_timestamps_in_utc for: "
+            + jdbcCustomization.get().getName());
+
+    TaskResolver defaultTaskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    defaultTaskResolver.addTask(oneTime);
+
+    JdbcTaskRepository taskRepo =
+        createRepositoryForJdbcCustomization(defaultTaskResolver, jdbcCustomization.get());
+
+    ZonedDateTime zonedDateTime =
+        ZonedDateTime.of(2020, 1, 1, 12, 0, 0, 0, ZoneId.of("Europe/Oslo"));
+
+    TaskInstance<String> instance1 = oneTime.instance("future1");
+    taskRepo.createIfNotExists(SchedulableInstance.of(instance1, zonedDateTime.toInstant()));
+
+    assertThat(taskRepo.getExecution(instance1).get().executionTime, is(zonedDateTime.toInstant()));
+  }
+
   private JdbcTaskRepository createRepositoryForForZone(
       TaskResolver defaultTaskResolver, String zoneId) {
+
+    ZoneSpecificJdbcCustomization jdbcCustomization =
+        new ZoneSpecificJdbcCustomization(
+            getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
+            GregorianCalendar.getInstance(TimeZone.getTimeZone(zoneId)));
+    return createRepositoryForJdbcCustomization(defaultTaskResolver, jdbcCustomization);
+  }
+
+  private JdbcTaskRepository createRepositoryForJdbcCustomization(
+      TaskResolver defaultTaskResolver, JdbcCustomization jdbcCustomization) {
     return new JdbcTaskRepository(
         getDataSource(),
         commitWhenAutocommitDisabled(),
-        new ZoneSpecificJdbcCustomization(
-            getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
-            GregorianCalendar.getInstance(TimeZone.getTimeZone(zoneId))),
+        jdbcCustomization,
         DEFAULT_TABLE_NAME,
         defaultTaskResolver,
         new SchedulerName.Fixed("scheduler1"),
