@@ -606,10 +606,11 @@ public class JdbcTaskRepository implements TaskRepository {
       return false;
     } else {
       if (updated > 1) {
-        throw new IllegalStateException(
+        LOG.error(
             "Updated multiple rows updating heartbeat for execution. Should never happen since "
                 + "name and id is primary key. Execution: "
                 + e);
+        return true;
       }
       LOG.debug("Updated heartbeat for execution: " + e);
       return true;

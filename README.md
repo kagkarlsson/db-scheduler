@@ -251,6 +251,9 @@ this, but testing has shown this is prone to deadlocks and thus not recommended 
 :gear: `.heartbeatInterval(Duration)`<br/>
 How often to update the heartbeat timestamp for running executions. Default `5m`.
 
+:gear: `.missedHeartbeatsLimit(int)`<br/>
+How many heartbeats may be missed before the execution is considered dead. Default `1`.
+
 :gear: `.schedulerName(SchedulerName)`<br/>
 Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler.
 Default `<hostname>`.
@@ -479,9 +482,13 @@ Use-cases might be:
 
 ### Dead executions
 
-During execution, the scheduler regularly updates a heartbeat-time for the task-execution. If an execution is marked as executing, but is not receiving updates to the heartbeat-time, it will be considered a _dead execution_ after time X. That may for example happen if the JVM running the scheduler suddenly exits.
+During execution, the scheduler regularly updates a heartbeat-time for the task-execution.
+If an execution is marked as executing, but is not receiving updates to the heartbeat-time,
+it will be considered a _dead execution_ after time X. That may for example happen if the
+JVM running the scheduler suddenly exits.
 
-When a dead execution is found, the `Task`is consulted to see what should be done. A dead `RecurringTask` is typically rescheduled to `now()`.
+When a dead execution is found, the `Task`is consulted to see what should be done. A dead
+`RecurringTask` is typically rescheduled to `now()`.
 
 ## Performance
 

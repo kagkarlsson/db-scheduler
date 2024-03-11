@@ -30,7 +30,6 @@ class HeartbeatStateTest {
 
     clock.tick(Duration.ofSeconds(60));
     state.heartbeat(false, clock.now());
-
     assertFailing(state, 1, 0.25);
   }
 
