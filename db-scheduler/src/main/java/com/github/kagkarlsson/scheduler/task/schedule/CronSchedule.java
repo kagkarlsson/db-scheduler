@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,19 +68,23 @@ public class CronSchedule implements Schedule, Serializable {
   @Override
   public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
     lazyInitExecutionTime(); // for deserialized objects
-    ZonedDateTime lastDone =
-        ZonedDateTime.ofInstant(
-            executionComplete.getTimeDone(),
-            zoneId); // frame the 'last done' time in the context of the time zone for this schedule
+
+    // frame the 'last done' time in the context of the time zone for this schedule
     // so that expressions like "0 05 13,20 * * ?" (New York) can operate in the
     // context of the desired time zone
+    ZonedDateTime lastDone = ZonedDateTime.ofInstant(executionComplete.getTimeDone(), zoneId);
 
     Optional<ZonedDateTime> nextTime = cronExecutionTime.nextExecution(lastDone);
     if (!nextTime.isPresent()) {
       LOG.error(
-          "Cron-pattern did not return any further execution-times. This behavior is currently not supported by the scheduler. Setting next execution-time to far-future.");
-      return Instant.now().plus(1000, ChronoUnit.YEARS);
+          "Cron-pattern did not return any further execution-times. This behavior is currently "
+              + "not supported by the scheduler. Setting next execution-time to far-future, "
+              + "aka \"NEVER\" ({})",
+          NEVER);
+
+      return Schedule.NEVER;
     }
+
     return nextTime.get().toInstant();
   }
 

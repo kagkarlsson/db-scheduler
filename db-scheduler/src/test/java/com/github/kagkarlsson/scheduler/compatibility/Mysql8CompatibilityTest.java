@@ -19,12 +19,12 @@ public class Mysql8CompatibilityTest extends CompatibilityTest {
 
   @Container
   private static final MySQLContainer MY_SQL =
-      new MySQLContainer(DockerImageName.parse("mysql").withTag("8"));
+      new MySQLContainer(DockerImageName.parse("mysql").withTag("8.3"));
 
   private static HikariDataSource pooledDatasource;
 
   public Mysql8CompatibilityTest() {
-    super(false); // FIXLATER: fix syntax and enable
+    super(false, false); // FIXLATER: fix syntax and enable
   }
 
   @BeforeAll

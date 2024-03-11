@@ -31,7 +31,7 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
   private static DataSource pooledDatasource;
 
   public MssqlCompatibilityTest() {
-    super(true);
+    super(true, true);
   }
 
   @BeforeAll

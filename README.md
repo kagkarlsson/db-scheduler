@@ -192,6 +192,15 @@ Number of threads. Default `10`.
 :gear: `.pollingInterval(Duration)`<br/>
 How often the scheduler checks the database for due executions. Default `10s`.<br/>
 
+:gear: `.alwaysPersistTimestampInUTC()`<br/>
+The Scheduler assumes that columns for persisting timestamps persist `Instant`s, not `LocalDateTime`s,
+ i.e. somehow tie the timestamp to a zone. However, some databases have limited support for such types
+ (which has no zone information) or other quirks, making "always store in UTC" a better alternative.
+Currently, only PostgreSQL and Oracle rely on the database preserving time zone information,
+other databases store timestamps in UTC. **NB:** For backwards compatibility, the default behavior
+for "unknown" databases is to assume the database preserves time zone. For "known" databases,
+see the class `AutodetectJdbcCustomization`.
+
 :gear: `.enableImmediateExecution()`<br/>
 If this is enabled, the scheduler will attempt to hint to the local `Scheduler` that there are executions to be executed after they are scheduled to
 run `now()`, or a time in the past. **NB:** If the call to `schedule(..)`/`reschedule(..)` occur from within a transaction, the scheduler might attempt to run
@@ -335,12 +344,12 @@ If you need to migrate from Java serialization to a `GsonSerializer`, configure 
 ```
 
 
-## Third-party task repositories
+## Third-party extensions
 
-Out of the box db-scheduler supports jdbc-compliant databases. There have however been efforts to implement support for more databases via custom task repositories. It is currently a bit cumbersome plugging in a custom repository, but there are plans for making it easier.
-This is a list of known third-party task repositories:
-
-* [db-scheduler-mongo](https://github.com/piemjean/db-scheduler-mongo)
+* [bekk/db-scheduler-ui](https://github.com/bekk/db-scheduler-ui) is admin-ui for the scheduler. It shows scheduled executions and supplies simple admin-operations such as
+  "rerun failed execution now" and "delete execution".
+* [rocketbase-io/db-scheduler-log](https://github.com/rocketbase-io/db-scheduler-log) is an extention providing a history of executions, including failures and exceptions.
+* [piemjean/db-scheduler-mongo](https://github.com/piemjean/db-scheduler-mongo) is an extension for running db-scheduler with a Mongodb database.
 
 ## Spring Boot usage
 

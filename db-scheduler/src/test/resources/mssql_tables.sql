@@ -1,16 +1,17 @@
-create table scheduled_tasks (
-  task_name varchar(250) not null,
-  task_instance varchar(250) not null,
-  task_data  nvarchar(max),
-  execution_time datetimeoffset  not null,
-  picked bit,
-  picked_by text,
-  last_success datetimeoffset ,
-  last_failure datetimeoffset ,
-  consecutive_failures INT,
-  last_heartbeat datetimeoffset ,
-  [version] BIGINT not null,
-  PRIMARY KEY (task_name, task_instance),
-  INDEX execution_time_idx (execution_time),
-  INDEX last_heartbeat_idx (last_heartbeat)
+create table scheduled_tasks
+(
+  task_name            varchar(250)   not null,
+  task_instance        varchar(250)   not null,
+  task_data            nvarchar(max),
+  execution_time       datetimeoffset not null,
+  picked               bit,
+  picked_by            varchar(50),
+  last_success         datetimeoffset,
+  last_failure         datetimeoffset,
+  consecutive_failures int,
+  last_heartbeat       datetimeoffset,
+  [version]            bigint         not null,
+  primary key (task_name, task_instance),
+  index execution_time_idx (execution_time),
+  index last_heartbeat_idx (last_heartbeat)
 )

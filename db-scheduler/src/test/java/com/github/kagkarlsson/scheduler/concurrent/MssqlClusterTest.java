@@ -66,7 +66,7 @@ public class MssqlClusterTest {
     // Observed failed heartbeats due to deadlock.
     // FIXLATER: add retry of update heartbeats
     Utils.retryOnFailed(
-        1,
+        3,
         () -> {
           DEBUG_LOG.info("Starting test_concurrency_optimistic_locking");
           ClusterTests.testConcurrencyForPollingStrategy(

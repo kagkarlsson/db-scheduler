@@ -15,7 +15,21 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
+  private static final Logger LOG = LoggerFactory.getLogger(MariaDBJdbcCustomization.class);
+
+  public MariaDBJdbcCustomization(boolean persistTimestampInUTC) {
+    super(persistTimestampInUTC);
+    if (!persistTimestampInUTC) {
+      LOG.warn(
+          "{} does not support persistent timezones. "
+              + "It is recommended to store time in UTC to avoid issues with for example DST",
+          getClass().getName());
+    }
+  }
 
   @Override
   public String getName() {

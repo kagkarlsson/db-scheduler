@@ -17,6 +17,10 @@ import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
 public class OracleJdbcCustomization extends DefaultJdbcCustomization {
 
+  public OracleJdbcCustomization(boolean persistTimestampInUTC) {
+    super(persistTimestampInUTC);
+  }
+
   @Override
   public String getName() {
     return "Oracle";

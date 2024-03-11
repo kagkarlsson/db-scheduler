@@ -35,7 +35,11 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   private final JdbcCustomization jdbcCustomization;
 
   public AutodetectJdbcCustomization(DataSource dataSource) {
-    JdbcCustomization detectedCustomization = new DefaultJdbcCustomization();
+    this(dataSource, false);
+  }
+
+  public AutodetectJdbcCustomization(DataSource dataSource, boolean persistTimestampInUTC) {
+    JdbcCustomization detectedCustomization = new DefaultJdbcCustomization(persistTimestampInUTC);
 
     LOG.debug("Detecting database...");
     try (Connection c = dataSource.getConnection()) {
@@ -44,25 +48,37 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
 
       if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
         LOG.info("Using MSSQL jdbc-overrides.");
-        detectedCustomization = new MssqlJdbcCustomization();
+        detectedCustomization = new MssqlJdbcCustomization(true);
       } else if (databaseProductName.equals(POSTGRESQL)) {
         LOG.info("Using PostgreSQL jdbc-overrides.");
-        detectedCustomization = new PostgreSqlJdbcCustomization();
+        detectedCustomization = new PostgreSqlJdbcCustomization(false, persistTimestampInUTC);
       } else if (databaseProductName.contains(ORACLE)) {
         LOG.info("Using Oracle jdbc-overrides.");
-        detectedCustomization = new OracleJdbcCustomization();
+        detectedCustomization = new OracleJdbcCustomization(persistTimestampInUTC);
       } else if (databaseProductName.contains(MARIADB)) {
         LOG.info("Using MariaDB jdbc-overrides.");
-        detectedCustomization = new MariaDBJdbcCustomization();
+        detectedCustomization = new MariaDBJdbcCustomization(true);
       } else if (databaseProductName.contains(MYSQL)) {
         int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
         String dbVersion = c.getMetaData().getDatabaseProductVersion();
         if (databaseMajorVersion >= 8) {
           LOG.info("Using MySQL jdbc-overrides version 8 and later. (v {})", dbVersion);
-          detectedCustomization = new MySQL8JdbcCustomization();
+          detectedCustomization = new MySQL8JdbcCustomization(true);
         } else {
           LOG.info("Using MySQL jdbc-overrides for version older than 8. (v {})", dbVersion);
-          detectedCustomization = new MySQLJdbcCustomization();
+          detectedCustomization = new MySQLJdbcCustomization(true);
+        }
+      } else {
+        if (persistTimestampInUTC) {
+          LOG.info(
+              "No database-specific jdbc-overrides applied. Behavior overridden to always store "
+                  + "timestamps in zone UTC");
+        } else {
+          Logger silencableLogger = LoggerFactory.getLogger(LOG.getName() + ".utc_warning");
+          silencableLogger.warn(
+              "No database-specific jdbc-overrides applied. Assuming time-related columns "
+                  + "to be of type compatibe with 'TIMESTAMP WITH TIME ZONE', i.e. zone is persisted."
+                  + " If not, consider overriding to always UTC via '.alwaysPersistTimestampInUTC()'.");
         }
       }
 
