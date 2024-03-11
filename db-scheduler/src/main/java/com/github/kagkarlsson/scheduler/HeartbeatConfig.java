@@ -11,26 +11,20 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.testhelper;
+package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.Clock;
 import java.time.Duration;
-import java.time.Instant;
 
-public class SettableClock implements Clock {
+public class HeartbeatConfig {
 
-  public Instant now = Instant.now();
+  public final Duration heartbeatInterval;
+  public final int missedHeartbeatsLimit;
+  public final Duration maxAgeBeforeConsideredDead;
 
-  @Override
-  public Instant now() {
-    return now;
-  }
-
-  public void set(Instant newNow) {
-    this.now = newNow;
-  }
-
-  public void tick(Duration toAdd) {
-    now = now.plus(toAdd);
+  public HeartbeatConfig(
+      Duration heartbeatInterval, int missedHeartbeatsLimit, Duration maxAgeBeforeConsideredDead) {
+    this.heartbeatInterval = heartbeatInterval;
+    this.missedHeartbeatsLimit = missedHeartbeatsLimit;
+    this.maxAgeBeforeConsideredDead = maxAgeBeforeConsideredDead;
   }
 }

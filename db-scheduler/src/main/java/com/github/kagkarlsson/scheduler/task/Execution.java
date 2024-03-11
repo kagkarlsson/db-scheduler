@@ -17,7 +17,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 @SuppressWarnings("rawtypes")
-public final class Execution {
+public final class Execution implements TaskInstanceId {
   public final TaskInstance taskInstance;
   public final Instant executionTime;
   public final boolean picked;
@@ -106,5 +106,15 @@ public final class Execution {
         + lastHeartbeat
         + ", version="
         + version;
+  }
+
+  @Override
+  public String getTaskName() {
+    return taskInstance.getTaskName();
+  }
+
+  @Override
+  public String getId() {
+    return taskInstance.getId();
   }
 }

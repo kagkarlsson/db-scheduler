@@ -158,9 +158,12 @@ public class TestTasks {
     public void execute(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
       try {
         waitForExecute.countDown();
+        LoggerFactory.getLogger(PausingHandler.class).trace("Awaiting waitInExecuteUntil.");
         waitInExecuteUntil.await();
+        LoggerFactory.getLogger(PausingHandler.class)
+            .trace("Received countdown for waitInExecuteUntil.");
       } catch (InterruptedException e) {
-        LoggerFactory.getLogger(WaitingHandler.class).info("Interrupted.");
+        LoggerFactory.getLogger(PausingHandler.class).info("Interrupted.");
       }
     }
   }
@@ -202,11 +205,20 @@ public class TestTasks {
 
   public static class SimpleStatsRegistry extends StatsRegistry.DefaultStatsRegistry {
     public final AtomicInteger unexpectedErrors = new AtomicInteger(0);
+    public final AtomicInteger failedHeartbeats = new AtomicInteger(0);
+    public final AtomicInteger failedMultipleHeartbeats = new AtomicInteger(0);
+    public final AtomicInteger deadExecutions = new AtomicInteger(0);
 
     @Override
     public void register(SchedulerStatsEvent e) {
       if (e == SchedulerStatsEvent.UNEXPECTED_ERROR) {
         unexpectedErrors.incrementAndGet();
+      } else if (e == SchedulerStatsEvent.FAILED_HEARTBEAT) {
+        failedHeartbeats.incrementAndGet();
+      } else if (e == SchedulerStatsEvent.FAILED_MULTIPLE_HEARTBEATS) {
+        failedMultipleHeartbeats.incrementAndGet();
+      } else if (e == SchedulerStatsEvent.DEAD_EXECUTION) {
+        deadExecutions.incrementAndGet();
       }
       super.register(e);
     }

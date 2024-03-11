@@ -14,13 +14,21 @@
 package com.github.kagkarlsson.scheduler;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
-import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
+import com.github.kagkarlsson.scheduler.task.OnStartup;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
@@ -45,6 +53,8 @@ public class Scheduler implements SchedulerClient {
   protected final PollStrategy executeDueStrategy;
   protected final Executor executor;
   private final ScheduledExecutorService housekeeperExecutor;
+  private final HeartbeatConfig heartbeatConfig;
+  private final int numberOfMissedHeartbeatsBeforeDead;
   int threadpoolSize;
   private final Waiter executeDueWaiter;
   private final Duration deleteUnresolvedAfter;
@@ -69,6 +79,7 @@ public class Scheduler implements SchedulerClient {
       SchedulerName schedulerName,
       Waiter executeDueWaiter,
       Duration heartbeatInterval,
+      int numberOfMissedHeartbeatsBeforeDead,
       boolean enableImmediateExecution,
       StatsRegistry statsRegistry,
       PollingStrategyConfig pollingStrategyConfig,
@@ -90,7 +101,11 @@ public class Scheduler implements SchedulerClient {
     this.onStartup = onStartup;
     this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
     this.heartbeatInterval = heartbeatInterval;
+    this.numberOfMissedHeartbeatsBeforeDead = numberOfMissedHeartbeatsBeforeDead;
     this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
+    this.heartbeatConfig =
+        new HeartbeatConfig(
+            heartbeatInterval, numberOfMissedHeartbeatsBeforeDead, getMaxAgeBeforeConsideredDead());
     this.statsRegistry = statsRegistry;
     this.dueExecutor = dueExecutor;
     this.housekeeperExecutor = housekeeperExecutor;
@@ -116,7 +131,8 @@ public class Scheduler implements SchedulerClient {
               taskResolver,
               clock,
               pollingStrategyConfig,
-              this::triggerCheckForDueExecutions);
+              this::triggerCheckForDueExecutions,
+              heartbeatConfig);
     } else if (pollingStrategyConfig.type == PollingStrategyConfig.Type.FETCH) {
       executeDueStrategy =
           new FetchCandidates(
@@ -131,7 +147,8 @@ public class Scheduler implements SchedulerClient {
               taskResolver,
               clock,
               pollingStrategyConfig,
-              this::triggerCheckForDueExecutions);
+              this::triggerCheckForDueExecutions,
+              heartbeatConfig);
     } else {
       throw new IllegalArgumentException(
           "Unknown polling-strategy type: " + pollingStrategyConfig.type);
@@ -303,6 +320,12 @@ public class Scheduler implements SchedulerClient {
     return executor.getCurrentlyExecuting();
   }
 
+  public List<CurrentlyExecuting> getCurrentlyExecutingWithStaleHeartbeat() {
+    return executor.getCurrentlyExecuting().stream()
+        .filter(c -> c.getHeartbeatState().hasStaleHeartbeat())
+        .collect(toList());
+  }
+
   @SuppressWarnings({"rawtypes", "unchecked"})
   protected void detectDeadExecutions() {
     LOG.debug("Deleting executions with unresolved tasks.");
@@ -368,26 +391,44 @@ public class Scheduler implements SchedulerClient {
 
     LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
     Instant now = clock.now();
-    currentlyProcessing.stream()
-        .map(CurrentlyExecuting::getExecution)
-        .forEach(
-            execution -> {
-              LOG.trace("Updating heartbeat for execution: " + execution);
-              try {
-                schedulerTaskRepository.updateHeartbeat(execution, now);
-              } catch (Throwable e) {
-                LOG.error(
-                    "Failed while updating heartbeat for execution {}. Will try again later.",
-                    execution,
-                    e);
-                statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
-              }
-            });
+    currentlyProcessing.forEach(execution -> updateHeartbeatForExecution(now, execution));
     statsRegistry.register(SchedulerStatsEvent.RAN_UPDATE_HEARTBEATS);
   }
 
+  protected void updateHeartbeatForExecution(Instant now, CurrentlyExecuting currentlyExecuting) {
+    // There is a race-condition: the execution may have been deleted or updated, causing
+    // this update to fail (or update 0 rows). This may happen once, but not multiple times.
+
+    Execution e = currentlyExecuting.getExecution();
+    LOG.trace("Updating heartbeat for execution: " + e);
+
+    try {
+      boolean successfulHeartbeat = schedulerTaskRepository.updateHeartbeatWithRetry(e, now, 3);
+      currentlyExecuting.heartbeat(successfulHeartbeat, now);
+
+      if (!successfulHeartbeat) {
+        statsRegistry.register(SchedulerStatsEvent.FAILED_HEARTBEAT);
+      }
+
+      HeartbeatState heartbeatState = currentlyExecuting.getHeartbeatState();
+      if (heartbeatState.getFailedHeartbeats() > 1) {
+        LOG.warn(
+            "Execution has more than 1 failed heartbeats. Should not happen. Risk of being"
+                + " considered dead. See heartbeat-state. Heartbeat-state={}, Execution={}",
+            heartbeatState.describe(),
+            e);
+        statsRegistry.register(SchedulerStatsEvent.FAILED_MULTIPLE_HEARTBEATS);
+      }
+
+    } catch (Throwable ex) { // just-in-case to avoid any "poison-pills"
+      LOG.error("Unexpteced failure while while updating heartbeat for execution {}.", e, ex);
+      statsRegistry.register(SchedulerStatsEvent.FAILED_HEARTBEAT);
+      statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
+    }
+  }
+
   Duration getMaxAgeBeforeConsideredDead() {
-    return heartbeatInterval.multipliedBy(4);
+    return heartbeatInterval.multipliedBy(numberOfMissedHeartbeatsBeforeDead);
   }
 
   public static SchedulerBuilder create(DataSource dataSource, Task<?>... knownTasks) {

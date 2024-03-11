@@ -58,6 +58,7 @@ public class ManualScheduler extends Scheduler {
         schedulerName,
         waiter,
         heartbeatInterval,
+        SchedulerBuilder.DEFAULT_MISSED_HEARTBEATS_LIMIT,
         executeImmediately,
         statsRegistry,
         pollingStrategyConfig,

@@ -39,6 +39,7 @@ class ExecutePicked implements Runnable {
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
   private final Clock clock;
+  private HeartbeatConfig heartbeatConfig;
   private final Execution pickedExecution;
 
   public ExecutePicked(
@@ -51,6 +52,7 @@ class ExecutePicked implements Runnable {
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
       Clock clock,
+      HeartbeatConfig heartbeatConfig,
       Execution pickedExecution) {
     this.executor = executor;
     this.taskRepository = taskRepository;
@@ -61,23 +63,26 @@ class ExecutePicked implements Runnable {
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
     this.clock = clock;
+    this.heartbeatConfig = heartbeatConfig;
     this.pickedExecution = pickedExecution;
   }
 
   @Override
   public void run() {
     // FIXLATER: need to cleanup all the references back to scheduler fields
-    final UUID executionId =
-        executor.addCurrentlyProcessing(new CurrentlyExecuting(pickedExecution, clock));
+    CurrentlyExecuting currentlyExecuting =
+        new CurrentlyExecuting(pickedExecution, clock, heartbeatConfig);
+    final UUID executionId = executor.addCurrentlyProcessing(currentlyExecuting);
+
     try {
       statsRegistry.register(StatsRegistry.CandidateStatsEvent.EXECUTED);
-      executePickedExecution(pickedExecution);
+      executePickedExecution(pickedExecution, currentlyExecuting);
     } finally {
       executor.removeCurrentlyProcessing(executionId);
     }
   }
 
-  private void executePickedExecution(Execution execution) {
+  private void executePickedExecution(Execution execution, CurrentlyExecuting currentlyExecuting) {
     final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
     if (!task.isPresent()) {
       LOG.error(
@@ -94,7 +99,8 @@ class ExecutePicked implements Runnable {
           task.get()
               .execute(
                   execution.taskInstance,
-                  new ExecutionContext(schedulerState, execution, schedulerClient));
+                  new ExecutionContext(
+                      schedulerState, execution, schedulerClient, currentlyExecuting));
       LOG.debug("Execution done: " + execution);
 
       complete(completion, execution, executionStarted);

@@ -41,6 +41,7 @@
 		<dependency-plugin.failOnWarning>true</dependency-plugin.failOnWarning>
 
 		<!-- Dependency versions -->
+		<micro-jdbc.version>0.6.0</micro-jdbc.version>
 		<slf4j.version>1.7.36</slf4j.version>
 		<logback.version>1.2.12</logback.version>
 		<spring-boot.version>2.7.11</spring-boot.version>

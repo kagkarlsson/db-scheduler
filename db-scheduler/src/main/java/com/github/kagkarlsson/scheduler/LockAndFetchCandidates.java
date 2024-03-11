@@ -35,6 +35,7 @@ public class LockAndFetchCandidates implements PollStrategy {
   private final Clock clock;
   private final PollingStrategyConfig pollingStrategyConfig;
   private final Runnable triggerCheckForNewExecutions;
+  private HeartbeatConfig maxAgeBeforeConsideredDead;
   private final int lowerLimit;
   private final int upperLimit;
   private AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
@@ -51,7 +52,8 @@ public class LockAndFetchCandidates implements PollStrategy {
       TaskResolver taskResolver,
       Clock clock,
       PollingStrategyConfig pollingStrategyConfig,
-      Runnable triggerCheckForNewExecutions) {
+      Runnable triggerCheckForNewExecutions,
+      HeartbeatConfig maxAgeBeforeConsideredDead) {
     this.executor = executor;
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
@@ -63,6 +65,7 @@ public class LockAndFetchCandidates implements PollStrategy {
     this.clock = clock;
     this.pollingStrategyConfig = pollingStrategyConfig;
     this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
+    this.maxAgeBeforeConsideredDead = maxAgeBeforeConsideredDead;
     lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
     upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
   }
@@ -106,6 +109,7 @@ public class LockAndFetchCandidates implements PollStrategy {
               schedulerState,
               failureLogger,
               clock,
+              maxAgeBeforeConsideredDead,
               picked),
           () -> {
             if (moreExecutionsInDatabase.get()

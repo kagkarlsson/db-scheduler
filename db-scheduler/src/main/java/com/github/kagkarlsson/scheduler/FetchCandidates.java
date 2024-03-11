@@ -37,6 +37,7 @@ public class FetchCandidates implements PollStrategy {
   private final Clock clock;
   private final PollingStrategyConfig pollingStrategyConfig;
   private final Runnable triggerCheckForNewExecutions;
+  private HeartbeatConfig heartbeatConfig;
   AtomicInteger currentGenerationNumber = new AtomicInteger(0);
   private final int lowerLimit;
   private final int upperLimit;
@@ -53,7 +54,8 @@ public class FetchCandidates implements PollStrategy {
       TaskResolver taskResolver,
       Clock clock,
       PollingStrategyConfig pollingStrategyConfig,
-      Runnable triggerCheckForNewExecutions) {
+      Runnable triggerCheckForNewExecutions,
+      HeartbeatConfig heartbeatConfig) {
     this.executor = executor;
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
@@ -65,6 +67,7 @@ public class FetchCandidates implements PollStrategy {
     this.clock = clock;
     this.pollingStrategyConfig = pollingStrategyConfig;
     this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
+    this.heartbeatConfig = heartbeatConfig;
     lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
     // FIXLATER: this is not "upper limit", but rather nr of executions to get. those already in
     // queue will become stale
@@ -106,6 +109,7 @@ public class FetchCandidates implements PollStrategy {
                             schedulerState,
                             failureLogger,
                             clock,
+                            heartbeatConfig,
                             picked)
                         .run());
           },

@@ -18,11 +18,9 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-import com.github.kagkarlsson.jdbc.*;
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
-import com.github.kagkarlsson.scheduler.*;
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -32,7 +30,10 @@ import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -560,7 +561,23 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public void updateHeartbeat(Execution e, Instant newHeartbeat) {
+  public boolean updateHeartbeatWithRetry(Execution execution, Instant newHeartbeat, int tries) {
+
+    try {
+      return updateHeartbeat(execution, newHeartbeat);
+    } catch (RuntimeException e) {
+      if (tries <= 1) {
+        LOG.warn("Failed to update heartbeat. No more retries.", e);
+        return false;
+      } else {
+        LOG.info("Failed to update heartbeat. Remaining retries={}.", tries - 1, e);
+        return updateHeartbeatWithRetry(execution, newHeartbeat, tries - 1);
+      }
+    }
+  }
+
+  @Override
+  public boolean updateHeartbeat(Execution e, Instant newHeartbeat) {
 
     final int updated =
         jdbcRunner.execute(
@@ -578,14 +595,25 @@ public class JdbcTaskRepository implements TaskRepository {
             });
 
     if (updated == 0) {
-      LOG.trace("Did not update heartbeat. Execution must have been removed or rescheduled.", e);
+      // There is a race-condition: Executions are not removed from currently-executing until after
+      // the execution has been updated in the database, so this might happen.
+      LOG.warn(
+          "Did not update heartbeat. Execution must have been removed or rescheduled"
+              + "(i.e. CompletionHandler ran and finished just before heartbeat-update). "
+              + "This is a race-condition that may occur, but is very unlikely. "
+              + "task-instance={}",
+          e.taskInstance);
+      return false;
     } else {
       if (updated > 1) {
-        throw new IllegalStateException(
-            "Updated multiple rows updating heartbeat for execution. Should never happen since name and id is primary key. Execution: "
+        LOG.error(
+            "Updated multiple rows updating heartbeat for execution. Should never happen since "
+                + "name and id is primary key. Execution: "
                 + e);
+        return true;
       }
       LOG.debug("Updated heartbeat for execution: " + e);
+      return true;
     }
   }
 
