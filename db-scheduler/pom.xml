@@ -23,7 +23,7 @@
         <equals-verifier.version>3.14.2</equals-verifier.version>
         <bytebuddy.version>1.14.5</bytebuddy.version>
         <zonky-pg-embedded.version>2.0.4</zonky-pg-embedded.version>
-        <postgresql.version>42.5.1</postgresql.version>
+        <postgresql.version>42.5.5</postgresql.version>
         <slf4j.version>1.7.36</slf4j.version>
         <test.excludedTags>compatibility,compatibility-cluster</test.excludedTags>
     </properties>
