@@ -148,7 +148,7 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    
+
     <build>
         <plugins>
             <plugin>
@@ -157,7 +157,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Automatic-Module-Name>com.github.kagkarlsson.scheduler.spring-boot</Automatic-Module-Name>
+                            <Automatic-Module-Name>com.github.kagkarlsson.scheduler.springboot</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
