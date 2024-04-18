@@ -157,7 +157,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Automatic-Module-Name>com.github.kagkarlsson.scheduler.boot</Automatic-Module-Name>
+                            <Automatic-Module-Name>com.github.kagkarlsson.scheduler.spring-boot</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
