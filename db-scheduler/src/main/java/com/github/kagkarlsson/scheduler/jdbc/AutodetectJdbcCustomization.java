@@ -162,7 +162,12 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     if (!persistTimestampInUTC) {
       SILENCABLE_LOG.warn(
           "{}-schema does not support persistent timezones. "
-              + "It is recommended to store time in UTC to avoid issues with for example DST",
+              + "It is recommended to store time in UTC to avoid issues with for example DST. "
+            + "For first time users, use setting 'alwaysPersistTimestampInUtc' to achieve this. "
+            + "Users upgrading from a version prior to v14.0.0 can either silence this logger, "
+            + "or perform a controlled upgrade to UTC timestamps. All old instances "
+            + "of the scheduler must be stopped and timestamps migrated to UTC before starting "
+            + "again, using 'alwaysPersistTimestampInUtc=true'.",
           database);
     }
   }
