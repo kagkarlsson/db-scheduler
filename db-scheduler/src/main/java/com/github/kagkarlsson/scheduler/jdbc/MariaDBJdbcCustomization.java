@@ -23,12 +23,6 @@ public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
 
   public MariaDBJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
-    if (!persistTimestampInUTC) {
-      LOG.warn(
-          "{} does not support persistent timezones. "
-              + "It is recommended to store time in UTC to avoid issues with for example DST",
-          getClass().getName());
-    }
   }
 
   @Override

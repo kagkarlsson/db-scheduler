@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 public class AutodetectJdbcCustomization implements JdbcCustomization {
 
   private static final Logger LOG = LoggerFactory.getLogger(AutodetectJdbcCustomization.class);
+  private static final Logger SILENCABLE_LOG =
+      LoggerFactory.getLogger(LOG.getName() + ".utc_warning");
   public static final String MICROSOFT_SQL_SERVER = "Microsoft SQL Server";
   public static final String POSTGRESQL = "PostgreSQL";
   public static final String ORACLE = "Oracle";
@@ -60,10 +62,12 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
         detectedCustomization = new OracleJdbcCustomization(persistTimestampInUTC);
       } else if (databaseProductName.contains(MARIADB)) {
         LOG.info("Using MariaDB jdbc-overrides.");
+        logWarningIfNotUTC("MariaDB", persistTimestampInUTC);
         detectedCustomization = new MariaDBJdbcCustomization(persistTimestampInUTC);
       } else if (databaseProductName.contains(MYSQL)) {
         int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
         String dbVersion = c.getMetaData().getDatabaseProductVersion();
+        logWarningIfNotUTC("MySQL", persistTimestampInUTC);
         if (databaseMajorVersion >= 8) {
           LOG.info("Using MySQL jdbc-overrides version 8 and later. (v {})", dbVersion);
           detectedCustomization = new MySQL8JdbcCustomization(persistTimestampInUTC);
@@ -77,8 +81,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
               "No database-specific jdbc-overrides applied. Behavior overridden to always store "
                   + "timestamps in zone UTC");
         } else {
-          Logger silencableLogger = LoggerFactory.getLogger(LOG.getName() + ".utc_warning");
-          silencableLogger.warn(
+          SILENCABLE_LOG.warn(
               "No database-specific jdbc-overrides applied. Assuming time-related columns "
                   + "to be of type compatibe with 'TIMESTAMP WITH TIME ZONE', i.e. zone is persisted."
                   + " If not, consider overriding to always UTC via '.alwaysPersistTimestampInUTC()'.");
@@ -153,5 +156,14 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   @Override
   public String getName() {
     return jdbcCustomization.getName();
+  }
+
+  private void logWarningIfNotUTC(String database, boolean persistTimestampInUTC) {
+    if (!persistTimestampInUTC) {
+      SILENCABLE_LOG.warn(
+          "{}-schema does not support persistent timezones. "
+              + "It is recommended to store time in UTC to avoid issues with for example DST",
+          database);
+    }
   }
 }
