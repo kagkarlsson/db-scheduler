@@ -27,6 +27,8 @@ import org.slf4j.LoggerFactory;
 public class AutodetectJdbcCustomization implements JdbcCustomization {
 
   private static final Logger LOG = LoggerFactory.getLogger(AutodetectJdbcCustomization.class);
+  private static final Logger SILENCABLE_LOG =
+      LoggerFactory.getLogger(LOG.getName() + ".utc_warning");
   public static final String MICROSOFT_SQL_SERVER = "Microsoft SQL Server";
   public static final String POSTGRESQL = "PostgreSQL";
   public static final String ORACLE = "Oracle";
@@ -48,6 +50,9 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
 
       if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
         LOG.info("Using MSSQL jdbc-overrides.");
+        if (persistTimestampInUTC) {
+          LOG.info("Redundant 'persistTimestampInUTC' setting. MSSQL will always persist in UTC.");
+        }
         detectedCustomization = new MssqlJdbcCustomization(true);
       } else if (databaseProductName.equals(POSTGRESQL)) {
         LOG.info("Using PostgreSQL jdbc-overrides.");
@@ -57,16 +62,18 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
         detectedCustomization = new OracleJdbcCustomization(persistTimestampInUTC);
       } else if (databaseProductName.contains(MARIADB)) {
         LOG.info("Using MariaDB jdbc-overrides.");
-        detectedCustomization = new MariaDBJdbcCustomization(true);
+        logWarningIfNotUTC("MariaDB", persistTimestampInUTC);
+        detectedCustomization = new MariaDBJdbcCustomization(persistTimestampInUTC);
       } else if (databaseProductName.contains(MYSQL)) {
         int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
         String dbVersion = c.getMetaData().getDatabaseProductVersion();
+        logWarningIfNotUTC("MySQL", persistTimestampInUTC);
         if (databaseMajorVersion >= 8) {
           LOG.info("Using MySQL jdbc-overrides version 8 and later. (v {})", dbVersion);
-          detectedCustomization = new MySQL8JdbcCustomization(true);
+          detectedCustomization = new MySQL8JdbcCustomization(persistTimestampInUTC);
         } else {
           LOG.info("Using MySQL jdbc-overrides for version older than 8. (v {})", dbVersion);
-          detectedCustomization = new MySQLJdbcCustomization(true);
+          detectedCustomization = new MySQLJdbcCustomization(persistTimestampInUTC);
         }
       } else {
         if (persistTimestampInUTC) {
@@ -74,8 +81,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
               "No database-specific jdbc-overrides applied. Behavior overridden to always store "
                   + "timestamps in zone UTC");
         } else {
-          Logger silencableLogger = LoggerFactory.getLogger(LOG.getName() + ".utc_warning");
-          silencableLogger.warn(
+          SILENCABLE_LOG.warn(
               "No database-specific jdbc-overrides applied. Assuming time-related columns "
                   + "to be of type compatibe with 'TIMESTAMP WITH TIME ZONE', i.e. zone is persisted."
                   + " If not, consider overriding to always UTC via '.alwaysPersistTimestampInUTC()'.");
@@ -150,5 +156,19 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   @Override
   public String getName() {
     return jdbcCustomization.getName();
+  }
+
+  private void logWarningIfNotUTC(String database, boolean persistTimestampInUTC) {
+    if (!persistTimestampInUTC) {
+      SILENCABLE_LOG.warn(
+          "{}-schema does not support persistent timezones. "
+              + "It is recommended to store time in UTC to avoid issues with for example DST. "
+              + "For first time users, use setting 'alwaysPersistTimestampInUtc' to achieve this. "
+              + "Users upgrading from a version prior to v14.0.0 can either silence this logger, "
+              + "or perform a controlled upgrade to UTC timestamps. All old instances "
+              + "of the scheduler must be stopped and timestamps migrated to UTC before starting "
+              + "again, using 'alwaysPersistTimestampInUtc=true'.",
+          database);
+    }
   }
 }

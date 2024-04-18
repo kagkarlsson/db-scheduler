@@ -196,8 +196,10 @@ How often the scheduler checks the database for due executions. Default `10s`.<b
 The Scheduler assumes that columns for persisting timestamps persist `Instant`s, not `LocalDateTime`s,
  i.e. somehow tie the timestamp to a zone. However, some databases have limited support for such types
  (which has no zone information) or other quirks, making "always store in UTC" a better alternative.
-Currently, only PostgreSQL and Oracle rely on the database preserving time zone information,
-other databases store timestamps in UTC. **NB:** For backwards compatibility, the default behavior
+For such cases, use this setting to always store Instants in UTC.
+PostgreSQL and Oracle-schemas is tested to preserve zone-information. **MySQL** and **MariaDB**-schemas
+_does not_ and should use this setting.
+**NB:** For backwards compatibility, the default behavior
 for "unknown" databases is to assume the database preserves time zone. For "known" databases,
 see the class `AutodetectJdbcCustomization`.
 
