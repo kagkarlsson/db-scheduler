@@ -11,6 +11,7 @@ public class PostgresqlCompatibilityTest extends CompatibilityTest {
 
   @RegisterExtension
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
+
   //    Enable if test gets flaky!
   //    @RegisterExtension
   //    public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(

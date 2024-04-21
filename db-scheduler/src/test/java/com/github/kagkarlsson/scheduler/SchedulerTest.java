@@ -39,6 +39,7 @@ public class SchedulerTest {
 
   @RegisterExtension
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
+
   //    @RegisterExtension
   //        public ChangeLogLevelsExtension changeLogLevels = new ChangeLogLevelsExtension(
   //        new ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson.scheduler",
