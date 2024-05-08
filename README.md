@@ -254,7 +254,7 @@ this, but testing has shown this is prone to deadlocks and thus not recommended 
 How often to update the heartbeat timestamp for running executions. Default `5m`.
 
 :gear: `.missedHeartbeatsLimit(int)`<br/>
-How many heartbeats may be missed before the execution is considered dead. Default `1`.
+How many heartbeats may be missed before the execution is considered dead. Default `6`.
 
 :gear: `.schedulerName(SchedulerName)`<br/>
 Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler.
