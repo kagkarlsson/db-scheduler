@@ -29,6 +29,7 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.LazyInitializationExcludeFilter;
 import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
@@ -239,6 +240,17 @@ public class DbSchedulerAutoConfigurationTest {
               assertThat(ctx).doesNotHaveBean(DefaultStatsRegistry.class);
               assertThat(ctx).doesNotHaveBean(MicrometerStatsRegistry.class);
             });
+  }
+
+  @Test
+  void it_should_exclude_db_scheduler_starter_from_lazy_init() {
+    ctxRunner.run(
+        (context) -> {
+          LazyInitializationExcludeFilter filter =
+              context.getBean(LazyInitializationExcludeFilter.class);
+
+          assertThat(filter.isExcluded(null, null, DbSchedulerStarter.class)).isTrue();
+        });
   }
 
   @Configuration

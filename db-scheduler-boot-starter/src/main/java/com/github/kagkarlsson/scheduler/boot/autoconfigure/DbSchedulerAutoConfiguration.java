@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.LazyInitializationExcludeFilter;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -194,6 +195,11 @@ public class DbSchedulerAutoConfiguration {
     }
 
     return new ImmediateStart(scheduler);
+  }
+
+  @Bean
+  public LazyInitializationExcludeFilter eagerDbSchedulerStarter() {
+    return LazyInitializationExcludeFilter.forBeanTypes(DbSchedulerStarter.class);
   }
 
   private static DataSource configureDataSource(DataSource existingDataSource) {
