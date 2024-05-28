@@ -344,6 +344,15 @@
             </plugin>
             <plugin>
                 <artifactId>maven-shade-plugin</artifactId>
+                <configuration>
+                    <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                            <manifestEntries>
+                                <Automatic-Module-Name>com.github.kagkarlsson.scheduler</Automatic-Module-Name>
+                            </manifestEntries>
+                        </transformer>
+                    </transformers>
+                </configuration>
             </plugin>
         </plugins>
     </build>
