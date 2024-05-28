@@ -23,7 +23,6 @@ import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
-import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
@@ -146,10 +145,7 @@ public class DbSchedulerAutoConfiguration {
     builder.serializer(customizer.serializer().orElse(SPRING_JAVA_SERIALIZER));
 
     // Use custom JdbcCustomizer if provided.
-    builder.jdbcCustomization(
-        customizer
-            .jdbcCustomization()
-            .orElse(new AutodetectJdbcCustomization(transactionalDataSource)));
+    customizer.jdbcCustomization().ifPresent(builder::jdbcCustomization);
 
     if (config.isAlwaysPersistTimestampInUtc()) {
       builder.alwaysPersistTimestampInUTC();
