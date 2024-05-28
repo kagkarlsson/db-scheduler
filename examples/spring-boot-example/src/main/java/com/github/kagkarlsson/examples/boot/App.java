@@ -36,7 +36,8 @@ public class App {
 
   /** Example hack: use a {@link CommandLineRunner} to trigger scheduling of a one-time task. */
   @Bean
-  CommandLineRunner executeOnStartup(Scheduler scheduler, @Qualifier("sampleOneTimeTask") Task<Void> sampleOneTimeTask) {
+  CommandLineRunner executeOnStartup(
+      Scheduler scheduler, @Qualifier("sampleOneTimeTask") Task<Void> sampleOneTimeTask) {
     log.info("Scheduling one time task to now!");
 
     return ignored ->
