@@ -2,7 +2,7 @@ package com.github.kagkarlsson.scheduler.functional;
 
 import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
@@ -21,7 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import org.hamcrest.collection.IsCollectionWithSize;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ public class DetectStaleHeartbeatTest {
 
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
-  @Test
+  @RepeatedTest(10) // FIXLATER: remove when test is stable
   public void test_dead_execution() throws InterruptedException {
     PausingHandler<Void> handler = new PausingHandler<>();
 
@@ -44,7 +44,7 @@ public class DetectStaleHeartbeatTest {
             .execute(handler);
 
     TestableRegistry.Condition ranUpdateHeartbeats =
-        TestableRegistry.Conditions.ranUpdateHeartbeats(2);
+        TestableRegistry.Conditions.ranUpdateHeartbeats(3);
     TestableRegistry.Condition ranExecuteDue = TestableRegistry.Conditions.ranExecuteDue(1);
 
     TestableRegistry registry =
@@ -54,6 +54,7 @@ public class DetectStaleHeartbeatTest {
         Scheduler.create(postgres.getDataSource(), customTask)
             .pollingInterval(Duration.ofMillis(30))
             .heartbeatInterval(Duration.ofMillis(30))
+            .missedHeartbeatsLimit(10)
             .schedulerName(new SchedulerName.Fixed("test"))
             .statsRegistry(registry)
             .build();
@@ -74,6 +75,7 @@ public class DetectStaleHeartbeatTest {
     assertThat(failing, IsCollectionWithSize.hasSize(1));
     HeartbeatState state = failing.get(0).getHeartbeatState();
     assertTrue(state.hasStaleHeartbeat());
-    assertThat(state.getFailedHeartbeats(), is(2));
+    // update-heartbeats may have run once before this execution was picked, hence >= 2 and not == 3
+    assertThat(state.getFailedHeartbeats(), greaterThanOrEqualTo(2));
   }
 }
