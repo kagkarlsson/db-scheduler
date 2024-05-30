@@ -40,16 +40,38 @@ import org.slf4j.LoggerFactory;
 public interface SchedulerClient {
 
   /**
-   * Schedule a new execution.
+   * Schedule a new execution if task instance does not already exists.
    *
    * @param taskInstance Task-instance, optionally with data
    * @param executionTime Instant it should run
    * @see java.time.Instant
    * @see com.github.kagkarlsson.scheduler.task.TaskInstance
    */
+  @Deprecated
   <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime);
 
+  @Deprecated
   <T> void schedule(SchedulableInstance<T> schedulableInstance);
+
+  /**
+   * Schedule a new execution if task instance does not already exists.
+   *
+   * @param taskInstance Task-instance, optionally with data
+   * @param executionTime Instant it should run
+   * @see java.time.Instant
+   * @see com.github.kagkarlsson.scheduler.task.TaskInstance
+   * @return true if scheduled successfully
+   */
+  <T> boolean scheduleIfNotExists(TaskInstance<T> taskInstance, Instant executionTime);
+
+  /**
+   * Schedule a new execution if task instance does not already exists.
+   *
+   * @param schedulableInstance Task-instance and time it should run
+   * @see com.github.kagkarlsson.scheduler.task.SchedulableInstance
+   * @return true if scheduled successfully
+   */
+  <T> boolean scheduleIfNotExists(SchedulableInstance<T> schedulableInstance);
 
   /**
    * Update an existing execution to a new execution-time. If the execution does not exist or if it
@@ -256,11 +278,25 @@ public interface SchedulerClient {
 
     @Override
     public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
+      // ignore result even if failed to schedule due to duplicates for backwards-compatibility
+      scheduleIfNotExists(taskInstance, executionTime);
+    }
+
+    @Override
+    public <T> boolean scheduleIfNotExists(TaskInstance<T> taskInstance, Instant executionTime) {
       boolean success =
           taskRepository.createIfNotExists(SchedulableInstance.of(taskInstance, executionTime));
       if (success) {
         notifyListeners(ClientEvent.EventType.SCHEDULE, taskInstance, executionTime);
       }
+      return success;
+    }
+
+    @Override
+    public <T> boolean scheduleIfNotExists(SchedulableInstance<T> schedulableInstance) {
+      return scheduleIfNotExists(
+          schedulableInstance.getTaskInstance(),
+          schedulableInstance.getNextExecutionTime(clock.now()));
     }
 
     @Override
