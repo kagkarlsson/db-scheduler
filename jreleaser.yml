@@ -42,6 +42,6 @@ deploy:
         active: ALWAYS
         url: https://oss.sonatype.org/service/local
         closeRepository: true
-        releaseRepository: false
+        releaseRepository: true
         stagingRepositories:
           - target/staging-deploy
