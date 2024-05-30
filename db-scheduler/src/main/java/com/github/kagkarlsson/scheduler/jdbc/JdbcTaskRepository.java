@@ -218,7 +218,8 @@ public class JdbcTaskRepository implements TaskRepository {
               ps.setInt(index++, 0); // consecutive_failures
               jdbcCustomization.setInstant(ps, index++, newExecutionTime); // execution_time
               // may cause datbase-specific problems, might have to use setNull instead
-              jdbcCustomization.setTaskData(ps, index++, serializer.serialize(newData)); //task_data
+              jdbcCustomization.setTaskData(
+                  ps, index++, serializer.serialize(newData)); // task_data
               ps.setString(index++, toBeReplaced.taskInstance.getTaskName()); // task_name
               ps.setString(index++, toBeReplaced.taskInstance.getId()); // task_instance
               ps.setLong(index++, toBeReplaced.version); // version
