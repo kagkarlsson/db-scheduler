@@ -13,6 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import static com.github.kagkarlsson.scheduler.ExceptionUtils.describe;
+
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
@@ -129,9 +131,10 @@ class ExecutePicked implements Runnable {
       statsRegistry.register(StatsRegistry.SchedulerStatsEvent.COMPLETIONHANDLER_ERROR);
       statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
       LOG.error(
-          "Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. "
+          "Failed while completing execution {}, because {}. Execution will likely remain scheduled and locked/picked. "
               + "The execution should be detected as dead after a while, and handled according to the tasks DeadExecutionHandler.",
           execution,
+          describe(e),
           e);
     }
   }
@@ -142,9 +145,8 @@ class ExecutePicked implements Runnable {
       Throwable cause,
       Instant executionStarted,
       String errorMessagePrefix) {
-    String logMessage =
-        errorMessagePrefix + " during execution of task with name '{}'. Treating as failure.";
-    failureLogger.log(logMessage, cause, task.getName());
+    String logMessage = "{} {} during execution of task with name '{}'. Treating as failure.";
+    failureLogger.log(logMessage, cause, errorMessagePrefix, describe(cause), task.getName());
 
     ExecutionComplete completeEvent =
         ExecutionComplete.failure(execution, executionStarted, clock.now(), cause);
@@ -158,9 +160,10 @@ class ExecutePicked implements Runnable {
       statsRegistry.register(StatsRegistry.SchedulerStatsEvent.FAILUREHANDLER_ERROR);
       statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
       LOG.error(
-          "Failed while completing execution {}. Execution will likely remain scheduled and locked/picked. "
+          "Failed while completing execution {}, because {}. Execution will likely remain scheduled and locked/picked. "
               + "The execution should be detected as dead after a while, and handled according to the tasks DeadExecutionHandler.",
           execution,
+          describe(cause),
           e);
     }
   }
