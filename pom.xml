@@ -56,8 +56,8 @@
 	<modules>
 		<module>db-scheduler</module>
 		<module>db-scheduler-boot-starter</module>
-        <module>examples</module>
-    </modules>
+		<module>examples</module>
+	</modules>
 
 	<dependencyManagement>
 		<dependencies>
@@ -318,19 +318,6 @@
 				<failOnMissingHeader>false</failOnMissingHeader>
 				<dependency-plugin.failOnWarning>false</dependency-plugin.failOnWarning>
 			</properties>
-		</profile>
-		<profile>
-			<id>sources</id>
-			<build>
-				<plugins>
-					<plugin>
-						<artifactId>maven-javadoc-plugin</artifactId>
-					</plugin>
-					<plugin>
-						<artifactId>maven-source-plugin</artifactId>
-					</plugin>
-				</plugins>
-			</build>
 		</profile>
 		<profile>
 			<id>release</id>
