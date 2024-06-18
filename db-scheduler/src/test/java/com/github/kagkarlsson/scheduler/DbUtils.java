@@ -23,13 +23,25 @@ public class DbUtils {
   }
 
   public static Consumer<DataSource> runSqlResource(String resource) {
+    return runSqlResource(resource, false);
+  }
+
+  public static Consumer<DataSource> runSqlResource(String resource, boolean splitStatements) {
     return dataSource -> {
       final JdbcRunner jdbcRunner = new JdbcRunner(dataSource);
       try {
         final String statements =
             CharStreams.toString(
                 new InputStreamReader(DbUtils.class.getResourceAsStream(resource)));
-        jdbcRunner.execute(statements, NOOP);
+        if (splitStatements) {
+          for (String statement : statements.split(";")) {
+            if (!statement.trim().isEmpty()) {
+              jdbcRunner.execute(statement, NOOP);
+            }
+          }
+        } else {
+          jdbcRunner.execute(statements, NOOP);
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
