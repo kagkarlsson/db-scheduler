@@ -14,7 +14,8 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.SchedulerListener;
+import com.github.kagkarlsson.scheduler.stats.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import java.time.Instant;
 import java.util.List;
@@ -28,7 +29,7 @@ public class LockAndFetchCandidates implements PollStrategy {
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
   private SchedulerClientEventListener earlyExecutionListener;
-  private final StatsRegistry statsRegistry;
+  private final SchedulerListener schedulerListener;
   private final TaskResolver taskResolver;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
@@ -46,7 +47,7 @@ public class LockAndFetchCandidates implements PollStrategy {
       SchedulerClient schedulerClient,
       SchedulerClientEventListener earlyExecutionListener,
       int threadpoolSize,
-      StatsRegistry statsRegistry,
+      SchedulerListener schedulerListener,
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
       TaskResolver taskResolver,
@@ -58,7 +59,7 @@ public class LockAndFetchCandidates implements PollStrategy {
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
     this.earlyExecutionListener = earlyExecutionListener;
-    this.statsRegistry = statsRegistry;
+    this.schedulerListener = schedulerListener;
     this.taskResolver = taskResolver;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
@@ -104,7 +105,7 @@ public class LockAndFetchCandidates implements PollStrategy {
               taskRepository,
               earlyExecutionListener,
               schedulerClient,
-              statsRegistry,
+              schedulerListener,
               taskResolver,
               schedulerState,
               failureLogger,
@@ -118,6 +119,6 @@ public class LockAndFetchCandidates implements PollStrategy {
             }
           });
     }
-    statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
+    schedulerListener.onSchedulerEvent(SchedulerEventType.RAN_EXECUTE_DUE);
   }
 }

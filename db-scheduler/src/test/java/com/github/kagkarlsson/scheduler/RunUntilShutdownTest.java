@@ -3,7 +3,7 @@ package com.github.kagkarlsson.scheduler;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.SchedulerListener;
 import java.time.Duration;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +22,7 @@ public class RunUntilShutdownTest {
     runnable = new TimeLimitedRunnable(2, schedulerState);
     countingWaiter = new CountingWaiter();
     runUntilShutdown =
-        new RunUntilShutdown(runnable, countingWaiter, schedulerState, StatsRegistry.NOOP);
+        new RunUntilShutdown(runnable, countingWaiter, schedulerState, SchedulerListener.NOOP);
   }
 
   @Test

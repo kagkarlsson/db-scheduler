@@ -22,7 +22,10 @@ import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
+import com.github.kagkarlsson.scheduler.stats.CompositeSchedulerListener;
+import com.github.kagkarlsson.scheduler.stats.SchedulerListener;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistryAdapter;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
 import java.time.Duration;
@@ -37,9 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SchedulerBuilder {
-  private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
   public static final double UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH = 3.0;
-
   public static final Duration DEFAULT_POLLING_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMinutes(5);
   public static final int DEFAULT_MISSED_HEARTBEATS_LIMIT = 6;
@@ -50,14 +51,13 @@ public class SchedulerBuilder {
           PollingStrategyConfig.Type.FETCH, 0.5, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH);
   public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.WARN;
   public static final boolean LOG_STACK_TRACE_ON_FAILURE = true;
-
-  protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
-
+  private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
   protected final DataSource dataSource;
-  protected SchedulerName schedulerName;
-  protected int executorThreads = 10;
   protected final List<Task<?>> knownTasks = new ArrayList<>();
   protected final List<OnStartup> startTasks = new ArrayList<>();
+  protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
+  protected SchedulerName schedulerName;
+  protected int executorThreads = 10;
   protected Waiter waiter = new Waiter(DEFAULT_POLLING_INTERVAL, clock);
   protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
   protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -77,6 +77,7 @@ public class SchedulerBuilder {
   private boolean registerShutdownHook = false;
   private int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
   private boolean alwaysPersistTimestampInUTC = false;
+  private List<SchedulerListener> schedulerListeners = new ArrayList<>();
 
   public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
     this.dataSource = dataSource;
@@ -134,6 +135,11 @@ public class SchedulerBuilder {
 
   public SchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
     this.statsRegistry = statsRegistry;
+    return this;
+  }
+
+  public SchedulerBuilder addSchedulerListener(SchedulerListener schedulerListener) {
+    this.schedulerListeners.add(schedulerListener);
     return this;
   }
 
@@ -268,6 +274,10 @@ public class SchedulerBuilder {
               3, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-housekeeper-"));
     }
 
+    if (statsRegistry != null) {
+      addSchedulerListener(new StatsRegistryAdapter(statsRegistry));
+    }
+
     LOG.info(
         "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s enable-immediate-execution={}, table-name={}, name={}",
         executorThreads,
@@ -290,7 +300,7 @@ public class SchedulerBuilder {
             heartbeatInterval,
             numberOfMissedHeartbeatsBeforeDead,
             enableImmediateExecution,
-            statsRegistry,
+            new CompositeSchedulerListener(schedulerListeners),
             pollingStrategyConfig,
             deleteUnresolvedAfter,
             shutdownMaxWait,
