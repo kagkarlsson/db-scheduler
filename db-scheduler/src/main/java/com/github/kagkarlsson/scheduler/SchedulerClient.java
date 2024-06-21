@@ -219,11 +219,15 @@ public interface SchedulerClient {
       TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, knownTasks);
       final SystemClock clock = new SystemClock();
 
+      final JdbcCustomization jdbcCustomization =
+          ofNullable(this.jdbcCustomization)
+              .orElseGet(() -> new AutodetectJdbcCustomization(dataSource));
+
       TaskRepository taskRepository =
           new JdbcTaskRepository(
               dataSource,
               false,
-              ofNullable(jdbcCustomization).orElse(new AutodetectJdbcCustomization(dataSource)),
+              jdbcCustomization,
               tableName,
               taskResolver,
               new SchedulerClientName(),
