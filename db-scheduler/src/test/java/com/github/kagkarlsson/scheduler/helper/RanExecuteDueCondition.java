@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler.helper;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.LoggerFactory;
 
@@ -39,4 +40,7 @@ public class RanExecuteDueCondition implements TestableRegistry.Condition {
 
   @Override
   public void apply(StatsRegistry.ExecutionStatsEvent e) {}
+
+  @Override
+  public void applyExecutionComplete(ExecutionComplete complete) {}
 }

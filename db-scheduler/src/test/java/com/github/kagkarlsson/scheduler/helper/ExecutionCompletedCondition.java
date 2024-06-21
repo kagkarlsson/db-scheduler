@@ -1,6 +1,8 @@
 package com.github.kagkarlsson.scheduler.helper;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.ExecutionComplete.Result;
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +34,13 @@ public class ExecutionCompletedCondition implements TestableRegistry.Condition {
   public void apply(StatsRegistry.CandidateStatsEvent e) {}
 
   @Override
-  public void apply(StatsRegistry.ExecutionStatsEvent e) {
-    if (e == StatsRegistry.ExecutionStatsEvent.COMPLETED) {
+  public void apply(StatsRegistry.ExecutionStatsEvent e) {}
+
+  @Override
+  public void applyExecutionComplete(ExecutionComplete complete) {
+    if (complete.getResult() == Result.OK) {
       LoggerFactory.getLogger(ExecutionCompletedCondition.class)
-          .debug("Received event execution-completed, counting down");
+        .debug("Received event execution-completed, counting down");
       completed.countDown();
     }
   }
