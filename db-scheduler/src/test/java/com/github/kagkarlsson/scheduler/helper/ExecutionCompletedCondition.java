@@ -40,7 +40,7 @@ public class ExecutionCompletedCondition implements TestableRegistry.Condition {
   public void applyExecutionComplete(ExecutionComplete complete) {
     if (complete.getResult() == Result.OK) {
       LoggerFactory.getLogger(ExecutionCompletedCondition.class)
-        .debug("Received event execution-completed, counting down");
+          .debug("Received event execution-completed, counting down");
       completed.countDown();
     }
   }

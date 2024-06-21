@@ -100,7 +100,6 @@ public class TestableRegistry implements StatsRegistry {
     waitConditions.forEach(c -> c.applyExecutionComplete(complete));
   }
 
-
   private void countEvent(Enum e) {
     String key = counterKey(e.getClass(), e.name());
     AtomicLong counter = counters.get(key);
