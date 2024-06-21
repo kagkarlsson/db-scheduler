@@ -61,8 +61,8 @@ public class TestableRegistry implements StatsRegistry {
 
   @Override
   public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {
-    applyToConditions(completeEvent);
     completed.add(completeEvent);
+    applyToConditions(completeEvent);
     log(completeEvent);
   }
 
