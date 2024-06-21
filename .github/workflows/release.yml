@@ -33,7 +33,7 @@ jobs:
         uses: jreleaser/release-action@v2
         with:
           setup-java: false
-          version: 1.6.0
+          version: 1.12.0
         env:
           JRELEASER_PROJECT_VERSION: ${{ github.event.inputs.version }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
