@@ -133,6 +133,10 @@ public class SchedulerBuilder {
     return this;
   }
 
+  /**
+   * Deprecated, use addSchedulerListener instead
+   */
+  @Deprecated
   public SchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
     this.statsRegistry = statsRegistry;
     return this;
