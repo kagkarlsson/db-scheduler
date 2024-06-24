@@ -44,7 +44,7 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
     pooledDatasource = new HikariDataSource(hikariConfig);
 
     // init schema
-    DbUtils.runSqlResource("/oracle_tables.sql").accept(pooledDatasource);
+    DbUtils.runSqlResource("/oracle_tables.sql", true).accept(pooledDatasource);
   }
 
   @BeforeEach
