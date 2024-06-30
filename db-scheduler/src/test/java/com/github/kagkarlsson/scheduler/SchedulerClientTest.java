@@ -5,6 +5,7 @@ import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.unruly.matchers.OptionalMatchers;
@@ -79,10 +80,20 @@ public class SchedulerClientTest {
   @Test
   public void client_should_be_able_to_schedule_executions() {
     SchedulerClient client = create(DB.getDataSource()).build();
+
+    // test deprecated method
     client.schedule(oneTimeTaskA.instance("1"), settableClock.now());
+    assertFalse(client.scheduleIfNotExists(oneTimeTaskA.instance("1"), settableClock.now()));
 
     scheduler.runAnyDueExecutions();
     assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(1));
+
+    // test new method
+    client.scheduleIfNotExists(oneTimeTaskA.instance("1"), settableClock.now());
+    assertFalse(client.scheduleIfNotExists(oneTimeTaskA.instance("1"), settableClock.now()));
+
+    scheduler.runAnyDueExecutions();
+    assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(2));
   }
 
   @Test
