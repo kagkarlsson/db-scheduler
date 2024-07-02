@@ -157,6 +157,10 @@ public class Scheduler implements SchedulerClient {
     LOG.info("Using polling-strategy: " + pollingStrategyConfig.describe());
   }
 
+  public void registerSchedulerListener(SchedulerListener listener) {
+    schedulerListeners.add(listener);
+  }
+
   public void start() {
     LOG.info("Starting scheduler.");
 

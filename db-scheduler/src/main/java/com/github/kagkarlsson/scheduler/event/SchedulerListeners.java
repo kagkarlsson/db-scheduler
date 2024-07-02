@@ -38,6 +38,10 @@ public class SchedulerListeners implements SchedulerListener {
     this.schedulerListeners = schedulerListeners;
   }
 
+  public void add(SchedulerListener listener) {
+    schedulerListeners.add(listener);
+  }
+
   @Override
   public void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime) {
     schedulerListeners.forEach(
