@@ -13,10 +13,9 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
-import com.github.kagkarlsson.scheduler.event.SchedulerListener;
-import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import java.time.Instant;
 import java.util.List;

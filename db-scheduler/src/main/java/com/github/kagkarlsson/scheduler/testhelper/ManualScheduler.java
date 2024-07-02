@@ -14,8 +14,8 @@
 package com.github.kagkarlsson.scheduler.testhelper;
 
 import com.github.kagkarlsson.scheduler.*;
-import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import java.time.Duration;
 import java.time.Instant;
@@ -59,7 +59,7 @@ public class ManualScheduler extends Scheduler {
         waiter,
         heartbeatInterval,
         SchedulerBuilder.DEFAULT_MISSED_HEARTBEATS_LIMIT,
-      schedulerListeners,
+        schedulerListeners,
         pollingStrategyConfig,
         deleteUnresolvedAfter,
         Duration.ZERO,

@@ -15,11 +15,10 @@ package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.ExceptionUtils.describe;
 
-import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
-import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
-import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.CandidateEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
+import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
@@ -122,8 +121,7 @@ class ExecutePicked implements Runnable {
         ExecutionComplete.success(execution, executionStarted, clock.now());
     try {
       completion.complete(
-          completeEvent,
-          new ExecutionOperations(taskRepository, schedulerListeners, execution));
+          completeEvent, new ExecutionOperations(taskRepository, schedulerListeners, execution));
     } catch (Throwable e) {
       schedulerListeners.onSchedulerEvent(SchedulerEventType.COMPLETIONHANDLER_ERROR);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);

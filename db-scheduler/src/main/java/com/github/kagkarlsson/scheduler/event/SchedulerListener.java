@@ -25,12 +25,15 @@ import java.time.Instant;
  * The method-parameters might be subject to change. For instance, Event-types might be introduced
  * to hold the data relevant to the event.
  *
- * Will typically run in the same Thread as the execution, so must not do IO or similar slow operations.
+ * <p>Will typically run in the same Thread as the execution, so must not do IO or similar slow
+ * operations.
  */
 public interface SchedulerListener {
 
   /**
-   * Execution scheduled either by the <code>SchedulerClient</code> or by a <code>CompletionHandler</code>
+   * Execution scheduled either by the <code>SchedulerClient</code> or by a <code>CompletionHandler
+   * </code>
+   *
    * @param taskInstanceId
    * @param executionTime
    */
@@ -38,12 +41,14 @@ public interface SchedulerListener {
 
   /**
    * Will typically run in the same thread as <code>onExecutionComplete</code>
+   *
    * @param currentlyExecuting
    */
   void onExecutionStart(CurrentlyExecuting currentlyExecuting);
 
   /**
    * Will typically run in the same thread as <code>onExecutionStart</code>
+   *
    * @param executionComplete
    */
   void onExecutionComplete(ExecutionComplete executionComplete);

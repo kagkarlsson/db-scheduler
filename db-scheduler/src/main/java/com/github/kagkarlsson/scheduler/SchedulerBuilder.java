@@ -17,12 +17,12 @@ import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactor
 import static com.github.kagkarlsson.scheduler.Scheduler.THREAD_PREFIX;
 import static java.util.Optional.ofNullable;
 
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistryAdapter;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
@@ -132,9 +132,7 @@ public class SchedulerBuilder {
     return this;
   }
 
-  /**
-   * Deprecated, use addSchedulerListener instead
-   */
+  /** Deprecated, use addSchedulerListener instead */
   @Deprecated
   public SchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
     this.statsRegistry = statsRegistry;
@@ -302,7 +300,7 @@ public class SchedulerBuilder {
             waiter,
             heartbeatInterval,
             numberOfMissedHeartbeatsBeforeDead,
-          schedulerListeners,
+            schedulerListeners,
             pollingStrategyConfig,
             deleteUnresolvedAfter,
             shutdownMaxWait,

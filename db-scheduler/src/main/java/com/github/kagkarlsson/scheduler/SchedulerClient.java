@@ -247,9 +247,7 @@ public interface SchedulerClient {
     }
 
     StandardSchedulerClient(
-        TaskRepository taskRepository,
-        SchedulerListeners schedulerListeners,
-        Clock clock) {
+        TaskRepository taskRepository, SchedulerListeners schedulerListeners, Clock clock) {
       this.taskRepository = taskRepository;
       this.schedulerListeners = schedulerListeners;
       this.clock = clock;
@@ -364,7 +362,6 @@ public interface SchedulerClient {
           taskRepository.getExecution(taskInstanceId.getTaskName(), taskInstanceId.getId());
       return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
     }
-
   }
 
   class SchedulerClientName implements SchedulerName {

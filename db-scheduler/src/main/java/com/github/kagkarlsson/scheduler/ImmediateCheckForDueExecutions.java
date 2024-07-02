@@ -24,8 +24,7 @@ class ImmediateCheckForDueExecutions extends AbstractSchedulerListener {
   private final Scheduler scheduler;
   private Clock clock;
 
-  public ImmediateCheckForDueExecutions(
-      Scheduler scheduler, Clock clock) {
+  public ImmediateCheckForDueExecutions(Scheduler scheduler, Clock clock) {
     this.scheduler = scheduler;
     this.clock = clock;
   }

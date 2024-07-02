@@ -17,11 +17,11 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
-import com.github.kagkarlsson.scheduler.event.SchedulerListener;
-import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
@@ -80,7 +80,7 @@ public class Scheduler implements SchedulerClient {
       Waiter executeDueWaiter,
       Duration heartbeatInterval,
       int numberOfMissedHeartbeatsBeforeDead,
-    List<SchedulerListener> schedulerListeners,
+      List<SchedulerListener> schedulerListeners,
       PollingStrategyConfig pollingStrategyConfig,
       Duration deleteUnresolvedAfter,
       Duration shutdownMaxWait,

@@ -24,9 +24,7 @@ public class ExecutionOperations<T> {
   private final Execution execution;
 
   public ExecutionOperations(
-      TaskRepository taskRepository,
-      SchedulerListeners schedulerListeners,
-      Execution execution) {
+      TaskRepository taskRepository, SchedulerListeners schedulerListeners, Execution execution) {
     this.taskRepository = taskRepository;
     this.schedulerListeners = schedulerListeners;
     this.execution = execution;
