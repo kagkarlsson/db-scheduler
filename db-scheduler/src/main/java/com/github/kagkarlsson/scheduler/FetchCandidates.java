@@ -13,10 +13,11 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
-import com.github.kagkarlsson.scheduler.stats.SchedulerListener;
-import com.github.kagkarlsson.scheduler.stats.SchedulerListener.CandidateEventType;
-import com.github.kagkarlsson.scheduler.stats.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.CandidateEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import java.time.Instant;
 import java.util.List;
@@ -32,7 +33,7 @@ public class FetchCandidates implements PollStrategy {
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
   private SchedulerClientEventListener earlyExecutionListener;
-  private final SchedulerListener schedulerListener;
+  private final SchedulerListeners schedulerListeners;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
   private final TaskResolver taskResolver;
@@ -50,7 +51,7 @@ public class FetchCandidates implements PollStrategy {
       SchedulerClient schedulerClient,
       SchedulerClientEventListener earlyExecutionListener,
       int threadpoolSize,
-      SchedulerListener schedulerListener,
+      SchedulerListeners schedulerListeners,
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
       TaskResolver taskResolver,
@@ -62,7 +63,7 @@ public class FetchCandidates implements PollStrategy {
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
     this.earlyExecutionListener = earlyExecutionListener;
-    this.schedulerListener = schedulerListener;
+    this.schedulerListeners = schedulerListeners;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
     this.taskResolver = taskResolver;
@@ -106,7 +107,7 @@ public class FetchCandidates implements PollStrategy {
                             taskRepository,
                             earlyExecutionListener,
                             schedulerClient,
-                            schedulerListener,
+                            schedulerListeners,
                             taskResolver,
                             schedulerState,
                             failureLogger,
@@ -119,7 +120,7 @@ public class FetchCandidates implements PollStrategy {
             newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);
           });
     }
-    schedulerListener.onSchedulerEvent(SchedulerEventType.RAN_EXECUTE_DUE);
+    schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_EXECUTE_DUE);
   }
 
   private class PickDue implements Callable<Optional<Execution>> {
@@ -143,7 +144,7 @@ public class FetchCandidates implements PollStrategy {
       if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber.get())) {
         // skipping execution due to it being stale
         addedDueExecutionsBatch.markBatchAsStale();
-        schedulerListener.onCandidateEvent(CandidateEventType.STALE);
+        schedulerListeners.onCandidateEvent(CandidateEventType.STALE);
         LOG.trace(
             "Skipping queued execution (current generationNumber: {}, execution generationNumber: {})",
             currentGenerationNumber,
@@ -156,7 +157,7 @@ public class FetchCandidates implements PollStrategy {
       if (!pickedExecution.isPresent()) {
         // someone else picked id
         LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
-        schedulerListener.onCandidateEvent(CandidateEventType.ALREADY_PICKED);
+        schedulerListeners.onCandidateEvent(CandidateEventType.ALREADY_PICKED);
         return Optional.empty();
       }
 

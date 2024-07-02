@@ -11,18 +11,41 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.stats;
+package com.github.kagkarlsson.scheduler.event;
 
 import com.github.kagkarlsson.scheduler.CurrentlyExecuting;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.CandidateStatsEvent;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import java.time.Instant;
 
+/**
+ * The method-parameters might be subject to change. For instance, Event-types might be introduced
+ * to hold the data relevant to the event.
+ *
+ * Will typically run in the same Thread as the execution, so must not do IO or similar slow operations.
+ */
 public interface SchedulerListener {
 
+  /**
+   * Execution scheduled either by the <code>SchedulerClient</code> or by a <code>CompletionHandler</code>
+   * @param taskInstanceId
+   * @param executionTime
+   */
+  void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime);
+
+  /**
+   * Will typically run in the same thread as <code>onExecutionComplete</code>
+   * @param currentlyExecuting
+   */
   void onExecutionStart(CurrentlyExecuting currentlyExecuting);
 
+  /**
+   * Will typically run in the same thread as <code>onExecutionStart</code>
+   * @param executionComplete
+   */
   void onExecutionComplete(ExecutionComplete executionComplete);
 
   void onExecutionDead(Execution execution);

@@ -11,13 +11,18 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.stats;
+package com.github.kagkarlsson.scheduler.event;
 
 import com.github.kagkarlsson.scheduler.CurrentlyExecuting;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import java.time.Instant;
 
 public abstract class AbstractSchedulerListener implements SchedulerListener {
+
+  @Override
+  public void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime) {}
 
   @Override
   public void onExecutionStart(CurrentlyExecuting currentlyExecuting) {}

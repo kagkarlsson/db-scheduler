@@ -15,10 +15,11 @@ package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.ExceptionUtils.describe;
 
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
-import com.github.kagkarlsson.scheduler.stats.SchedulerListener;
-import com.github.kagkarlsson.scheduler.stats.SchedulerListener.CandidateEventType;
-import com.github.kagkarlsson.scheduler.stats.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.CandidateEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
@@ -38,7 +39,7 @@ class ExecutePicked implements Runnable {
   private final TaskRepository taskRepository;
   private SchedulerClientEventListener earlyExecutionListener;
   private final SchedulerClient schedulerClient;
-  private final SchedulerListener schedulerListener;
+  private final SchedulerListeners schedulerListeners;
   private final TaskResolver taskResolver;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
@@ -51,7 +52,7 @@ class ExecutePicked implements Runnable {
       TaskRepository taskRepository,
       SchedulerClientEventListener earlyExecutionListener,
       SchedulerClient schedulerClient,
-      SchedulerListener schedulerListener,
+      SchedulerListeners schedulerListeners,
       TaskResolver taskResolver,
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
@@ -62,7 +63,7 @@ class ExecutePicked implements Runnable {
     this.taskRepository = taskRepository;
     this.earlyExecutionListener = earlyExecutionListener;
     this.schedulerClient = schedulerClient;
-    this.schedulerListener = schedulerListener;
+    this.schedulerListeners = schedulerListeners;
     this.taskResolver = taskResolver;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
@@ -79,8 +80,8 @@ class ExecutePicked implements Runnable {
     final UUID executionId = executor.addCurrentlyProcessing(currentlyExecuting);
 
     try {
-      schedulerListener.onCandidateEvent(CandidateEventType.EXECUTED);
-      schedulerListener.onExecutionStart(currentlyExecuting);
+      schedulerListeners.onCandidateEvent(CandidateEventType.EXECUTED);
+      schedulerListeners.onExecutionStart(currentlyExecuting);
       executePickedExecution(pickedExecution, currentlyExecuting);
     } finally {
       executor.removeCurrentlyProcessing(executionId);
@@ -93,7 +94,7 @@ class ExecutePicked implements Runnable {
       LOG.error(
           "Failed to find implementation for task with name '{}'. Should have been excluded in JdbcRepository.",
           execution.taskInstance.getTaskName());
-      schedulerListener.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
+      schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
       return;
     }
 
@@ -127,8 +128,8 @@ class ExecutePicked implements Runnable {
           completeEvent,
           new ExecutionOperations(taskRepository, earlyExecutionListener, execution));
     } catch (Throwable e) {
-      schedulerListener.onSchedulerEvent(SchedulerEventType.COMPLETIONHANDLER_ERROR);
-      schedulerListener.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
+      schedulerListeners.onSchedulerEvent(SchedulerEventType.COMPLETIONHANDLER_ERROR);
+      schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
       LOG.error(
           "Failed while completing execution {}, because {}. Execution will likely remain scheduled and locked/picked. "
               + "The execution should be detected as dead after a while, and handled according to the tasks DeadExecutionHandler.",
@@ -136,7 +137,7 @@ class ExecutePicked implements Runnable {
           describe(e),
           e);
     } finally {
-      schedulerListener.onExecutionComplete(completeEvent);
+      schedulerListeners.onExecutionComplete(completeEvent);
     }
   }
 
@@ -157,8 +158,8 @@ class ExecutePicked implements Runnable {
               completeEvent,
               new ExecutionOperations(taskRepository, earlyExecutionListener, execution));
     } catch (Throwable e) {
-      schedulerListener.onSchedulerEvent(SchedulerEventType.FAILUREHANDLER_ERROR);
-      schedulerListener.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
+      schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILUREHANDLER_ERROR);
+      schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
       LOG.error(
           "Failed while completing execution {}, because {}. Execution will likely remain scheduled and locked/picked. "
               + "The execution should be detected as dead after a while, and handled according to the tasks DeadExecutionHandler.",
@@ -166,7 +167,7 @@ class ExecutePicked implements Runnable {
           describe(cause),
           e);
     } finally {
-      schedulerListener.onExecutionComplete(completeEvent);
+      schedulerListeners.onExecutionComplete(completeEvent);
     }
   }
 }

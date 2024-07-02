@@ -13,8 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.stats.SchedulerListener;
-import com.github.kagkarlsson.scheduler.stats.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

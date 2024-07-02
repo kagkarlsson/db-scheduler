@@ -104,7 +104,7 @@ public class TestHelper {
           waiter,
           heartbeatInterval,
           enableImmediateExecution,
-          new StatsRegistryAdapter(statsRegistry),
+          List.of(new StatsRegistryAdapter(statsRegistry)),
           Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
           deleteUnresolvedAfter,
           LogLevel.DEBUG,

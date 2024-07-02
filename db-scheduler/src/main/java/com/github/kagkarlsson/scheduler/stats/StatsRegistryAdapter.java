@@ -14,10 +14,13 @@
 package com.github.kagkarlsson.scheduler.stats;
 
 import com.github.kagkarlsson.scheduler.CurrentlyExecuting;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.ExecutionStatsEvent;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete.Result;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import java.time.Instant;
 
 public class StatsRegistryAdapter implements SchedulerListener {
 
@@ -26,6 +29,9 @@ public class StatsRegistryAdapter implements SchedulerListener {
   public StatsRegistryAdapter(StatsRegistry statsRegistry) {
     this.statsRegistry = statsRegistry;
   }
+
+  @Override
+  public void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime) {}
 
   @Override
   public void onExecutionStart(CurrentlyExecuting currentlyExecuting) {}

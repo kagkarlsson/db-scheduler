@@ -22,8 +22,7 @@ import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import com.github.kagkarlsson.scheduler.stats.CompositeSchedulerListener;
-import com.github.kagkarlsson.scheduler.stats.SchedulerListener;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistryAdapter;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
@@ -304,7 +303,7 @@ public class SchedulerBuilder {
             heartbeatInterval,
             numberOfMissedHeartbeatsBeforeDead,
             enableImmediateExecution,
-            new CompositeSchedulerListener(schedulerListeners),
+            schedulerListeners,
             pollingStrategyConfig,
             deleteUnresolvedAfter,
             shutdownMaxWait,
