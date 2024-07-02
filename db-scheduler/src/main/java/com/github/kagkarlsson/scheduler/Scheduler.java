@@ -68,7 +68,6 @@ public class Scheduler implements SchedulerClient {
   private final Waiter heartbeatWaiter;
   final SettableSchedulerState schedulerState = new SettableSchedulerState();
   final ConfigurableLogger failureLogger;
-  private SchedulerClientEventListener earlyExecutionListener;
 
   protected Scheduler(
       Clock clock,
@@ -110,11 +109,10 @@ public class Scheduler implements SchedulerClient {
     this.schedulerListeners = new SchedulerListeners(schedulerListeners);
     this.dueExecutor = dueExecutor;
     this.housekeeperExecutor = housekeeperExecutor;
-    earlyExecutionListener =
-        (enableImmediateExecution
-            ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter)
-            : SchedulerClientEventListener.NOOP);
-    delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener, clock);
+    if (enableImmediateExecution) {
+      this.schedulerListeners.add(new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter));
+    }
+    delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 
     if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
@@ -124,7 +122,6 @@ public class Scheduler implements SchedulerClient {
               executor,
               schedulerTaskRepository,
               this,
-              earlyExecutionListener,
               threadpoolSize,
               this.schedulerListeners,
               schedulerState,
@@ -140,7 +137,6 @@ public class Scheduler implements SchedulerClient {
               executor,
               schedulerTaskRepository,
               this,
-              earlyExecutionListener,
               threadpoolSize,
               this.schedulerListeners,
               schedulerState,
@@ -368,7 +364,7 @@ public class Scheduler implements SchedulerClient {
                     .deadExecution(
                         ExecutionComplete.failure(execution, now, now, null),
                         new ExecutionOperations(
-                            schedulerTaskRepository, earlyExecutionListener, execution));
+                            schedulerTaskRepository, schedulerListeners, execution));
               } else {
                 LOG.error(
                     "Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.",

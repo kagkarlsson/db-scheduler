@@ -32,7 +32,6 @@ public class FetchCandidates implements PollStrategy {
   private final Executor executor;
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
-  private SchedulerClientEventListener earlyExecutionListener;
   private final SchedulerListeners schedulerListeners;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
@@ -49,7 +48,6 @@ public class FetchCandidates implements PollStrategy {
       Executor executor,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
-      SchedulerClientEventListener earlyExecutionListener,
       int threadpoolSize,
       SchedulerListeners schedulerListeners,
       SchedulerState schedulerState,
@@ -62,7 +60,6 @@ public class FetchCandidates implements PollStrategy {
     this.executor = executor;
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
-    this.earlyExecutionListener = earlyExecutionListener;
     this.schedulerListeners = schedulerListeners;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
@@ -105,7 +102,6 @@ public class FetchCandidates implements PollStrategy {
                     new ExecutePicked(
                             executor,
                             taskRepository,
-                            earlyExecutionListener,
                             schedulerClient,
                             schedulerListeners,
                             taskResolver,

@@ -13,11 +13,13 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.event.AbstractSchedulerListener;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class TriggerCheckForDueExecutions implements SchedulerClientEventListener {
+class TriggerCheckForDueExecutions extends AbstractSchedulerListener {
   private static final Logger LOG = LoggerFactory.getLogger(TriggerCheckForDueExecutions.class);
   private SchedulerState schedulerState;
   private Clock clock;
@@ -31,29 +33,22 @@ class TriggerCheckForDueExecutions implements SchedulerClientEventListener {
   }
 
   @Override
-  public void newEvent(ClientEvent event) {
-    ClientEvent.ClientEventContext ctx = event.getContext();
-    ClientEvent.EventType eventType = ctx.getEventType();
-
+  public void onExecutionScheduled(
+      TaskInstanceId taskInstanceId, Instant scheduledToExecutionTime) {
     if (!schedulerState.isStarted() || schedulerState.isShuttingDown()) {
       LOG.debug(
           "Will not act on scheduling event for execution (task: '{}', id: '{}') as scheduler is starting or shutting down.",
-          ctx.getTaskInstanceId().getTaskName(),
-          ctx.getTaskInstanceId().getId());
+          taskInstanceId.getTaskName(),
+          taskInstanceId.getId());
       return;
     }
 
-    if (eventType == ClientEvent.EventType.SCHEDULE
-        || eventType == ClientEvent.EventType.RESCHEDULE) {
-
-      Instant scheduledToExecutionTime = ctx.getExecutionTime();
-      if (scheduledToExecutionTime.toEpochMilli() <= clock.now().toEpochMilli()) {
-        LOG.debug(
-            "Task-instance scheduled to run directly, triggering check for due executions (unless it is already running). Task: {}, instance: {}",
-            ctx.getTaskInstanceId().getTaskName(),
-            ctx.getTaskInstanceId().getId());
-        executeDueWaiter.wakeOrSkipNextWait();
-      }
+    if (scheduledToExecutionTime.toEpochMilli() <= clock.now().toEpochMilli()) {
+      LOG.debug(
+          "Task-instance scheduled to run directly, triggering check for due executions (unless it is already running). Task: {}, instance: {}",
+          taskInstanceId.getTaskName(),
+          taskInstanceId.getId());
+      executeDueWaiter.wakeOrSkipNextWait();
     }
   }
 }

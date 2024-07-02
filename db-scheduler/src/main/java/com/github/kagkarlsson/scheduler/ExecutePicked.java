@@ -37,7 +37,6 @@ class ExecutePicked implements Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(ExecutePicked.class);
   private final Executor executor;
   private final TaskRepository taskRepository;
-  private SchedulerClientEventListener earlyExecutionListener;
   private final SchedulerClient schedulerClient;
   private final SchedulerListeners schedulerListeners;
   private final TaskResolver taskResolver;
@@ -50,7 +49,6 @@ class ExecutePicked implements Runnable {
   public ExecutePicked(
       Executor executor,
       TaskRepository taskRepository,
-      SchedulerClientEventListener earlyExecutionListener,
       SchedulerClient schedulerClient,
       SchedulerListeners schedulerListeners,
       TaskResolver taskResolver,
@@ -61,7 +59,6 @@ class ExecutePicked implements Runnable {
       Execution pickedExecution) {
     this.executor = executor;
     this.taskRepository = taskRepository;
-    this.earlyExecutionListener = earlyExecutionListener;
     this.schedulerClient = schedulerClient;
     this.schedulerListeners = schedulerListeners;
     this.taskResolver = taskResolver;
@@ -126,7 +123,7 @@ class ExecutePicked implements Runnable {
     try {
       completion.complete(
           completeEvent,
-          new ExecutionOperations(taskRepository, earlyExecutionListener, execution));
+          new ExecutionOperations(taskRepository, schedulerListeners, execution));
     } catch (Throwable e) {
       schedulerListeners.onSchedulerEvent(SchedulerEventType.COMPLETIONHANDLER_ERROR);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
@@ -156,7 +153,7 @@ class ExecutePicked implements Runnable {
       task.getFailureHandler()
           .onFailure(
               completeEvent,
-              new ExecutionOperations(taskRepository, earlyExecutionListener, execution));
+              new ExecutionOperations(taskRepository, schedulerListeners, execution));
     } catch (Throwable e) {
       schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILUREHANDLER_ERROR);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);

@@ -29,7 +29,6 @@ public class LockAndFetchCandidates implements PollStrategy {
   private final Executor executor;
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
-  private SchedulerClientEventListener earlyExecutionListener;
   private final SchedulerListeners schedulerListeners;
   private final TaskResolver taskResolver;
   private final SchedulerState schedulerState;
@@ -46,7 +45,6 @@ public class LockAndFetchCandidates implements PollStrategy {
       Executor executor,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
-      SchedulerClientEventListener earlyExecutionListener,
       int threadpoolSize,
       SchedulerListeners schedulerListeners,
       SchedulerState schedulerState,
@@ -59,7 +57,6 @@ public class LockAndFetchCandidates implements PollStrategy {
     this.executor = executor;
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
-    this.earlyExecutionListener = earlyExecutionListener;
     this.schedulerListeners = schedulerListeners;
     this.taskResolver = taskResolver;
     this.schedulerState = schedulerState;
@@ -104,7 +101,6 @@ public class LockAndFetchCandidates implements PollStrategy {
           new ExecutePicked(
               executor,
               taskRepository,
-              earlyExecutionListener,
               schedulerClient,
               schedulerListeners,
               taskResolver,
