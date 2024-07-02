@@ -19,22 +19,21 @@ import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class TriggerCheckForDueExecutions extends AbstractSchedulerListener {
-  private static final Logger LOG = LoggerFactory.getLogger(TriggerCheckForDueExecutions.class);
-  private SchedulerState schedulerState;
+class ImmediateCheckForDueExecutions extends AbstractSchedulerListener {
+  private static final Logger LOG = LoggerFactory.getLogger(ImmediateCheckForDueExecutions.class);
+  private final Scheduler scheduler;
   private Clock clock;
-  private Waiter executeDueWaiter;
 
-  public TriggerCheckForDueExecutions(
-      SchedulerState schedulerState, Clock clock, Waiter executeDueWaiter) {
-    this.schedulerState = schedulerState;
+  public ImmediateCheckForDueExecutions(
+      Scheduler scheduler, Clock clock) {
+    this.scheduler = scheduler;
     this.clock = clock;
-    this.executeDueWaiter = executeDueWaiter;
   }
 
   @Override
   public void onExecutionScheduled(
       TaskInstanceId taskInstanceId, Instant scheduledToExecutionTime) {
+    SchedulerState schedulerState = scheduler.getSchedulerState();
     if (!schedulerState.isStarted() || schedulerState.isShuttingDown()) {
       LOG.debug(
           "Will not act on scheduling event for execution (task: '{}', id: '{}') as scheduler is starting or shutting down.",
@@ -48,7 +47,7 @@ class TriggerCheckForDueExecutions extends AbstractSchedulerListener {
           "Task-instance scheduled to run directly, triggering check for due executions (unless it is already running). Task: {}, instance: {}",
           taskInstanceId.getTaskName(),
           taskInstanceId.getId());
-      executeDueWaiter.wakeOrSkipNextWait();
+      scheduler.triggerCheckForDueExecutions();
     }
   }
 }

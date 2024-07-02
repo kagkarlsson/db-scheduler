@@ -80,8 +80,7 @@ public class Scheduler implements SchedulerClient {
       Waiter executeDueWaiter,
       Duration heartbeatInterval,
       int numberOfMissedHeartbeatsBeforeDead,
-      boolean enableImmediateExecution,
-      List<SchedulerListener> schedulerListeners,
+    List<SchedulerListener> schedulerListeners,
       PollingStrategyConfig pollingStrategyConfig,
       Duration deleteUnresolvedAfter,
       Duration shutdownMaxWait,
@@ -109,9 +108,6 @@ public class Scheduler implements SchedulerClient {
     this.schedulerListeners = new SchedulerListeners(schedulerListeners);
     this.dueExecutor = dueExecutor;
     this.housekeeperExecutor = housekeeperExecutor;
-    if (enableImmediateExecution) {
-      this.schedulerListeners.add(new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter));
-    }
     delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 

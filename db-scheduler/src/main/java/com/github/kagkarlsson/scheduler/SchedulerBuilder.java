@@ -302,8 +302,7 @@ public class SchedulerBuilder {
             waiter,
             heartbeatInterval,
             numberOfMissedHeartbeatsBeforeDead,
-            enableImmediateExecution,
-            schedulerListeners,
+          schedulerListeners,
             pollingStrategyConfig,
             deleteUnresolvedAfter,
             shutdownMaxWait,
@@ -312,6 +311,10 @@ public class SchedulerBuilder {
             startTasks,
             candidateDueExecutor,
             candidateHousekeeperExecutor);
+
+    if (enableImmediateExecution) {
+      scheduler.registerSchedulerListener(new ImmediateCheckForDueExecutions(scheduler, clock));
+    }
 
     if (registerShutdownHook) {
       Runtime.getRuntime()
