@@ -13,6 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
@@ -29,6 +30,7 @@ public class LockAndFetchCandidates implements PollStrategy {
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
   private final SchedulerListeners schedulerListeners;
+  private final List<ExecutionInterceptor> executionInterceptors;
   private final TaskResolver taskResolver;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
@@ -46,6 +48,7 @@ public class LockAndFetchCandidates implements PollStrategy {
       SchedulerClient schedulerClient,
       int threadpoolSize,
       SchedulerListeners schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
       TaskResolver taskResolver,
@@ -57,6 +60,7 @@ public class LockAndFetchCandidates implements PollStrategy {
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
     this.schedulerListeners = schedulerListeners;
+    this.executionInterceptors = executionInterceptors;
     this.taskResolver = taskResolver;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
@@ -102,6 +106,7 @@ public class LockAndFetchCandidates implements PollStrategy {
               taskRepository,
               schedulerClient,
               schedulerListeners,
+              executionInterceptors,
               taskResolver,
               schedulerState,
               failureLogger,

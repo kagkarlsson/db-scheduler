@@ -17,6 +17,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
+import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
@@ -81,6 +82,7 @@ public class Scheduler implements SchedulerClient {
       Duration heartbeatInterval,
       int numberOfMissedHeartbeatsBeforeDead,
       List<SchedulerListener> schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
       PollingStrategyConfig pollingStrategyConfig,
       Duration deleteUnresolvedAfter,
       Duration shutdownMaxWait,
@@ -120,6 +122,7 @@ public class Scheduler implements SchedulerClient {
               this,
               threadpoolSize,
               this.schedulerListeners,
+              executionInterceptors,
               schedulerState,
               failureLogger,
               taskResolver,
@@ -135,6 +138,7 @@ public class Scheduler implements SchedulerClient {
               this,
               threadpoolSize,
               this.schedulerListeners,
+              executionInterceptors,
               schedulerState,
               failureLogger,
               taskResolver,

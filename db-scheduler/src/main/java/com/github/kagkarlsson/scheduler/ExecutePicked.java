@@ -15,6 +15,8 @@ package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.ExceptionUtils.describe;
 
+import com.github.kagkarlsson.scheduler.event.ExecutionChain;
+import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.CandidateEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
@@ -23,21 +25,25 @@ import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
+import com.github.kagkarlsson.scheduler.task.ExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.Task;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "unchecked"})
 class ExecutePicked implements Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(ExecutePicked.class);
   private final Executor executor;
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
   private final SchedulerListeners schedulerListeners;
+  private final List<ExecutionInterceptor> executionInterceptors;
   private final TaskResolver taskResolver;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
@@ -50,6 +56,7 @@ class ExecutePicked implements Runnable {
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
       SchedulerListeners schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
       TaskResolver taskResolver,
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
@@ -60,6 +67,7 @@ class ExecutePicked implements Runnable {
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
     this.schedulerListeners = schedulerListeners;
+    this.executionInterceptors = executionInterceptors;
     this.taskResolver = taskResolver;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
@@ -97,12 +105,12 @@ class ExecutePicked implements Runnable {
     Instant executionStarted = clock.now();
     try {
       LOG.debug("Executing: " + execution);
-      CompletionHandler completion =
-          task.get()
-              .execute(
-                  execution.taskInstance,
-                  new ExecutionContext(
-                      schedulerState, execution, schedulerClient, currentlyExecuting));
+      ExecutionHandler handler = task.get();
+      ExecutionContext executionContext =
+          new ExecutionContext(schedulerState, execution, schedulerClient, currentlyExecuting);
+      ExecutionChain chain = new ExecutionChain(new ArrayList<>(executionInterceptors), handler);
+
+      CompletionHandler completion = chain.proceed(execution.taskInstance, executionContext);
       LOG.debug("Execution done: " + execution);
 
       complete(completion, execution, executionStarted);

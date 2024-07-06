@@ -17,6 +17,7 @@ import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactor
 import static com.github.kagkarlsson.scheduler.Scheduler.THREAD_PREFIX;
 import static java.util.Optional.ofNullable;
 
+import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
@@ -77,6 +78,7 @@ public class SchedulerBuilder {
   private int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
   private boolean alwaysPersistTimestampInUTC = false;
   private List<SchedulerListener> schedulerListeners = new ArrayList<>();
+  private List<ExecutionInterceptor> executionInterceptors = new ArrayList<>();
 
   public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
     this.dataSource = dataSource;
@@ -141,6 +143,11 @@ public class SchedulerBuilder {
 
   public SchedulerBuilder addSchedulerListener(SchedulerListener schedulerListener) {
     this.schedulerListeners.add(schedulerListener);
+    return this;
+  }
+
+  public SchedulerBuilder addExecutionInterceptor(ExecutionInterceptor interceptor) {
+    this.executionInterceptors.add(interceptor);
     return this;
   }
 
@@ -301,6 +308,7 @@ public class SchedulerBuilder {
             heartbeatInterval,
             numberOfMissedHeartbeatsBeforeDead,
             schedulerListeners,
+            executionInterceptors,
             pollingStrategyConfig,
             deleteUnresolvedAfter,
             shutdownMaxWait,
