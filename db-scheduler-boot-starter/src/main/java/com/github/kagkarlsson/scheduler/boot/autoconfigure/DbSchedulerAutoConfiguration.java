@@ -22,6 +22,8 @@ import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
+import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
@@ -68,11 +70,15 @@ public class DbSchedulerAutoConfiguration {
   private final DbSchedulerProperties config;
   private final DataSource existingDataSource;
   private final List<Task<?>> configuredTasks;
+  private final List<SchedulerListener> schedulerListeners;
+  private final List<ExecutionInterceptor> executionInterceptors;
 
   public DbSchedulerAutoConfiguration(
       DbSchedulerProperties dbSchedulerProperties,
       DataSource dataSource,
-      List<Task<?>> configuredTasks) {
+      List<Task<?>> configuredTasks,
+      List<SchedulerListener> schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors) {
     this.config =
         Objects.requireNonNull(
             dbSchedulerProperties, "Can't configure db-scheduler without required configuration");
@@ -80,6 +86,8 @@ public class DbSchedulerAutoConfiguration {
         Objects.requireNonNull(dataSource, "An existing javax.sql.DataSource is required");
     this.configuredTasks =
         Objects.requireNonNull(configuredTasks, "At least one Task must be configured");
+    this.schedulerListeners = schedulerListeners;
+    this.executionInterceptors = executionInterceptors;
   }
 
   /** Provide an empty customizer if not present in the context. */
@@ -178,6 +186,12 @@ public class DbSchedulerAutoConfiguration {
 
     // Shutdown max wait
     builder.shutdownMaxWait(config.getShutdownMaxWait());
+
+    // Register listeners
+    schedulerListeners.forEach(builder::addSchedulerListener);
+
+    // Register interceptors
+    executionInterceptors.forEach(builder::addExecutionInterceptor);
 
     return builder.build();
   }
