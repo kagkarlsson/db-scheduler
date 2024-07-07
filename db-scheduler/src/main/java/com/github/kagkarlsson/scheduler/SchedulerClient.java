@@ -46,10 +46,14 @@ public interface SchedulerClient {
    * @param executionTime Instant it should run
    * @see java.time.Instant
    * @see com.github.kagkarlsson.scheduler.task.TaskInstance
+   * @deprecated use {@link #scheduleIfNotExists(TaskInstance, Instant)} instead.
    */
   @Deprecated
   <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime);
 
+  /**
+   * @deprecated use {@link #scheduleIfNotExists(SchedulableInstance)} instead.
+   */
   @Deprecated
   <T> void schedule(SchedulableInstance<T> schedulableInstance);
 
