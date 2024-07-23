@@ -107,7 +107,7 @@ public class SchedulerListeners implements SchedulerListener {
   public void fireAndLogErrors(SchedulerListener listener, String method, Runnable r) {
     try {
       r.run();
-    } catch (RuntimeException e) {
+    } catch (Throwable e) {
       LOG.warn(
           "Listener '{}' method '{}' threw an unexpected Exception",
           listener.getClass().getName(),
