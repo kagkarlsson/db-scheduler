@@ -194,7 +194,7 @@ public class DbSchedulerAutoConfiguration {
   }
 
   @Bean
-  public LazyInitializationExcludeFilter eagerDbSchedulerStarter() {
+  static LazyInitializationExcludeFilter eagerDbSchedulerStarter() {
     return LazyInitializationExcludeFilter.forBeanTypes(DbSchedulerStarter.class);
   }
 
