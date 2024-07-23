@@ -25,7 +25,7 @@ import java.time.Instant;
  * The method-parameters might be subject to change. For instance, Event-types might be introduced
  * to hold the data relevant to the event.
  *
- * <p>Will typically run in the same Thread as the execution, so must not do IO or similar slow
+ * <p>Will typically run in the same Thread as the execution, so must not do I/O or similar slow
  * operations.
  */
 public interface SchedulerListener {
@@ -40,25 +40,49 @@ public interface SchedulerListener {
   void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime);
 
   /**
-   * Will typically run in the same thread as <code>onExecutionComplete</code>
+   * Execution picked and <code>ExecutionHandler</code> about to run. Will typically run in the same
+   * thread as <code>onExecutionComplete</code>
    *
    * @param currentlyExecuting
    */
   void onExecutionStart(CurrentlyExecuting currentlyExecuting);
 
   /**
-   * Will typically run in the same thread as <code>onExecutionStart</code>
+   * <code>ExecutionHandler</code> done. Will typically run in the same thread as <code>
+   * onExecutionStart</code>
    *
    * @param executionComplete
    */
   void onExecutionComplete(ExecutionComplete executionComplete);
 
+  /**
+   * Scheduler has detected a <i>dead</i> execution. About to run <code>DeadExecutionHandler</code>.
+   *
+   * @param execution
+   */
   void onExecutionDead(Execution execution);
 
+  /**
+   * Scheduler failed to update heartbeat-timestamp for execution that it is currently executing.
+   * Multiple failures will eventually lead to the execution being declared <i>dead</i> (and its
+   * <code>DeadExecutionHandler</code> triggered).
+   *
+   * @param currentlyExecuting
+   */
   void onExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting);
 
+  /**
+   * Internal scheduler event. Primarily intended for testing.
+   *
+   * @param type
+   */
   void onSchedulerEvent(SchedulerEventType type);
 
+  /**
+   * Internal scheduler event. Primarily intended for testing.
+   *
+   * @param type
+   */
   void onCandidateEvent(CandidateEventType type);
 
   enum SchedulerEventType {
