@@ -17,10 +17,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
+import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
@@ -62,12 +64,11 @@ public class Scheduler implements SchedulerClient {
   protected final List<OnStartup> onStartup;
   private final Waiter detectDeadWaiter;
   private final Duration heartbeatInterval;
-  final StatsRegistry statsRegistry;
+  final SchedulerListeners schedulerListeners;
   private final ExecutorService dueExecutor;
   private final Waiter heartbeatWaiter;
   final SettableSchedulerState schedulerState = new SettableSchedulerState();
   final ConfigurableLogger failureLogger;
-  private SchedulerClientEventListener earlyExecutionListener;
 
   protected Scheduler(
       Clock clock,
@@ -80,8 +81,8 @@ public class Scheduler implements SchedulerClient {
       Waiter executeDueWaiter,
       Duration heartbeatInterval,
       int numberOfMissedHeartbeatsBeforeDead,
-      boolean enableImmediateExecution,
-      StatsRegistry statsRegistry,
+      List<SchedulerListener> schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
       PollingStrategyConfig pollingStrategyConfig,
       Duration deleteUnresolvedAfter,
       Duration shutdownMaxWait,
@@ -106,14 +107,10 @@ public class Scheduler implements SchedulerClient {
     this.heartbeatConfig =
         new HeartbeatConfig(
             heartbeatInterval, numberOfMissedHeartbeatsBeforeDead, getMaxAgeBeforeConsideredDead());
-    this.statsRegistry = statsRegistry;
+    this.schedulerListeners = new SchedulerListeners(schedulerListeners);
     this.dueExecutor = dueExecutor;
     this.housekeeperExecutor = housekeeperExecutor;
-    earlyExecutionListener =
-        (enableImmediateExecution
-            ? new TriggerCheckForDueExecutions(schedulerState, clock, executeDueWaiter)
-            : SchedulerClientEventListener.NOOP);
-    delegate = new StandardSchedulerClient(clientTaskRepository, earlyExecutionListener, clock);
+    delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 
     if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
@@ -123,9 +120,9 @@ public class Scheduler implements SchedulerClient {
               executor,
               schedulerTaskRepository,
               this,
-              earlyExecutionListener,
               threadpoolSize,
-              statsRegistry,
+              this.schedulerListeners,
+              executionInterceptors,
               schedulerState,
               failureLogger,
               taskResolver,
@@ -139,9 +136,9 @@ public class Scheduler implements SchedulerClient {
               executor,
               schedulerTaskRepository,
               this,
-              earlyExecutionListener,
               threadpoolSize,
-              statsRegistry,
+              this.schedulerListeners,
+              executionInterceptors,
               schedulerState,
               failureLogger,
               taskResolver,
@@ -156,21 +153,26 @@ public class Scheduler implements SchedulerClient {
     LOG.info("Using polling-strategy: " + pollingStrategyConfig.describe());
   }
 
+  public void registerSchedulerListener(SchedulerListener listener) {
+    schedulerListeners.add(listener);
+  }
+
   public void start() {
     LOG.info("Starting scheduler.");
 
     executeOnStartup();
 
     dueExecutor.submit(
-        new RunUntilShutdown(executeDueStrategy, executeDueWaiter, schedulerState, statsRegistry));
+        new RunUntilShutdown(
+            executeDueStrategy, executeDueWaiter, schedulerState, schedulerListeners));
 
     housekeeperExecutor.scheduleWithFixedDelay(
-        new RunAndLogErrors(this::detectDeadExecutions, statsRegistry),
+        new RunAndLogErrors(this::detectDeadExecutions, schedulerListeners),
         0,
         detectDeadWaiter.getWaitDuration().toMillis(),
         MILLISECONDS);
     housekeeperExecutor.scheduleWithFixedDelay(
-        new RunAndLogErrors(this::updateHeartbeats, statsRegistry),
+        new RunAndLogErrors(this::updateHeartbeats, schedulerListeners),
         0,
         heartbeatWaiter.getWaitDuration().toMillis(),
         MILLISECONDS);
@@ -192,7 +194,7 @@ public class Scheduler implements SchedulerClient {
             os.onStartup(onStartupClient, this.clock);
           } catch (Exception e) {
             LOG.error("Unexpected error while executing OnStartup tasks. Continuing.", e);
-            statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
+            schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
           }
         });
   }
@@ -365,13 +367,14 @@ public class Scheduler implements SchedulerClient {
 
               Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
               if (task.isPresent()) {
-                statsRegistry.register(SchedulerStatsEvent.DEAD_EXECUTION);
+                schedulerListeners.onSchedulerEvent(SchedulerEventType.DEAD_EXECUTION);
+                schedulerListeners.onExecutionDead(execution);
                 task.get()
                     .getDeadExecutionHandler()
                     .deadExecution(
                         ExecutionComplete.failure(execution, now, now, null),
                         new ExecutionOperations(
-                            schedulerTaskRepository, earlyExecutionListener, execution));
+                            schedulerTaskRepository, schedulerListeners, execution));
               } else {
                 LOG.error(
                     "Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.",
@@ -383,13 +386,13 @@ public class Scheduler implements SchedulerClient {
                   "Failed while handling dead execution {}. Will be tried again later.",
                   execution,
                   e);
-              statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
+              schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
             }
           });
     } else {
       LOG.trace("No dead executions found.");
     }
-    statsRegistry.register(SchedulerStatsEvent.RAN_DETECT_DEAD);
+    schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_DETECT_DEAD);
   }
 
   void updateHeartbeats() {
@@ -402,7 +405,7 @@ public class Scheduler implements SchedulerClient {
     LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
     Instant now = clock.now();
     currentlyProcessing.forEach(execution -> updateHeartbeatForExecution(now, execution));
-    statsRegistry.register(SchedulerStatsEvent.RAN_UPDATE_HEARTBEATS);
+    schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_UPDATE_HEARTBEATS);
   }
 
   protected void updateHeartbeatForExecution(Instant now, CurrentlyExecuting currentlyExecuting) {
@@ -417,7 +420,8 @@ public class Scheduler implements SchedulerClient {
       currentlyExecuting.heartbeat(successfulHeartbeat, now);
 
       if (!successfulHeartbeat) {
-        statsRegistry.register(SchedulerStatsEvent.FAILED_HEARTBEAT);
+        schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILED_HEARTBEAT);
+        schedulerListeners.onExecutionFailedHeartbeat(currentlyExecuting);
       }
 
       HeartbeatState heartbeatState = currentlyExecuting.getHeartbeatState();
@@ -427,13 +431,14 @@ public class Scheduler implements SchedulerClient {
                 + " considered dead. See heartbeat-state. Heartbeat-state={}, Execution={}",
             heartbeatState.describe(),
             e);
-        statsRegistry.register(SchedulerStatsEvent.FAILED_MULTIPLE_HEARTBEATS);
+        schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILED_MULTIPLE_HEARTBEATS);
       }
 
     } catch (Throwable ex) { // just-in-case to avoid any "poison-pills"
       LOG.error("Unexpteced failure while while updating heartbeat for execution {}.", e, ex);
-      statsRegistry.register(SchedulerStatsEvent.FAILED_HEARTBEAT);
-      statsRegistry.register(SchedulerStatsEvent.UNEXPECTED_ERROR);
+      schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILED_HEARTBEAT);
+      schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
+      schedulerListeners.onExecutionFailedHeartbeat(currentlyExecuting);
     }
   }
 

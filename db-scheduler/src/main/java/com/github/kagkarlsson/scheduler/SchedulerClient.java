@@ -15,6 +15,7 @@ package com.github.kagkarlsson.scheduler;
 
 import static java.util.Optional.ofNullable;
 
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
@@ -269,18 +270,16 @@ public interface SchedulerClient {
     private static final Logger LOG = LoggerFactory.getLogger(StandardSchedulerClient.class);
     protected final TaskRepository taskRepository;
     private final Clock clock;
-    private SchedulerClientEventListener schedulerClientEventListener;
+    private final SchedulerListeners schedulerListeners;
 
     StandardSchedulerClient(TaskRepository taskRepository, Clock clock) {
-      this(taskRepository, SchedulerClientEventListener.NOOP, clock);
+      this(taskRepository, SchedulerListeners.NOOP, clock);
     }
 
     StandardSchedulerClient(
-        TaskRepository taskRepository,
-        SchedulerClientEventListener schedulerClientEventListener,
-        Clock clock) {
+        TaskRepository taskRepository, SchedulerListeners schedulerListeners, Clock clock) {
       this.taskRepository = taskRepository;
-      this.schedulerClientEventListener = schedulerClientEventListener;
+      this.schedulerListeners = schedulerListeners;
       this.clock = clock;
     }
 
@@ -295,7 +294,7 @@ public interface SchedulerClient {
       boolean success =
           taskRepository.createIfNotExists(SchedulableInstance.of(taskInstance, executionTime));
       if (success) {
-        notifyListeners(ClientEvent.EventType.SCHEDULE, taskInstance, executionTime);
+        schedulerListeners.onExecutionScheduled(taskInstance, executionTime);
       }
       return success;
     }
@@ -346,7 +345,7 @@ public interface SchedulerClient {
         }
 
         if (success) {
-          notifyListeners(ClientEvent.EventType.RESCHEDULE, taskInstanceId, newExecutionTime);
+          schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
         }
       } else {
         throw new TaskInstanceNotFoundException(taskName, instanceId);
@@ -364,8 +363,6 @@ public interface SchedulerClient {
         }
 
         taskRepository.remove(execution.get());
-        notifyListeners(
-            ClientEvent.EventType.CANCEL, taskInstanceId, execution.get().executionTime);
       } else {
         throw new TaskInstanceNotFoundException(taskName, instanceId);
       }
@@ -408,17 +405,6 @@ public interface SchedulerClient {
       Optional<Execution> e =
           taskRepository.getExecution(taskInstanceId.getTaskName(), taskInstanceId.getId());
       return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
-    }
-
-    private void notifyListeners(
-        ClientEvent.EventType eventType, TaskInstanceId taskInstanceId, Instant executionTime) {
-      try {
-        schedulerClientEventListener.newEvent(
-            new ClientEvent(
-                new ClientEvent.ClientEventContext(eventType, taskInstanceId, executionTime)));
-      } catch (Exception e) {
-        LOG.error("Error when notifying SchedulerClientEventListener.", e);
-      }
     }
   }
 

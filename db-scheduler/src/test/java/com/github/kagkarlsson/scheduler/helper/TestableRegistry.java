@@ -62,6 +62,7 @@ public class TestableRegistry implements StatsRegistry {
   @Override
   public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {
     completed.add(completeEvent);
+    applyToConditions(completeEvent);
     log(completeEvent);
   }
 
@@ -93,6 +94,10 @@ public class TestableRegistry implements StatsRegistry {
 
   private void applyToConditions(ExecutionStatsEvent e) {
     waitConditions.forEach(c -> c.apply(e));
+  }
+
+  private void applyToConditions(ExecutionComplete complete) {
+    waitConditions.forEach(c -> c.applyExecutionComplete(complete));
   }
 
   private void countEvent(Enum e) {
@@ -146,6 +151,8 @@ public class TestableRegistry implements StatsRegistry {
     void apply(CandidateStatsEvent e);
 
     void apply(ExecutionStatsEvent e);
+
+    void applyExecutionComplete(ExecutionComplete complete);
   }
 
   public static class Builder {

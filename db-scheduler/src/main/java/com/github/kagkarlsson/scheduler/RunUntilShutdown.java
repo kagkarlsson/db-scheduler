@@ -13,7 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,17 +23,17 @@ class RunUntilShutdown implements Runnable {
   private final Runnable toRun;
   private final Waiter waitBetweenRuns;
   private final SchedulerState schedulerState;
-  private final StatsRegistry statsRegistry;
+  private final SchedulerListeners schedulerListeners;
 
   public RunUntilShutdown(
       Runnable toRun,
       Waiter waitBetweenRuns,
       SchedulerState schedulerState,
-      StatsRegistry statsRegistry) {
+      SchedulerListeners schedulerListeners) {
     this.toRun = toRun;
     this.waitBetweenRuns = waitBetweenRuns;
     this.schedulerState = schedulerState;
-    this.statsRegistry = statsRegistry;
+    this.schedulerListeners = schedulerListeners;
   }
 
   @Override
@@ -43,7 +44,7 @@ class RunUntilShutdown implements Runnable {
           toRun.run();
         } catch (Throwable e) {
           LOG.error("Unhandled exception. Will keep running.", e);
-          statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+          schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
         }
       }
 
@@ -54,7 +55,7 @@ class RunUntilShutdown implements Runnable {
           LOG.debug("Thread '{}' interrupted due to shutdown.", Thread.currentThread().getName());
         } else {
           LOG.error("Unexpected interruption of thread. Will keep running.", interruptedException);
-          statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+          schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
         }
       }
     }

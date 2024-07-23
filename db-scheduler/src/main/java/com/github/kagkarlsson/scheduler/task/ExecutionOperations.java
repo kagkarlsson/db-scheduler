@@ -13,25 +13,20 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.ClientEvent;
-import com.github.kagkarlsson.scheduler.ClientEvent.ClientEventContext;
-import com.github.kagkarlsson.scheduler.ClientEvent.EventType;
-import com.github.kagkarlsson.scheduler.SchedulerClientEventListener;
 import com.github.kagkarlsson.scheduler.TaskRepository;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import java.time.Instant;
 
 public class ExecutionOperations<T> {
 
   private final TaskRepository taskRepository;
-  private final SchedulerClientEventListener earlyExecutionListener;
+  private final SchedulerListeners schedulerListeners;
   private final Execution execution;
 
   public ExecutionOperations(
-      TaskRepository taskRepository,
-      SchedulerClientEventListener earlyExecutionListener,
-      Execution execution) {
+      TaskRepository taskRepository, SchedulerListeners schedulerListeners, Execution execution) {
     this.taskRepository = taskRepository;
-    this.earlyExecutionListener = earlyExecutionListener;
+    this.schedulerListeners = schedulerListeners;
     this.execution = execution;
   }
 
@@ -81,8 +76,6 @@ public class ExecutionOperations<T> {
 
   private void hintExecutionScheduled(TaskInstanceId taskInstanceId, Instant nextExecutionTime) {
     // Hint that a new execution was scheduled in-case we want to go check for it immediately
-    earlyExecutionListener.newEvent(
-        new ClientEvent(
-            new ClientEventContext(EventType.RESCHEDULE, taskInstanceId, nextExecutionTime)));
+    schedulerListeners.onExecutionScheduled(taskInstanceId, nextExecutionTime);
   }
 }

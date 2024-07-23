@@ -149,18 +149,23 @@ scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.
 
 #### Plain Java
 
-* [EnableImmediateExecutionMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/EnableImmediateExecutionMain.java)
-* [MaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/MaxRetriesMain.java)
-* [ExponentialBackoffMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/ExponentialBackoffMain.java)
-* [ExponentialBackoffWithMaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/ExponentialBackoffWithMaxRetriesMain.java)
-* [TrackingProgressRecurringTaskMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/TrackingProgressRecurringTaskMain.java)
-* [SpawningOtherTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SpawningOtherTasksMain.java)
-* [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)
-* [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java)
-* [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java)
-* [JsonSerializerMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JsonSerializerMain.java)
-* [JobChainingUsingTaskDataMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingTaskDataMain.java)
-* [JobChainingUsingSeparateTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingSeparateTasksMain.java)
+| Example                                                                                                                                                                        | Description                                                                                                                                                                                                             |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [EnableImmediateExecutionMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/EnableImmediateExecutionMain.java)                                       | When scheduling executions to run `now()` or earlier, the local `Scheduler` will be hinted about this, and "wake up" to go check for new executions earlier than it normally would (as configured by `pollingInterval`. |
+| [MaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/MaxRetriesMain.java)                                                                   | How to set a limit on the number of retries an execution can have.                                                                                                                                                      |
+| [ExponentialBackoffMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/ExponentialBackoffMain.java)                                                   | How to use exponential backoff as retry strategy instead of fixed delay as is default.                                                                                                                                  |
+| [ExponentialBackoffWithMaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/ExponentialBackoffWithMaxRetriesMain.java)                       | How to use exponential backoff as retry strategy **and** a hard limit on the maximum number of retries.                                                                                                                 |
+| [TrackingProgressRecurringTaskMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/TrackingProgressRecurringTaskMain.java)                             | Recurring jobs may store `task_data` as a way of persisting state across executions. This example shows how.                                                                                                            |
+| [SpawningOtherTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SpawningOtherTasksMain.java)                                                   | Demonstrates on task scheduling instances of another by using the `executionContext.getSchedulerClient()`.                                                                                                              |
+| [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)                                                         | Demonstates some of the `SchedulerClient`'s capabilities. Scheduling, fetching scheduled executions etc.                                                                                                                |
+| [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java)                 | Multi-instance recurring jobs where the `Schedule` is stored as part of the `task_data`. For example suitable for multi-tenant applications where each tenent should have a recurring task.                             |
+| [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java) |                                                                                                                                                                                                                         |
+| [JsonSerializerMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JsonSerializerMain.java)                                                           | Overrides serialization of `task_data` from Java-serialization (default) to JSON.                                                                                                                                       |
+| [JobChainingUsingTaskDataMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingTaskDataMain.java)                                       | Job chaining, i.e. "when this instance is done executing, schedule another task.                                                                                                                                        |
+| [JobChainingUsingSeparateTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingSeparateTasksMain.java)                             | Job chaining, as above.                                                                                                                                                                                                 |
+| [InterceptorMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/InterceptorMain.java)                                                                 | Using `ExecutionInterceptor` to inject logic before and after execution for all `ExecutionHandler`.                                                                                                                     |
+
+
 
 #### Spring Boot
 
@@ -255,6 +260,12 @@ How often to update the heartbeat timestamp for running executions. Default `5m`
 
 :gear: `.missedHeartbeatsLimit(int)`<br/>
 How many heartbeats may be missed before the execution is considered dead. Default `6`.
+
+:gear: `.addExecutionInterceptor(ExecutionInterceptor)`<br/>
+Adds an `ExecutionInterceptor` which may inject logic around executions. For Spring Boot, simply register a Bean of type `ExecutionInterceptor`.
+
+:gear: `.addSchedulerListener(SchedulerListener)`<br/>
+Adds an `SchedulerListener` which will receive Scheduler- and Execution-related events. For Spring Boot, simply register a Bean of type `SchedulerListener`.
 
 :gear: `.schedulerName(SchedulerName)`<br/>
 Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler.
@@ -612,6 +623,7 @@ Some users have experienced intermittent test failures when running on a single-
 
 The goal of `db-scheduler` is to be non-invasive and simple to use, but still solve the persistence problem, and the cluster-coordination problem.
  It was originally targeted at applications with modest database schemas, to which adding 11 tables would feel a bit overkill..
+**Update:** Also, as of now (2024), Quartz does not seem to be actively maintained either.
 
 #### Why use a RDBMS for persistence and coordination?
 

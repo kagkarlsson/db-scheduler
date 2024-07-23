@@ -13,8 +13,11 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.CandidateEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import java.time.Instant;
 import java.util.List;
@@ -29,8 +32,8 @@ public class FetchCandidates implements PollStrategy {
   private final Executor executor;
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
-  private SchedulerClientEventListener earlyExecutionListener;
-  private final StatsRegistry statsRegistry;
+  private final SchedulerListeners schedulerListeners;
+  private final List<ExecutionInterceptor> executionInterceptors;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
   private final TaskResolver taskResolver;
@@ -46,9 +49,9 @@ public class FetchCandidates implements PollStrategy {
       Executor executor,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
-      SchedulerClientEventListener earlyExecutionListener,
       int threadpoolSize,
-      StatsRegistry statsRegistry,
+      SchedulerListeners schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
       TaskResolver taskResolver,
@@ -59,8 +62,8 @@ public class FetchCandidates implements PollStrategy {
     this.executor = executor;
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
-    this.earlyExecutionListener = earlyExecutionListener;
-    this.statsRegistry = statsRegistry;
+    this.schedulerListeners = schedulerListeners;
+    this.executionInterceptors = executionInterceptors;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
     this.taskResolver = taskResolver;
@@ -102,9 +105,9 @@ public class FetchCandidates implements PollStrategy {
                     new ExecutePicked(
                             executor,
                             taskRepository,
-                            earlyExecutionListener,
                             schedulerClient,
-                            statsRegistry,
+                            schedulerListeners,
+                            executionInterceptors,
                             taskResolver,
                             schedulerState,
                             failureLogger,
@@ -117,7 +120,7 @@ public class FetchCandidates implements PollStrategy {
             newDueBatch.oneExecutionDone(triggerCheckForNewExecutions::run);
           });
     }
-    statsRegistry.register(StatsRegistry.SchedulerStatsEvent.RAN_EXECUTE_DUE);
+    schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_EXECUTE_DUE);
   }
 
   private class PickDue implements Callable<Optional<Execution>> {
@@ -141,7 +144,7 @@ public class FetchCandidates implements PollStrategy {
       if (addedDueExecutionsBatch.isOlderGenerationThan(currentGenerationNumber.get())) {
         // skipping execution due to it being stale
         addedDueExecutionsBatch.markBatchAsStale();
-        statsRegistry.register(StatsRegistry.CandidateStatsEvent.STALE);
+        schedulerListeners.onCandidateEvent(CandidateEventType.STALE);
         LOG.trace(
             "Skipping queued execution (current generationNumber: {}, execution generationNumber: {})",
             currentGenerationNumber,
@@ -154,7 +157,7 @@ public class FetchCandidates implements PollStrategy {
       if (!pickedExecution.isPresent()) {
         // someone else picked id
         LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
-        statsRegistry.register(StatsRegistry.CandidateStatsEvent.ALREADY_PICKED);
+        schedulerListeners.onCandidateEvent(CandidateEventType.ALREADY_PICKED);
         return Optional.empty();
       }
 

@@ -14,11 +14,12 @@
 package com.github.kagkarlsson.scheduler.testhelper;
 
 import com.github.kagkarlsson.scheduler.*;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,7 +41,7 @@ public class ManualScheduler extends Scheduler {
       Waiter waiter,
       Duration heartbeatInterval,
       boolean executeImmediately,
-      StatsRegistry statsRegistry,
+      List<SchedulerListener> schedulerListeners,
       PollingStrategyConfig pollingStrategyConfig,
       Duration deleteUnresolvedAfter,
       LogLevel logLevel,
@@ -59,8 +60,8 @@ public class ManualScheduler extends Scheduler {
         waiter,
         heartbeatInterval,
         SchedulerBuilder.DEFAULT_MISSED_HEARTBEATS_LIMIT,
-        executeImmediately,
-        statsRegistry,
+        schedulerListeners,
+        new ArrayList<>(),
         pollingStrategyConfig,
         deleteUnresolvedAfter,
         Duration.ZERO,

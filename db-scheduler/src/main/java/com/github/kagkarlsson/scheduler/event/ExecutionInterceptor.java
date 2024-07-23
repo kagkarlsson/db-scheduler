@@ -11,16 +11,13 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.event;
 
-public interface SchedulerClientEventListener {
+import com.github.kagkarlsson.scheduler.task.CompletionHandler;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 
-  void newEvent(ClientEvent event);
-
-  SchedulerClientEventListener NOOP =
-      new SchedulerClientEventListener() {
-
-        @Override
-        public void newEvent(ClientEvent event) {}
-      };
+public interface ExecutionInterceptor {
+  CompletionHandler<?> execute(
+      TaskInstance<?> taskInstance, ExecutionContext executionContext, ExecutionChain chain);
 }

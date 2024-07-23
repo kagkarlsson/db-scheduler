@@ -21,6 +21,7 @@ import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistryAdapter;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
 import java.util.ArrayList;
@@ -103,7 +104,7 @@ public class TestHelper {
           waiter,
           heartbeatInterval,
           enableImmediateExecution,
-          statsRegistry,
+          List.of(new StatsRegistryAdapter(statsRegistry)),
           Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
           deleteUnresolvedAfter,
           LogLevel.DEBUG,

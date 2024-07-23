@@ -13,18 +13,19 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class RunAndLogErrors implements Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(RunAndLogErrors.class);
   private final Runnable toRun;
-  private final StatsRegistry statsRegistry;
+  private final SchedulerListener schedulerListener;
 
-  public RunAndLogErrors(Runnable toRun, StatsRegistry statsRegistry) {
+  public RunAndLogErrors(Runnable toRun, SchedulerListener schedulerListener) {
     this.toRun = toRun;
-    this.statsRegistry = statsRegistry;
+    this.schedulerListener = schedulerListener;
   }
 
   @Override
@@ -33,7 +34,7 @@ class RunAndLogErrors implements Runnable {
       toRun.run();
     } catch (Throwable e) {
       LOG.error("Unhandled exception. Will keep running.", e);
-      statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNEXPECTED_ERROR);
+      schedulerListener.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
     }
   }
 }
