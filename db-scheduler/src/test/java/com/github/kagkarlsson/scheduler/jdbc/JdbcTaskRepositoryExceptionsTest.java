@@ -42,7 +42,7 @@ public class JdbcTaskRepositoryExceptionsTest {
     expectedTableName = randomAlphanumeric(5);
     jdbcTaskRepository =
         new JdbcTaskRepository(
-            null, expectedTableName, null, null, null, mockJdbcRunner, new SystemClock());
+            null, expectedTableName, null, null, null, mockJdbcRunner, false, new SystemClock());
   }
 
   @Test
@@ -60,7 +60,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             ArgumentMatchers.eq(
                 "insert into "
                     + expectedTableName
-                    + "(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)"),
+                    + "(task_name, task_instance, task_data, execution_time, picked, version, priority) values(?, ?, ?, ?, ?, ?, ?)"),
             any(PreparedStatementSetter.class)))
         .thenThrow(rootCause);
 

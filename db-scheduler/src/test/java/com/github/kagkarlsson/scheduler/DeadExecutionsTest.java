@@ -56,6 +56,7 @@ public class DeadExecutionsTest {
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
+            false,
             settableClock);
 
     scheduler =
@@ -73,7 +74,7 @@ public class DeadExecutionsTest {
         new SchedulableTaskInstance<>(taskInstance, now.minus(Duration.ofDays(1)));
     jdbcTaskRepository.createIfNotExists(execution1);
 
-    final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
+    final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT, false);
     assertThat(due, Matchers.hasSize(1));
     final Execution execution = due.get(0);
     final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(execution, now);
@@ -86,7 +87,7 @@ public class DeadExecutionsTest {
     assertThat(rescheduled.get().picked, is(false));
     assertThat(rescheduled.get().pickedBy, nullValue());
 
-    assertThat(jdbcTaskRepository.getDue(Instant.now(), POLLING_LIMIT), hasSize(1));
+    assertThat(jdbcTaskRepository.getDue(Instant.now(), POLLING_LIMIT, false), hasSize(1));
   }
 
   @Test

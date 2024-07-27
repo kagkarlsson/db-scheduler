@@ -81,6 +81,7 @@ public class TestHelper {
               taskResolver,
               new SchedulerName.Fixed("manual"),
               serializer,
+              prioritization,
               clock);
       final JdbcTaskRepository clientTaskRepository =
           new JdbcTaskRepository(
@@ -91,6 +92,7 @@ public class TestHelper {
               taskResolver,
               new SchedulerName.Fixed("manual"),
               serializer,
+              prioritization,
               clock);
 
       return new ManualScheduler(
@@ -111,7 +113,8 @@ public class TestHelper {
           true,
           startTasks,
           new ThrowingScheduledExecutorService(),
-          new ThrowingScheduledExecutorService());
+          new ThrowingScheduledExecutorService(),
+          false);
     }
 
     public ManualScheduler start() {

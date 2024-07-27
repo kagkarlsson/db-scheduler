@@ -164,6 +164,10 @@ public class DbSchedulerAutoConfiguration {
       builder.enableImmediateExecution();
     }
 
+    if (config.isPrioritizationEnabled()) {
+      builder.enablePrioritization();
+    }
+
     // Use custom executor service if provided
     customizer.executorService().ifPresent(builder::executorService);
 

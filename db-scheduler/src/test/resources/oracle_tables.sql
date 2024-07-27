@@ -11,8 +11,10 @@ create table scheduled_tasks
     consecutive_failures NUMBER(19, 0),
     last_heartbeat       TIMESTAMP(6) WITH TIME ZONE,
     version              NUMBER(19, 0),
+    priority             NUMBER(19, 0),
     PRIMARY KEY (task_name, task_instance)
 );
 
 CREATE INDEX scheduled_tasks__execution_time__idx on scheduled_tasks(execution_time);
 CREATE INDEX scheduled_tasks__last_heartbeat__idx on scheduled_tasks(last_heartbeat);
+CREATE INDEX scheduled_tasks__priority__execution_time__idx on scheduled_tasks(priority desc, execution_time asc);

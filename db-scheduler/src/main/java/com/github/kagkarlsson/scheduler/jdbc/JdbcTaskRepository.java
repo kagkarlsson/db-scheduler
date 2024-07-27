@@ -62,6 +62,7 @@ public class JdbcTaskRepository implements TaskRepository {
   private final Serializer serializer;
   private final String tableName;
   private final JdbcCustomization jdbcCustomization;
+  private final boolean prioritization;
   private final Clock clock;
 
   public JdbcTaskRepository(
@@ -70,6 +71,7 @@ public class JdbcTaskRepository implements TaskRepository {
       String tableName,
       TaskResolver taskResolver,
       SchedulerName schedulerSchedulerName,
+      boolean prioritization,
       Clock clock) {
     this(
         dataSource,
@@ -79,6 +81,7 @@ public class JdbcTaskRepository implements TaskRepository {
         taskResolver,
         schedulerSchedulerName,
         Serializer.DEFAULT_JAVA_SERIALIZER,
+        prioritization,
         clock);
   }
 
@@ -89,6 +92,7 @@ public class JdbcTaskRepository implements TaskRepository {
       String tableName,
       TaskResolver taskResolver,
       SchedulerName schedulerSchedulerName,
+      boolean prioritization,
       Clock clock) {
     this(
         dataSource,
@@ -98,6 +102,7 @@ public class JdbcTaskRepository implements TaskRepository {
         taskResolver,
         schedulerSchedulerName,
         Serializer.DEFAULT_JAVA_SERIALIZER,
+        prioritization,
         clock);
   }
 
@@ -109,6 +114,7 @@ public class JdbcTaskRepository implements TaskRepository {
       TaskResolver taskResolver,
       SchedulerName schedulerSchedulerName,
       Serializer serializer,
+      boolean prioritization,
       Clock clock) {
     this(
         jdbcCustomization,
@@ -117,6 +123,7 @@ public class JdbcTaskRepository implements TaskRepository {
         schedulerSchedulerName,
         serializer,
         new JdbcRunner(dataSource, commitWhenAutocommitDisabled),
+        prioritization,
         clock);
   }
 
@@ -127,6 +134,7 @@ public class JdbcTaskRepository implements TaskRepository {
       SchedulerName schedulerSchedulerName,
       Serializer serializer,
       JdbcRunner jdbcRunner,
+      boolean prioritization,
       Clock clock) {
     this.tableName = tableName;
     this.taskResolver = taskResolver;
@@ -134,6 +142,7 @@ public class JdbcTaskRepository implements TaskRepository {
     this.jdbcRunner = jdbcRunner;
     this.serializer = serializer;
     this.jdbcCustomization = jdbcCustomization;
+    this.prioritization = prioritization;
     this.clock = clock;
   }
 
@@ -153,7 +162,7 @@ public class JdbcTaskRepository implements TaskRepository {
       jdbcRunner.execute(
           "insert into "
               + tableName
-              + "(task_name, task_instance, task_data, execution_time, picked, version) values(?, ?, ?, ?, ?, ?)",
+              + "(task_name, task_instance, task_data, execution_time, picked, version, priority) values(?, ?, ?, ?, ?, ?, ?)",
           (PreparedStatement p) -> {
             p.setString(1, taskInstance.getTaskName());
             p.setString(2, taskInstance.getId());
@@ -161,6 +170,7 @@ public class JdbcTaskRepository implements TaskRepository {
             jdbcCustomization.setInstant(p, 4, instance.getNextExecutionTime(clock.now()));
             p.setBoolean(5, false);
             p.setLong(6, 1L);
+            p.setInt(7, taskInstance.getPriority());
           });
       return true;
 
@@ -246,7 +256,7 @@ public class JdbcTaskRepository implements TaskRepository {
       ScheduledExecutionsFilter filter, Consumer<Execution> consumer) {
     UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
 
-    QueryBuilder q = queryForFilter(filter);
+    QueryBuilder q = queryForFilter(filter, prioritization);
     if (unresolvedFilter.isActive() && !filter.getIncludeUnresolved()) {
       q.andCondition(unresolvedFilter);
     }
@@ -262,7 +272,7 @@ public class JdbcTaskRepository implements TaskRepository {
       ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer) {
     UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
 
-    QueryBuilder q = queryForFilter(filter);
+    QueryBuilder q = queryForFilter(filter, prioritization);
     if (unresolvedFilter.isActive() && !filter.getIncludeUnresolved()) {
       q.andCondition(unresolvedFilter);
     }
@@ -275,11 +285,12 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public List<Execution> getDue(Instant now, int limit) {
+  public List<Execution> getDue(Instant now, int limit, boolean prioritization) {
     LOG.trace("Using generic fetch-then-lock query");
     final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
     String selectDueQuery =
-        jdbcCustomization.createSelectDueQuery(tableName, limit, unresolvedFilter.andCondition());
+        jdbcCustomization.createSelectDueQuery(
+            tableName, limit, unresolvedFilter.andCondition(), prioritization);
 
     return jdbcRunner.query(
         selectDueQuery,
@@ -303,7 +314,7 @@ public class JdbcTaskRepository implements TaskRepository {
               new UnresolvedFilter(taskResolver.getUnresolved());
           String selectForUpdateQuery =
               jdbcCustomization.createGenericSelectForUpdateQuery(
-                  tableName, limit, unresolvedFilter.andCondition());
+                  tableName, limit, unresolvedFilter.andCondition(), prioritization);
           List<Execution> candidates =
               txRunner.query(
                   selectForUpdateQuery,
@@ -386,10 +397,11 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public List<Execution> lockAndGetDue(Instant now, int limit) {
+  public List<Execution> lockAndGetDue(Instant now, int limit, boolean prioritization) {
     if (jdbcCustomization.supportsSingleStatementLockAndFetch()) {
       LOG.trace("Using single-statement lock-and-fetch");
-      return jdbcCustomization.lockAndFetchSingleStatement(getTaskRespositoryContext(), now, limit);
+      return jdbcCustomization.lockAndFetchSingleStatement(
+          getTaskRespositoryContext(), now, limit, prioritization);
     } else if (jdbcCustomization.supportsGenericLockAndFetch()) {
       LOG.trace("Using generic transaction-based lock-and-fetch");
       return lockAndFetchGeneric(now, limit);
@@ -688,7 +700,7 @@ public class JdbcTaskRepository implements TaskRepository {
         () -> new ExecutionResultSetMapper(false, true));
   }
 
-  private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
+  private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter, boolean prioritization) {
     final QueryBuilder q = QueryBuilder.selectFromTable(tableName);
 
     filter
@@ -698,7 +710,7 @@ public class JdbcTaskRepository implements TaskRepository {
               q.andCondition(new PickedCondition(value));
             });
 
-    q.orderBy("execution_time asc");
+    q.orderBy(prioritization ? "priority desc, execution_time asc" : "execution_time asc");
     return q;
   }
 
@@ -775,6 +787,7 @@ public class JdbcTaskRepository implements TaskRepository {
         // default
         Instant lastHeartbeat = jdbcCustomization.getInstant(rs, "last_heartbeat");
         long version = rs.getLong("version");
+        int priority = rs.getInt("priority");
 
         Supplier dataSupplier =
             memoize(
@@ -789,7 +802,7 @@ public class JdbcTaskRepository implements TaskRepository {
         this.consumer.accept(
             new Execution(
                 executionTime,
-                new TaskInstance(taskName, instanceId, dataSupplier),
+                new TaskInstance(taskName, instanceId, dataSupplier, priority),
                 picked,
                 pickedBy,
                 lastSuccess,

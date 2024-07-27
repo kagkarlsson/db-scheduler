@@ -183,6 +183,20 @@ public class DbSchedulerAutoConfigurationTest {
   }
 
   @Test
+  public void it_should_enable_prioritization() {
+    ctxRunner
+        .withPropertyValues("db-scheduler.prioritization-enabled=true")
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(DataSource.class);
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+
+              DbSchedulerProperties props = ctx.getBean(DbSchedulerProperties.class);
+              assertThat(props.isPrioritizationEnabled()).isTrue();
+            });
+  }
+
+  @Test
   public void it_should_support_custom_starting_strategies() {
     ctxRunner
         .withUserConfiguration(CustomStarterConfiguration.class)

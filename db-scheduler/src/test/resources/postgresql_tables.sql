@@ -10,8 +10,10 @@ create table scheduled_tasks (
   consecutive_failures INT,
   last_heartbeat timestamp with time zone,
   version BIGINT not null,
+  priority INT,
   PRIMARY KEY (task_name, task_instance)
 );
 
 CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time);
 CREATE INDEX last_heartbeat_idx ON scheduled_tasks (last_heartbeat);
+CREATE INDEX priority_execution_time_idx on scheduled_tasks (priority desc, execution_time asc);

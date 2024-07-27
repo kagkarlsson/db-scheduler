@@ -69,6 +69,7 @@ public class Scheduler implements SchedulerClient {
   private final Waiter heartbeatWaiter;
   final SettableSchedulerState schedulerState = new SettableSchedulerState();
   final ConfigurableLogger failureLogger;
+  final boolean prioritization;
 
   protected Scheduler(
       Clock clock,
@@ -90,7 +91,8 @@ public class Scheduler implements SchedulerClient {
       boolean logStackTrace,
       List<OnStartup> onStartup,
       ExecutorService dueExecutor,
-      ScheduledExecutorService housekeeperExecutor) {
+      ScheduledExecutorService housekeeperExecutor,
+      boolean prioritization) {
     this.clock = clock;
     this.schedulerTaskRepository = schedulerTaskRepository;
     this.taskResolver = taskResolver;
@@ -112,6 +114,7 @@ public class Scheduler implements SchedulerClient {
     this.housekeeperExecutor = housekeeperExecutor;
     delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
+    this.prioritization = prioritization;
 
     if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
       schedulerTaskRepository.verifySupportsLockAndFetch();
@@ -129,7 +132,8 @@ public class Scheduler implements SchedulerClient {
               clock,
               pollingStrategyConfig,
               this::triggerCheckForDueExecutions,
-              heartbeatConfig);
+              heartbeatConfig,
+              prioritization);
     } else if (pollingStrategyConfig.type == PollingStrategyConfig.Type.FETCH) {
       executeDueStrategy =
           new FetchCandidates(
@@ -145,7 +149,8 @@ public class Scheduler implements SchedulerClient {
               clock,
               pollingStrategyConfig,
               this::triggerCheckForDueExecutions,
-              heartbeatConfig);
+              heartbeatConfig,
+              prioritization);
     } else {
       throw new IllegalArgumentException(
           "Unknown polling-strategy type: " + pollingStrategyConfig.type);

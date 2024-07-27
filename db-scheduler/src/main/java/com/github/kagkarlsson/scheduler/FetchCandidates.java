@@ -44,6 +44,7 @@ public class FetchCandidates implements PollStrategy {
   AtomicInteger currentGenerationNumber = new AtomicInteger(0);
   private final int lowerLimit;
   private final int upperLimit;
+  private final boolean prioritization;
 
   public FetchCandidates(
       Executor executor,
@@ -58,7 +59,8 @@ public class FetchCandidates implements PollStrategy {
       Clock clock,
       PollingStrategyConfig pollingStrategyConfig,
       Runnable triggerCheckForNewExecutions,
-      HeartbeatConfig heartbeatConfig) {
+      HeartbeatConfig heartbeatConfig,
+      boolean prioritization) {
     this.executor = executor;
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
@@ -71,6 +73,7 @@ public class FetchCandidates implements PollStrategy {
     this.pollingStrategyConfig = pollingStrategyConfig;
     this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
     this.heartbeatConfig = heartbeatConfig;
+    this.prioritization = prioritization;
     lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
     // FIXLATER: this is not "upper limit", but rather nr of executions to get. those already in
     // queue will become stale
@@ -84,7 +87,8 @@ public class FetchCandidates implements PollStrategy {
     // Fetch new candidates for execution. Old ones still in ExecutorService will become stale and
     // be discarded
     final int executionsToFetch = upperLimit;
-    List<Execution> fetchedDueExecutions = taskRepository.getDue(now, executionsToFetch);
+    List<Execution> fetchedDueExecutions =
+        taskRepository.getDue(now, executionsToFetch, prioritization);
     LOG.trace(
         "Fetched {} task instances due for execution at {}", fetchedDueExecutions.size(), now);
 
