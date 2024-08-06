@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler.task;
 
 public abstract class AbstractTask<T> implements Task<T> {
+
   protected final String name;
   private final FailureHandler<T> failureHandler;
   private final DeadExecutionHandler<T> deadExecutionHandler;
@@ -42,12 +43,17 @@ public abstract class AbstractTask<T> implements Task<T> {
 
   @Override
   public TaskInstance<T> instance(String id) {
-    return new TaskInstance<>(this.name, id);
+    return instanceBuilder(id).build();
   }
 
   @Override
   public TaskInstance<T> instance(String id, T data) {
-    return new TaskInstance<>(this.name, id, data);
+    return instanceBuilder(id).setData(data).build();
+  }
+
+  @Override
+  public TaskInstance.Builder<T> instanceBuilder(String id) {
+    return new TaskInstance.Builder<>(this.name, id);
   }
 
   @Override

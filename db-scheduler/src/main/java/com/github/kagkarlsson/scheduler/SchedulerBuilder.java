@@ -74,6 +74,7 @@ public class SchedulerBuilder {
   protected PollingStrategyConfig pollingStrategyConfig = DEFAULT_POLLING_STRATEGY;
   protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
   protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
+  protected boolean prioritization = false;
   private boolean registerShutdownHook = false;
   private int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
   private boolean alwaysPersistTimestampInUTC = false;
@@ -230,6 +231,11 @@ public class SchedulerBuilder {
     return this;
   }
 
+  public SchedulerBuilder enablePrioritization() {
+    this.prioritization = true;
+    return this;
+  }
+
   public Scheduler build() {
     if (schedulerName == null) {
       schedulerName = new SchedulerName.Hostname();
@@ -249,6 +255,7 @@ public class SchedulerBuilder {
             taskResolver,
             schedulerName,
             serializer,
+            prioritization,
             clock);
     final JdbcTaskRepository clientTaskRepository =
         new JdbcTaskRepository(
@@ -259,6 +266,7 @@ public class SchedulerBuilder {
             taskResolver,
             schedulerName,
             serializer,
+            prioritization,
             clock);
 
     ExecutorService candidateExecutorService = executorService;
@@ -316,7 +324,8 @@ public class SchedulerBuilder {
             logStackTrace,
             startTasks,
             candidateDueExecutor,
-            candidateHousekeeperExecutor);
+            candidateHousekeeperExecutor,
+            prioritization);
 
     if (enableImmediateExecution) {
       scheduler.registerSchedulerListener(new ImmediateCheckForDueExecutions(scheduler, clock));

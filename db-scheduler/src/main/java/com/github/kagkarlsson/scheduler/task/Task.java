@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler.task;
 
 public interface Task<T> extends ExecutionHandler<T>, HasTaskName {
+
   String getName();
 
   Class<T> getDataClass();
@@ -21,6 +22,8 @@ public interface Task<T> extends ExecutionHandler<T>, HasTaskName {
   TaskInstance<T> instance(String id);
 
   TaskInstance<T> instance(String id, T data);
+
+  TaskInstance.Builder<T> instanceBuilder(String id);
 
   default TaskInstanceId instanceId(String id) {
     return TaskInstanceId.of(getName(), id);

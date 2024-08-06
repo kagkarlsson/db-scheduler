@@ -33,7 +33,7 @@ import org.postgresql.ds.PGSimpleDataSource;
 
    docker run -d --name my_postgres -v my_dbdata:/var/lib/postgresql/data -p 54320:5432 -e POSTGRES_PASSWORD=my_password postgres:13
    psql -h localhost -p 54320 postgres postgres
-   create table scheduled_tasks (  task_name text not null,  task_instance text not null,  task_data bytea,  execution_time timestamp with time zone not null,  picked BOOLEAN not null,  picked_by text,  last_success timestamp with time zone,  last_failure timestamp with time zone,  consecutive_failures INT,  last_heartbeat timestamp with time zone,  version BIGINT not null,  PRIMARY KEY (task_name, task_instance));
+   create table scheduled_tasks (  task_name text not null,  task_instance text not null,  task_data bytea,  execution_time timestamp with time zone not null,  picked BOOLEAN not null,  picked_by text,  last_success timestamp with time zone,  last_failure timestamp with time zone,  consecutive_failures INT,  last_heartbeat timestamp with time zone,  version BIGINT not null,  priority INT,  PRIMARY KEY (task_name, task_instance));
 
    get json data
      select convert_from(task_data, 'UTF-8') from scheduled_tasks ;

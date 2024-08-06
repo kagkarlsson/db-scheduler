@@ -48,7 +48,8 @@ public class ManualScheduler extends Scheduler {
       boolean logStackTrace,
       List<OnStartup> onStartup,
       ExecutorService dueExecutor,
-      ScheduledExecutorService houseKeeperExecutor) {
+      ScheduledExecutorService houseKeeperExecutor,
+      boolean prioritization) {
     super(
         clock,
         schedulerTaskRepository,
@@ -69,7 +70,8 @@ public class ManualScheduler extends Scheduler {
         logStackTrace,
         onStartup,
         dueExecutor,
-        houseKeeperExecutor);
+        houseKeeperExecutor,
+        prioritization);
     this.clock = clock;
   }
 

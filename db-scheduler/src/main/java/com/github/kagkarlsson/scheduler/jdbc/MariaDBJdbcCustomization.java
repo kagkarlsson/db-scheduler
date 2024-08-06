@@ -43,9 +43,10 @@ public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition) {
+      String tableName, int limit, String requiredAndCondition, boolean prioritization) {
     return selectForUpdate(
         tableName,
+        Queries.ansiSqlOrderPart(prioritization),
         Queries.postgresSqlLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",

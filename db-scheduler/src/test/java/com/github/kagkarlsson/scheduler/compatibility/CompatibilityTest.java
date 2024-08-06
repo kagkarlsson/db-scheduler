@@ -4,7 +4,6 @@ import static com.github.kagkarlsson.scheduler.SchedulerBuilder.UPPER_LIMIT_FRAC
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -14,9 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import co.unruly.matchers.OptionalMatchers;
-import com.github.kagkarlsson.scheduler.*;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.SystemClock;
@@ -214,6 +213,7 @@ public abstract class CompatibilityTest {
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
+            false,
             new SystemClock());
 
     final Instant now = TimeHelper.truncatedInstantNow();
@@ -222,7 +222,7 @@ public abstract class CompatibilityTest {
         SchedulableInstance.of(oneTime.instance("future1"), now.plusSeconds(10)));
     jdbcTaskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(oneTime.instance("id1"), now));
-    List<Execution> picked = jdbcTaskRepository.lockAndGetDue(now, POLLING_LIMIT);
+    List<Execution> picked = jdbcTaskRepository.lockAndGetDue(now, POLLING_LIMIT, false);
     assertThat(picked, IsCollectionWithSize.hasSize(1));
 
     assertThat(jdbcTaskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
@@ -262,6 +262,7 @@ public abstract class CompatibilityTest {
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
+            false,
             new SystemClock());
 
     final Instant now = TimeHelper.truncatedInstantNow();
@@ -273,21 +274,22 @@ public abstract class CompatibilityTest {
     Execution storedExecution = (jdbcTaskRepository.getExecution(taskInstance)).get();
     assertThat(storedExecution.getExecutionTime(), is(now));
 
-    final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
+    final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT, false);
     assertThat(due, hasSize(1));
     final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), now);
     assertThat(pickedExecution.isPresent(), is(true));
 
-    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
 
     jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
     assertThat(jdbcTaskRepository.getDeadExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
 
     jdbcTaskRepository.reschedule(
         pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1), 0);
-    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
     assertThat(
-        jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1)), POLLING_LIMIT), hasSize(1));
+        jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1)), POLLING_LIMIT, false),
+        hasSize(1));
 
     final Optional<Execution> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
     assertThat(rescheduled.isPresent(), is(true));
@@ -311,6 +313,7 @@ public abstract class CompatibilityTest {
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
+            false,
             new SystemClock());
 
     final Instant now = TimeHelper.truncatedInstantNow();
@@ -386,6 +389,7 @@ public abstract class CompatibilityTest {
         DEFAULT_TABLE_NAME,
         defaultTaskResolver,
         new SchedulerName.Fixed("scheduler1"),
+        false,
         new SystemClock());
   }
 }

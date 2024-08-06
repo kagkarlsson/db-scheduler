@@ -114,6 +114,9 @@ public class DbSchedulerProperties {
   /** Whether or not to log the {@link Throwable} that caused a task to fail. */
   private boolean failureLoggerLogStackTrace = SchedulerBuilder.LOG_STACK_TRACE_ON_FAILURE;
 
+  /** Whether or not to prioritization of tasks is enabled. */
+  private boolean prioritizationEnabled = false;
+
   public boolean isEnabled() {
     return enabled;
   }
@@ -242,5 +245,13 @@ public class DbSchedulerProperties {
 
   public void setAlwaysPersistTimestampInUtc(boolean alwaysPersistTimestampInUTC) {
     this.alwaysPersistTimestampInUtc = alwaysPersistTimestampInUTC;
+  }
+
+  public boolean isPrioritizationEnabled() {
+    return prioritizationEnabled;
+  }
+
+  public void setPrioritizationEnabled(boolean prioritizationEnabled) {
+    this.prioritizationEnabled = prioritizationEnabled;
   }
 }
