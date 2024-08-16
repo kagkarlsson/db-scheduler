@@ -11,7 +11,7 @@ create table scheduled_tasks
   consecutive_failures int,
   last_heartbeat       datetimeoffset,
   [version]            bigint         not null,
-  priority             int            not null,
+  priority             int,
   primary key (task_name, task_instance),
   index execution_time_idx (execution_time),
   index last_heartbeat_idx (last_heartbeat),

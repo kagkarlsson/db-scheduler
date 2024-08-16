@@ -48,7 +48,7 @@ public abstract class AbstractTask<T> implements Task<T> {
 
   @Override
   public TaskInstance<T> instance(String id, T data) {
-    return instanceBuilder(id).setData(data).build();
+    return instanceBuilder(id).data(data).build();
   }
 
   @Override

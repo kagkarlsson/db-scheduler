@@ -95,18 +95,18 @@ public final class TaskInstance<T> implements TaskInstanceId {
       this.taskName = taskName;
     }
 
-    public Builder<T> setDataSupplier(Supplier<T> dataSupplier) {
+    public Builder<T> dataSupplier(Supplier<T> dataSupplier) {
       this.dataSupplier = dataSupplier;
       return this;
     }
 
-    public Builder<T> setData(T data) {
+    public Builder<T> data(T data) {
       this.dataSupplier = () -> (T) data;
       ;
       return this;
     }
 
-    public Builder<T> setPriority(int priority) {
+    public Builder<T> priority(int priority) {
       this.priority = priority;
       return this;
     }

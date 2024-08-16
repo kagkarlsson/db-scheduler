@@ -258,19 +258,21 @@ If you have a mix of tasks with different priorities, you might want to enable p
 
 :gear: `.enablePrioritization()`<br/>
 An executor will always run the tasks with the highest priority first even if the `execution_time` is greater than other tasks. <br />
-You can set the priority of a task using the `setPriority(int)` method on the task instance, by default the priority of task is set to `0`.
+You can set the priority of a task using the `priority(int)` method on the task instance, by default the priority of task is set to `0`.
 
 ```java
 scheduler.schedule(
-  onetimeTask.instanceBuilder("1").setPriority(100),
+  onetimeTask.instanceBuilder("1").priority(100),
   Instant.now()
 );
 
 scheduler.schedule(
-  onetimeTask.instanceBuilder("2").setPriority(200),
+  onetimeTask.instanceBuilder("2").priority(200),
   Instant.now()
 );
 ```
+
+**MySQL** and **MariaDB** below version **8.x** should not use this setting, because of a lack of support for descending indexes.
 
 #### Less commonly tuned
 
