@@ -1,0 +1,52 @@
+
+
+export PGPASSWORD=postgres
+
+docker stop pg ; docker rm pg ; docker run -d --name pg -p "5432:5432" -e POSTGRES_PASSWORD=postgres postgres
+
+psql -h localhost postgres postgres  <<EOF
+ create table scheduled_tasks (
+   task_name text not null,
+   task_instance text not null,
+   task_data bytea,
+   execution_time timestamp with time zone not null,
+   priority INT,
+   picked BOOLEAN not null,
+   picked_by text,
+   last_success timestamp with time zone,
+   last_failure timestamp with time zone,
+   consecutive_failures INT,
+   last_heartbeat timestamp with time zone,
+   version BIGINT not null,
+   PRIMARY KEY (task_name, task_instance)
+ );
+
+ CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time);
+ CREATE INDEX last_heartbeat_idx ON scheduled_tasks (last_heartbeat);
+
+ INSERT INTO scheduled_tasks (task_name, task_instance, execution_time, priority, picked, version)
+             SELECT 'task1', 'instance-'||i::text,
+             now() - random() * (timestamp '2014-01-20 15:00:00' - timestamp '2014-01-18 10:00:00'),
+             trunc(random() * 100 + 1),
+             false, 1
+             FROM generate_series(1, 1000000) s(i);
+
+INSERT INTO scheduled_tasks (task_name, task_instance, execution_time, priority, picked, version)
+             SELECT 'task1', 'instance2-'||i::text,
+             now() + random() * (timestamp '2014-01-20 15:00:00' - timestamp '2014-01-18 10:00:00'),
+             trunc(random() * 100 + 1),
+             false, 1
+             FROM generate_series(1, 1000000) s(i);
+
+EOF
+
+
+CREATE INDEX prio_idx ON scheduled_tasks (priority desc,execution_time desc);
+CREATE INDEX exectime_idx ON scheduled_tasks (execution_time desc, priority desc);
+
+
+explain (buffers on, analyze on) select *
+from scheduled_tasks
+where execution_time < now()
+order by priority desc, execution_time desc
+limit 100;
