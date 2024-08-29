@@ -88,6 +88,7 @@ List of organizations known to be running db-scheduler in production:
 | [ModernLoop](https://modernloop.io/)      |  Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination.             |
 | [Diffia](https://www.diffia.com/)         |  Norwegian eHealth company                                   |
 | [Swan](https://www.swan.io/)              | Swan helps developers to embed banking services easily into their product. |
+| [TOMRA](https://www.tomra.com/)           | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling. |
 
 Feel free to open a PR to add your organization to the list.
 
