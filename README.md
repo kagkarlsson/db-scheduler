@@ -365,8 +365,9 @@ If you need to migrate from Java serialization to a `GsonSerializer`, configure 
 
 * [bekk/db-scheduler-ui](https://github.com/bekk/db-scheduler-ui) is admin-ui for the scheduler. It shows scheduled executions and supplies simple admin-operations such as
   "rerun failed execution now" and "delete execution".
-* [rocketbase-io/db-scheduler-log](https://github.com/rocketbase-io/db-scheduler-log) is an extention providing a history of executions, including failures and exceptions.
-* [piemjean/db-scheduler-mongo](https://github.com/piemjean/db-scheduler-mongo) is an extension for running db-scheduler with a Mongodb database.
+* [rocketbase-io/db-scheduler-log](https://github.com/rocketbase-io/db-scheduler-log) is an extension providing a history of executions, including failures and exceptions.
+* [piemjean/db-scheduler-mongo](https://github.com/piemjean/db-scheduler-mongo) is an extension for running db-scheduler with a MongoDB database.
+* [osoykan/db-scheduler-additions](https://github.com/osoykan/db-scheduler-additions) adds MongoDB & Couchbase support on top of Kotlin and Coroutines. It also provides a Ktor plugin for db-scheduler-ui.
 
 ## Spring Boot usage
 
