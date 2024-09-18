@@ -40,6 +40,7 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
         Queries.ansiSqlLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",
+        null,
         null);
   }
 }
