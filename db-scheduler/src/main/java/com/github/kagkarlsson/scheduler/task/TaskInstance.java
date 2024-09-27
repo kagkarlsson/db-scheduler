@@ -18,8 +18,6 @@ import java.util.function.Supplier;
 
 public final class TaskInstance<T> implements TaskInstanceId {
 
-  private static final int DEFAULT_PRIORITY = 0;
-
   private final String taskName;
   private final String id;
   private final Supplier<T> dataSupplier;
@@ -30,7 +28,7 @@ public final class TaskInstance<T> implements TaskInstanceId {
   }
 
   public TaskInstance(String taskName, String id, T data) {
-    this(taskName, id, () -> data, DEFAULT_PRIORITY);
+    this(taskName, id, () -> data, Priority.MEDIUM);
   }
 
   public TaskInstance(String taskName, String id, Supplier<T> dataSupplier, int priority) {
@@ -86,7 +84,7 @@ public final class TaskInstance<T> implements TaskInstanceId {
     private final String taskName;
     private final String id;
     private Supplier<T> dataSupplier = () -> (T) null;
-    private int priority = DEFAULT_PRIORITY;
+    private int priority = Priority.MEDIUM;
 
     public Builder(String taskName, String id) {
       this.id = id;

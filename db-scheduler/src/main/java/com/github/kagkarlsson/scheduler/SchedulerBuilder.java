@@ -255,7 +255,7 @@ public class SchedulerBuilder {
             taskResolver,
             schedulerName,
             serializer,
-          enablePriority,
+            enablePriority,
             clock);
     final JdbcTaskRepository clientTaskRepository =
         new JdbcTaskRepository(
@@ -266,7 +266,7 @@ public class SchedulerBuilder {
             taskResolver,
             schedulerName,
             serializer,
-          enablePriority,
+            enablePriority,
             clock);
 
     ExecutorService candidateExecutorService = executorService;
@@ -300,7 +300,7 @@ public class SchedulerBuilder {
         waiter.getWaitDuration().getSeconds(),
         heartbeatInterval.getSeconds(),
         enableImmediateExecution,
-      enablePriority,
+        enablePriority,
         tableName,
         schedulerName.getName());
 
@@ -326,7 +326,7 @@ public class SchedulerBuilder {
             startTasks,
             candidateDueExecutor,
             candidateHousekeeperExecutor,
-          enablePriority);
+            enablePriority);
 
     if (enableImmediateExecution) {
       scheduler.registerSchedulerListener(new ImmediateCheckForDueExecutions(scheduler, clock));

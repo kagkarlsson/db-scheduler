@@ -152,22 +152,25 @@ public class JdbcTaskRepositoryTest {
         new SchedulableTaskInstance<>(
             oneTimeTask.instanceBuilder("id1").priority(1).build(), now.minus(Duration.ofDays(1)));
     SchedulableTaskInstance<Void> id2 =
-      new SchedulableTaskInstance<>(
-        oneTimeTask.instanceBuilder("id2").priority(10).build(), now.minus(Duration.ofDays(2)));
+        new SchedulableTaskInstance<>(
+            oneTimeTask.instanceBuilder("id2").priority(10).build(), now.minus(Duration.ofDays(2)));
     SchedulableTaskInstance<Void> id3 =
-      new SchedulableTaskInstance<>(
-        oneTimeTask.instanceBuilder("id3").priority(5).build(), now.minus(Duration.ofDays(3)));
+        new SchedulableTaskInstance<>(
+            oneTimeTask.instanceBuilder("id3").priority(5).build(), now.minus(Duration.ofDays(3)));
 
     Stream.of(id1, id2, id3).forEach(taskRepository::createIfNotExists);
 
-    List<String> orderedByPriority = taskRepository.getDue(now, POLLING_LIMIT, true).stream()
-      .map(Execution::getId).collect(Collectors.toList());
+    List<String> orderedByPriority =
+        taskRepository.getDue(now, POLLING_LIMIT, true).stream()
+            .map(Execution::getId)
+            .collect(Collectors.toList());
     assertThat(orderedByPriority, contains("id2", "id3", "id1"));
 
-    List<String> orderedByExecutionTime = taskRepository.getDue(now, POLLING_LIMIT, false).stream()
-      .map(Execution::getId).collect(Collectors.toList());
+    List<String> orderedByExecutionTime =
+        taskRepository.getDue(now, POLLING_LIMIT, false).stream()
+            .map(Execution::getId)
+            .collect(Collectors.toList());
     assertThat(orderedByExecutionTime, contains("id3", "id2", "id1"));
-
   }
 
   @Test

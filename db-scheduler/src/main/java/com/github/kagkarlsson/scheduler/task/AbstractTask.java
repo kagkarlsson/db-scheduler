@@ -13,6 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.task.TaskInstance.Builder;
+
 public abstract class AbstractTask<T> implements Task<T> {
 
   protected final String name;
@@ -48,12 +50,12 @@ public abstract class AbstractTask<T> implements Task<T> {
 
   @Override
   public TaskInstance<T> instance(String id, T data) {
-    return instanceBuilder(id).data(data).build();
+    return instanceBuilder(id).priority(getDefaultPriority()).data(data).build();
   }
 
   @Override
   public TaskInstance.Builder<T> instanceBuilder(String id) {
-    return new TaskInstance.Builder<>(this.name, id);
+    return new Builder<>(this.name, id);
   }
 
   @Override

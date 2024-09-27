@@ -28,7 +28,6 @@ public interface Task<T> extends ExecutionHandler<T>, HasTaskName {
   default TaskInstanceId instanceId(String id) {
     return TaskInstanceId.of(getName(), id);
   }
-  ;
 
   SchedulableInstance<T> schedulableInstance(String id);
 
@@ -41,5 +40,9 @@ public interface Task<T> extends ExecutionHandler<T>, HasTaskName {
   @Override
   default String getTaskName() {
     return getName();
+  }
+
+  default int getDefaultPriority() {
+    return Priority.MEDIUM;
   }
 }
