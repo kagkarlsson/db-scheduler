@@ -274,6 +274,9 @@ public abstract class CompatibilityTest {
     Execution storedExecution = (jdbcTaskRepository.getExecution(taskInstance)).get();
     assertThat(storedExecution.getExecutionTime(), is(now));
 
+    // priority=true
+    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT, true), hasSize(1));
+    // priority=false
     final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT, false);
     assertThat(due, hasSize(1));
     final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), now);
