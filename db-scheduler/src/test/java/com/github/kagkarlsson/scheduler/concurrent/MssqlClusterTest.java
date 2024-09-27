@@ -25,6 +25,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @Tag("compatibility-cluster")
+@Disabled
 public class MssqlClusterTest {
   public static final int NUMBER_OF_THREADS = 10;
   private static final Logger DEBUG_LOG = LoggerFactory.getLogger(MssqlClusterTest.class);

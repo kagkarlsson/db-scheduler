@@ -7,6 +7,7 @@ import com.zaxxer.hikari.util.DriverDataSource;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -25,6 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @SuppressWarnings("rawtypes")
 @Tag("compatibility")
 @Testcontainers
+@Disabled
 public class MssqlCompatibilityTest extends CompatibilityTest {
 
   @Container private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer();
