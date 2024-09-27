@@ -59,11 +59,6 @@ public class ZoneSpecificJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public String getQueryOrderPart(boolean orderByPriority) {
-    return delegate.getQueryOrderPart(orderByPriority);
-  }
-
-  @Override
   public boolean supportsSingleStatementLockAndFetch() {
     return delegate.supportsSingleStatementLockAndFetch();
   }

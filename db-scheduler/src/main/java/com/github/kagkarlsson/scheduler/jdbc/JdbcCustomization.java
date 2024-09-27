@@ -36,8 +36,6 @@ public interface JdbcCustomization {
 
   String getQueryLimitPart(int limit);
 
-  String getQueryOrderPart(boolean orderByPriority);
-
   boolean supportsSingleStatementLockAndFetch();
 
   List<Execution> lockAndFetchSingleStatement(

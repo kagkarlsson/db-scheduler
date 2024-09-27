@@ -55,7 +55,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
       String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     return selectForUpdate(
         tableName,
-        getQueryOrderPart(orderByPriority),
+        Queries.ansiSqlOrderPart(orderByPriority),
         getQueryLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",
@@ -78,7 +78,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
             + " st2 "
             + " WHERE picked = ? and execution_time <= ? "
             + unresolvedFilter.andCondition()
-            + getQueryOrderPart(orderByPriority)
+            + Queries.ansiSqlOrderPart(orderByPriority)
             + " FOR UPDATE SKIP LOCKED "
             + getQueryLimitPart(limit)
             + ")"

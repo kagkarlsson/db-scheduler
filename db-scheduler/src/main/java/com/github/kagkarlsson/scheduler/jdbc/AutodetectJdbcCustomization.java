@@ -126,11 +126,6 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public String getQueryOrderPart(boolean orderByPriority) {
-    return jdbcCustomization.getQueryOrderPart(orderByPriority);
-  }
-
-  @Override
   public boolean supportsSingleStatementLockAndFetch() {
     return jdbcCustomization.supportsSingleStatementLockAndFetch();
   }

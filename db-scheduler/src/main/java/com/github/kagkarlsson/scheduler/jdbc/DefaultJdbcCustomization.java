@@ -83,11 +83,6 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public String getQueryOrderPart(boolean orderByPriority) {
-    return Queries.ansiSqlOrderPart(orderByPriority);
-  }
-
-  @Override
   public boolean supportsSingleStatementLockAndFetch() {
     return false;
   }
@@ -119,7 +114,7 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
         + tableName
         + " where picked = ? and execution_time <= ? "
         + andCondition
-        + getQueryOrderPart(orderByPriority)
+        + Queries.ansiSqlOrderPart(orderByPriority)
         + explicitLimit;
   }
 
