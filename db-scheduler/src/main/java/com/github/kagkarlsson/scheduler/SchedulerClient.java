@@ -213,7 +213,6 @@ public interface SchedulerClient {
     private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
     private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
     private JdbcCustomization jdbcCustomization;
-    private boolean prioritization = false;
 
     private Builder(DataSource dataSource, List<Task<?>> knownTasks) {
       this.dataSource = dataSource;
@@ -243,11 +242,6 @@ public interface SchedulerClient {
       return this;
     }
 
-    public Builder enablePrioritization() {
-      this.prioritization = true;
-      return this;
-    }
-
     public SchedulerClient build() {
       TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, knownTasks);
       final SystemClock clock = new SystemClock();
@@ -265,7 +259,8 @@ public interface SchedulerClient {
               taskResolver,
               new SchedulerClientName(),
               serializer,
-              prioritization,
+              // scheduler-client is not affected by priority since it does not poll
+              false,
               clock);
 
       return new StandardSchedulerClient(taskRepository, clock);

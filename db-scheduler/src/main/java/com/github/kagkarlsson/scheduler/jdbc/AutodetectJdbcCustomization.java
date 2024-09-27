@@ -126,8 +126,8 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public String getQueryOrderPart(boolean prioritization) {
-    return jdbcCustomization.getQueryOrderPart(prioritization);
+  public String getQueryOrderPart(boolean orderByPriority) {
+    return jdbcCustomization.getQueryOrderPart(orderByPriority);
   }
 
   @Override
@@ -137,8 +137,8 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
 
   @Override
   public List<Execution> lockAndFetchSingleStatement(
-      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean prioritization) {
-    return jdbcCustomization.lockAndFetchSingleStatement(ctx, now, limit, prioritization);
+      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean orderByPriority) {
+    return jdbcCustomization.lockAndFetchSingleStatement(ctx, now, limit, orderByPriority);
   }
 
   @Override
@@ -148,15 +148,15 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition, boolean prioritization) {
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     return jdbcCustomization.createGenericSelectForUpdateQuery(
-        tableName, limit, requiredAndCondition, prioritization);
+        tableName, limit, requiredAndCondition, orderByPriority);
   }
 
   @Override
   public String createSelectDueQuery(
-      String tableName, int limit, String andCondition, boolean prioritization) {
-    return jdbcCustomization.createSelectDueQuery(tableName, limit, andCondition, prioritization);
+      String tableName, int limit, String andCondition, boolean orderByPriority) {
+    return jdbcCustomization.createSelectDueQuery(tableName, limit, andCondition, orderByPriority);
   }
 
   @Override

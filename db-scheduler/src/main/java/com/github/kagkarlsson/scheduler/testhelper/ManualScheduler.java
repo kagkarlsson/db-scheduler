@@ -49,7 +49,7 @@ public class ManualScheduler extends Scheduler {
       List<OnStartup> onStartup,
       ExecutorService dueExecutor,
       ScheduledExecutorService houseKeeperExecutor,
-      boolean prioritization) {
+      boolean priorityEnabled) {
     super(
         clock,
         schedulerTaskRepository,
@@ -71,7 +71,7 @@ public class ManualScheduler extends Scheduler {
         onStartup,
         dueExecutor,
         houseKeeperExecutor,
-        prioritization);
+        priorityEnabled);
     this.clock = clock;
   }
 

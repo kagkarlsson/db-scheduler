@@ -48,23 +48,23 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String createSelectDueQuery(
-      String tableName, int limit, String andCondition, boolean prioritization) {
+      String tableName, int limit, String andCondition, boolean orderByPriority) {
     return "SELECT "
         + " * FROM "
         + tableName
         // try reading past locked rows to see if that helps on deadlock-warnings
         + " WITH (READPAST) WHERE picked = ? AND execution_time <= ? "
         + andCondition
-        + getQueryOrderPart(prioritization)
+        + getQueryOrderPart(orderByPriority)
         + getQueryLimitPart(limit);
   }
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition, boolean prioritization) {
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     return selectForUpdate(
         tableName,
-        Queries.ansiSqlOrderPart(prioritization),
+        Queries.ansiSqlOrderPart(orderByPriority),
         Queries.ansiSqlLimitPart(limit),
         requiredAndCondition,
         null,

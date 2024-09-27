@@ -59,8 +59,8 @@ public class ZoneSpecificJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public String getQueryOrderPart(boolean prioritization) {
-    return delegate.getQueryOrderPart(prioritization);
+  public String getQueryOrderPart(boolean orderByPriority) {
+    return delegate.getQueryOrderPart(orderByPriority);
   }
 
   @Override
@@ -70,8 +70,8 @@ public class ZoneSpecificJdbcCustomization implements JdbcCustomization {
 
   @Override
   public List<Execution> lockAndFetchSingleStatement(
-      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean prioritization) {
-    return delegate.lockAndFetchSingleStatement(ctx, now, limit, prioritization);
+      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean orderByPriority) {
+    return delegate.lockAndFetchSingleStatement(ctx, now, limit, orderByPriority);
   }
 
   @Override
@@ -81,14 +81,14 @@ public class ZoneSpecificJdbcCustomization implements JdbcCustomization {
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition, boolean prioritization) {
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     return delegate.createGenericSelectForUpdateQuery(
-        tableName, limit, requiredAndCondition, prioritization);
+        tableName, limit, requiredAndCondition, orderByPriority);
   }
 
   @Override
   public String createSelectDueQuery(
-      String tableName, int limit, String andCondition, boolean prioritization) {
-    return delegate.createSelectDueQuery(tableName, limit, andCondition, prioritization);
+      String tableName, int limit, String andCondition, boolean orderByPriority) {
+    return delegate.createSelectDueQuery(tableName, limit, andCondition, orderByPriority);
   }
 }

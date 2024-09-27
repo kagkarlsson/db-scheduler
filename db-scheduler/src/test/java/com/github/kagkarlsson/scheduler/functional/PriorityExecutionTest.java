@@ -32,7 +32,7 @@ public class PriorityExecutionTest {
       TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
 
   @Test
-  public void test_when_prioritization_is_enabled() {
+  public void test_when_priority_is_enabled() {
     TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(4);
     TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
 
@@ -42,7 +42,7 @@ public class PriorityExecutionTest {
             .pollingInterval(ofMinutes(1))
             .schedulerName(new Fixed("test"))
             .statsRegistry(registry)
-            .enablePrioritization()
+            .enablePriority()
             .build();
 
     stopScheduler.register(scheduler);
@@ -73,7 +73,7 @@ public class PriorityExecutionTest {
           List<ExecutionComplete> completed = registry.getCompleted();
           assertThat(completed, hasSize(4));
 
-          // when prioritization is enabled
+          // when priority is enabled
           // the order should be maintained according to the priorities of tasks
           List<Integer> orderOfPriorities =
               completed.stream()
@@ -102,7 +102,7 @@ public class PriorityExecutionTest {
   }
 
   @Test
-  public void test_when_prioritization_is_disabled() {
+  public void test_when_priority_is_disabled() {
     TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(4);
     TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
 
@@ -116,7 +116,7 @@ public class PriorityExecutionTest {
 
     stopScheduler.register(scheduler);
 
-    // when prioritization is disabled priorities should be ignored
+    // when priority is disabled priorities should be ignored
     scheduler.schedule(
         oneTimeTask.instanceBuilder("three").priority(3).build(),
         Instant.parse("2020-01-01T20:00:00Z"));
@@ -144,7 +144,7 @@ public class PriorityExecutionTest {
           List<ExecutionComplete> completed = registry.getCompleted();
           assertThat(completed, hasSize(4));
 
-          // when prioritization is disabled
+          // when priority is disabled
           // the order should be maintained according to the execution times of tasks
           List<Instant> orderOfExecutionTimes =
               completed.stream()

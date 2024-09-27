@@ -42,8 +42,8 @@ public class Queries {
     return " OFFSET 0 ROWS FETCH FIRST " + limit + " ROWS ONLY ";
   }
 
-  public static String ansiSqlOrderPart(boolean prioritization) {
-    return prioritization
+  public static String ansiSqlOrderPart(boolean orderByPriority) {
+    return orderByPriority
         ? " ORDER BY priority DESC, execution_time ASC "
         : " ORDER BY execution_time ASC ";
   }

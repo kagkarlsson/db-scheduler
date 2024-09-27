@@ -74,7 +74,7 @@ public class SchedulerBuilder {
   protected PollingStrategyConfig pollingStrategyConfig = DEFAULT_POLLING_STRATEGY;
   protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
   protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
-  protected boolean enablePrioritization = false;
+  protected boolean enablePriority = false;
   private boolean registerShutdownHook = false;
   private int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
   private boolean alwaysPersistTimestampInUTC = false;
@@ -231,8 +231,8 @@ public class SchedulerBuilder {
     return this;
   }
 
-  public SchedulerBuilder enablePrioritization() {
-    this.enablePrioritization = true;
+  public SchedulerBuilder enablePriority() {
+    this.enablePriority = true;
     return this;
   }
 
@@ -255,7 +255,7 @@ public class SchedulerBuilder {
             taskResolver,
             schedulerName,
             serializer,
-            enablePrioritization,
+          enablePriority,
             clock);
     final JdbcTaskRepository clientTaskRepository =
         new JdbcTaskRepository(
@@ -266,7 +266,7 @@ public class SchedulerBuilder {
             taskResolver,
             schedulerName,
             serializer,
-            enablePrioritization,
+          enablePriority,
             clock);
 
     ExecutorService candidateExecutorService = executorService;
@@ -295,12 +295,12 @@ public class SchedulerBuilder {
     }
 
     LOG.info(
-        "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s, enable-immediate-execution={}, enable-prioritization={}, table-name={}, name={}",
+        "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s, enable-immediate-execution={}, enable-priority={}, table-name={}, name={}",
         executorThreads,
         waiter.getWaitDuration().getSeconds(),
         heartbeatInterval.getSeconds(),
         enableImmediateExecution,
-        enablePrioritization,
+      enablePriority,
         tableName,
         schedulerName.getName());
 
@@ -326,7 +326,7 @@ public class SchedulerBuilder {
             startTasks,
             candidateDueExecutor,
             candidateHousekeeperExecutor,
-            enablePrioritization);
+          enablePriority);
 
     if (enableImmediateExecution) {
       scheduler.registerSchedulerListener(new ImmediateCheckForDueExecutions(scheduler, clock));

@@ -26,7 +26,7 @@ public interface TaskRepository {
 
   boolean createIfNotExists(SchedulableInstance execution);
 
-  List<Execution> getDue(Instant now, int limit, boolean prioritization);
+  List<Execution> getDue(Instant now, int limit, boolean orderByPriority);
 
   Instant replace(Execution toBeReplaced, SchedulableInstance newInstance);
 
@@ -37,7 +37,7 @@ public interface TaskRepository {
 
   List<Execution> lockAndFetchGeneric(Instant now, int limit);
 
-  List<Execution> lockAndGetDue(Instant now, int limit, boolean prioritization);
+  List<Execution> lockAndGetDue(Instant now, int limit, boolean orderByPriority);
 
   void remove(Execution execution);
 

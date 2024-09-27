@@ -52,10 +52,10 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition, boolean prioritization) {
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     return selectForUpdate(
         tableName,
-        getQueryOrderPart(prioritization),
+        getQueryOrderPart(orderByPriority),
         getQueryLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",
@@ -64,7 +64,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public List<Execution> lockAndFetchSingleStatement(
-      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean prioritization) {
+      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean orderByPriority) {
     final JdbcTaskRepository.UnresolvedFilter unresolvedFilter =
         new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
 
@@ -78,7 +78,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
             + " st2 "
             + " WHERE picked = ? and execution_time <= ? "
             + unresolvedFilter.andCondition()
-            + getQueryOrderPart(prioritization)
+            + getQueryOrderPart(orderByPriority)
             + " FOR UPDATE SKIP LOCKED "
             + getQueryLimitPart(limit)
             + ")"

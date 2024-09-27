@@ -69,7 +69,7 @@ public class Scheduler implements SchedulerClient {
   private final Waiter heartbeatWaiter;
   final SettableSchedulerState schedulerState = new SettableSchedulerState();
   final ConfigurableLogger failureLogger;
-  final boolean prioritization;
+  final boolean priorityEnabled;
 
   protected Scheduler(
       Clock clock,
@@ -92,7 +92,7 @@ public class Scheduler implements SchedulerClient {
       List<OnStartup> onStartup,
       ExecutorService dueExecutor,
       ScheduledExecutorService housekeeperExecutor,
-      boolean prioritization) {
+      boolean priorityEnabled) {
     this.clock = clock;
     this.schedulerTaskRepository = schedulerTaskRepository;
     this.taskResolver = taskResolver;
@@ -114,7 +114,7 @@ public class Scheduler implements SchedulerClient {
     this.housekeeperExecutor = housekeeperExecutor;
     delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
-    this.prioritization = prioritization;
+    this.priorityEnabled = priorityEnabled;
 
     if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
       schedulerTaskRepository.verifySupportsLockAndFetch();
@@ -133,7 +133,7 @@ public class Scheduler implements SchedulerClient {
               pollingStrategyConfig,
               this::triggerCheckForDueExecutions,
               heartbeatConfig,
-              prioritization);
+              priorityEnabled);
     } else if (pollingStrategyConfig.type == PollingStrategyConfig.Type.FETCH) {
       executeDueStrategy =
           new FetchCandidates(
@@ -150,7 +150,7 @@ public class Scheduler implements SchedulerClient {
               pollingStrategyConfig,
               this::triggerCheckForDueExecutions,
               heartbeatConfig,
-              prioritization);
+              priorityEnabled);
     } else {
       throw new IllegalArgumentException(
           "Unknown polling-strategy type: " + pollingStrategyConfig.type);

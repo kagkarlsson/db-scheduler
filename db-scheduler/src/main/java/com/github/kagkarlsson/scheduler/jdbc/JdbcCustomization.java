@@ -36,18 +36,18 @@ public interface JdbcCustomization {
 
   String getQueryLimitPart(int limit);
 
-  String getQueryOrderPart(boolean prioritization);
+  String getQueryOrderPart(boolean orderByPriority);
 
   boolean supportsSingleStatementLockAndFetch();
 
   List<Execution> lockAndFetchSingleStatement(
-      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean prioritization);
+      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean orderByPriority);
 
   boolean supportsGenericLockAndFetch();
 
   String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition, boolean prioritization);
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority);
 
   String createSelectDueQuery(
-      String tableName, int limit, String andCondition, boolean prioritization);
+      String tableName, int limit, String andCondition, boolean orderByPriority);
 }

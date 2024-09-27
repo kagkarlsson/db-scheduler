@@ -34,10 +34,10 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition, boolean prioritization) {
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     return selectForUpdate(
         tableName,
-        Queries.ansiSqlOrderPart(prioritization),
+        Queries.ansiSqlOrderPart(orderByPriority),
         Queries.ansiSqlLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",

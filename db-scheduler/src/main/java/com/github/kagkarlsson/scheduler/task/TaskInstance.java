@@ -13,6 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public final class TaskInstance<T> implements TaskInstanceId {
@@ -64,18 +65,15 @@ public final class TaskInstance<T> implements TaskInstanceId {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-
     TaskInstance<?> that = (TaskInstance<?>) o;
-
-    if (!taskName.equals(that.taskName)) return false;
-    return id.equals(that.id);
+    return priority == that.priority
+        && Objects.equals(taskName, that.taskName)
+        && Objects.equals(id, that.id);
   }
 
   @Override
   public int hashCode() {
-    int result = taskName.hashCode();
-    result = 31 * result + id.hashCode();
-    return result;
+    return Objects.hash(taskName, id, priority);
   }
 
   @Override

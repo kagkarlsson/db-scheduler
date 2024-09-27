@@ -83,8 +83,8 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
-  public String getQueryOrderPart(boolean prioritization) {
-    return Queries.ansiSqlOrderPart(prioritization);
+  public String getQueryOrderPart(boolean orderByPriority) {
+    return Queries.ansiSqlOrderPart(orderByPriority);
   }
 
   @Override
@@ -94,7 +94,7 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public List<Execution> lockAndFetchSingleStatement(
-      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean prioritization) {
+      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean orderByPriority) {
     throw new UnsupportedOperationException(
         "lockAndFetch not supported for " + this.getClass().getName());
   }
@@ -106,20 +106,20 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition, boolean prioritization) {
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     throw new UnsupportedOperationException(
         "method must be implemented when supporting generic lock-and-fetch");
   }
 
   @Override
   public String createSelectDueQuery(
-      String tableName, int limit, String andCondition, boolean prioritization) {
+      String tableName, int limit, String andCondition, boolean orderByPriority) {
     final String explicitLimit = supportsExplicitQueryLimitPart() ? getQueryLimitPart(limit) : "";
     return "select * from "
         + tableName
         + " where picked = ? and execution_time <= ? "
         + andCondition
-        + getQueryOrderPart(prioritization)
+        + getQueryOrderPart(orderByPriority)
         + explicitLimit;
   }
 
