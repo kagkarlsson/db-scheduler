@@ -29,7 +29,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * [Who uses db-scheduler?](#who-uses-db-scheduler)
 * [Examples](#examples)
 * [Configuration](#configuration)
-* [Third-party task repositories](#third-party-task-repositories)
+* [Third-party extensions](#third-party-extensions)
 * [Spring Boot usage](#spring-boot-usage)
 * [Interacting with scheduled executions using the SchedulerClient](#interacting-with-scheduled-executions-using-the-schedulerclient)
 * [How it works](#how-it-works)
@@ -88,6 +88,7 @@ List of organizations known to be running db-scheduler in production:
 | [ModernLoop](https://modernloop.io/)      |  Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination.             |
 | [Diffia](https://www.diffia.com/)         |  Norwegian eHealth company                                   |
 | [Swan](https://www.swan.io/)              | Swan helps developers to embed banking services easily into their product. |
+| [TOMRA](https://www.tomra.com/)           | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling. |
 
 Feel free to open a PR to add your organization to the list.
 
@@ -391,8 +392,9 @@ If you need to migrate from Java serialization to a `GsonSerializer`, configure 
 
 * [bekk/db-scheduler-ui](https://github.com/bekk/db-scheduler-ui) is admin-ui for the scheduler. It shows scheduled executions and supplies simple admin-operations such as
   "rerun failed execution now" and "delete execution".
-* [rocketbase-io/db-scheduler-log](https://github.com/rocketbase-io/db-scheduler-log) is an extention providing a history of executions, including failures and exceptions.
-* [piemjean/db-scheduler-mongo](https://github.com/piemjean/db-scheduler-mongo) is an extension for running db-scheduler with a Mongodb database.
+* [rocketbase-io/db-scheduler-log](https://github.com/rocketbase-io/db-scheduler-log) is an extension providing a history of executions, including failures and exceptions.
+* [piemjean/db-scheduler-mongo](https://github.com/piemjean/db-scheduler-mongo) is an extension for running db-scheduler with a MongoDB database.
+* [osoykan/db-scheduler-additions](https://github.com/osoykan/db-scheduler-additions) adds MongoDB & Couchbase support on top of Kotlin and Coroutines. It also provides a Ktor plugin for db-scheduler-ui.
 
 ## Spring Boot usage
 
