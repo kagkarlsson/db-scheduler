@@ -43,7 +43,7 @@
 		<!-- Dependency versions -->
 		<micro-jdbc.version>0.6.0</micro-jdbc.version>
 		<slf4j.version>1.7.36</slf4j.version>
-		<logback.version>1.2.12</logback.version>
+		<logback.version>1.2.13</logback.version>
 		<spring-boot.version>2.7.18</spring-boot.version>
 <!--		<spring-boot.version>3.2.4</spring-boot.version>-->
 		<micrometer.version>1.11.1</micrometer.version>
