@@ -228,6 +228,8 @@ in the ExecutionHandler and abort long-running task. Default `30min`.
 It is possible to define a priority for executions which determines the order in which due executions
 are fetched from the database. An execution with a higher value for priority will run before an
 execution with a lower value (technically, the ordering will be `order by priority desc, execution_time asc`).
+Consider using priorities in the range 0-32000 as the field is defined as a `SMALLINT`. If you need a larger value,
+modify the schema.
 For now, this feature is opt-in.
 
 Set the priority per instance using the `TaskBuilder`:

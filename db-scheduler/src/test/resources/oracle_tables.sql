@@ -11,7 +11,7 @@ create table scheduled_tasks
     consecutive_failures NUMBER(19, 0),
     last_heartbeat       TIMESTAMP(6) WITH TIME ZONE,
     version              NUMBER(19, 0),
-    priority             NUMBER(19, 0),
+    priority             SMALLINT,
     PRIMARY KEY (task_name, task_instance)
 );
 
