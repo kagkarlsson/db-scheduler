@@ -15,6 +15,7 @@ package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.io.Serializable;
@@ -30,21 +31,27 @@ public class OneTimeTaskMain extends Example {
   @Override
   public void run(DataSource dataSource) {
 
-    OneTimeTask<MyTaskData> myAdhocTask =
-        Tasks.oneTime("my-typed-adhoc-task", MyTaskData.class)
+    TaskDescriptor<MyTaskData> MY_TASK = TaskDescriptor.of("my-onetime-task", MyTaskData.class);
+
+    OneTimeTask<MyTaskData> taskImplementation =
+        Tasks.oneTime(MY_TASK)
             .execute(
                 (inst, ctx) -> {
                   System.out.println("Executed! Custom data, Id: " + inst.getData().id);
                 });
 
-    final Scheduler scheduler = Scheduler.create(dataSource, myAdhocTask).threads(5).build();
+    final Scheduler scheduler =
+        Scheduler.create(dataSource, taskImplementation).registerShutdownHook().build();
 
     scheduler.start();
 
     // Schedule the task for execution a certain time in the future and optionally provide custom
     // data for the execution
     scheduler.schedule(
-        myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.now().plusSeconds(5));
+        MY_TASK
+            .instanceWithId("1045")
+            .data(new MyTaskData(1001L))
+            .scheduledTo(Instant.now().plusSeconds(5)));
   }
 
   public static class MyTaskData implements Serializable {

@@ -14,8 +14,18 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import java.time.Instant;
+import java.util.function.Supplier;
 
 public interface SchedulableInstance<T> extends TaskInstanceId {
+
+  static <T> SchedulableInstance<T> of(TaskInstance<T> taskInstance, Instant executionTime) {
+    return new SchedulableTaskInstance<T>(taskInstance, executionTime);
+  }
+
+  static <T> SchedulableInstance<T> of(
+      TaskInstance<T> taskInstance, NextExecutionTime executionTime) {
+    return new SchedulableTaskInstance<T>(taskInstance, executionTime);
+  }
 
   TaskInstance<T> getTaskInstance();
 
@@ -29,12 +39,36 @@ public interface SchedulableInstance<T> extends TaskInstanceId {
     return getTaskInstance().getId();
   }
 
-  static <T> SchedulableInstance<T> of(TaskInstance<T> taskInstance, Instant executionTime) {
-    return new SchedulableTaskInstance<T>(taskInstance, executionTime);
-  }
+  class Builder<T> {
 
-  static <T> SchedulableInstance<T> of(
-      TaskInstance<T> taskInstance, NextExecutionTime executionTime) {
-    return new SchedulableTaskInstance<T>(taskInstance, executionTime);
+    private final String taskName;
+    private final String id;
+    private Supplier<T> dataSupplier = () -> (T) null;
+    private int priority = Priority.MEDIUM;
+
+    public Builder(String taskName, String id) {
+      this.id = id;
+      this.taskName = taskName;
+    }
+
+    public SchedulableInstance.Builder<T> data(Supplier<T> dataSupplier) {
+      this.dataSupplier = dataSupplier;
+      return this;
+    }
+
+    public SchedulableInstance.Builder<T> data(T data) {
+      this.dataSupplier = () -> (T) data;
+      return this;
+    }
+
+    public SchedulableInstance.Builder<T> priority(int priority) {
+      this.priority = priority;
+      return this;
+    }
+
+    public SchedulableInstance<T> scheduledTo(Instant executionTime) {
+      TaskInstance<T> taskInstance = new TaskInstance<>(taskName, id, dataSupplier, priority);
+      return new SchedulableTaskInstance<>(taskInstance, executionTime);
+    }
   }
 }

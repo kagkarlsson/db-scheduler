@@ -47,7 +47,7 @@ public abstract class RecurringTaskWithPersistentSchedule<T extends ScheduleAndD
   @Override
   public SchedulableInstance<T> schedulableInstance(String id, T data) {
     return new SchedulableTaskInstance<>(
-        new TaskInstance<>(getName(), id, data), data.getSchedule()::getInitialExecutionTime);
+        instanceBuilder(id).data(data).build(), data.getSchedule()::getInitialExecutionTime);
   }
 
   @Override

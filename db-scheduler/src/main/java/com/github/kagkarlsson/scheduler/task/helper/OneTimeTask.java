@@ -43,14 +43,13 @@ public abstract class OneTimeTask<T> extends AbstractTask<T> {
 
   @Override
   public SchedulableInstance<T> schedulableInstance(String id) {
-    return new SchedulableTaskInstance<>(
-        new TaskInstance<>(getName(), id), (currentTime) -> currentTime);
+    return new SchedulableTaskInstance<>(instanceBuilder(id).build(), (currentTime) -> currentTime);
   }
 
   @Override
   public SchedulableInstance<T> schedulableInstance(String id, T data) {
     return new SchedulableTaskInstance<>(
-        new TaskInstance<>(getName(), id, data), (currentTime) -> currentTime);
+        instanceBuilder(id).data(data).build(), (currentTime) -> currentTime);
   }
 
   @Override

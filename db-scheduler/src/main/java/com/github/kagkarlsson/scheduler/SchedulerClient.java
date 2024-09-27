@@ -259,6 +259,8 @@ public interface SchedulerClient {
               taskResolver,
               new SchedulerClientName(),
               serializer,
+              // scheduler-client is not affected by priority since it does not poll
+              false,
               clock);
 
       return new StandardSchedulerClient(taskRepository, clock);

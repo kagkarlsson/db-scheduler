@@ -65,8 +65,8 @@ public class ZoneSpecificJdbcCustomization implements JdbcCustomization {
 
   @Override
   public List<Execution> lockAndFetchSingleStatement(
-      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
-    return delegate.lockAndFetchSingleStatement(ctx, now, limit);
+      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean orderByPriority) {
+    return delegate.lockAndFetchSingleStatement(ctx, now, limit, orderByPriority);
   }
 
   @Override
@@ -76,12 +76,14 @@ public class ZoneSpecificJdbcCustomization implements JdbcCustomization {
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition) {
-    return delegate.createGenericSelectForUpdateQuery(tableName, limit, requiredAndCondition);
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
+    return delegate.createGenericSelectForUpdateQuery(
+        tableName, limit, requiredAndCondition, orderByPriority);
   }
 
   @Override
-  public String createSelectDueQuery(String tableName, int limit, String andCondition) {
-    return delegate.createSelectDueQuery(tableName, limit, andCondition);
+  public String createSelectDueQuery(
+      String tableName, int limit, String andCondition, boolean orderByPriority) {
+    return delegate.createSelectDueQuery(tableName, limit, andCondition, orderByPriority);
   }
 }
