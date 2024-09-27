@@ -4,6 +4,7 @@ import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.onlyResolved;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -29,7 +30,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -140,6 +143,31 @@ public class JdbcTaskRepositoryTest {
     List<Execution> sortedDue = new ArrayList<>(due);
     sortedDue.sort(Comparator.comparing(Execution::getExecutionTime));
     assertThat(due, is(sortedDue));
+  }
+
+  @Test
+  public void get_due_should_be_sorted_by_priority() {
+    Instant now = TimeHelper.truncatedInstantNow();
+    SchedulableTaskInstance<Void> id1 =
+        new SchedulableTaskInstance<>(
+            oneTimeTask.instanceBuilder("id1").priority(1).build(), now.minus(Duration.ofDays(1)));
+    SchedulableTaskInstance<Void> id2 =
+      new SchedulableTaskInstance<>(
+        oneTimeTask.instanceBuilder("id2").priority(10).build(), now.minus(Duration.ofDays(2)));
+    SchedulableTaskInstance<Void> id3 =
+      new SchedulableTaskInstance<>(
+        oneTimeTask.instanceBuilder("id3").priority(5).build(), now.minus(Duration.ofDays(3)));
+
+    Stream.of(id1, id2, id3).forEach(taskRepository::createIfNotExists);
+
+    List<String> orderedByPriority = taskRepository.getDue(now, POLLING_LIMIT, true).stream()
+      .map(Execution::getId).collect(Collectors.toList());
+    assertThat(orderedByPriority, contains("id2", "id3", "id1"));
+
+    List<String> orderedByExecutionTime = taskRepository.getDue(now, POLLING_LIMIT, false).stream()
+      .map(Execution::getId).collect(Collectors.toList());
+    assertThat(orderedByExecutionTime, contains("id3", "id2", "id1"));
+
   }
 
   @Test
