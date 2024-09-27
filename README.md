@@ -124,25 +124,32 @@ An instance of a _one-time_ task has a single execution-time some time in the fu
 Define a _one-time_ task and start the scheduler:
 
 ```java
-OneTimeTask<MyTaskData> myAdhocTask = Tasks.oneTime("my-typed-adhoc-task", MyTaskData.class)
+TaskDescriptor<MyTaskData> MY_TASK =
+    TaskDescriptor.of("my-onetime-task", MyTaskData.class);
+
+OneTimeTask<MyTaskData> myTaskImplementation =
+    Tasks.oneTime(MY_TASK)
         .execute((inst, ctx) -> {
-            System.out.println("Executed! Custom data, Id: " + inst.getData().id);
+              System.out.println("Executed! Custom data, Id: " + inst.getData().id);
         });
 
 final Scheduler scheduler = Scheduler
-        .create(dataSource, myAdhocTask)
-        .registerShutdownHook()
-        .build();
+    .create(dataSource, myTaskImplementation)
+    .registerShutdownHook()
+    .build();
 
 scheduler.start();
-
 ```
 
 ... and then at some point (at runtime), an execution is scheduled using the `SchedulerClient`:
 
 ```java
 // Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
-scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.now().plusSeconds(5));
+scheduler.schedule(
+    MY_TASK
+        .instanceWithId("1045")
+        .data(new MyTaskData(1001L))
+        .scheduledTo(Instant.now().plusSeconds(5)));
 ```
 
 ### More examples

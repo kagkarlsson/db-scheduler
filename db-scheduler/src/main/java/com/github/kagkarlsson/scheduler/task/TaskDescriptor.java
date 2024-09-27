@@ -19,8 +19,16 @@ public interface TaskDescriptor<T> extends HasTaskName {
 
   Class<T> getDataClass();
 
+  static TaskDescriptor<Void> of(String name) {
+    return TaskDescriptor.of(name, Void.class);
+  }
+
   static <T> TaskDescriptor<T> of(String name, Class<T> dataClass) {
     return new TaskDescriptor.SimpleTaskDescriptor<T>(name, dataClass);
+  }
+
+  default SchedulableInstance.Builder<T> instanceWithId(String id) {
+    return new SchedulableInstance.Builder<>(getTaskName(), id);
   }
 
   class SimpleTaskDescriptor<T> implements TaskDescriptor<T> {

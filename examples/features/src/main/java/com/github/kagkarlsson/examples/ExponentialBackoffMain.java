@@ -18,6 +18,7 @@ import static java.time.Duration.*;
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Instant;
@@ -31,8 +32,10 @@ public class ExponentialBackoffMain extends Example {
 
   @Override
   public void run(DataSource dataSource) {
+    TaskDescriptor<Void> TASK = TaskDescriptor.of("exponential_backoff_task", Void.class);
+
     OneTimeTask<Void> failingTask =
-        Tasks.oneTime("exponential_backoff_task")
+        Tasks.oneTime(TASK)
             .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(ofSeconds(1)))
             .execute(
                 (taskInstance, executionContext) -> {
@@ -45,7 +48,7 @@ public class ExponentialBackoffMain extends Example {
             .registerShutdownHook()
             .build();
 
-    scheduler.schedule(failingTask.instance("1"), Instant.now());
+    scheduler.schedule(TASK.instanceWithId("1").scheduledTo(Instant.now()));
 
     scheduler.start();
   }

@@ -15,6 +15,7 @@ package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.TaskWithoutDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
@@ -30,8 +31,11 @@ public class EnableImmediateExecutionMain extends Example {
   @Override
   public void run(DataSource dataSource) {
 
+    TaskWithoutDataDescriptor DESCRIPTOR =
+      new TaskWithoutDataDescriptor("my_task");
+
     OneTimeTask<Void> onetimeTask =
-        Tasks.oneTime("my_task")
+        Tasks.oneTime(DESCRIPTOR)
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println("Executed!");
@@ -48,8 +52,13 @@ public class EnableImmediateExecutionMain extends Example {
 
     sleep(2000);
     System.out.println("Scheduling task to executed immediately.");
-    scheduler.schedule(onetimeTask.instance("1"), Instant.now());
-    //        scheduler.triggerCheckForDueExecutions();  // another option for triggering execution
-    // directly
+    scheduler.schedule(
+      DESCRIPTOR
+        .instanceWithId("1")
+        .scheduledTo(Instant.now()));
+
+    // scheduler.triggerCheckForDueExecutions();
+    // another option for triggering execution directly
+
   }
 }
