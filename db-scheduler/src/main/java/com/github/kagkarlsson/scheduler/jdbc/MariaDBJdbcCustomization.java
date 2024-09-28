@@ -49,6 +49,7 @@ public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
         Queries.postgresSqlLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",
+        null,
         null);
   }
 }

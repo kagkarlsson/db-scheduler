@@ -37,8 +37,7 @@ public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public boolean supportsGenericLockAndFetch() {
-    // FIXLATER: fix syntax and enable
-    return false;
+    return true;
   }
 
   @Override
@@ -48,7 +47,8 @@ public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
         tableName,
         Queries.postgresSqlLimitPart(limit),
         requiredAndCondition,
-        " FOR UPDATE SKIP LOCKED ",
-        null);
+        null,
+        null,
+        " FOR UPDATE SKIP LOCKED ");
   }
 }
