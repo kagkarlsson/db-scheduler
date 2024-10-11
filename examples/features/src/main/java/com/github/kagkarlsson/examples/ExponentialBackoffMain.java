@@ -30,7 +30,8 @@ public class ExponentialBackoffMain extends Example {
     new ExponentialBackoffMain().runWithDatasource();
   }
 
-  public static final TaskDescriptor<Void> MY_TASK = TaskDescriptor.of("exponential_backoff_task", Void.class);
+  public static final TaskDescriptor<Void> MY_TASK =
+      TaskDescriptor.of("exponential_backoff_task", Void.class);
 
   @Override
   public void run(DataSource dataSource) {

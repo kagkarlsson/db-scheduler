@@ -122,14 +122,14 @@ public class TaskInstance<T> implements TaskInstanceId {
       TaskInstance<T> taskInstance = new TaskInstance<>(taskName, id, dataSupplier, priority);
       T data = dataSupplier.get();
       if (!(data instanceof ScheduleAndData)) {
-        throw new RuntimeException("To be able to use method 'scheduledAccordingToData()', dataClass must implement ScheduleAndData interface and contain a Schedule");
+        throw new RuntimeException(
+            "To be able to use method 'scheduledAccordingToData()', dataClass must implement ScheduleAndData interface and contain a Schedule");
       }
 
       ScheduleAndData scheduleAndData = (ScheduleAndData) data;
 
-      return new SchedulableTaskInstance<>(taskInstance, scheduleAndData.getSchedule()::getInitialExecutionTime);
+      return new SchedulableTaskInstance<>(
+          taskInstance, scheduleAndData.getSchedule()::getInitialExecutionTime);
     }
-
-
   }
 }

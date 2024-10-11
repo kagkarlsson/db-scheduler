@@ -44,7 +44,8 @@ public class BasicExamplesConfiguration {
         "Scheduling a basic one-time task to run 'Instant.now()+seconds'. If seconds=0, the scheduler will pick "
             + "these up immediately since it is configured with 'immediate-execution-enabled=true'");
 
-    ctx.schedulerClient.scheduleIfNotExists(BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)).scheduledTo(Instant.now()));
+    ctx.schedulerClient.scheduleIfNotExists(
+        BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)).scheduledTo(Instant.now()));
   }
 
   /**

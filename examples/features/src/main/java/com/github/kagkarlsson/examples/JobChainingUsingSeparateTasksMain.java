@@ -25,8 +25,10 @@ import javax.sql.DataSource;
 
 public class JobChainingUsingSeparateTasksMain extends Example {
 
-  public static final TaskDescriptor<JobId> STEP1_TASK = TaskDescriptor.of("job-step-1", JobId.class);
-  public static final TaskDescriptor<JobId> STEP2_TASK = TaskDescriptor.of("job-step-2", JobId.class);
+  public static final TaskDescriptor<JobId> STEP1_TASK =
+      TaskDescriptor.of("job-step-1", JobId.class);
+  public static final TaskDescriptor<JobId> STEP2_TASK =
+      TaskDescriptor.of("job-step-2", JobId.class);
 
   public static void main(String[] args) {
     new JobChainingUsingSeparateTasksMain().runWithDatasource();

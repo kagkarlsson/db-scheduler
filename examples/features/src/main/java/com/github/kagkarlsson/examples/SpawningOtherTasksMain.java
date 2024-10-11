@@ -31,7 +31,8 @@ public class SpawningOtherTasksMain extends Example {
     new SpawningOtherTasksMain().runWithDatasource();
   }
 
-  public static final TaskDescriptor<Integer> PRINTER_TASK = TaskDescriptor.of("printer", Integer.class);
+  public static final TaskDescriptor<Integer> PRINTER_TASK =
+      TaskDescriptor.of("printer", Integer.class);
 
   @Override
   public void run(DataSource dataSource) {

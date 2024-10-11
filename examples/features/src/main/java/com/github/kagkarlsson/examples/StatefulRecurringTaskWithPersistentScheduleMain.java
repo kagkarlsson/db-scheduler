@@ -30,7 +30,8 @@ public class StatefulRecurringTaskWithPersistentScheduleMain extends Example {
     new StatefulRecurringTaskWithPersistentScheduleMain().runWithDatasource();
   }
 
-  public static final TaskDescriptor<ScheduleAndInteger> DYNAMIC_RECURRING_TASK = TaskDescriptor.of("dynamic-recurring-task", ScheduleAndInteger.class);
+  public static final TaskDescriptor<ScheduleAndInteger> DYNAMIC_RECURRING_TASK =
+      TaskDescriptor.of("dynamic-recurring-task", ScheduleAndInteger.class);
 
   @Override
   public void run(DataSource dataSource) {

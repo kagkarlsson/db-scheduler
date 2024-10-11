@@ -26,7 +26,8 @@ import javax.sql.DataSource;
 
 public class JobChainingUsingTaskDataMain extends Example {
 
-  public static final TaskDescriptor<JobState> JOB_CHAIN_TASK = TaskDescriptor.of("job-chain-poc", JobState.class);
+  public static final TaskDescriptor<JobState> JOB_CHAIN_TASK =
+      TaskDescriptor.of("job-chain-poc", JobState.class);
 
   public static void main(String[] args) {
     new JobChainingUsingTaskDataMain().runWithDatasource();

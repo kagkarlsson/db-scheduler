@@ -30,7 +30,8 @@ public class ExponentialBackoffWithMaxRetriesMain extends Example {
     new ExponentialBackoffWithMaxRetriesMain().runWithDatasource();
   }
 
-  public static final TaskDescriptor<Void> EXPONENTIAL_BACKOFF_TASK = TaskDescriptor.of("exponential_backoff_with_max_retries_task");
+  public static final TaskDescriptor<Void> EXPONENTIAL_BACKOFF_TASK =
+      TaskDescriptor.of("exponential_backoff_with_max_retries_task");
 
   @Override
   public void run(DataSource dataSource) {

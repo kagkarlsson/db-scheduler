@@ -32,7 +32,8 @@ public class HeartbeatMonitoringMain extends Example {
     new HeartbeatMonitoringMain().runWithDatasource();
   }
 
-  public static final TaskDescriptor<Void> WAIT_FOR_STALE_HEARTBEAT_TASK = TaskDescriptor.of("wait-for-stale-heartbeat-task");
+  public static final TaskDescriptor<Void> WAIT_FOR_STALE_HEARTBEAT_TASK =
+      TaskDescriptor.of("wait-for-stale-heartbeat-task");
 
   @Override
   public void run(DataSource dataSource) {

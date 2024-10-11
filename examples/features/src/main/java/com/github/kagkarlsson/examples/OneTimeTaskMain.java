@@ -24,7 +24,8 @@ import javax.sql.DataSource;
 
 public class OneTimeTaskMain extends Example {
 
-  public static final TaskDescriptor<MyTaskData> MY_TASK = TaskDescriptor.of("my-onetime-task", MyTaskData.class);
+  public static final TaskDescriptor<MyTaskData> MY_TASK =
+      TaskDescriptor.of("my-onetime-task", MyTaskData.class);
 
   public static void main(String[] args) {
     new OneTimeTaskMain().runWithDatasource();

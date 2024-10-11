@@ -30,7 +30,8 @@ public class JsonSerializerMain extends Example {
     new JsonSerializerMain().runWithDatasource();
   }
 
-  public static final TaskDescriptor<JsonData> JSON_TASK = TaskDescriptor.of("json-task", JsonData.class);
+  public static final TaskDescriptor<JsonData> JSON_TASK =
+      TaskDescriptor.of("json-task", JsonData.class);
 
   @Override
   public void run(DataSource dataSource) {
