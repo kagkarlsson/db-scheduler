@@ -16,6 +16,7 @@ package com.github.kagkarlsson.examples;
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.io.Serializable;
@@ -25,6 +26,8 @@ import javax.sql.DataSource;
 
 public class JobChainingUsingTaskDataMain extends Example {
 
+  public static final TaskDescriptor<JobState> JOB_CHAIN_TASK = TaskDescriptor.of("job-chain-poc", JobState.class);
+
   public static void main(String[] args) {
     new JobChainingUsingTaskDataMain().runWithDatasource();
   }
@@ -33,7 +36,7 @@ public class JobChainingUsingTaskDataMain extends Example {
   public void run(DataSource dataSource) {
 
     final CustomTask<JobState> chainingTask =
-        Tasks.custom("job-chain-poc", JobState.class)
+        Tasks.custom(JOB_CHAIN_TASK)
             .execute(
                 (taskInstance, executionContext) -> {
 
@@ -80,7 +83,10 @@ public class JobChainingUsingTaskDataMain extends Example {
 
     // Schedule a multistep job. Simulate some instance-specific data, id=507
     scheduler.schedule(
-        chainingTask.instance("job-507", JobState.newJob(507)), Instant.now().plusSeconds(1));
+        JOB_CHAIN_TASK
+            .instance("job-507")
+            .data(JobState.newJob(507))
+            .scheduledTo(Instant.now().plusSeconds(1)));
   }
 
   public enum Step {
@@ -90,7 +96,7 @@ public class JobChainingUsingTaskDataMain extends Example {
   }
 
   public static class JobState implements Serializable {
-    private static long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
     public Step currentStep;
     public int id;
 

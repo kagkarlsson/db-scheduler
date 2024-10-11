@@ -16,6 +16,7 @@ package com.github.kagkarlsson.examples;
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.serializer.GsonSerializer;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
@@ -29,11 +30,13 @@ public class JsonSerializerMain extends Example {
     new JsonSerializerMain().runWithDatasource();
   }
 
+  public static final TaskDescriptor<JsonData> JSON_TASK = TaskDescriptor.of("json-task", JsonData.class);
+
   @Override
   public void run(DataSource dataSource) {
 
     OneTimeTask<JsonData> myAdhocTask =
-        Tasks.oneTime("json-task", JsonData.class)
+        Tasks.oneTime(JSON_TASK)
             .execute(
                 (inst, ctx) -> {
                   System.out.println("Executed! Custom data: " + inst.getData());
@@ -49,8 +52,10 @@ public class JsonSerializerMain extends Example {
     scheduler.start();
 
     scheduler.schedule(
-        myAdhocTask.instance("id1", new JsonData(1001L, Instant.now())),
-        Instant.now().plusSeconds(1));
+        JSON_TASK
+            .instance("id1")
+            .data(new JsonData(1001L, Instant.now()))
+            .scheduledTo(Instant.now().plusSeconds(1)));
   }
 
   public static class JsonData {

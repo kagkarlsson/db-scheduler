@@ -13,7 +13,10 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-/** Experimental */
+/**
+ * @deprecated use {@link TaskDescriptor} directly instead.
+ */
+@Deprecated
 public class TaskWithDataDescriptor<T> implements TaskDescriptor<T> {
 
   private final String taskName;
@@ -22,10 +25,6 @@ public class TaskWithDataDescriptor<T> implements TaskDescriptor<T> {
   public TaskWithDataDescriptor(String taskName, Class<T> dataClass) { // TODO: not used?
     this.taskName = taskName;
     this.dataClass = dataClass;
-  }
-
-  public TaskInstance<T> instance(String id, T data) {
-    return new TaskInstance<>(taskName, id, data);
   }
 
   @Override

@@ -15,7 +15,7 @@ package com.github.kagkarlsson.examples.boot.config;
 
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
-import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
@@ -29,12 +29,12 @@ import utils.EventLogger;
 @Configuration
 public class JobChainingConfiguration {
 
-  public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_1_TASK =
-      new TaskWithDataDescriptor<>("chained-step-1", JobState.class);
-  public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_2_TASK =
-      new TaskWithDataDescriptor<>("chained-step-2", JobState.class);
-  public static final TaskWithDataDescriptor<JobState> CHAINED_STEP_3_TASK =
-      new TaskWithDataDescriptor<>("chained-step-3", JobState.class);
+  public static final TaskDescriptor<JobState> CHAINED_STEP_1_TASK =
+      TaskDescriptor.of("chained-step-1", JobState.class);
+  public static final TaskDescriptor<JobState> CHAINED_STEP_2_TASK =
+      TaskDescriptor.of("chained-step-2", JobState.class);
+  public static final TaskDescriptor<JobState> CHAINED_STEP_3_TASK =
+      TaskDescriptor.of("chained-step-3", JobState.class);
   private static int CHAINED_JOB_ID = 1;
 
   /** Start the example */
@@ -42,8 +42,11 @@ public class JobChainingConfiguration {
     ctx.log("Scheduling a chained one-time task to run.");
 
     int id = CHAINED_JOB_ID++;
-    ctx.schedulerClient.schedule(
-        CHAINED_STEP_1_TASK.instance("chain-" + id, new JobState(id, 0)), Instant.now());
+    ctx.schedulerClient.scheduleIfNotExists(
+        CHAINED_STEP_1_TASK
+            .instance("chain-" + id)
+            .data(new JobState(id, 0))
+            .scheduledTo(Instant.now()));
   }
 
   /** Bean definition */

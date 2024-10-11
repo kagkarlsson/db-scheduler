@@ -13,10 +13,12 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-public final class TaskInstance<T> implements TaskInstanceId {
+public class TaskInstance<T> implements TaskInstanceId {
 
   private final String taskName;
   private final String id;
@@ -110,5 +112,24 @@ public final class TaskInstance<T> implements TaskInstanceId {
     public TaskInstance<T> build() {
       return new TaskInstance<>(taskName, id, dataSupplier, priority);
     }
+
+    public SchedulableInstance<T> scheduledTo(Instant executionTime) {
+      TaskInstance<T> taskInstance = new TaskInstance<>(taskName, id, dataSupplier, priority);
+      return new SchedulableTaskInstance<>(taskInstance, executionTime);
+    }
+
+    public SchedulableInstance<T> scheduledAccordingToData() {
+      TaskInstance<T> taskInstance = new TaskInstance<>(taskName, id, dataSupplier, priority);
+      T data = dataSupplier.get();
+      if (!(data instanceof ScheduleAndData)) {
+        throw new RuntimeException("To be able to use method 'scheduledAccordingToData()', dataClass must implement ScheduleAndData interface and contain a Schedule");
+      }
+
+      ScheduleAndData scheduleAndData = (ScheduleAndData) data;
+
+      return new SchedulableTaskInstance<>(taskInstance, scheduleAndData.getSchedule()::getInitialExecutionTime);
+    }
+
+
   }
 }

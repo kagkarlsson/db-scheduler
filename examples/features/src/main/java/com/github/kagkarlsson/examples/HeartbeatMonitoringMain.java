@@ -19,6 +19,7 @@ import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.scheduler.HeartbeatState;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
@@ -31,11 +32,13 @@ public class HeartbeatMonitoringMain extends Example {
     new HeartbeatMonitoringMain().runWithDatasource();
   }
 
+  public static final TaskDescriptor<Void> WAIT_FOR_STALE_HEARTBEAT_TASK = TaskDescriptor.of("wait-for-stale-heartbeat-task");
+
   @Override
   public void run(DataSource dataSource) {
 
     OneTimeTask<Void> waitForStaleHeartbeatTask =
-        Tasks.oneTime("wait-for-stale-heartbeat-task", Void.class)
+        Tasks.oneTime(WAIT_FOR_STALE_HEARTBEAT_TASK)
             .execute(
                 (inst, ctx) -> {
                   System.out.println("Running!");
@@ -57,7 +60,7 @@ public class HeartbeatMonitoringMain extends Example {
 
     scheduler.start();
 
-    scheduler.schedule(waitForStaleHeartbeatTask.instance("1045"), Instant.now());
+    scheduler.schedule(WAIT_FOR_STALE_HEARTBEAT_TASK.instance("1045").scheduledTo(Instant.now()));
 
     sleep(4000);
     JdbcRunner jdbcRunner = new JdbcRunner(dataSource);

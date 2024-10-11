@@ -16,6 +16,7 @@ package com.github.kagkarlsson.examples;
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -30,11 +31,13 @@ public class SpawningOtherTasksMain extends Example {
     new SpawningOtherTasksMain().runWithDatasource();
   }
 
+  public static final TaskDescriptor<Integer> PRINTER_TASK = TaskDescriptor.of("printer", Integer.class);
+
   @Override
   public void run(DataSource dataSource) {
 
     final OneTimeTask<Integer> printer =
-        Tasks.oneTime("printer", Integer.class)
+        Tasks.oneTime(PRINTER_TASK)
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println("Printer: " + taskInstance.getData());
@@ -49,7 +52,8 @@ public class SpawningOtherTasksMain extends Example {
 
                   System.out.println("Scheduling printer executions.");
                   for (int i = 0; i < 5; i++) {
-                    client.schedule(printer.instance("print" + id + i, i), Instant.now());
+                    client.scheduleIfNotExists(
+                        PRINTER_TASK.instance("print" + id + i).data(i).scheduledTo(Instant.now()));
                   }
                 });
 

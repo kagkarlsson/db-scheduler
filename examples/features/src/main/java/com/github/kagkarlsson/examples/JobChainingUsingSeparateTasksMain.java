@@ -25,6 +25,9 @@ import javax.sql.DataSource;
 
 public class JobChainingUsingSeparateTasksMain extends Example {
 
+  public static final TaskDescriptor<JobId> STEP1_TASK = TaskDescriptor.of("job-step-1", JobId.class);
+  public static final TaskDescriptor<JobId> STEP2_TASK = TaskDescriptor.of("job-step-2", JobId.class);
+
   public static void main(String[] args) {
     new JobChainingUsingSeparateTasksMain().runWithDatasource();
   }
@@ -33,15 +36,15 @@ public class JobChainingUsingSeparateTasksMain extends Example {
   public void run(DataSource dataSource) {
 
     final CustomTask<JobId> jobStep1 =
-        Tasks.custom("job-step-1", JobId.class)
+        Tasks.custom(STEP1_TASK)
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println("Step1 ran. Job: " + taskInstance.getData());
-                  return new OnCompleteRemoveAndCreateNextStep("job-step-2");
+                  return new OnCompleteRemoveAndCreateNextStep(STEP2_TASK.getTaskName());
                 });
 
     final CustomTask<JobId> jobStep2 =
-        Tasks.custom("job-step-2", JobId.class)
+        Tasks.custom(STEP2_TASK)
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println(
@@ -60,13 +63,13 @@ public class JobChainingUsingSeparateTasksMain extends Example {
     sleep(1_000);
 
     // Schedule a multistep job. Simulate some instance-specific data, id=507
+    // both steps will run directly
     scheduler.schedule(
-        jobStep1.instance("job-507", new JobId(507)),
-        Instant.now()); // both steps will run directly
+        STEP1_TASK.instance("job-507").data(new JobId(507)).scheduledTo(Instant.now()));
   }
 
   public static class JobId implements Serializable {
-    private static long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
     public int id;
 
     public JobId(int id) {
@@ -79,7 +82,8 @@ public class JobChainingUsingSeparateTasksMain extends Example {
     }
   }
 
-  class OnCompleteRemoveAndCreateNextStep implements CompletionHandler<JobId> {
+  @SuppressWarnings("rawtypes")
+  static class OnCompleteRemoveAndCreateNextStep implements CompletionHandler<JobId> {
     private final String newTaskName;
 
     public OnCompleteRemoveAndCreateNextStep(String newTaskName) {

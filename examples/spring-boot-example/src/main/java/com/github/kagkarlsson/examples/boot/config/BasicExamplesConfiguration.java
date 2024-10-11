@@ -18,7 +18,7 @@ import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDela
 import com.github.kagkarlsson.examples.boot.CounterService;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.Task;
-import com.github.kagkarlsson.scheduler.task.TaskWithoutDataDescriptor;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
 import java.time.Instant;
@@ -31,10 +31,10 @@ import utils.EventLogger;
 @Configuration
 public class BasicExamplesConfiguration {
 
-  public static final TaskWithoutDataDescriptor BASIC_ONE_TIME_TASK =
-      new TaskWithoutDataDescriptor("sample-one-time-task");
-  public static final TaskWithoutDataDescriptor BASIC_RECURRING_TASK =
-      new TaskWithoutDataDescriptor("recurring-sample-task");
+  public static final TaskDescriptor<Void> BASIC_ONE_TIME_TASK =
+      TaskDescriptor.of("sample-one-time-task");
+  public static final TaskDescriptor<Void> BASIC_RECURRING_TASK =
+      TaskDescriptor.of("recurring-sample-task");
   private static final Logger log = LoggerFactory.getLogger(BasicExamplesConfiguration.class);
   private static int ID = 1;
 
@@ -44,7 +44,7 @@ public class BasicExamplesConfiguration {
         "Scheduling a basic one-time task to run 'Instant.now()+seconds'. If seconds=0, the scheduler will pick "
             + "these up immediately since it is configured with 'immediate-execution-enabled=true'");
 
-    ctx.schedulerClient.schedule(BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)), Instant.now());
+    ctx.schedulerClient.scheduleIfNotExists(BASIC_ONE_TIME_TASK.instance(String.valueOf(ID++)).scheduledTo(Instant.now()));
   }
 
   /**

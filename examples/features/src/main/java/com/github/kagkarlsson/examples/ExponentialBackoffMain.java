@@ -30,12 +30,13 @@ public class ExponentialBackoffMain extends Example {
     new ExponentialBackoffMain().runWithDatasource();
   }
 
+  public static final TaskDescriptor<Void> MY_TASK = TaskDescriptor.of("exponential_backoff_task", Void.class);
+
   @Override
   public void run(DataSource dataSource) {
-    TaskDescriptor<Void> TASK = TaskDescriptor.of("exponential_backoff_task", Void.class);
 
     OneTimeTask<Void> failingTask =
-        Tasks.oneTime(TASK)
+        Tasks.oneTime(MY_TASK)
             .onFailure(new FailureHandler.ExponentialBackoffFailureHandler<>(ofSeconds(1)))
             .execute(
                 (taskInstance, executionContext) -> {
@@ -48,7 +49,7 @@ public class ExponentialBackoffMain extends Example {
             .registerShutdownHook()
             .build();
 
-    scheduler.schedule(TASK.instanceWithId("1").scheduledTo(Instant.now()));
+    scheduler.schedule(MY_TASK.instance("1").scheduledTo(Instant.now()));
 
     scheduler.start();
   }

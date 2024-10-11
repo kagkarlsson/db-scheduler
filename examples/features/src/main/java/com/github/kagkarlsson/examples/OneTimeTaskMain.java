@@ -24,14 +24,14 @@ import javax.sql.DataSource;
 
 public class OneTimeTaskMain extends Example {
 
+  public static final TaskDescriptor<MyTaskData> MY_TASK = TaskDescriptor.of("my-onetime-task", MyTaskData.class);
+
   public static void main(String[] args) {
     new OneTimeTaskMain().runWithDatasource();
   }
 
   @Override
   public void run(DataSource dataSource) {
-
-    TaskDescriptor<MyTaskData> MY_TASK = TaskDescriptor.of("my-onetime-task", MyTaskData.class);
 
     OneTimeTask<MyTaskData> taskImplementation =
         Tasks.oneTime(MY_TASK)
@@ -49,12 +49,13 @@ public class OneTimeTaskMain extends Example {
     // data for the execution
     scheduler.schedule(
         MY_TASK
-            .instanceWithId("1045")
+            .instance("1045")
             .data(new MyTaskData(1001L))
             .scheduledTo(Instant.now().plusSeconds(5)));
   }
 
   public static class MyTaskData implements Serializable {
+    private static final long serialVersionUID = 1L;
     public final long id;
 
     public MyTaskData(long id) {

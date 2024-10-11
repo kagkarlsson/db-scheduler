@@ -18,6 +18,7 @@ import static java.time.Duration.ofSeconds;
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Instant;
@@ -29,10 +30,12 @@ public class ExponentialBackoffWithMaxRetriesMain extends Example {
     new ExponentialBackoffWithMaxRetriesMain().runWithDatasource();
   }
 
+  public static final TaskDescriptor<Void> EXPONENTIAL_BACKOFF_TASK = TaskDescriptor.of("exponential_backoff_with_max_retries_task");
+
   @Override
   public void run(DataSource dataSource) {
     OneTimeTask<Void> failingTask =
-        Tasks.oneTime("exponential_backoff_with_max_retries_task")
+        Tasks.oneTime(EXPONENTIAL_BACKOFF_TASK)
             .onFailure(
                 new FailureHandler.MaxRetriesFailureHandler<>(
                     6, new FailureHandler.ExponentialBackoffFailureHandler<>(ofSeconds(1), 2)))
@@ -47,7 +50,7 @@ public class ExponentialBackoffWithMaxRetriesMain extends Example {
             .registerShutdownHook()
             .build();
 
-    scheduler.schedule(failingTask.instance("1"), Instant.now());
+    scheduler.schedule(EXPONENTIAL_BACKOFF_TASK.instance("1").scheduledTo(Instant.now()));
 
     scheduler.start();
   }
