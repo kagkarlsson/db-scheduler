@@ -159,18 +159,29 @@ public class JdbcTaskRepository implements TaskRepository {
         return false;
       }
 
+      // FIXLATER: replace with some sort of generic SQL-builder, possibly extend micro-jdbc
+      //           with execute(query-and-pss) and have builder return that..
       jdbcRunner.execute(
           "insert into "
               + tableName
-              + "(task_name, task_instance, task_data, execution_time, picked, version, priority) values(?, ?, ?, ?, ?, ?, ?)",
+              + "(task_name, task_instance, task_data, execution_time, picked, version"
+              + (orderByPriority ? ", priority" : "")
+              + ") values(?, ?, ?, ?, ?, ? "
+              + (orderByPriority ? ", ?" : "")
+              + ")",
           (PreparedStatement p) -> {
-            p.setString(1, taskInstance.getTaskName());
-            p.setString(2, taskInstance.getId());
-            jdbcCustomization.setTaskData(p, 3, serializer.serialize(taskInstance.getData()));
-            jdbcCustomization.setInstant(p, 4, instance.getNextExecutionTime(clock.now()));
-            p.setBoolean(5, false);
-            p.setLong(6, 1L);
-            p.setInt(7, taskInstance.getPriority());
+            int parameterIndex = 1;
+            p.setString(parameterIndex++, taskInstance.getTaskName());
+            p.setString(parameterIndex++, taskInstance.getId());
+            jdbcCustomization.setTaskData(
+                p, parameterIndex++, serializer.serialize(taskInstance.getData()));
+            jdbcCustomization.setInstant(
+                p, parameterIndex++, instance.getNextExecutionTime(clock.now()));
+            p.setBoolean(parameterIndex++, false);
+            p.setLong(parameterIndex++, 1L);
+            if (orderByPriority) {
+              p.setInt(parameterIndex++, taskInstance.getPriority());
+            }
           });
       return true;
 
@@ -285,7 +296,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public List<Execution> getDue(Instant now, int limit, boolean orderByPriority) {
+  public List<Execution> getDue(Instant now, int limit) {
     LOG.trace("Using generic fetch-then-lock query");
     final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
     String selectDueQuery =
@@ -397,7 +408,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public List<Execution> lockAndGetDue(Instant now, int limit, boolean orderByPriority) {
+  public List<Execution> lockAndGetDue(Instant now, int limit) {
     if (jdbcCustomization.supportsSingleStatementLockAndFetch()) {
       LOG.trace("Using single-statement lock-and-fetch");
       return jdbcCustomization.lockAndFetchSingleStatement(
@@ -787,7 +798,8 @@ public class JdbcTaskRepository implements TaskRepository {
         // default
         Instant lastHeartbeat = jdbcCustomization.getInstant(rs, "last_heartbeat");
         long version = rs.getLong("version");
-        int priority = rs.getInt("priority");
+
+        int priority = orderByPriority ? rs.getInt("priority") : 0;
 
         Supplier dataSupplier =
             memoize(

@@ -325,8 +325,7 @@ public class SchedulerBuilder {
             logStackTrace,
             startTasks,
             candidateDueExecutor,
-            candidateHousekeeperExecutor,
-            enablePriority);
+            candidateHousekeeperExecutor);
 
     if (enableImmediateExecution) {
       scheduler.registerSchedulerListener(new ImmediateCheckForDueExecutions(scheduler, clock));

@@ -64,15 +64,7 @@ public class JdbcTaskRepositoryTest {
     knownTasks.add(alternativeOneTimeTask);
     testableRegistry = new TestableRegistry(true, Collections.emptyList());
     taskResolver = new TaskResolver(testableRegistry, knownTasks);
-    taskRepository =
-        new JdbcTaskRepository(
-            DB.getDataSource(),
-            false,
-            DEFAULT_TABLE_NAME,
-            taskResolver,
-            new SchedulerName.Fixed(SCHEDULER_NAME),
-            false,
-            new SystemClock());
+    taskRepository = createRepository(taskResolver, false);
   }
 
   @Test
@@ -111,8 +103,8 @@ public class JdbcTaskRepositoryTest {
 
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(oneTimeTask.instance("id1"), now));
-    assertThat(taskRepository.getDue(now, POLLING_LIMIT, false), hasSize(1));
-    assertThat(taskRepository.getDue(now.minusSeconds(1), POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(1));
+    assertThat(taskRepository.getDue(now.minusSeconds(1), POLLING_LIMIT), hasSize(0));
   }
 
   @Test
@@ -123,8 +115,8 @@ public class JdbcTaskRepositoryTest {
         new SchedulableTaskInstance<>(oneTimeTask.instance("id1"), now));
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(oneTimeTask.instance("id2"), now));
-    assertThat(taskRepository.getDue(now, 1, false), hasSize(1));
-    assertThat(taskRepository.getDue(now, 2, false), hasSize(2));
+    assertThat(taskRepository.getDue(now, 1), hasSize(1));
+    assertThat(taskRepository.getDue(now, 2), hasSize(2));
   }
 
   @Test
@@ -137,7 +129,7 @@ public class JdbcTaskRepositoryTest {
                     new SchedulableTaskInstance<>(
                         oneTimeTask.instance("id" + i),
                         now.minusSeconds(new Random().nextInt(10000)))));
-    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT, false);
+    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
     assertThat(due, hasSize(100));
 
     List<Execution> sortedDue = new ArrayList<>(due);
@@ -146,7 +138,8 @@ public class JdbcTaskRepositoryTest {
   }
 
   @Test
-  public void get_due_should_be_sorted_by_priority() {
+  public void get_due_should_be_sorted_by_priority_when_enabled() {
+    JdbcTaskRepository taskRespositoryWithPriority = createRepository(taskResolver, true);
     Instant now = TimeHelper.truncatedInstantNow();
     SchedulableTaskInstance<Void> id1 =
         new SchedulableTaskInstance<>(
@@ -158,16 +151,17 @@ public class JdbcTaskRepositoryTest {
         new SchedulableTaskInstance<>(
             oneTimeTask.instanceBuilder("id3").priority(5).build(), now.minus(Duration.ofDays(3)));
 
-    Stream.of(id1, id2, id3).forEach(taskRepository::createIfNotExists);
+    Stream.of(id1, id2, id3).forEach(taskRespositoryWithPriority::createIfNotExists);
 
     List<String> orderedByPriority =
-        taskRepository.getDue(now, POLLING_LIMIT, true).stream()
+        taskRespositoryWithPriority.getDue(now, POLLING_LIMIT).stream()
             .map(Execution::getId)
             .collect(Collectors.toList());
     assertThat(orderedByPriority, contains("id2", "id3", "id1"));
 
+    // default task-repository should have no order
     List<String> orderedByExecutionTime =
-        taskRepository.getDue(now, POLLING_LIMIT, false).stream()
+        taskRepository.getDue(now, POLLING_LIMIT).stream()
             .map(Execution::getId)
             .collect(Collectors.toList());
     assertThat(orderedByExecutionTime, contains("id3", "id2", "id1"));
@@ -188,11 +182,11 @@ public class JdbcTaskRepositoryTest {
     // 1
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(unresolved1.instance("id"), now));
-    assertThat(taskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
     assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
 
-    assertThat(taskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
     assertEquals(
         1,
@@ -202,14 +196,14 @@ public class JdbcTaskRepositoryTest {
     // 1, 2
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(unresolved2.instance("id"), now));
-    assertThat(taskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(2));
     assertEquals(2, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
 
     // 1, 2, 3
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(unresolved3.instance("id"), now));
-    assertThat(taskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(3));
     assertEquals(3, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
   }
@@ -219,11 +213,11 @@ public class JdbcTaskRepositoryTest {
     Instant now = TimeHelper.truncatedInstantNow();
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(oneTimeTask.instance("id1"), now));
-    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT, false);
+    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
     assertThat(due, hasSize(1));
 
     taskRepository.pick(due.get(0), now);
-    assertThat(taskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
   }
 
   @Test
@@ -231,7 +225,7 @@ public class JdbcTaskRepositoryTest {
     Instant now = TimeHelper.truncatedInstantNow();
     final TaskInstance<Void> instance = oneTimeTask.instance("id1");
     taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, now));
-    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT, false);
+    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
     assertThat(due, hasSize(1));
     taskRepository.pick(due.get(0), now);
 
@@ -240,7 +234,7 @@ public class JdbcTaskRepositoryTest {
     assertThat(pickedExecution.get().picked, is(true));
     assertThat(pickedExecution.get().pickedBy, is(SCHEDULER_NAME));
     assertThat(pickedExecution.get().lastHeartbeat, notNullValue());
-    assertThat(taskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
   }
 
   @Test
@@ -249,7 +243,7 @@ public class JdbcTaskRepositoryTest {
     final TaskInstance<Void> instance = oneTimeTask.instance("id1");
     taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, now));
 
-    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT, false);
+    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
     assertThat(due, hasSize(1));
     final Execution execution = due.get(0);
     final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
@@ -264,7 +258,7 @@ public class JdbcTaskRepositoryTest {
     Instant now = TimeHelper.truncatedInstantNow();
     final TaskInstance<Void> instance = oneTimeTask.instance("id1");
     taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, now));
-    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT, false);
+    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
     assertThat(due, hasSize(1));
 
     Execution execution = due.get(0);
@@ -272,8 +266,8 @@ public class JdbcTaskRepositoryTest {
     final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
     taskRepository.reschedule(pickedExecution.get(), nextExecutionTime, now, null, 0);
 
-    assertThat(taskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
-    assertThat(taskRepository.getDue(nextExecutionTime, POLLING_LIMIT, false), hasSize(1));
+    assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
+    assertThat(taskRepository.getDue(nextExecutionTime, POLLING_LIMIT), hasSize(1));
 
     final Optional<Execution> nextExecution = taskRepository.getExecution(instance);
     assertTrue(nextExecution.isPresent());
@@ -287,7 +281,7 @@ public class JdbcTaskRepositoryTest {
     Instant now = TimeHelper.truncatedInstantNow();
     final TaskInstance<Void> instance = oneTimeTask.instance("id1");
     taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, now));
-    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT, false);
+    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
     assertThat(due, hasSize(1));
 
     Execution execution = due.get(0);
@@ -323,7 +317,7 @@ public class JdbcTaskRepositoryTest {
     final TaskInstance<Void> instance = oneTimeTask.instance("id1");
     taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, now));
 
-    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT, false);
+    List<Execution> due = taskRepository.getDue(now, POLLING_LIMIT);
     assertThat(due, hasSize(1));
 
     assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
@@ -395,13 +389,6 @@ public class JdbcTaskRepositoryTest {
     assertThat(getScheduledExecutions(all().withPicked(false), "non-existing"), empty());
   }
 
-  private List<Execution> getScheduledExecutions(
-      ScheduledExecutionsFilter filter, String taskName) {
-    List<Execution> alternativeTasks = new ArrayList<>();
-    taskRepository.getScheduledExecutions(filter, taskName, alternativeTasks::add);
-    return alternativeTasks;
-  }
-
   @Test
   public void get_dead_executions_should_not_include_previously_unresolved() {
     Instant now = TimeHelper.truncatedInstantNow();
@@ -411,15 +398,7 @@ public class JdbcTaskRepositoryTest {
     createDeadExecution(oneTimeTask.instance("id1"), timeDied);
 
     TaskResolver taskResolverMissingTask = new TaskResolver(testableRegistry);
-    JdbcTaskRepository repoMissingTask =
-        new JdbcTaskRepository(
-            DB.getDataSource(),
-            false,
-            DEFAULT_TABLE_NAME,
-            taskResolverMissingTask,
-            new SchedulerName.Fixed(SCHEDULER_NAME),
-            false,
-            new SystemClock());
+    JdbcTaskRepository repoMissingTask = createRepository(taskResolverMissingTask, false);
 
     assertThat(taskResolverMissingTask.getUnresolved(), hasSize(0));
     assertEquals(0, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
@@ -441,7 +420,7 @@ public class JdbcTaskRepositoryTest {
         TestTasks.oneTime(taskName, Void.class, TestTasks.DO_NOTHING);
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(unresolved1.instance("id"), now));
-    assertThat(taskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
 
     assertThat(getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved()), hasSize(0));
@@ -458,11 +437,11 @@ public class JdbcTaskRepositoryTest {
         new SchedulableTaskInstance<>(oneTimeTask.instance("future1"), now.plusSeconds(10)));
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(oneTimeTask.instance("id1"), now));
-    List<Execution> picked = taskRepository.lockAndGetDue(now, POLLING_LIMIT, false);
+    List<Execution> picked = taskRepository.lockAndGetDue(now, POLLING_LIMIT);
     assertThat(picked, hasSize(1));
 
     // should not be able to pick the same execution twice
-    assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
   }
 
@@ -476,8 +455,8 @@ public class JdbcTaskRepositoryTest {
 
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(unresolved1.instance("id"), now));
-    assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT, false), hasSize(0));
-    assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT), hasSize(0));
+    assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
     assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
   }
@@ -497,6 +476,24 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
   }
 
+  private List<Execution> getScheduledExecutions(
+      ScheduledExecutionsFilter filter, String taskName) {
+    List<Execution> alternativeTasks = new ArrayList<>();
+    taskRepository.getScheduledExecutions(filter, taskName, alternativeTasks::add);
+    return alternativeTasks;
+  }
+
+  private JdbcTaskRepository createRepository(TaskResolver taskResolver, boolean orderByPriority) {
+    return new JdbcTaskRepository(
+        DB.getDataSource(),
+        false,
+        DEFAULT_TABLE_NAME,
+        taskResolver,
+        new SchedulerName.Fixed(SCHEDULER_NAME),
+        orderByPriority,
+        new SystemClock());
+  }
+
   private void createDeadExecution(TaskInstance<Void> taskInstance, Instant timeDied) {
     taskRepository.createIfNotExists(new SchedulableTaskInstance<>(taskInstance, timeDied));
     final Execution due = getSingleExecution();
@@ -506,7 +503,7 @@ public class JdbcTaskRepositoryTest {
   }
 
   private Execution getSingleDueExecution() {
-    List<Execution> due = taskRepository.getDue(Instant.now(), POLLING_LIMIT, false);
+    List<Execution> due = taskRepository.getDue(Instant.now(), POLLING_LIMIT);
     return due.get(0);
   }
 

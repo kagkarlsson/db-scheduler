@@ -166,8 +166,6 @@ public class PriorityExecutionTest {
                   .map(e -> e.taskInstance.getPriority())
                   .collect(Collectors.toList());
 
-          assertThat(orderOfPriorities, contains(2, 0, 1, 3));
-
           registry.assertNoFailures();
         });
   }

@@ -41,7 +41,6 @@ public class LockAndFetchCandidates implements PollStrategy {
   private final int lowerLimit;
   private final int upperLimit;
   private AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
-  private final boolean priorityEnabled;
 
   public LockAndFetchCandidates(
       Executor executor,
@@ -56,8 +55,7 @@ public class LockAndFetchCandidates implements PollStrategy {
       Clock clock,
       PollingStrategyConfig pollingStrategyConfig,
       Runnable triggerCheckForNewExecutions,
-      HeartbeatConfig maxAgeBeforeConsideredDead,
-      boolean priorityEnabled) {
+      HeartbeatConfig maxAgeBeforeConsideredDead) {
     this.executor = executor;
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
@@ -70,7 +68,6 @@ public class LockAndFetchCandidates implements PollStrategy {
     this.pollingStrategyConfig = pollingStrategyConfig;
     this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
     this.maxAgeBeforeConsideredDead = maxAgeBeforeConsideredDead;
-    this.priorityEnabled = priorityEnabled;
     lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
     upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
   }
@@ -88,8 +85,7 @@ public class LockAndFetchCandidates implements PollStrategy {
     }
 
     // FIXLATER: should it fetch here if not under lowerLimit? probably
-    List<Execution> pickedExecutions =
-        taskRepository.lockAndGetDue(now, executionsToFetch, priorityEnabled);
+    List<Execution> pickedExecutions = taskRepository.lockAndGetDue(now, executionsToFetch);
     LOG.trace("Picked {} taskinstances due for execution", pickedExecutions.size());
 
     // Shared indicator for if there are more due executions in the database.

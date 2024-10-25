@@ -57,10 +57,7 @@ public class JdbcTaskRepositoryExceptionsTest {
         .thenReturn(emptyList());
     SQLRuntimeException rootCause = new SQLRuntimeException("SQL GO BOOM!!!");
     when(mockJdbcRunner.execute(
-            ArgumentMatchers.eq(
-                "insert into "
-                    + expectedTableName
-                    + "(task_name, task_instance, task_data, execution_time, picked, version, priority) values(?, ?, ?, ?, ?, ?, ?)"),
+            ArgumentMatchers.startsWith("insert into " + expectedTableName),
             any(PreparedStatementSetter.class)))
         .thenThrow(rootCause);
 

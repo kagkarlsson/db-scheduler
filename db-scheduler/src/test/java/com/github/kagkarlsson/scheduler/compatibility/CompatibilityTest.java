@@ -222,7 +222,7 @@ public abstract class CompatibilityTest {
         SchedulableInstance.of(oneTime.instance("future1"), now.plusSeconds(10)));
     jdbcTaskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(oneTime.instance("id1"), now));
-    List<Execution> picked = jdbcTaskRepository.lockAndGetDue(now, POLLING_LIMIT, false);
+    List<Execution> picked = jdbcTaskRepository.lockAndGetDue(now, POLLING_LIMIT);
     assertThat(picked, IsCollectionWithSize.hasSize(1));
 
     assertThat(jdbcTaskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
@@ -265,6 +265,16 @@ public abstract class CompatibilityTest {
             false,
             new SystemClock());
 
+    final JdbcTaskRepository jdbcTaskRepositoryWithPriority =
+        new JdbcTaskRepository(
+            dataSource,
+            commitWhenAutocommitDisabled(),
+            DEFAULT_TABLE_NAME,
+            taskResolver,
+            new SchedulerName.Fixed("scheduler1"),
+            true,
+            new SystemClock());
+
     final Instant now = TimeHelper.truncatedInstantNow();
 
     final TaskInstance<String> taskInstance = oneTime.instance("id1", data);
@@ -275,24 +285,24 @@ public abstract class CompatibilityTest {
     assertThat(storedExecution.getExecutionTime(), is(now));
 
     // priority=true
-    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT, true), hasSize(1));
+    assertThat(jdbcTaskRepositoryWithPriority.getDue(now, POLLING_LIMIT), hasSize(1));
+
     // priority=false
-    final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT, false);
+    final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
     assertThat(due, hasSize(1));
     final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), now);
     assertThat(pickedExecution.isPresent(), is(true));
 
-    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
 
     jdbcTaskRepository.updateHeartbeat(pickedExecution.get(), now.plusSeconds(1));
     assertThat(jdbcTaskRepository.getDeadExecutions(now.plus(Duration.ofDays(1))), hasSize(1));
 
     jdbcTaskRepository.reschedule(
         pickedExecution.get(), now.plusSeconds(1), now.minusSeconds(1), now.minusSeconds(1), 0);
-    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT, false), hasSize(0));
+    assertThat(jdbcTaskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(
-        jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1)), POLLING_LIMIT, false),
-        hasSize(1));
+        jdbcTaskRepository.getDue(now.plus(Duration.ofMinutes(1)), POLLING_LIMIT), hasSize(1));
 
     final Optional<Execution> rescheduled = jdbcTaskRepository.getExecution(taskInstance);
     assertThat(rescheduled.isPresent(), is(true));

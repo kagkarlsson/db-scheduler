@@ -70,8 +70,7 @@ public class ManualScheduler extends Scheduler {
         logStackTrace,
         onStartup,
         dueExecutor,
-        houseKeeperExecutor,
-        priorityEnabled);
+        houseKeeperExecutor);
     this.clock = clock;
   }
 
