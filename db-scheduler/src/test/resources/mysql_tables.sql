@@ -16,3 +16,7 @@ create table test.scheduled_tasks (
   INDEX last_heartbeat_idx (last_heartbeat),
   INDEX priority_execution_time_idx (priority desc, execution_time asc)
 )
+
+-- an optimization for users of priority might be to add priority to the execution_time_idx
+-- this _might_ save reads as the priority-value is already in the index
+-- CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time asc, priority desc);

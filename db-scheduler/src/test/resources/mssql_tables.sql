@@ -17,3 +17,7 @@ create table scheduled_tasks
   index last_heartbeat_idx (last_heartbeat),
   index priority_execution_time_idx (priority desc, execution_time asc)
 )
+
+-- an optimization for users of priority might be to add priority to the priority_execution_time_idx
+-- this _might_ save reads as the priority-value is already in the index
+-- index priority_execution_time_idx (execution_time asc, priority desc)

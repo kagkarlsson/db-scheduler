@@ -237,18 +237,21 @@ It is possible to define a priority for executions which determines the order in
 are fetched from the database. An execution with a higher value for priority will run before an
 execution with a lower value (technically, the ordering will be `order by priority desc, execution_time asc`).
 Consider using priorities in the range 0-32000 as the field is defined as a `SMALLINT`. If you need a larger value,
-modify the schema.
-For now, this feature is opt-in.
+modify the schema. For now, this feature is **opt-in**.
 
 Set the priority per instance using the `TaskBuilder`:
 
 ```java
-scheduler.schedule(
-  onetimeTask.instanceBuilder("1").priority(100),
-  Instant.now()
-);
+    scheduler.schedule(
+        MY_TASK
+            .instance("1")
+            .priority(100)
+            .scheduledTo(Instant.now()));
 ```
-**Note:** When enabling this feature, make sure you have the new necessary indexes defined.
+
+**Note:** When enabling this feature, make sure you have the new necessary indexes defined. If you
+regularly have a state with large amounts of executions both due and future, it might be beneficial
+to add an index on `(execution_time asc, priority desc)` (replacing the old `execution_time asc`).
 Also, this feature is not recommended for users of **MySQL** and **MariaDB** below version 8.x,
 as they do not support descending indexes.
 
