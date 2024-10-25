@@ -69,7 +69,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
         new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
 
     String selectForUpdateQuery =
-        " UPDATE "
+        " WITH locked_executions as (UPDATE "
             + ctx.tableName
             + " st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 "
             + " WHERE (st1.task_name, st1.task_instance) IN "
@@ -82,7 +82,9 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
             + " FOR UPDATE SKIP LOCKED "
             + getQueryLimitPart(limit)
             + ")"
-            + " RETURNING st1.*";
+            + " RETURNING st1.*) "
+          + " SELECT * FROM locked_executions "
+          + Queries.ansiSqlOrderPart(orderByPriority);
 
     return ctx.jdbcRunner.query(
         selectForUpdateQuery,
