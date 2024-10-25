@@ -101,7 +101,9 @@ public abstract class CompatibilityTest {
     delayingHandlerOneTime = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
     delayingHandlerRecurring = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
 
-    oneTime = TestTasks.oneTimeWithType(ONETIME.getTaskName(), ONETIME.getDataClass(), delayingHandlerOneTime);
+    oneTime =
+        TestTasks.oneTimeWithType(
+            ONETIME.getTaskName(), ONETIME.getDataClass(), delayingHandlerOneTime);
     recurring = TestTasks.recurring("recurring", FixedDelay.ofMillis(10), delayingHandlerRecurring);
     recurringWithData =
         TestTasks.recurringWithData(
@@ -227,7 +229,6 @@ public abstract class CompatibilityTest {
     assertCorrectOrder(false, (r) -> r.getDue(truncatedInstantNow(), POLLING_LIMIT));
   }
 
-
   @Test
   public void test_jdbc_repository_lock_and_get_due_correct_order_with_priority() {
     if (!supportsSelectForUpdate) {
@@ -246,7 +247,8 @@ public abstract class CompatibilityTest {
     assertCorrectOrder(false, (r) -> r.lockAndGetDue(truncatedInstantNow(), POLLING_LIMIT));
   }
 
-  private void assertCorrectOrder(boolean orderByPriority, Function<JdbcTaskRepository, List<Execution>> methodUnderTest) {
+  private void assertCorrectOrder(
+      boolean orderByPriority, Function<JdbcTaskRepository, List<Execution>> methodUnderTest) {
     final JdbcTaskRepository jdbcTaskRepository = createJdbcTaskRepository(orderByPriority);
     final Instant now = truncatedInstantNow();
 
@@ -273,17 +275,17 @@ public abstract class CompatibilityTest {
 
     DataSource dataSource = getDataSource();
     JdbcCustomization jdbcCustomization =
-      getJdbcCustomization().orElse(new AutodetectJdbcCustomization(dataSource));
+        getJdbcCustomization().orElse(new AutodetectJdbcCustomization(dataSource));
     final JdbcTaskRepository jdbcTaskRepository =
-      new JdbcTaskRepository(
-        dataSource,
-        commitWhenAutocommitDisabled(),
-        jdbcCustomization,
-        DEFAULT_TABLE_NAME,
-        taskResolver,
-        new SchedulerName.Fixed("scheduler1"),
-        orderByPriority,
-        new SystemClock());
+        new JdbcTaskRepository(
+            dataSource,
+            commitWhenAutocommitDisabled(),
+            jdbcCustomization,
+            DEFAULT_TABLE_NAME,
+            taskResolver,
+            new SchedulerName.Fixed("scheduler1"),
+            orderByPriority,
+            new SystemClock());
     return jdbcTaskRepository;
   }
 

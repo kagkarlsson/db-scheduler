@@ -83,8 +83,8 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
             + getQueryLimitPart(limit)
             + ")"
             + " RETURNING st1.*) "
-          + " SELECT * FROM locked_executions "
-          + Queries.ansiSqlOrderPart(orderByPriority);
+            + " SELECT * FROM locked_executions "
+            + Queries.ansiSqlOrderPart(orderByPriority);
 
     return ctx.jdbcRunner.query(
         selectForUpdateQuery,
