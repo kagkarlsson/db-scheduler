@@ -21,3 +21,4 @@ CREATE INDEX scheduled_tasks__priority__execution_time__idx on scheduled_tasks(p
 
 -- an optimization for users of priority might be to add priority to the scheduled_tasks__execution_time__idx
 -- this _might_ save reads as the priority-value is already in the index
+-- CREATE INDEX scheduled_tasks__execution_time__idx on scheduled_tasks(execution_time asc, priority desc)
