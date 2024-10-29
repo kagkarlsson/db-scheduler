@@ -238,9 +238,7 @@ public interface SchedulerClient {
       return this;
     }
 
-    /**
-     * Will cause getScheduledExecutions(..) to return executions in priority order.
-     */
+    /** Will cause getScheduledExecutions(..) to return executions in priority order. */
     public Builder enablePriority() {
       this.priority = true;
       return this;
