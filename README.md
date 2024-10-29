@@ -237,9 +237,10 @@ It is possible to define a priority for executions which determines the order in
 are fetched from the database. An execution with a higher value for priority will run before an
 execution with a lower value (technically, the ordering will be `order by priority desc, execution_time asc`).
 Consider using priorities in the range 0-32000 as the field is defined as a `SMALLINT`. If you need a larger value,
-modify the schema. For now, this feature is **opt-in**.
+modify the schema. For now, this feature is **opt-in**, and column `priority` is only needed by users who choose to
+enable priority via this config setting.
 
-Set the priority per instance using the `TaskBuilder`:
+Set the priority per instance using the `TaskInstance.Builder`:
 
 ```java
     scheduler.schedule(
@@ -249,11 +250,13 @@ Set the priority per instance using the `TaskBuilder`:
             .scheduledTo(Instant.now()));
 ```
 
-**Note:** When enabling this feature, make sure you have the new necessary indexes defined. If you
+**Note:**
+* When enabling this feature, make sure you have the new necessary indexes defined. If you
 regularly have a state with large amounts of executions both due and future, it might be beneficial
 to add an index on `(execution_time asc, priority desc)` (replacing the old `execution_time asc`).
-Also, this feature is not recommended for users of **MySQL** and **MariaDB** below version 8.x,
+* This feature is not recommended for users of **MySQL** and **MariaDB** below version 8.x,
 as they do not support descending indexes.
+* Value `null` for priority may be interpreted differently depending on database (low or high).
 
 #### Polling strategy
 
@@ -611,7 +614,12 @@ There are a number of users that are using db-scheduler for high throughput use-
 See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
 
 **Upgrading to 15.x**
-* Add column `priority` and `priority_execution_time_idx` index to the database schema. See table definitions for [postgresql](./b-scheduler/src/test/resources/postgresql_tables.sql), [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](./db-scheduler/src/test/resources/mysql_tables.sql). Note that when `enablePriority()` is used, the `null` value in order of priority is handled differently depending on the database used.
+* Priority is a new opt-in feature. To be able to use it, column `priority` and index `priority_execution_time_idx`
+  must be added to the database schema. See table definitions for
+  [postgresql](./b-scheduler/src/test/resources/postgresql_tables.sql),
+  [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or
+  [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
+  At some point, this column will be made mandatory. This will be made clear in future release/upgrade-notes.
 
 **Upgrading to 8.x**
 * Custom Schedules must implement a method `boolean isDeterministic()` to indicate whether they will always produce the same instants or not.
