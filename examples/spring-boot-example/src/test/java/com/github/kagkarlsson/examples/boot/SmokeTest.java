@@ -75,7 +75,7 @@ public class SmokeTest {
           });
     } catch (SimulatedException e) {
       LOG.info(
-          "Caught expected SimulatedException. Should rollback ongoing transation for instance2");
+          "Caught expected SimulatedException. Should rollback ongoing transaction for instance2");
     }
 
     assertFalse(
