@@ -110,6 +110,34 @@ public interface SchedulerClient {
   <T> void reschedule(SchedulableInstance<T> schedulableInstance);
 
   /**
+   * Updates an existing execution to a new execution time.
+   *
+   * <p>Should the execution not exist, it will be scheduled. An exception is thrown if the
+   * execution is currently running.
+   *
+   * @param taskInstance Task-instance, optionally with data
+   * @param executionTime Instant it should run
+   * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
+   * @see java.time.Instant
+   * @see com.github.kagkarlsson.scheduler.task.TaskInstance
+   * @see com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException
+   */
+  <T> void rescheduleOrCreate(TaskInstance<T> taskInstance, Instant executionTime);
+
+  /**
+   * Updates an existing execution with a new execution-time and new task-data.
+   *
+   * <p>Should the execution not exist, it will be scheduled. An exception is thrown if the
+   * execution is currently running.
+   *
+   * @param schedulableInstance Task-instance and time it should run
+   * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
+   * @see com.github.kagkarlsson.scheduler.task.SchedulableInstance
+   * @see com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException
+   */
+  <T> void rescheduleOrCreate(SchedulableInstance<T> schedulableInstance);
+
+  /**
    * Removes/Cancels an execution.
    *
    * @param taskInstanceId
@@ -350,6 +378,26 @@ public interface SchedulerClient {
       } else {
         throw new TaskInstanceNotFoundException(taskName, instanceId);
       }
+    }
+
+    @Override
+    public <T> void rescheduleOrCreate(TaskInstance<T> taskInstance, Instant executionTime) {
+      Optional<ScheduledExecution<Object>> executionObject =
+          this.getScheduledExecutions().stream()
+              .filter(e -> e.getTaskInstance().getId().equals(taskInstance.getId()))
+              .findFirst();
+      if (executionObject.isPresent()) {
+        this.reschedule(taskInstance, executionTime, taskInstance.getData());
+      } else {
+        this.scheduleIfNotExists(taskInstance, executionTime);
+      }
+    }
+
+    @Override
+    public <T> void rescheduleOrCreate(SchedulableInstance<T> schedulableInstance) {
+      rescheduleOrCreate(
+          schedulableInstance.getTaskInstance(),
+          schedulableInstance.getNextExecutionTime(clock.now()));
     }
 
     @Override
