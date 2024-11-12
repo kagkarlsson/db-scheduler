@@ -56,7 +56,35 @@ class FailureHandlerTest {
 
       assertThat(failureHandlerCalled.get(), is(false));
       assertThat(maxRetriesExceededHandlerCalled.get(), is(true));
+    }
+
+    @Test
+    void should_remove_task_when_maxRetriesExceededHandler_is_undefined_and_max_retries_exceeded() {
+      MaxRetriesFailureHandler<String> maxRetriesFailureHandler =
+          new MaxRetriesFailureHandler<>(3, failureHandler);
+
+      Execution execution = getExecutionWithFails(3);
+      when(executionComplete.getExecution()).thenReturn(execution);
+
+      maxRetriesFailureHandler.onFailure(executionComplete, executionOperations);
+
+      assertThat(failureHandlerCalled.get(), is(false));
       verify(executionOperations).stop();
+    }
+
+    @Test
+    void should_keep_task_when_maxRetriesExceededHandler_is_defined_and_max_retries_exceeded() {
+      MaxRetriesFailureHandler<String> maxRetriesFailureHandler =
+          new MaxRetriesFailureHandler<>(3, failureHandler, maxRetriesExceededHandler);
+
+      Execution execution = getExecutionWithFails(3);
+      when(executionComplete.getExecution()).thenReturn(execution);
+
+      maxRetriesFailureHandler.onFailure(executionComplete, executionOperations);
+
+      assertThat(failureHandlerCalled.get(), is(false));
+      assertThat(maxRetriesExceededHandlerCalled.get(), is(true));
+      verifyNoInteractions(executionOperations);
     }
 
     @Test
