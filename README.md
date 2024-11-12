@@ -579,6 +579,9 @@ There are a number of users that are using db-scheduler for high throughput use-
 
 See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
 
+**Upgrading to 15.x**
+* The behavior of tasks with a defined `maxRetriesExceededHandler` for the `MaxRetriesFailureHandler` has been updated for greater flexibility. Tasks will no longer be automatically removed. To maintain the previous behavior of task removal, please invoke `executionOperations.stop()` within your `maxRetriesExceededHandler`. If you have not defined a `maxRetriesExceededHandler`, the behavior remains unchanged, and no further action is required.
+
 **Upgrading to 8.x**
 * Custom Schedules must implement a method `boolean isDeterministic()` to indicate whether they will always produce the same instants or not.
 

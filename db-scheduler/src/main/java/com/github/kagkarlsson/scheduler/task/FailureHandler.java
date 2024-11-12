@@ -70,7 +70,10 @@ public interface FailureHandler<T> {
     private final BiConsumer<ExecutionComplete, ExecutionOperations<T>> maxRetriesExceededHandler;
 
     public MaxRetriesFailureHandler(int maxRetries, FailureHandler<T> failureHandler) {
-      this(maxRetries, failureHandler, (executionComplete, executionOperations) -> {});
+      this(
+          maxRetries,
+          failureHandler,
+          (executionComplete, executionOperations) -> executionOperations.stop());
     }
 
     public MaxRetriesFailureHandler(
@@ -90,10 +93,9 @@ public interface FailureHandler<T> {
       int totalNumberOfFailures = consecutiveFailures + 1;
       if (totalNumberOfFailures > maxRetries) {
         LOG.error(
-            "Execution has failed {} times for task instance {}. Cancelling execution.",
+            "Execution has failed {} times for task instance {}. Invoking maxRetriesExceededHandler",
             totalNumberOfFailures,
             executionComplete.getExecution().taskInstance);
-        executionOperations.stop();
         maxRetriesExceededHandler.accept(executionComplete, executionOperations);
       } else {
         this.failureHandler.onFailure(executionComplete, executionOperations);
