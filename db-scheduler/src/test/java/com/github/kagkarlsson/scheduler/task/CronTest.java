@@ -2,7 +2,9 @@ package com.github.kagkarlsson.scheduler.task;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
@@ -12,6 +14,7 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -125,7 +128,28 @@ public class CronTest {
   public void should_not_fail_on_cronschedule_without_next_execution_time() {
     CronSchedule cron =
         new CronSchedule("0 0 0 29 2 MON#1", ZoneId.systemDefault(), CronStyle.SPRING53);
-    Assertions.assertEquals(Schedule.NEVER, cron.getNextExecutionTime(complete(Instant.now())));
+    assertEquals(Schedule.NEVER, cron.getNextExecutionTime(complete(Instant.now())));
+  }
+
+  @Test
+  public void validate_cron_schedule_equals() {
+    assertEquals(
+        new CronSchedule("* * * * *", ZoneId.systemDefault(), CronStyle.UNIX),
+        new CronSchedule("* * * * *", ZoneId.systemDefault(), CronStyle.UNIX));
+    assertNotEquals(
+        new CronSchedule("1 * * * *", ZoneId.systemDefault(), CronStyle.UNIX),
+        new CronSchedule("* * * * *", ZoneId.systemDefault(), CronStyle.UNIX));
+    assertNotEquals(
+        new CronSchedule("1 * * * *", london, CronStyle.UNIX),
+        new CronSchedule("1 * * * *", newYork, CronStyle.UNIX));
+    assertNotEquals(
+        new CronSchedule("* * * * * *", ZoneId.systemDefault(), CronStyle.SPRING53),
+        new CronSchedule("* * * * * *", ZoneId.systemDefault(), CronStyle.SPRING));
+  }
+
+  @Test
+  public void equals_and_hash_code() {
+    EqualsVerifier.forClass(CronSchedule.class).verify();
   }
 
   private void assertNextExecutionTime(

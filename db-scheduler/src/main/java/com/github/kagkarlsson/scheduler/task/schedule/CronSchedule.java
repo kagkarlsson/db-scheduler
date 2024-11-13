@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,6 +133,21 @@ public class CronSchedule implements Schedule, Serializable {
   @Override
   public boolean isDeterministic() {
     return true;
+  }
+
+  @Override
+  public final boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof CronSchedule)) return false;
+    CronSchedule that = (CronSchedule) o;
+    return Objects.equals(this.cronStyle, that.cronStyle)
+        && Objects.equals(this.zoneId, that.zoneId)
+        && Objects.equals(this.pattern, that.pattern);
+  }
+
+  @Override
+  public final int hashCode() {
+    return Objects.hash(cronStyle, zoneId, pattern);
   }
 
   @Override
