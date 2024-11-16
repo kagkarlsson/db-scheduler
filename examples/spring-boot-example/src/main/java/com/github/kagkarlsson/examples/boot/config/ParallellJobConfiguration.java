@@ -30,10 +30,10 @@ import utils.Utils;
 @Configuration
 public class ParallellJobConfiguration {
 
-  public static final TaskWithoutDataDescriptor PARALLEL_JOB_SPAWNER =
-      new TaskWithoutDataDescriptor("parallel-job-spawner");
-  public static final TaskWithDataDescriptor<Integer> PARALLEL_JOB =
-      new TaskWithDataDescriptor<>("parallel-job", Integer.class);
+  public static final TaskDescriptor<Void> PARALLEL_JOB_SPAWNER =
+      TaskDescriptor.of("parallel-job-spawner");
+  public static final TaskDescriptor<Integer> PARALLEL_JOB =
+      TaskDescriptor.of("parallel-job", Integer.class);
   private TransactionTemplate tx;
 
   public ParallellJobConfiguration(TransactionTemplate tx) {
@@ -68,7 +68,11 @@ public class ParallellJobConfiguration {
                       // dependency
                       executionContext
                           .getSchedulerClient()
-                          .schedule(PARALLEL_JOB.instance("q" + quarter, quarter), Instant.now());
+                          .scheduleIfNotExists(
+                              PARALLEL_JOB
+                                  .instance("q" + quarter)
+                                  .data(quarter)
+                                  .scheduledTo(Instant.now()));
                     }
                   });
               EventLogger.logTask(

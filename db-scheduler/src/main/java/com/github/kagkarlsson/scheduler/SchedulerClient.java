@@ -213,6 +213,7 @@ public interface SchedulerClient {
     private Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
     private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
     private JdbcCustomization jdbcCustomization;
+    private boolean priority = false;
 
     private Builder(DataSource dataSource, List<Task<?>> knownTasks) {
       this.dataSource = dataSource;
@@ -234,6 +235,12 @@ public interface SchedulerClient {
 
     public Builder tableName(String tableName) {
       this.tableName = tableName;
+      return this;
+    }
+
+    /** Will cause getScheduledExecutions(..) to return executions in priority order. */
+    public Builder enablePriority() {
+      this.priority = true;
       return this;
     }
 
@@ -259,6 +266,7 @@ public interface SchedulerClient {
               taskResolver,
               new SchedulerClientName(),
               serializer,
+              priority,
               clock);
 
       return new StandardSchedulerClient(taskRepository, clock);

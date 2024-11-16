@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.util.List;
 
 public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
+
   private final boolean useGenericLockAndFetch;
 
   public PostgreSqlJdbcCustomization(
@@ -51,9 +52,10 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition) {
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     return selectForUpdate(
         tableName,
+        Queries.ansiSqlOrderPart(orderByPriority),
         getQueryLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",
@@ -62,12 +64,12 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public List<Execution> lockAndFetchSingleStatement(
-      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean orderByPriority) {
     final JdbcTaskRepository.UnresolvedFilter unresolvedFilter =
         new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
 
     String selectForUpdateQuery =
-        " UPDATE "
+        " WITH locked_executions as (UPDATE "
             + ctx.tableName
             + " st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 "
             + " WHERE (st1.task_name, st1.task_instance) IN "
@@ -76,10 +78,13 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
             + " st2 "
             + " WHERE picked = ? and execution_time <= ? "
             + unresolvedFilter.andCondition()
-            + " ORDER BY execution_time ASC FOR UPDATE SKIP LOCKED "
+            + Queries.ansiSqlOrderPart(orderByPriority)
+            + " FOR UPDATE SKIP LOCKED "
             + getQueryLimitPart(limit)
             + ")"
-            + " RETURNING st1.*";
+            + " RETURNING st1.*) "
+            + " SELECT * FROM locked_executions "
+            + Queries.ansiSqlOrderPart(orderByPriority);
 
     return ctx.jdbcRunner.query(
         selectForUpdateQuery,

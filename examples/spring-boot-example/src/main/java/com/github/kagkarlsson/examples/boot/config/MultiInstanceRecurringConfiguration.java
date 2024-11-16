@@ -16,13 +16,12 @@ package com.github.kagkarlsson.examples.boot.config;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import java.io.Serializable;
-import java.time.Instant;
 import java.util.Random;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,8 +30,8 @@ import utils.EventLogger;
 @Configuration
 public class MultiInstanceRecurringConfiguration {
 
-  public static final TaskWithDataDescriptor<ScheduleAndCustomer> MULTI_INSTANCE_RECURRING_TASK =
-      new TaskWithDataDescriptor<>("multi-instance-recurring-task", ScheduleAndCustomer.class);
+  public static final TaskDescriptor<ScheduleAndCustomer> MULTI_INSTANCE_RECURRING_TASK =
+      TaskDescriptor.of("multi-instance-recurring-task", ScheduleAndCustomer.class);
 
   /** Start the example */
   public static void start(ExampleContext ctx) {
@@ -46,9 +45,8 @@ public class MultiInstanceRecurringConfiguration {
             + " with data: "
             + data);
 
-    ctx.schedulerClient.schedule(
-        MULTI_INSTANCE_RECURRING_TASK.instance(customer.id, data),
-        cron.getInitialExecutionTime(Instant.now()));
+    ctx.schedulerClient.scheduleIfNotExists(
+        MULTI_INSTANCE_RECURRING_TASK.instance(customer.id).data(data).scheduledAccordingToData());
   }
 
   /** Bean definition */

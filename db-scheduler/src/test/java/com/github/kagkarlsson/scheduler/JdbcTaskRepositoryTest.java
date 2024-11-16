@@ -4,6 +4,7 @@ import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.onlyResolved;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -29,7 +30,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,14 +64,7 @@ public class JdbcTaskRepositoryTest {
     knownTasks.add(alternativeOneTimeTask);
     testableRegistry = new TestableRegistry(true, Collections.emptyList());
     taskResolver = new TaskResolver(testableRegistry, knownTasks);
-    taskRepository =
-        new JdbcTaskRepository(
-            DB.getDataSource(),
-            false,
-            DEFAULT_TABLE_NAME,
-            taskResolver,
-            new SchedulerName.Fixed(SCHEDULER_NAME),
-            new SystemClock());
+    taskRepository = createRepository(taskResolver, false);
   }
 
   @Test
@@ -139,6 +135,36 @@ public class JdbcTaskRepositoryTest {
     List<Execution> sortedDue = new ArrayList<>(due);
     sortedDue.sort(Comparator.comparing(Execution::getExecutionTime));
     assertThat(due, is(sortedDue));
+  }
+
+  @Test
+  public void get_due_should_be_sorted_by_priority_when_enabled() {
+    JdbcTaskRepository taskRespositoryWithPriority = createRepository(taskResolver, true);
+    Instant now = TimeHelper.truncatedInstantNow();
+    SchedulableTaskInstance<Void> id1 =
+        new SchedulableTaskInstance<>(
+            oneTimeTask.instanceBuilder("id1").priority(1).build(), now.minus(Duration.ofDays(1)));
+    SchedulableTaskInstance<Void> id2 =
+        new SchedulableTaskInstance<>(
+            oneTimeTask.instanceBuilder("id2").priority(10).build(), now.minus(Duration.ofDays(2)));
+    SchedulableTaskInstance<Void> id3 =
+        new SchedulableTaskInstance<>(
+            oneTimeTask.instanceBuilder("id3").priority(5).build(), now.minus(Duration.ofDays(3)));
+
+    Stream.of(id1, id2, id3).forEach(taskRespositoryWithPriority::createIfNotExists);
+
+    List<String> orderedByPriority =
+        taskRespositoryWithPriority.getDue(now, POLLING_LIMIT).stream()
+            .map(Execution::getId)
+            .collect(Collectors.toList());
+    assertThat(orderedByPriority, contains("id2", "id3", "id1"));
+
+    // default task-repository should have no order
+    List<String> orderedByExecutionTime =
+        taskRepository.getDue(now, POLLING_LIMIT).stream()
+            .map(Execution::getId)
+            .collect(Collectors.toList());
+    assertThat(orderedByExecutionTime, contains("id3", "id2", "id1"));
   }
 
   @Test
@@ -363,13 +389,6 @@ public class JdbcTaskRepositoryTest {
     assertThat(getScheduledExecutions(all().withPicked(false), "non-existing"), empty());
   }
 
-  private List<Execution> getScheduledExecutions(
-      ScheduledExecutionsFilter filter, String taskName) {
-    List<Execution> alternativeTasks = new ArrayList<>();
-    taskRepository.getScheduledExecutions(filter, taskName, alternativeTasks::add);
-    return alternativeTasks;
-  }
-
   @Test
   public void get_dead_executions_should_not_include_previously_unresolved() {
     Instant now = TimeHelper.truncatedInstantNow();
@@ -379,14 +398,7 @@ public class JdbcTaskRepositoryTest {
     createDeadExecution(oneTimeTask.instance("id1"), timeDied);
 
     TaskResolver taskResolverMissingTask = new TaskResolver(testableRegistry);
-    JdbcTaskRepository repoMissingTask =
-        new JdbcTaskRepository(
-            DB.getDataSource(),
-            false,
-            DEFAULT_TABLE_NAME,
-            taskResolverMissingTask,
-            new SchedulerName.Fixed(SCHEDULER_NAME),
-            new SystemClock());
+    JdbcTaskRepository repoMissingTask = createRepository(taskResolverMissingTask, false);
 
     assertThat(taskResolverMissingTask.getUnresolved(), hasSize(0));
     assertEquals(0, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
@@ -462,6 +474,24 @@ public class JdbcTaskRepositoryTest {
     // should not be able to pick the same execution twice
     assertThat(taskRepository.lockAndFetchGeneric(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
+  }
+
+  private List<Execution> getScheduledExecutions(
+      ScheduledExecutionsFilter filter, String taskName) {
+    List<Execution> alternativeTasks = new ArrayList<>();
+    taskRepository.getScheduledExecutions(filter, taskName, alternativeTasks::add);
+    return alternativeTasks;
+  }
+
+  private JdbcTaskRepository createRepository(TaskResolver taskResolver, boolean orderByPriority) {
+    return new JdbcTaskRepository(
+        DB.getDataSource(),
+        false,
+        DEFAULT_TABLE_NAME,
+        taskResolver,
+        new SchedulerName.Fixed(SCHEDULER_NAME),
+        orderByPriority,
+        new SystemClock());
   }
 
   private void createDeadExecution(TaskInstance<Void> taskInstance, Instant timeDied) {

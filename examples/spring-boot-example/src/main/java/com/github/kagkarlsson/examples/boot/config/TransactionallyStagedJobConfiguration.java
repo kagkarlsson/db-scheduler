@@ -16,8 +16,8 @@ package com.github.kagkarlsson.examples.boot.config;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.TaskWithoutDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Instant;
 import java.util.Random;
@@ -29,8 +29,8 @@ import utils.EventLogger;
 @Configuration
 public class TransactionallyStagedJobConfiguration {
 
-  public static final TaskWithoutDataDescriptor TRANSACTIONALLY_STAGED_TASK =
-      new TaskWithoutDataDescriptor("transactionally-staged-task");
+  public static final TaskDescriptor<Void> TRANSACTIONALLY_STAGED_TASK =
+      TaskDescriptor.of("transactionally-staged-task");
   private static int ID = 1;
 
   /** Start the example */
@@ -44,8 +44,10 @@ public class TransactionallyStagedJobConfiguration {
           // Since it is scheduled in a transaction, the scheduler will not run it until the tx
           // commits
           // If the tx rolls back, the insert of the new job will also roll back, i.e. not run.
-          ctx.schedulerClient.schedule(
-              TRANSACTIONALLY_STAGED_TASK.instance(String.valueOf(ID++)), Instant.now());
+          ctx.schedulerClient.scheduleIfNotExists(
+              TRANSACTIONALLY_STAGED_TASK
+                  .instance(String.valueOf(ID++))
+                  .scheduledTo(Instant.now()));
 
           // Do additional database-operations here
 

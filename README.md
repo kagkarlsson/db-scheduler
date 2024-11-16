@@ -125,25 +125,32 @@ An instance of a _one-time_ task has a single execution-time some time in the fu
 Define a _one-time_ task and start the scheduler:
 
 ```java
-OneTimeTask<MyTaskData> myAdhocTask = Tasks.oneTime("my-typed-adhoc-task", MyTaskData.class)
+TaskDescriptor<MyTaskData> MY_TASK =
+    TaskDescriptor.of("my-onetime-task", MyTaskData.class);
+
+OneTimeTask<MyTaskData> myTaskImplementation =
+    Tasks.oneTime(MY_TASK)
         .execute((inst, ctx) -> {
-            System.out.println("Executed! Custom data, Id: " + inst.getData().id);
+              System.out.println("Executed! Custom data, Id: " + inst.getData().id);
         });
 
 final Scheduler scheduler = Scheduler
-        .create(dataSource, myAdhocTask)
-        .registerShutdownHook()
-        .build();
+    .create(dataSource, myTaskImplementation)
+    .registerShutdownHook()
+    .build();
 
 scheduler.start();
-
 ```
 
 ... and then at some point (at runtime), an execution is scheduled using the `SchedulerClient`:
 
 ```java
 // Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
-scheduler.schedule(myAdhocTask.instance("1045", new MyTaskData(1001L)), Instant.now().plusSeconds(5));
+scheduler.schedule(
+    MY_TASK
+        .instanceWithId("1045")
+        .data(new MyTaskData(1001L))
+        .scheduledTo(Instant.now().plusSeconds(5)));
 ```
 
 ### More examples
@@ -224,6 +231,32 @@ graceful shutdown and to avoid dead executions.
 How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this,
 consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()`
 in the ExecutionHandler and abort long-running task. Default `30min`.
+
+:gear: `.enablePriority()`<br/>
+It is possible to define a priority for executions which determines the order in which due executions
+are fetched from the database. An execution with a higher value for priority will run before an
+execution with a lower value (technically, the ordering will be `order by priority desc, execution_time asc`).
+Consider using priorities in the range 0-32000 as the field is defined as a `SMALLINT`. If you need a larger value,
+modify the schema. For now, this feature is **opt-in**, and column `priority` is only needed by users who choose to
+enable priority via this config setting.
+
+Set the priority per instance using the `TaskInstance.Builder`:
+
+```java
+    scheduler.schedule(
+        MY_TASK
+            .instance("1")
+            .priority(100)
+            .scheduledTo(Instant.now()));
+```
+
+**Note:**
+* When enabling this feature, make sure you have the new necessary indexes defined. If you
+regularly have a state with large amounts of executions both due and future, it might be beneficial
+to add an index on `(execution_time asc, priority desc)` (replacing the old `execution_time asc`).
+* This feature is not recommended for users of **MySQL** and **MariaDB** below version 8.x,
+as they do not support descending indexes.
+* Value `null` for priority may be interpreted differently depending on database (low or high).
 
 #### Polling strategy
 
@@ -408,6 +441,7 @@ db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=
 db-scheduler.threads=10
+db-scheduler.priority-enabled=false
 
 # Ignored if a custom DbSchedulerStarter bean is defined
 db-scheduler.delay-startup-until-context-ready=false
@@ -578,6 +612,14 @@ There are a number of users that are using db-scheduler for high throughput use-
 ## Versions / upgrading
 
 See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
+
+**Upgrading to 15.x**
+* Priority is a new opt-in feature. To be able to use it, column `priority` and index `priority_execution_time_idx`
+  must be added to the database schema. See table definitions for
+  [postgresql](./b-scheduler/src/test/resources/postgresql_tables.sql),
+  [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or
+  [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
+  At some point, this column will be made mandatory. This will be made clear in future release/upgrade-notes.
 
 **Upgrading to 8.x**
 * Custom Schedules must implement a method `boolean isDeterministic()` to indicate whether they will always produce the same instants or not.

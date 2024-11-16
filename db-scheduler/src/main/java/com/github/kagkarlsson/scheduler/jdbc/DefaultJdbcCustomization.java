@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.TimeZone;
 
 public class DefaultJdbcCustomization implements JdbcCustomization {
+
   public static final Calendar UTC = GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"));
   private final boolean persistTimestampInUTC;
 
@@ -88,7 +89,7 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public List<Execution> lockAndFetchSingleStatement(
-      JdbcTaskRepositoryContext ctx, Instant now, int limit) {
+      JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean orderByPriority) {
     throw new UnsupportedOperationException(
         "lockAndFetch not supported for " + this.getClass().getName());
   }
@@ -100,19 +101,20 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition) {
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     throw new UnsupportedOperationException(
         "method must be implemented when supporting generic lock-and-fetch");
   }
 
   @Override
-  public String createSelectDueQuery(String tableName, int limit, String andCondition) {
+  public String createSelectDueQuery(
+      String tableName, int limit, String andCondition, boolean orderByPriority) {
     final String explicitLimit = supportsExplicitQueryLimitPart() ? getQueryLimitPart(limit) : "";
     return "select * from "
         + tableName
         + " where picked = ? and execution_time <= ? "
         + andCondition
-        + " order by execution_time asc "
+        + Queries.ansiSqlOrderPart(orderByPriority)
         + explicitLimit;
   }
 
