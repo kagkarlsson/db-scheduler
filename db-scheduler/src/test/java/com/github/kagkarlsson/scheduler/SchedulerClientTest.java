@@ -161,6 +161,26 @@ public class SchedulerClientTest {
     assertThat(savingHandler.savedData, CoreMatchers.is(data2));
   }
 
+  @Test
+  public void client_should_be_able_to_rescheduleOrCreate_executions() {
+    String data1 = "data1";
+    String data2 = "data2";
+
+    scheduler.rescheduleOrCreate(savingTask.instance("1", data1), settableClock.now());
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data1));
+
+    scheduler.rescheduleOrCreate(
+        savingTask.instance("2", "none"), settableClock.now().plusSeconds(1));
+    scheduler.rescheduleOrCreate(savingTask.instance("2", data2), settableClock.now());
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+
+    scheduler.tick(ofSeconds(1));
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+  }
+
   @SuppressWarnings("OptionalGetWithoutIsPresent")
   @Test
   public void raw_client_should_be_able_to_fetch_executions() {

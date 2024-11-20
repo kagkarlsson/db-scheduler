@@ -285,6 +285,16 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  public <T> void rescheduleOrCreate(TaskInstance<T> taskInstance, Instant executionTime) {
+    this.delegate.rescheduleOrCreate(taskInstance, executionTime);
+  }
+
+  @Override
+  public <T> void rescheduleOrCreate(SchedulableInstance<T> schedulableInstance) {
+    this.delegate.rescheduleOrCreate(schedulableInstance);
+  }
+
+  @Override
   public void cancel(TaskInstanceId taskInstanceId) {
     this.delegate.cancel(taskInstanceId);
   }
