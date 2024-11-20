@@ -165,7 +165,7 @@ scheduler.schedule(
 | [ExponentialBackoffWithMaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/ExponentialBackoffWithMaxRetriesMain.java)                       | How to use exponential backoff as retry strategy **and** a hard limit on the maximum number of retries.                                                                                                                 |
 | [TrackingProgressRecurringTaskMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/TrackingProgressRecurringTaskMain.java)                             | Recurring jobs may store `task_data` as a way of persisting state across executions. This example shows how.                                                                                                            |
 | [SpawningOtherTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SpawningOtherTasksMain.java)                                                   | Demonstrates on task scheduling instances of another by using the `executionContext.getSchedulerClient()`.                                                                                                              |
-| [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)                                                         | Demonstates some of the `SchedulerClient`'s capabilities. Scheduling, fetching scheduled executions etc.                                                                                                                |
+| [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)                                                         | Demonstrates some of the `SchedulerClient`'s capabilities. Scheduling, fetching scheduled executions etc.                                                                                                                |
 | [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java)                 | Multi-instance recurring jobs where the `Schedule` is stored as part of the `task_data`. For example suitable for multi-tenant applications where each tenent should have a recurring task.                             |
 | [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java) |                                                                                                                                                                                                                         |
 | [JsonSerializerMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JsonSerializerMain.java)                                                           | Overrides serialization of `task_data` from Java-serialization (default) to JSON.                                                                                                                                       |
@@ -185,7 +185,7 @@ scheduler.schedule(
 | [TransactionallyStagedJob](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/TransactionallyStagedJobConfiguration.java) | Example of [transactionally staging a job](https://brandur.org/job-drain), i.e. making sure the background job runs **iff** the transaction commits (along with other db-modifications).                                                   |
 | [LongRunningJob](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/LongRunningJobConfiguration.java)                     | Long-running jobs need to **survive application restarts** and avoid restarting from the beginning. This example demonstrates how to **persisting progress** on shutdown and additionally  a technique for limiting the job to run nightly. |
 | [RecurringStateTracking](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/RecurringStateTrackingConfiguration.java)     | A recurring task with state that can be modified after each run.                                                                                                                                                                           |
-| [ParallellJobSpawner](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/ParallellJobConfiguration.java)                  | Demonstrates how to use a recurring job to spawn one-time jobs, e.g. for parallelization.                                                                                                                                                  |
+| [ParallelJobSpawner](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/ParallellJobConfiguration.java)                  | Demonstrates how to use a recurring job to spawn one-time jobs, e.g. for parallelization.                                                                                                                                                  |
 | [JobChaining](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/JobChainingConfiguration.java)                           | A one-time job with **multiple steps**. The next step is scheduled after the previous one completes.                                                                                                                                       |
 | [MultiInstanceRecurring](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/MultiInstanceRecurringConfiguration.java)     | Demonstrates how to achieve **multiple recurring jobs** of the same type, but potentially differing schedules and data.                                                                                                                    |
 
@@ -261,7 +261,7 @@ as they do not support descending indexes.
 #### Polling strategy
 
 If you are running >1000 executions/s you might want to use the `lock-and-fetch` polling-strategy for lower overhead
- and higher througput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` will be fine.
+ and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` will be fine.
 
 :gear: `.pollUsingFetchAndLockOnExecute(double, double)`<br/>
 Use default polling strategy `fetch-and-lock-on-execute`.<br/>
@@ -282,7 +282,7 @@ Fetched executions are already locked/picked for this scheduler-instance thus sa
 <br/>For high throughput
 (i.e. keep threads busy), set to for example `1.0, 4.0`. Currently hearbeats are not updated for picked executions
 in queue (applicable if `upperLimitFractionOfThreads > 1.0`). If they stay there for more than
-`4 * hearbeat-interval` (default `20m`), not starting execution, they will be detected as _dead_ and likely be
+`4 * heartbeat-interval` (default `20m`), not starting execution, they will be detected as _dead_ and likely be
 unlocked again (determined by `DeadExecutionHandler`).  Currently supported by **postgres**. **sql-server** also supports
 this, but testing has shown this is prone to deadlocks and thus not recommended until understood/resolved.
 
@@ -616,7 +616,7 @@ See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release
 **Upgrading to 15.x**
 * Priority is a new opt-in feature. To be able to use it, column `priority` and index `priority_execution_time_idx`
   must be added to the database schema. See table definitions for
-  [postgresql](./b-scheduler/src/test/resources/postgresql_tables.sql),
+  [postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql),
   [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or
   [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
   At some point, this column will be made mandatory. This will be made clear in future release/upgrade-notes.
@@ -629,10 +629,10 @@ See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release
 
 **Upgrading to 3.x**
 * No schema changes
-* Task creation are preferrably done through builders in `Tasks` class
+* Task creation are preferably done through builders in `Tasks` class
 
 **Upgrading to 2.x**
-* Add column `task_data` to the database schema. See table definitions for [postgresql](./b-scheduler/src/test/resources/postgresql_tables.sql), [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
+* Add column `task_data` to the database schema. See table definitions for [postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
 
 ## Building the source
 
