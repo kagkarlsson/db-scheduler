@@ -68,6 +68,7 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
         Queries.ansiSqlLimitPart(limit),
         requiredAndCondition,
         null,
-        " WITH (READPAST,ROWLOCK) ");
+        " WITH (READPAST,ROWLOCK) ",
+        null);
   }
 }

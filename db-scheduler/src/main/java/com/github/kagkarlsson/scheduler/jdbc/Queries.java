@@ -23,7 +23,8 @@ public class Queries {
       String limitPart,
       String requiredAndCondition,
       String postgresOracleStyleForUpdate,
-      String sqlServerStyleForUpdate) {
+      String sqlServerStyleForUpdate,
+      String mysqlOracleStyleForUpdate) {
     return "SELECT * FROM "
         + tableName
         + Optional.ofNullable(sqlServerStyleForUpdate).orElse("")
@@ -31,7 +32,9 @@ public class Queries {
         + requiredAndCondition
         + orderPart
         + Optional.ofNullable(postgresOracleStyleForUpdate).orElse("")
-        + limitPart;
+        + limitPart
+        // Note: Compared to Postgres, MySQL expects `FOR UPDATE SKIP LOCKED` after `LIMIT`
+        + Optional.ofNullable(mysqlOracleStyleForUpdate).orElse("");
   }
 
   public static String postgresSqlLimitPart(int limit) {

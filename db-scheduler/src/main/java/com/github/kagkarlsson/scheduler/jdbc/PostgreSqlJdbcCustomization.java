@@ -59,6 +59,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
         getQueryLimitPart(limit),
         requiredAndCondition,
         " FOR UPDATE SKIP LOCKED ",
+        null,
         null);
   }
 
