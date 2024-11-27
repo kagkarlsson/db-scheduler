@@ -57,19 +57,33 @@ class DueExecutionsBatch {
         triggeredExecuteDue,
         possiblyMoreExecutionsInDb,
         executionsLeftInBatch.get());
-    // Will not synchronize this method as it is not a big problem if two threads manage to call
-    // triggerCheckForNewBatch.run() at the same time.
-    // There is synchronization further in, when waking the thread that will do the fetching.
-    if (!stale
-        && !triggeredExecuteDue
-        && possiblyMoreExecutionsInDb
-        && whenToTriggerCheckForNewBatch.test(executionsLeftInBatch.get())) {
-      LOG.trace("Triggering check for new batch.");
-      triggerCheckForNewBatch.run();
-      triggeredExecuteDue = true;
-    }
-  }
 
+    if (isBatchValidForTrigger()) {
+        LOG.trace("Triggering check for new batch.");
+        triggerCheckForNewBatch.run();
+        triggeredExecuteDue = true;
+    }
+}
+
+private boolean isBatchValidForTrigger() {
+    return isNotStale() && isNotAlreadyTriggered() && hasPossibleExecutions() && isTriggerConditionMet();
+}
+
+private boolean isNotStale() {
+    return !stale;
+}
+
+private boolean isNotAlreadyTriggered() {
+    return !triggeredExecuteDue;
+}
+
+private boolean hasPossibleExecutions() {
+    return possiblyMoreExecutionsInDb;
+}
+
+private boolean isTriggerConditionMet() {
+    return whenToTriggerCheckForNewBatch.test(executionsLeftInBatch.get());
+}
   public boolean isOlderGenerationThan(int compareTo) {
     return generationNumber < compareTo;
   }
