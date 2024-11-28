@@ -3,7 +3,6 @@ package com.github.kagkarlsson.scheduler.functional;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import co.unruly.matchers.TimeMatchers;

@@ -10,7 +10,13 @@ create table test.scheduled_tasks (
   consecutive_failures INT,
   last_heartbeat timestamp(6) null,
   version BIGINT not null,
+  priority SMALLINT,
   PRIMARY KEY (task_name, task_instance),
   INDEX execution_time_idx (execution_time),
-  INDEX last_heartbeat_idx (last_heartbeat)
+  INDEX last_heartbeat_idx (last_heartbeat),
+  INDEX priority_execution_time_idx (priority desc, execution_time asc)
 )
+
+-- an optimization for users of priority might be to add priority to the execution_time_idx
+-- this _might_ save reads as the priority-value is already in the index
+-- CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time asc, priority desc);

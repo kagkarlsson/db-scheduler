@@ -15,6 +15,7 @@ package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTaskWithPersistentSchedule;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -24,6 +25,9 @@ import javax.sql.DataSource;
 
 public class RecurringTaskWithPersistentScheduleMain extends Example {
 
+  public static final TaskDescriptor<ScheduleAndNoData> DYNAMIC_RECURRING_TASK =
+      TaskDescriptor.of("dynamic-recurring-task", ScheduleAndNoData.class);
+
   public static void main(String[] args) {
     new RecurringTaskWithPersistentScheduleMain().runWithDatasource();
   }
@@ -32,7 +36,7 @@ public class RecurringTaskWithPersistentScheduleMain extends Example {
   public void run(DataSource dataSource) {
 
     final RecurringTaskWithPersistentSchedule<ScheduleAndNoData> task =
-        Tasks.recurringWithPersistentSchedule("dynamic-recurring-task", ScheduleAndNoData.class)
+        Tasks.recurringWithPersistentSchedule(DYNAMIC_RECURRING_TASK)
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println(
@@ -52,11 +56,15 @@ public class RecurringTaskWithPersistentScheduleMain extends Example {
     sleep(2_000);
 
     scheduler.schedule(
-        task.schedulableInstance(
-            "id1", new ScheduleAndNoData(Schedules.fixedDelay(Duration.ofSeconds(1)))));
+        DYNAMIC_RECURRING_TASK
+            .instance("id1")
+            .data(new ScheduleAndNoData(Schedules.fixedDelay(Duration.ofSeconds(1))))
+            .scheduledAccordingToData());
     scheduler.schedule(
-        task.schedulableInstance(
-            "id2", new ScheduleAndNoData(Schedules.fixedDelay(Duration.ofSeconds(6)))));
+        DYNAMIC_RECURRING_TASK
+            .instance("id2")
+            .data(new ScheduleAndNoData(Schedules.fixedDelay(Duration.ofSeconds(6))))
+            .scheduledAccordingToData());
   }
 
   public static class ScheduleAndNoData implements ScheduleAndData {

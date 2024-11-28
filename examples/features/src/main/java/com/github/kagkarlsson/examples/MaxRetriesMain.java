@@ -16,6 +16,7 @@ package com.github.kagkarlsson.examples;
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
@@ -28,11 +29,13 @@ public class MaxRetriesMain extends Example {
     new MaxRetriesMain().runWithDatasource();
   }
 
+  public static final TaskDescriptor<Void> MAX_RETRIES_TASK = TaskDescriptor.of("max_retries_task");
+
   @Override
   public void run(DataSource dataSource) {
 
     OneTimeTask<Void> failingTask =
-        Tasks.oneTime("max_retries_task")
+        Tasks.oneTime(MAX_RETRIES_TASK)
             .onFailure(
                 new FailureHandler.MaxRetriesFailureHandler<>(
                     3,
@@ -56,7 +59,7 @@ public class MaxRetriesMain extends Example {
             .registerShutdownHook()
             .build();
 
-    scheduler.schedule(failingTask.instance("1"), Instant.now());
+    scheduler.schedule(MAX_RETRIES_TASK.instance("1").scheduledTo(Instant.now()));
 
     scheduler.start();
   }

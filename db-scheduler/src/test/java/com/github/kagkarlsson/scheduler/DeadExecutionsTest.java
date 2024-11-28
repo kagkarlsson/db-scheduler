@@ -56,6 +56,7 @@ public class DeadExecutionsTest {
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
+            false,
             settableClock);
 
     scheduler =

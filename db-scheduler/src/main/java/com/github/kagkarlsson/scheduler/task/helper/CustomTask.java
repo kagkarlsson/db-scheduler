@@ -22,13 +22,12 @@ import com.github.kagkarlsson.scheduler.task.NextExecutionTime;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
-import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.time.Instant;
 import java.util.function.Function;
 
 public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup {
-  private ScheduleOnStartup<T> scheduleOnStartup;
   private final NextExecutionTime defaultExecutionTime;
+  private ScheduleOnStartup<T> scheduleOnStartup;
 
   public CustomTask(
       String name,
@@ -44,13 +43,13 @@ public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup
 
   @Override
   public SchedulableInstance<T> schedulableInstance(String id) {
-    return new SchedulableTaskInstance<>(new TaskInstance<>(getName(), id), defaultExecutionTime);
+    return new SchedulableTaskInstance<>(instanceBuilder(id).build(), defaultExecutionTime);
   }
 
   @Override
   public SchedulableInstance<T> schedulableInstance(String id, T data) {
     return new SchedulableTaskInstance<>(
-        new TaskInstance<>(getName(), id, data), defaultExecutionTime);
+        instanceBuilder(id).data(data).build(), defaultExecutionTime);
   }
 
   @Override

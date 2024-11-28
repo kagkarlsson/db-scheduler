@@ -13,31 +13,9 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-/**
- * @deprecated use {@link TaskDescriptor} directly instead.
- */
-@Deprecated
-public class TaskWithDataDescriptor<T> implements TaskDescriptor<T> {
+public class Priority {
 
-  private final String taskName;
-  private final Class<T> dataClass;
-
-  public TaskWithDataDescriptor(String taskName, Class<T> dataClass) { // TODO: not used?
-    this.taskName = taskName;
-    this.dataClass = dataClass;
-  }
-
-  @Override
-  public String getTaskName() {
-    return taskName;
-  }
-
-  @Override
-  public Class<T> getDataClass() {
-    return dataClass;
-  }
-
-  public TaskInstanceId instanceId(String id) {
-    return TaskInstanceId.of(taskName, id);
-  }
+  public static final int HIGH = 90;
+  public static final int MEDIUM = 50;
+  public static final int LOW = 10;
 }

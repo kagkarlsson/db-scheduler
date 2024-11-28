@@ -15,6 +15,7 @@ package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
@@ -27,10 +28,13 @@ public class CheckForNewBatchDirectlyMain extends Example {
     new CheckForNewBatchDirectlyMain().runWithDatasource();
   }
 
+  public static final TaskDescriptor<Void> MY_TASK = TaskDescriptor.of("my_task");
+
   @Override
   public void run(DataSource dataSource) {
+
     OneTimeTask<Void> onetimeTask =
-        Tasks.oneTime("my_task")
+        Tasks.oneTime(MY_TASK)
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println("Executed!");
@@ -48,7 +52,7 @@ public class CheckForNewBatchDirectlyMain extends Example {
     sleep(2);
     System.out.println("Scheduling 100 task-instances.");
     for (int i = 0; i < 100; i++) {
-      scheduler.schedule(onetimeTask.instance(String.valueOf(i)), Instant.now());
+      scheduler.schedule(MY_TASK.instance(String.valueOf(i)).scheduledTo(Instant.now()));
     }
   }
 }
