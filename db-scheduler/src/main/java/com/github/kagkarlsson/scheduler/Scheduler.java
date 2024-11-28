@@ -396,16 +396,25 @@ public class Scheduler implements SchedulerClient {
   }
 
   void updateHeartbeats() {
-    final List<CurrentlyExecuting> currentlyProcessing = executor.getCurrentlyExecuting();
-    if (currentlyProcessing.isEmpty()) {
-      LOG.trace("No executions to update heartbeats for. Skipping.");
-      return;
-    }
+    final List<CurrentlyExecuting> currentlyProcessing = getCurrentlyProcessingExecutions();
+    if (currentlyProcessing.isEmpty()) return;
 
-    LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
-    Instant now = clock.now();
-    currentlyProcessing.forEach(execution -> updateHeartbeatForExecution(now, execution));
+    updateAllHeartbeats(currentlyProcessing);
     schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_UPDATE_HEARTBEATS);
+  }
+
+  private List<CurrentlyExecuting> getCurrentlyProcessingExecutions() {
+      List<CurrentlyExecuting> currentlyProcessing = executor.getCurrentlyExecuting();
+      if (currentlyProcessing.isEmpty()) {
+          LOG.trace("No executions to update heartbeats for. Skipping.");
+      }
+      return currentlyProcessing;
+  }
+
+  private void updateAllHeartbeats(List<CurrentlyExecuting> currentlyProcessing) {
+      LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
+      Instant now = clock.now();
+      currentlyProcessing.forEach(execution -> updateHeartbeatForExecution(now, execution));
   }
 
   protected void updateHeartbeatForExecution(Instant now, CurrentlyExecuting currentlyExecuting) {
