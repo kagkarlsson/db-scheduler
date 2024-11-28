@@ -48,7 +48,7 @@ public class Scheduler implements SchedulerClient {
   public static final double TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO = 0.5;
   public static final String THREAD_PREFIX = "db-scheduler";
   private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
-  private final SchedulerClient delegate;
+  private final SchedulerClient schedulerClientDelegate;
   final Clock clock;
   final TaskRepository schedulerTaskRepository;
   final TaskResolver taskResolver;
@@ -110,7 +110,7 @@ public class Scheduler implements SchedulerClient {
     this.schedulerListeners = new SchedulerListeners(schedulerListeners);
     this.dueExecutor = dueExecutor;
     this.housekeeperExecutor = housekeeperExecutor;
-    delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
+    schedulerClientDelegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 
     if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
@@ -251,59 +251,59 @@ public class Scheduler implements SchedulerClient {
 
   @Override
   public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
-    this.delegate.schedule(schedulableInstance);
+    this.schedulerClientDelegate.schedule(schedulableInstance);
   }
 
   @Override
   public <T> boolean scheduleIfNotExists(TaskInstance<T> taskInstance, Instant executionTime) {
-    return this.delegate.scheduleIfNotExists(taskInstance, executionTime);
+    return this.schedulerClientDelegate.scheduleIfNotExists(taskInstance, executionTime);
   }
 
   @Override
   public <T> boolean scheduleIfNotExists(SchedulableInstance<T> schedulableInstance) {
-    return this.delegate.scheduleIfNotExists(schedulableInstance);
+    return this.schedulerClientDelegate.scheduleIfNotExists(schedulableInstance);
   }
 
   @Override
   public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
-    this.delegate.schedule(taskInstance, executionTime);
+    this.schedulerClientDelegate.schedule(taskInstance, executionTime);
   }
 
   @Override
   public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
-    this.delegate.reschedule(taskInstanceId, newExecutionTime);
+    this.schedulerClientDelegate.reschedule(taskInstanceId, newExecutionTime);
   }
 
   @Override
   public <T> void reschedule(SchedulableInstance<T> schedulableInstance) {
-    this.delegate.reschedule(schedulableInstance);
+    this.schedulerClientDelegate.reschedule(schedulableInstance);
   }
 
   @Override
   public <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
-    this.delegate.reschedule(taskInstanceId, newExecutionTime, newData);
+    this.schedulerClientDelegate.reschedule(taskInstanceId, newExecutionTime, newData);
   }
 
   @Override
   public void cancel(TaskInstanceId taskInstanceId) {
-    this.delegate.cancel(taskInstanceId);
+    this.schedulerClientDelegate.cancel(taskInstanceId);
   }
 
   @Override
   public void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
-    this.delegate.fetchScheduledExecutions(consumer);
+    this.schedulerClientDelegate.fetchScheduledExecutions(consumer);
   }
 
   @Override
   public void fetchScheduledExecutions(
       ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer) {
-    this.delegate.fetchScheduledExecutions(filter, consumer);
+    this.schedulerClientDelegate.fetchScheduledExecutions(filter, consumer);
   }
 
   @Override
   public <T> void fetchScheduledExecutionsForTask(
       String taskName, Class<T> dataClass, Consumer<ScheduledExecution<T>> consumer) {
-    this.delegate.fetchScheduledExecutionsForTask(taskName, dataClass, consumer);
+    this.schedulerClientDelegate.fetchScheduledExecutionsForTask(taskName, dataClass, consumer);
   }
 
   @Override
@@ -312,12 +312,12 @@ public class Scheduler implements SchedulerClient {
       Class<T> dataClass,
       ScheduledExecutionsFilter filter,
       Consumer<ScheduledExecution<T>> consumer) {
-    this.delegate.fetchScheduledExecutionsForTask(taskName, dataClass, filter, consumer);
+    this.schedulerClientDelegate.fetchScheduledExecutionsForTask(taskName, dataClass, filter, consumer);
   }
 
   @Override
   public Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId) {
-    return this.delegate.getScheduledExecution(taskInstanceId);
+    return this.schedulerClientDelegate.getScheduledExecution(taskInstanceId);
   }
 
   public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {
