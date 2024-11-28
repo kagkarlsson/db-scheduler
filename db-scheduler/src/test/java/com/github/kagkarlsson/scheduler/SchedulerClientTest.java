@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.unruly.matchers.OptionalMatchers;
+import com.github.kagkarlsson.scheduler.SchedulerClient.WhenExists;
 import com.github.kagkarlsson.scheduler.TestTasks.SavingHandler;
 import com.github.kagkarlsson.scheduler.serializer.JavaSerializer;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
@@ -162,23 +163,48 @@ public class SchedulerClientTest {
   }
 
   @Test
-  public void client_should_be_able_to_rescheduleOrCreate_executions() {
+  public void client_should_be_able_to_reschedule_executions_via_schedule_when_exists_reschedule() {
     String data1 = "data1";
     String data2 = "data2";
 
-    scheduler.rescheduleOrCreate(savingTask.instance("1", data1), settableClock.now());
+    scheduler.schedule(savingTask.instance("1", data1), settableClock.now(), WhenExists.RESCHEDULE);
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data1));
 
-    scheduler.rescheduleOrCreate(
-        savingTask.instance("2", "none"), settableClock.now().plusSeconds(1));
-    scheduler.rescheduleOrCreate(savingTask.instance("2", data2), settableClock.now());
+    scheduler.schedule(
+        savingTask.instance("2", "none"),
+        settableClock.now().plusSeconds(1),
+        WhenExists.RESCHEDULE);
+    scheduler.schedule(savingTask.instance("2", data2), settableClock.now(), WhenExists.RESCHEDULE);
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data2));
 
     scheduler.tick(ofSeconds(1));
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+  }
+
+  @Test
+  public void
+      client_should_do_nothing_when_task_instance_exists_and_schedule_with_when_exists_do_nothing() {
+    String data1 = "data1";
+    String data2 = "data2";
+
+    scheduler.schedule(savingTask.instance("1", data1), settableClock.now(), WhenExists.DO_NOTHING);
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data1));
+
+    scheduler.schedule(
+        savingTask.instance("2", "none"),
+        settableClock.now().plusSeconds(1),
+        WhenExists.DO_NOTHING);
+    scheduler.schedule(savingTask.instance("2", data2), settableClock.now(), WhenExists.DO_NOTHING);
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is("data1"));
+
+    scheduler.tick(ofSeconds(1));
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is("none"));
   }
 
   @SuppressWarnings("OptionalGetWithoutIsPresent")

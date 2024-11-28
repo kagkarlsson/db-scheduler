@@ -270,28 +270,30 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
-  public void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
-    this.delegate.reschedule(taskInstanceId, newExecutionTime);
+  public boolean reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+    return this.delegate.reschedule(taskInstanceId, newExecutionTime);
   }
 
   @Override
-  public <T> void reschedule(SchedulableInstance<T> schedulableInstance) {
-    this.delegate.reschedule(schedulableInstance);
+  public <T> boolean reschedule(SchedulableInstance<T> schedulableInstance) {
+    return this.delegate.reschedule(schedulableInstance);
   }
 
   @Override
-  public <T> void reschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
-    this.delegate.reschedule(taskInstanceId, newExecutionTime, newData);
+  public <T> boolean reschedule(
+      TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
+    return this.delegate.reschedule(taskInstanceId, newExecutionTime, newData);
   }
 
   @Override
-  public <T> void rescheduleOrCreate(TaskInstance<T> taskInstance, Instant executionTime) {
-    this.delegate.rescheduleOrCreate(taskInstance, executionTime);
+  public <T> boolean schedule(
+      TaskInstance<T> taskInstance, Instant executionTime, WhenExists whenExists) {
+    return this.delegate.schedule(taskInstance, executionTime, whenExists);
   }
 
   @Override
-  public <T> void rescheduleOrCreate(SchedulableInstance<T> schedulableInstance) {
-    this.delegate.rescheduleOrCreate(schedulableInstance);
+  public <T> boolean schedule(SchedulableInstance<T> schedulableInstance, WhenExists whenExists) {
+    return this.delegate.schedule(schedulableInstance, whenExists);
   }
 
   @Override
