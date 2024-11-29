@@ -72,6 +72,11 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
   }
 
   @Override
+  public int getDefaultPriority() {
+    return Priority.HIGH;
+  }
+
+  @Override
   public SchedulableInstance<T> schedulableInstance(String id) {
     return new SchedulableTaskInstance<>(
         new TaskInstance<>(getName(), id), schedule::getInitialExecutionTime);

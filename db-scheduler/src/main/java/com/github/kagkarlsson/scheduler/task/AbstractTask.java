@@ -13,7 +13,10 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.task.TaskInstance.Builder;
+
 public abstract class AbstractTask<T> implements Task<T> {
+
   protected final String name;
   private final FailureHandler<T> failureHandler;
   private final DeadExecutionHandler<T> deadExecutionHandler;
@@ -42,12 +45,17 @@ public abstract class AbstractTask<T> implements Task<T> {
 
   @Override
   public TaskInstance<T> instance(String id) {
-    return new TaskInstance<>(this.name, id);
+    return instanceBuilder(id).build();
   }
 
   @Override
   public TaskInstance<T> instance(String id, T data) {
-    return new TaskInstance<>(this.name, id, data);
+    return instanceBuilder(id).priority(getDefaultPriority()).data(data).build();
+  }
+
+  @Override
+  public TaskInstance.Builder<T> instanceBuilder(String id) {
+    return new Builder<>(this.name, id);
   }
 
   @Override

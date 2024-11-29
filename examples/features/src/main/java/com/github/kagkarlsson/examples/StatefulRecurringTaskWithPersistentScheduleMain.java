@@ -15,6 +15,7 @@ package com.github.kagkarlsson.examples;
 
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTaskWithPersistentSchedule;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -29,11 +30,14 @@ public class StatefulRecurringTaskWithPersistentScheduleMain extends Example {
     new StatefulRecurringTaskWithPersistentScheduleMain().runWithDatasource();
   }
 
+  public static final TaskDescriptor<ScheduleAndInteger> DYNAMIC_RECURRING_TASK =
+      TaskDescriptor.of("dynamic-recurring-task", ScheduleAndInteger.class);
+
   @Override
   public void run(DataSource dataSource) {
 
     final RecurringTaskWithPersistentSchedule<ScheduleAndInteger> task =
-        Tasks.recurringWithPersistentSchedule("dynamic-recurring-task", ScheduleAndInteger.class)
+        Tasks.recurringWithPersistentSchedule(DYNAMIC_RECURRING_TASK)
             .executeStateful(
                 (taskInstance, executionContext) -> {
                   System.out.printf(
@@ -54,8 +58,10 @@ public class StatefulRecurringTaskWithPersistentScheduleMain extends Example {
     sleep(2_000);
 
     scheduler.schedule(
-        task.schedulableInstance(
-            "id1", new ScheduleAndInteger(Schedules.fixedDelay(Duration.ofSeconds(3)), 1)));
+        DYNAMIC_RECURRING_TASK
+            .instance("id1")
+            .data(new ScheduleAndInteger(Schedules.fixedDelay(Duration.ofSeconds(3)), 1))
+            .scheduledAccordingToData());
   }
 
   public static class ScheduleAndInteger implements ScheduleAndData {

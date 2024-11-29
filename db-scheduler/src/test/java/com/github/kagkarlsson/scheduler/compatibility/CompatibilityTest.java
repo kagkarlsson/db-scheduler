@@ -1,10 +1,11 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
 import static com.github.kagkarlsson.scheduler.SchedulerBuilder.UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH;
+import static com.github.kagkarlsson.scheduler.helper.TimeHelper.truncatedInstantNow;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -14,9 +15,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import co.unruly.matchers.OptionalMatchers;
-import com.github.kagkarlsson.scheduler.*;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.SystemClock;
@@ -25,7 +26,6 @@ import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
 import com.github.kagkarlsson.scheduler.helper.ExecutionCompletedCondition;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
-import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
@@ -33,6 +33,7 @@ import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
@@ -47,7 +48,9 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
+import java.util.function.Function;
 import javax.sql.DataSource;
+import org.hamcrest.Matchers;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +63,7 @@ import org.slf4j.LoggerFactory;
 public abstract class CompatibilityTest {
 
   private static final int POLLING_LIMIT = 10_000;
+  private static final TaskDescriptor<String> ONETIME = TaskDescriptor.of("oneTime", String.class);
   private Logger LOG = LoggerFactory.getLogger(getClass());
   private final boolean supportsSelectForUpdate;
   private final boolean shouldHavePersistentTimezone;
@@ -97,7 +101,9 @@ public abstract class CompatibilityTest {
     delayingHandlerOneTime = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
     delayingHandlerRecurring = new TestTasks.CountingHandler<>(Duration.ofMillis(200));
 
-    oneTime = TestTasks.oneTimeWithType("oneTime", String.class, delayingHandlerOneTime);
+    oneTime =
+        TestTasks.oneTimeWithType(
+            ONETIME.getTaskName(), ONETIME.getDataClass(), delayingHandlerOneTime);
     recurring = TestTasks.recurring("recurring", FixedDelay.ofMillis(10), delayingHandlerRecurring);
     recurringWithData =
         TestTasks.recurringWithData(
@@ -200,6 +206,70 @@ public abstract class CompatibilityTest {
       return;
     }
 
+    final JdbcTaskRepository jdbcTaskRepository = createJdbcTaskRepository(false);
+
+    final Instant now = truncatedInstantNow();
+
+    jdbcTaskRepository.createIfNotExists(
+        ONETIME.instance("future1").scheduledTo(now.plusSeconds(10)));
+    jdbcTaskRepository.createIfNotExists(ONETIME.instance("id1").scheduledTo(now));
+    List<Execution> picked = jdbcTaskRepository.lockAndGetDue(now, POLLING_LIMIT);
+    assertThat(picked, IsCollectionWithSize.hasSize(1));
+
+    assertThat(jdbcTaskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
+  }
+
+  @Test
+  public void test_jdbc_repository_get_due_correct_order_with_priority() {
+    assertCorrectOrder(true, (r) -> r.getDue(truncatedInstantNow(), POLLING_LIMIT));
+  }
+
+  @Test
+  public void test_jdbc_repository_get_due_correct_order_without_priority() {
+    assertCorrectOrder(false, (r) -> r.getDue(truncatedInstantNow(), POLLING_LIMIT));
+  }
+
+  @Test
+  public void test_jdbc_repository_lock_and_get_due_correct_order_with_priority() {
+    if (!supportsSelectForUpdate) {
+      return;
+    }
+
+    assertCorrectOrder(true, (r) -> r.lockAndGetDue(truncatedInstantNow(), POLLING_LIMIT));
+  }
+
+  @Test
+  public void test_jdbc_repository_lock_and_get_due_correct_order_without_priority() {
+    if (!supportsSelectForUpdate) {
+      return;
+    }
+
+    assertCorrectOrder(false, (r) -> r.lockAndGetDue(truncatedInstantNow(), POLLING_LIMIT));
+  }
+
+  private void assertCorrectOrder(
+      boolean orderByPriority, Function<JdbcTaskRepository, List<Execution>> methodUnderTest) {
+    final JdbcTaskRepository jdbcTaskRepository = createJdbcTaskRepository(orderByPriority);
+    final Instant now = truncatedInstantNow();
+
+    jdbcTaskRepository.createIfNotExists(
+        ONETIME.instance("1").priority(1).scheduledTo(now.minusSeconds(10)));
+    jdbcTaskRepository.createIfNotExists(
+        ONETIME.instance("2").priority(2).scheduledTo(now.minusSeconds(30)));
+    jdbcTaskRepository.createIfNotExists(
+        ONETIME.instance("3").priority(3).scheduledTo(now.minusSeconds(20)));
+
+    List<Execution> picked = methodUnderTest.apply(jdbcTaskRepository);
+    List<String> ids = picked.stream().map(Execution::getId).collect(toList());
+
+    if (orderByPriority) {
+      assertThat("Contained: " + ids, ids, Matchers.contains("3", "2", "1"));
+    } else {
+      assertThat("Contained: " + ids, ids, Matchers.contains("2", "3", "1"));
+    }
+  }
+
+  private JdbcTaskRepository createJdbcTaskRepository(boolean orderByPriority) {
     TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
     taskResolver.addTask(oneTime);
 
@@ -214,18 +284,9 @@ public abstract class CompatibilityTest {
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
+            orderByPriority,
             new SystemClock());
-
-    final Instant now = TimeHelper.truncatedInstantNow();
-
-    jdbcTaskRepository.createIfNotExists(
-        SchedulableInstance.of(oneTime.instance("future1"), now.plusSeconds(10)));
-    jdbcTaskRepository.createIfNotExists(
-        new SchedulableTaskInstance<>(oneTime.instance("id1"), now));
-    List<Execution> picked = jdbcTaskRepository.lockAndGetDue(now, POLLING_LIMIT);
-    assertThat(picked, IsCollectionWithSize.hasSize(1));
-
-    assertThat(jdbcTaskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
+    return jdbcTaskRepository;
   }
 
   @Test
@@ -262,9 +323,20 @@ public abstract class CompatibilityTest {
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
+            false,
             new SystemClock());
 
-    final Instant now = TimeHelper.truncatedInstantNow();
+    final JdbcTaskRepository jdbcTaskRepositoryWithPriority =
+        new JdbcTaskRepository(
+            dataSource,
+            commitWhenAutocommitDisabled(),
+            DEFAULT_TABLE_NAME,
+            taskResolver,
+            new SchedulerName.Fixed("scheduler1"),
+            true,
+            new SystemClock());
+
+    final Instant now = truncatedInstantNow();
 
     final TaskInstance<String> taskInstance = oneTime.instance("id1", data);
     final SchedulableTaskInstance<String> newExecution =
@@ -273,6 +345,10 @@ public abstract class CompatibilityTest {
     Execution storedExecution = (jdbcTaskRepository.getExecution(taskInstance)).get();
     assertThat(storedExecution.getExecutionTime(), is(now));
 
+    // priority=true
+    assertThat(jdbcTaskRepositoryWithPriority.getDue(now, POLLING_LIMIT), hasSize(1));
+
+    // priority=false
     final List<Execution> due = jdbcTaskRepository.getDue(now, POLLING_LIMIT);
     assertThat(due, hasSize(1));
     final Optional<Execution> pickedExecution = jdbcTaskRepository.pick(due.get(0), now);
@@ -311,9 +387,10 @@ public abstract class CompatibilityTest {
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
+            false,
             new SystemClock());
 
-    final Instant now = TimeHelper.truncatedInstantNow();
+    final Instant now = truncatedInstantNow();
 
     final TaskInstance<Integer> taskInstance = recurringWithData.instance("id1", 1);
     final SchedulableTaskInstance<Integer> newExecution =
@@ -386,6 +463,7 @@ public abstract class CompatibilityTest {
         DEFAULT_TABLE_NAME,
         defaultTaskResolver,
         new SchedulerName.Fixed("scheduler1"),
+        false,
         new SystemClock());
   }
 }

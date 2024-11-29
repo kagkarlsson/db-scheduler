@@ -35,7 +35,7 @@ public class DbUtils {
                 new InputStreamReader(DbUtils.class.getResourceAsStream(resource)));
         if (splitStatements) {
           for (String statement : statements.split(";")) {
-            if (!statement.trim().isEmpty()) {
+            if (!statement.trim().isEmpty() && !statement.trim().startsWith("--")) {
               jdbcRunner.execute(statement, NOOP);
             }
           }

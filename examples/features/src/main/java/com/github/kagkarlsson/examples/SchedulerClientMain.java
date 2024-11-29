@@ -17,6 +17,7 @@ import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.serializer.JacksonSerializer;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Instant;
@@ -28,11 +29,13 @@ public class SchedulerClientMain extends Example {
     new SchedulerClientMain().runWithDatasource();
   }
 
+  public static final TaskDescriptor<Integer> MY_TASK = TaskDescriptor.of("task-a", Integer.class);
+
   @Override
   public void run(DataSource dataSource) {
 
     final OneTimeTask<Integer> task =
-        Tasks.oneTime("task-a", Integer.class)
+        Tasks.oneTime(MY_TASK)
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println("Task a executed");
@@ -45,7 +48,8 @@ public class SchedulerClientMain extends Example {
 
     final Instant now = Instant.now();
     for (int i = 0; i < 5; i++) {
-      clientWithTypeInformation.schedule(task.instance("id" + i, i), now.plusSeconds(i));
+      clientWithTypeInformation.scheduleIfNotExists(
+          MY_TASK.instance("id" + i).data(i).scheduledTo(now.plusSeconds(i)));
     }
 
     System.out.println("Listing scheduled executions");

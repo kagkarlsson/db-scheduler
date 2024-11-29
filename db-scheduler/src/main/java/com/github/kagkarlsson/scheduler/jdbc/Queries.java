@@ -19,18 +19,22 @@ public class Queries {
 
   public static String selectForUpdate(
       String tableName,
+      String orderPart,
       String limitPart,
       String requiredAndCondition,
       String postgresOracleStyleForUpdate,
-      String sqlServerStyleForUpdate) {
+      String sqlServerStyleForUpdate,
+      String mysqlOracleStyleForUpdate) {
     return "SELECT * FROM "
         + tableName
         + Optional.ofNullable(sqlServerStyleForUpdate).orElse("")
         + " WHERE picked = ? AND execution_time <= ? "
         + requiredAndCondition
-        + " ORDER BY execution_time ASC "
+        + orderPart
         + Optional.ofNullable(postgresOracleStyleForUpdate).orElse("")
-        + limitPart;
+        + limitPart
+        // Note: Compared to Postgres, MySQL expects `FOR UPDATE SKIP LOCKED` after `LIMIT`
+        + Optional.ofNullable(mysqlOracleStyleForUpdate).orElse("");
   }
 
   public static String postgresSqlLimitPart(int limit) {
@@ -39,5 +43,11 @@ public class Queries {
 
   public static String ansiSqlLimitPart(int limit) {
     return " OFFSET 0 ROWS FETCH FIRST " + limit + " ROWS ONLY ";
+  }
+
+  public static String ansiSqlOrderPart(boolean orderByPriority) {
+    return orderByPriority
+        ? " ORDER BY priority DESC, execution_time ASC "
+        : " ORDER BY execution_time ASC ";
   }
 }

@@ -16,8 +16,8 @@ package com.github.kagkarlsson.examples.boot.config;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
@@ -29,8 +29,8 @@ import utils.EventLogger;
 @Configuration
 public class RecurringStateTrackingConfiguration {
 
-  public static final TaskWithDataDescriptor<Integer> STATE_TRACKING_RECURRING_TASK =
-      new TaskWithDataDescriptor<>("state-tracking-recurring-task", Integer.class);
+  public static final TaskDescriptor<Integer> STATE_TRACKING_RECURRING_TASK =
+      TaskDescriptor.of("state-tracking-recurring-task", Integer.class);
 
   /** Start the example */
   public static void start(ExampleContext ctx) {
@@ -42,9 +42,11 @@ public class RecurringStateTrackingConfiguration {
             + data
             + ". Initial execution-time will be now (deviating from defined schedule).");
 
-    ctx.schedulerClient.schedule(
-        STATE_TRACKING_RECURRING_TASK.instance(RecurringTask.INSTANCE, data),
-        Instant.now() // start-time, will run according to schedule after this
+    ctx.schedulerClient.scheduleIfNotExists(
+        STATE_TRACKING_RECURRING_TASK
+            .instance(RecurringTask.INSTANCE)
+            .data(data)
+            .scheduledTo(Instant.now()) // start-time, will run according to schedule after this
         );
   }
 

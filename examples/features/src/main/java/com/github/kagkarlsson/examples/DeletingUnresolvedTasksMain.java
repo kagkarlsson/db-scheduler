@@ -16,6 +16,7 @@ package com.github.kagkarlsson.examples;
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
@@ -26,6 +27,9 @@ import javax.sql.DataSource;
 
 public class DeletingUnresolvedTasksMain extends Example {
 
+  public static final TaskDescriptor<Void> UNRESOLVED_TASK_1 = TaskDescriptor.of("unresolved1");
+  public static final TaskDescriptor<Void> UNRESOLVED_TASK_2 = TaskDescriptor.of("unresolved2");
+
   public static void main(String[] args) {
     new DeletingUnresolvedTasksMain().runWithDatasource();
   }
@@ -33,22 +37,25 @@ public class DeletingUnresolvedTasksMain extends Example {
   @Override
   public void run(DataSource dataSource) {
     RecurringTask<Void> unresolvedTask =
-        Tasks.recurring("unresolved1", Schedules.fixedDelay(Duration.ofSeconds(1)))
+        Tasks.recurring(UNRESOLVED_TASK_1, Schedules.fixedDelay(Duration.ofSeconds(1)))
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println("Ran");
                 });
     RecurringTask<Void> unresolvedTask2 =
-        Tasks.recurring("unresolved2", Schedules.fixedDelay(Duration.ofSeconds(1)))
+        Tasks.recurring(UNRESOLVED_TASK_2, Schedules.fixedDelay(Duration.ofSeconds(1)))
             .execute(
                 (taskInstance, executionContext) -> {
                   System.out.println("Ran");
                 });
 
     SchedulerClient client = SchedulerClient.Builder.create(dataSource).build();
-    client.schedule(unresolvedTask.instance(RecurringTask.INSTANCE), Instant.now());
-    client.schedule(
-        unresolvedTask2.instance(RecurringTask.INSTANCE), Instant.now().plusSeconds(10));
+    client.scheduleIfNotExists(
+        UNRESOLVED_TASK_1.instance(RecurringTask.INSTANCE).scheduledTo(Instant.now()));
+    client.scheduleIfNotExists(
+        UNRESOLVED_TASK_2
+            .instance(RecurringTask.INSTANCE)
+            .scheduledTo(Instant.now().plusSeconds(10)));
 
     final Scheduler scheduler =
         Scheduler.create(dataSource)

@@ -16,8 +16,8 @@ package com.github.kagkarlsson.examples.boot.config;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.TaskWithDataDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
@@ -31,8 +31,8 @@ import utils.EventLogger;
 @Configuration
 public class LongRunningJobConfiguration {
 
-  public static final TaskWithDataDescriptor<PrimeGeneratorState> LONG_RUNNING_TASK =
-      new TaskWithDataDescriptor<>("long-running-task", PrimeGeneratorState.class);
+  public static final TaskDescriptor<PrimeGeneratorState> LONG_RUNNING_TASK =
+      TaskDescriptor.of("long-running-task", PrimeGeneratorState.class);
 
   /** Start the example */
   public static void start(ExampleContext ctx) {
@@ -43,8 +43,11 @@ public class LongRunningJobConfiguration {
             + "has found all prime-numbers smaller than 1.000.000.");
 
     PrimeGeneratorState initialState = new PrimeGeneratorState(0, 0);
-    ctx.schedulerClient.schedule(
-        LONG_RUNNING_TASK.instance("prime-generator", initialState), Instant.now());
+    ctx.schedulerClient.scheduleIfNotExists(
+        LONG_RUNNING_TASK
+            .instance("prime-generator")
+            .data(initialState)
+            .scheduledTo(Instant.now()));
   }
 
   /** Bean definition */

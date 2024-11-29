@@ -37,18 +37,19 @@ public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public boolean supportsGenericLockAndFetch() {
-    // FIXLATER: fix syntax and enable
-    return false;
+    return true;
   }
 
   @Override
   public String createGenericSelectForUpdateQuery(
-      String tableName, int limit, String requiredAndCondition) {
+      String tableName, int limit, String requiredAndCondition, boolean orderByPriority) {
     return selectForUpdate(
         tableName,
+        Queries.ansiSqlOrderPart(orderByPriority),
         Queries.postgresSqlLimitPart(limit),
         requiredAndCondition,
-        " FOR UPDATE SKIP LOCKED ",
-        null);
+        null,
+        null,
+        " FOR UPDATE SKIP LOCKED ");
   }
 }
