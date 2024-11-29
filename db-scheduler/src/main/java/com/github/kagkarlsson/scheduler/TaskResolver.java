@@ -58,7 +58,7 @@ public class TaskResolver {
   public Optional<Task> resolve(String taskName, boolean addUnresolvedToExclusionFilter) {
     Task task = taskMap.get(taskName);
     if (task == null && addUnresolvedToExclusionFilter) {
-      addUnresolved(taskName);
+      new UnresolvedTask(taskName).addUnresolved();
       statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK);
       LOG.info(
           "Found execution with unknown task-name '{}'. Adding it to the list of known unresolved task-names.",
@@ -67,9 +67,9 @@ public class TaskResolver {
     return Optional.ofNullable(task);
   }
 
-  private void addUnresolved(String taskName) {
-    unresolvedTasks.putIfAbsent(taskName, new UnresolvedTask(taskName));
-  }
+  // private void addUnresolved(String taskName) {
+  //   unresolvedTasks.putIfAbsent(taskName, new UnresolvedTask(taskName));
+  // }
 
   public void addTask(Task task) {
     taskMap.put(task.getName(), task);
@@ -104,6 +104,10 @@ public class TaskResolver {
 
     public String getTaskName() {
       return taskName;
+    }
+
+    public void addUnresolved() {
+      TaskResolver.this.unresolvedTasks.putIfAbsent(taskName, this);
     }
   }
 }
