@@ -38,24 +38,24 @@ public interface TaskDescriptor<T> extends HasTaskName {
     private final Class<T> dataClass;
 
     public SimpleTaskDescriptor(String name, Class<T> dataClass) {
-        this.name = name;
-        this.dataClass = dataClass;
+      this.name = name;
+      this.dataClass = dataClass;
     }
 
     @Override
     public String getTaskName() {
-        return name; // Consistent with HasTaskName's expectations
+      return name; // Consistent with HasTaskName's expectations
     }
 
     @Override
     public Class<T> getDataClass() {
-        return dataClass;
+      return dataClass;
     }
   }
 
   public class VoidTaskDescriptor extends SimpleTaskDescriptor<Void> {
     public VoidTaskDescriptor(String name) {
-        super(name, Void.class);
+      super(name, Void.class);
     }
   }
 }

@@ -110,7 +110,8 @@ public class Scheduler implements SchedulerClient {
     this.schedulerListeners = new SchedulerListeners(schedulerListeners);
     this.dueExecutor = dueExecutor;
     this.housekeeperExecutor = housekeeperExecutor;
-    schedulerClientDelegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
+    schedulerClientDelegate =
+        new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 
     if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
@@ -312,7 +313,8 @@ public class Scheduler implements SchedulerClient {
       Class<T> dataClass,
       ScheduledExecutionsFilter filter,
       Consumer<ScheduledExecution<T>> consumer) {
-    this.schedulerClientDelegate.fetchScheduledExecutionsForTask(taskName, dataClass, filter, consumer);
+    this.schedulerClientDelegate.fetchScheduledExecutionsForTask(
+        taskName, dataClass, filter, consumer);
   }
 
   @Override
@@ -404,17 +406,17 @@ public class Scheduler implements SchedulerClient {
   }
 
   private List<CurrentlyExecuting> getCurrentlyProcessingExecutions() {
-      List<CurrentlyExecuting> currentlyProcessing = executor.getCurrentlyExecuting();
-      if (currentlyProcessing.isEmpty()) {
-          LOG.trace("No executions to update heartbeats for. Skipping.");
-      }
-      return currentlyProcessing;
+    List<CurrentlyExecuting> currentlyProcessing = executor.getCurrentlyExecuting();
+    if (currentlyProcessing.isEmpty()) {
+      LOG.trace("No executions to update heartbeats for. Skipping.");
+    }
+    return currentlyProcessing;
   }
 
   private void updateAllHeartbeats(List<CurrentlyExecuting> currentlyProcessing) {
-      LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
-      Instant now = clock.now();
-      currentlyProcessing.forEach(execution -> updateHeartbeatForExecution(now, execution));
+    LOG.debug("Updating heartbeats for {} executions being processed.", currentlyProcessing.size());
+    Instant now = clock.now();
+    currentlyProcessing.forEach(execution -> updateHeartbeatForExecution(now, execution));
   }
 
   protected void updateHeartbeatForExecution(Instant now, CurrentlyExecuting currentlyExecuting) {

@@ -59,31 +59,35 @@ class DueExecutionsBatch {
         executionsLeftInBatch.get());
 
     if (isBatchValidForTrigger()) {
-        LOG.trace("Triggering check for new batch.");
-        triggerCheckForNewBatch.run();
-        triggeredExecuteDue = true;
+      LOG.trace("Triggering check for new batch.");
+      triggerCheckForNewBatch.run();
+      triggeredExecuteDue = true;
     }
-}
+  }
 
-private boolean isBatchValidForTrigger() {
-    return isNotStale() && isNotAlreadyTriggered() && hasPossibleExecutions() && isTriggerConditionMet();
-}
+  private boolean isBatchValidForTrigger() {
+    return isNotStale()
+        && isNotAlreadyTriggered()
+        && hasPossibleExecutions()
+        && isTriggerConditionMet();
+  }
 
-private boolean isNotStale() {
+  private boolean isNotStale() {
     return !stale;
-}
+  }
 
-private boolean isNotAlreadyTriggered() {
+  private boolean isNotAlreadyTriggered() {
     return !triggeredExecuteDue;
-}
+  }
 
-private boolean hasPossibleExecutions() {
+  private boolean hasPossibleExecutions() {
     return possiblyMoreExecutionsInDb;
-}
+  }
 
-private boolean isTriggerConditionMet() {
+  private boolean isTriggerConditionMet() {
     return whenToTriggerCheckForNewBatch.test(executionsLeftInBatch.get());
-}
+  }
+
   public boolean isOlderGenerationThan(int compareTo) {
     return generationNumber < compareTo;
   }
