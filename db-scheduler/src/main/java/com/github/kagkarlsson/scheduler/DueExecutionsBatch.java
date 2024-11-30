@@ -57,7 +57,9 @@ class DueExecutionsBatch {
         triggeredExecuteDue,
         possiblyMoreExecutionsInDb,
         executionsLeftInBatch.get());
-
+// Will not synchronize this method as it is not a big problem if two threads manage to call
+    // triggerCheckForNewBatch.run() at the same time.
+    // There is synchronization further in, when waking the thread that will do the fetching.
     if (isBatchValidForTrigger()) {
       LOG.trace("Triggering check for new batch.");
       triggerCheckForNewBatch.run();
