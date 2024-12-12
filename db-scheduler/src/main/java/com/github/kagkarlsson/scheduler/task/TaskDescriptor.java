@@ -15,8 +15,6 @@ package com.github.kagkarlsson.scheduler.task;
 
 public interface TaskDescriptor<T> extends HasTaskName {
 
-  String getTaskName();
-
   Class<T> getDataClass();
 
   static TaskDescriptor<Void> of(String name) {
@@ -24,7 +22,7 @@ public interface TaskDescriptor<T> extends HasTaskName {
   }
 
   static <T> TaskDescriptor<T> of(String name, Class<T> dataClass) {
-    return new TaskDescriptor.SimpleTaskDescriptor<>(name, dataClass);
+    return new SimpleTaskDescriptor<>(name, dataClass);
   }
 
   default TaskInstance.Builder<T> instance(String id) {
@@ -35,8 +33,7 @@ public interface TaskDescriptor<T> extends HasTaskName {
     return TaskInstanceId.of(getTaskName(), id);
   }
 
-  class SimpleTaskDescriptor<T> implements TaskDescriptor<T> {
-
+  public class SimpleTaskDescriptor<T> implements TaskDescriptor<T> {
     private final String name;
     private final Class<T> dataClass;
 
@@ -47,12 +44,18 @@ public interface TaskDescriptor<T> extends HasTaskName {
 
     @Override
     public String getTaskName() {
-      return name;
+      return name; // Consistent with HasTaskName's expectations
     }
 
     @Override
     public Class<T> getDataClass() {
       return dataClass;
+    }
+  }
+
+  public class VoidTaskDescriptor extends SimpleTaskDescriptor<Void> {
+    public VoidTaskDescriptor(String name) {
+      super(name, Void.class);
     }
   }
 }
