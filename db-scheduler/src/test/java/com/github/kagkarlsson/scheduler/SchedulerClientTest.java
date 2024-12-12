@@ -1,6 +1,9 @@
 package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.SchedulerClient.Builder.create;
+import static com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.WHEN_EXISTS_DO_NOTHING;
+import static com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.WHEN_EXISTS_RESCHEDULE;
+import static com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.defaultOptions;
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -159,6 +162,55 @@ public class SchedulerClientTest {
     scheduler.tick(ofSeconds(1));
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+  }
+
+  @Test
+  public void client_should_be_able_to_reschedule_executions_via_schedule_when_exists_reschedule() {
+    String data1 = "data1";
+    String data2 = "data2";
+    String data3 = "data3";
+
+    scheduler.schedule(
+        savingTask.instance("1", data1), settableClock.now(), WHEN_EXISTS_RESCHEDULE);
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data1));
+
+    scheduler.schedule(
+        savingTask.instance("2", data3),
+        settableClock.now().plusSeconds(1),
+        WHEN_EXISTS_RESCHEDULE);
+    scheduler.schedule(
+        savingTask.instance("2", data2), settableClock.now(), WHEN_EXISTS_RESCHEDULE);
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+
+    scheduler.tick(ofSeconds(1));
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+  }
+
+  @Test
+  public void
+      client_should_do_nothing_when_task_instance_exists_and_schedule_with_when_exists_do_nothing() {
+    String data1 = "data1";
+    String data2 = "data2";
+    String data3 = "data3";
+
+    Instant now = settableClock.now();
+    scheduler.schedule(
+        savingTask.instance("1", data1), now, defaultOptions().whenExistsReschedule());
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data1));
+
+    scheduler.schedule(savingTask.instance("2", data3), now.plusSeconds(1), WHEN_EXISTS_DO_NOTHING);
+    // try to overwrite with new data
+    scheduler.schedule(savingTask.instance("2", data2), now, WHEN_EXISTS_DO_NOTHING);
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data1));
+
+    scheduler.tick(ofSeconds(1));
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data3));
   }
 
   @SuppressWarnings("OptionalGetWithoutIsPresent")
