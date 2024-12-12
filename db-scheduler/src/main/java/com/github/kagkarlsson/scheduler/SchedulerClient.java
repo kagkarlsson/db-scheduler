@@ -58,7 +58,8 @@ public interface SchedulerClient {
    * @see com.github.kagkarlsson.scheduler.task.TaskInstance
    * @see com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException
    */
-  <T> boolean schedule(TaskInstance<T> taskInstance, Instant executionTime, ScheduleOptions scheduleOptions);
+  <T> boolean schedule(
+      TaskInstance<T> taskInstance, Instant executionTime, ScheduleOptions scheduleOptions);
 
   /**
    * Schedule a new execution for the given task instance.
@@ -246,14 +247,13 @@ public interface SchedulerClient {
    */
   Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
 
-
   class ScheduleOptions {
 
     public static final ScheduleOptions WHEN_EXISTS_DO_NOTHING =
         defaultOptions().whenExistsDoNothing();
 
     public static final ScheduleOptions WHEN_EXISTS_RESCHEDULE =
-      defaultOptions().whenExistsReschedule();
+        defaultOptions().whenExistsReschedule();
 
     public enum WhenExists {
       RESCHEDULE,
@@ -418,9 +418,9 @@ public interface SchedulerClient {
         if (existing.isEmpty()) {
           // something must have processed it and deleted it
           LOG.warn(
-            "Task-instance should already exist, but failed to find it. "
-              + "It must have been processed and deleted. task-instance={}",
-            taskInstance);
+              "Task-instance should already exist, but failed to find it. "
+                  + "It must have been processed and deleted. task-instance={}",
+              taskInstance);
           return false;
         }
 
@@ -433,7 +433,8 @@ public interface SchedulerClient {
     }
 
     @Override
-    public <T> boolean schedule(SchedulableInstance<T> schedulableInstance, ScheduleOptions whenExists) {
+    public <T> boolean schedule(
+        SchedulableInstance<T> schedulableInstance, ScheduleOptions whenExists) {
       return schedule(
           schedulableInstance.getTaskInstance(),
           schedulableInstance.getNextExecutionTime(clock.now()),

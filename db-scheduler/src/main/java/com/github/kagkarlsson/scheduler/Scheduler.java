@@ -292,7 +292,8 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
-  public <T> boolean schedule(SchedulableInstance<T> schedulableInstance, ScheduleOptions scheduleOptions) {
+  public <T> boolean schedule(
+      SchedulableInstance<T> schedulableInstance, ScheduleOptions scheduleOptions) {
     return this.delegate.schedule(schedulableInstance, scheduleOptions);
   }
 

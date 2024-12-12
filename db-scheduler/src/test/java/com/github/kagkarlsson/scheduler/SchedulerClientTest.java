@@ -170,15 +170,17 @@ public class SchedulerClientTest {
     String data2 = "data2";
     String data3 = "data3";
 
-    scheduler.schedule(savingTask.instance("1", data1), settableClock.now(), WHEN_EXISTS_RESCHEDULE);
+    scheduler.schedule(
+        savingTask.instance("1", data1), settableClock.now(), WHEN_EXISTS_RESCHEDULE);
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data1));
 
     scheduler.schedule(
         savingTask.instance("2", data3),
         settableClock.now().plusSeconds(1),
-      WHEN_EXISTS_RESCHEDULE);
-    scheduler.schedule(savingTask.instance("2", data2), settableClock.now(), WHEN_EXISTS_RESCHEDULE);
+        WHEN_EXISTS_RESCHEDULE);
+    scheduler.schedule(
+        savingTask.instance("2", data2), settableClock.now(), WHEN_EXISTS_RESCHEDULE);
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data2));
 
@@ -195,12 +197,12 @@ public class SchedulerClientTest {
     String data3 = "data3";
 
     Instant now = settableClock.now();
-    scheduler.schedule(savingTask.instance("1", data1), now, defaultOptions().whenExistsReschedule());
+    scheduler.schedule(
+        savingTask.instance("1", data1), now, defaultOptions().whenExistsReschedule());
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data1));
 
-    scheduler.schedule(
-        savingTask.instance("2", data3), now.plusSeconds(1), WHEN_EXISTS_DO_NOTHING);
+    scheduler.schedule(savingTask.instance("2", data3), now.plusSeconds(1), WHEN_EXISTS_DO_NOTHING);
     // try to overwrite with new data
     scheduler.schedule(savingTask.instance("2", data2), now, WHEN_EXISTS_DO_NOTHING);
     scheduler.runAnyDueExecutions();
