@@ -12,7 +12,7 @@ create table scheduled_tasks
   last_heartbeat       datetimeoffset,
   [version]            bigint         not null,
   priority             smallint,
-  primary key (task_name, task_instance),
+  primary key (task_instance, task_name),
   index execution_time_idx (execution_time),
   index last_heartbeat_idx (last_heartbeat),
   index priority_execution_time_idx (priority desc, execution_time asc)
