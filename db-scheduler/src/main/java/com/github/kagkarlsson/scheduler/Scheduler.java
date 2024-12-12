@@ -287,13 +287,13 @@ public class Scheduler implements SchedulerClient {
 
   @Override
   public <T> boolean schedule(
-      TaskInstance<T> taskInstance, Instant executionTime, WhenExists whenExists) {
-    return this.delegate.schedule(taskInstance, executionTime, whenExists);
+      TaskInstance<T> taskInstance, Instant executionTime, ScheduleOptions scheduleOptions) {
+    return this.delegate.schedule(taskInstance, executionTime, scheduleOptions);
   }
 
   @Override
-  public <T> boolean schedule(SchedulableInstance<T> schedulableInstance, WhenExists whenExists) {
-    return this.delegate.schedule(schedulableInstance, whenExists);
+  public <T> boolean schedule(SchedulableInstance<T> schedulableInstance, ScheduleOptions scheduleOptions) {
+    return this.delegate.schedule(schedulableInstance, scheduleOptions);
   }
 
   @Override

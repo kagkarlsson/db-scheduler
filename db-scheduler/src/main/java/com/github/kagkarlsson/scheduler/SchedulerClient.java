@@ -15,6 +15,7 @@ package com.github.kagkarlsson.scheduler;
 
 import static java.util.Optional.ofNullable;
 
+import com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.WhenExists;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
@@ -40,45 +41,41 @@ import org.slf4j.LoggerFactory;
 
 public interface SchedulerClient {
 
-  enum WhenExists {
-    RESCHEDULE,
-    DO_NOTHING
-  }
-
   /**
    * Schedule a new execution for the given task instance.
    *
-   * <p>If the task instance already exists, the specified actions defined by the WhenExists policy
-   * will be applied.
+   * <p>If the task instance already exists, the specified policy in <code>scheduleOptions</code>
+   * applies.
+   *
+   * <p>An exception is thrown if the execution is currently running.
    *
    * @param taskInstance Task-instance, optionally with data
    * @param executionTime Instant it should run
-   * @param whenExists what to do if the task instance already exists
-   * @return true if operation was successful
+   * @param scheduleOptions policy for when the instance exists
+   * @return true if the task-instance actually was scheduled
    * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
    * @see java.time.Instant
    * @see com.github.kagkarlsson.scheduler.task.TaskInstance
    * @see com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException
    */
-  <T> boolean schedule(TaskInstance<T> taskInstance, Instant executionTime, WhenExists whenExists);
+  <T> boolean schedule(TaskInstance<T> taskInstance, Instant executionTime, ScheduleOptions scheduleOptions);
 
   /**
    * Schedule a new execution for the given task instance.
    *
-   * <p>If the task instance already exists, the specified actions defined by the WhenExists policy
-   * will be applied.
+   * <p>If the task instance already exists, the specified policy in <code>scheduleOptions</code>
+   * applies.
    *
-   * <p>Should the execution not exist, it will be scheduled. An exception is thrown if the
-   * execution is currently running.
+   * <p>An exception is thrown if the execution is currently running.
    *
    * @param schedulableInstance Task-instance and time it should run
-   * @param whenExists what to do if the task instance already exists
-   * @return true if operation was successful
+   * @param scheduleOptions policy for when the instance exists
+   * @return true if the task-instance actually was scheduled
    * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
    * @see com.github.kagkarlsson.scheduler.task.SchedulableInstance
    * @see com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException
    */
-  <T> boolean schedule(SchedulableInstance<T> schedulableInstance, WhenExists whenExists);
+  <T> boolean schedule(SchedulableInstance<T> schedulableInstance, ScheduleOptions scheduleOptions);
 
   /**
    * Schedule a new execution if task instance does not already exists.
@@ -122,7 +119,7 @@ public interface SchedulerClient {
    * Update an existing execution to a new execution-time. If the execution does not exist or if it
    * is currently running, an exception is thrown.
    *
-   * @param taskInstanceId
+   * @param taskInstanceId Task-instance to reschedule, expected to exist
    * @param newExecutionTime the new execution-time
    * @return true if rescheduled successfully
    * @see java.time.Instant
@@ -249,6 +246,41 @@ public interface SchedulerClient {
    */
   Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
 
+
+  class ScheduleOptions {
+
+    public static final ScheduleOptions WHEN_EXISTS_DO_NOTHING =
+        defaultOptions().whenExistsDoNothing();
+
+    public static final ScheduleOptions WHEN_EXISTS_RESCHEDULE =
+      defaultOptions().whenExistsReschedule();
+
+    public enum WhenExists {
+      RESCHEDULE,
+      DO_NOTHING;
+    }
+
+    private WhenExists whenExists;
+
+    public static ScheduleOptions defaultOptions() {
+      return new ScheduleOptions();
+    }
+
+    public ScheduleOptions whenExistsReschedule() {
+      this.whenExists = WhenExists.RESCHEDULE;
+      return this;
+    }
+
+    public ScheduleOptions whenExistsDoNothing() {
+      this.whenExists = WhenExists.DO_NOTHING;
+      return this;
+    }
+
+    public WhenExists getWhenExists() {
+      return whenExists;
+    }
+  }
+
   class Builder {
 
     private final DataSource dataSource;
@@ -366,30 +398,42 @@ public interface SchedulerClient {
 
     @Override
     public <T> boolean schedule(
-        TaskInstance<T> taskInstance, Instant executionTime, WhenExists whenExists) {
-      Optional<ScheduledExecution<Object>> executionObject =
-          this.getScheduledExecution(taskInstance);
-      if (executionObject.isPresent()) {
-        switch (whenExists) {
-          case RESCHEDULE:
-            LOG.info("Task instance already exists. Rescheduling task instance: {}", taskInstance);
-            return this.reschedule(taskInstance, executionTime, taskInstance.getData());
-          case DO_NOTHING:
-            LOG.info(
-                "Task instance already exists. No further action taken for task instance: {}",
-                taskInstance);
-            return true;
-          default:
-            throw new IllegalArgumentException("Unknown WhenExists: " + whenExists);
-        }
+        TaskInstance<T> taskInstance, Instant executionTime, ScheduleOptions scheduleOptions) {
+
+      boolean successfulSchedule = scheduleIfNotExists(taskInstance, executionTime);
+      if (successfulSchedule) {
+        return true;
       }
 
-      LOG.info("Scheduling new task instance: {}", taskInstance);
-      return this.scheduleIfNotExists(taskInstance, executionTime);
+      WhenExists whenExists = scheduleOptions.getWhenExists();
+      if (whenExists == WhenExists.DO_NOTHING) {
+        // failed to schedule, but user has chosen to ignore
+        LOG.debug("Task instance already exists. Keeping existing. task-instance={}", taskInstance);
+        return false;
+
+      } else if (whenExists == WhenExists.RESCHEDULE) {
+        // successfulSchedule = false, whenExists = RESCHEDULE
+        //   i.e. failed to schedule because it already exists -> try reschedule
+        var existing = getScheduledExecution(taskInstance);
+        if (existing.isEmpty()) {
+          // something must have processed it and deleted it
+          LOG.warn(
+            "Task-instance should already exist, but failed to find it. "
+              + "It must have been processed and deleted. task-instance={}",
+            taskInstance);
+          return false;
+        }
+
+        LOG.debug("Task instance already exists. Rescheduling. task-instance={}", taskInstance);
+        return reschedule(taskInstance, executionTime, taskInstance.getData());
+
+      } else {
+        throw new IllegalArgumentException("Unknown WhenExists value: " + whenExists);
+      }
     }
 
     @Override
-    public <T> boolean schedule(SchedulableInstance<T> schedulableInstance, WhenExists whenExists) {
+    public <T> boolean schedule(SchedulableInstance<T> schedulableInstance, ScheduleOptions whenExists) {
       return schedule(
           schedulableInstance.getTaskInstance(),
           schedulableInstance.getNextExecutionTime(clock.now()),
