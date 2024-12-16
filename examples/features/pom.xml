@@ -15,7 +15,7 @@
     <properties>
         <license.dir>${project.parent.parent.basedir}/.license</license.dir>
         <kotlin.version>2.1.0</kotlin.version>
-        <serialization.version>1.4.0</serialization.version>
+        <serialization.version>1.7.3</serialization.version>
     </properties>
 
     <dependencies>
