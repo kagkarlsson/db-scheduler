@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,28 +42,35 @@ public class DeleteUnresolvedTest {
   @Test
   public void should_delete_executions_with_old_unresolved_tasknames() {
 
-    OneTimeTask<Void> onetime = Tasks.oneTime("onetime").execute(TestTasks.DO_NOTHING);
+    OneTimeTask<Void> first = Tasks.oneTime("onetime_first").execute(TestTasks.DO_NOTHING);
+    OneTimeTask<Void> second = Tasks.oneTime("onetime_second").execute(TestTasks.DO_NOTHING);
 
     TestableRegistry testableRegistry = new TestableRegistry(false, Collections.emptyList());
-    // Missing task with name 'onetime'
+    // Missing tasks with name 'onetime_first' and 'onetime_second'
     ManualScheduler scheduler =
         TestHelper.createManualScheduler(postgres.getDataSource())
             .clock(clock)
             .statsRegistry(testableRegistry)
+            .deleteUnresolvedAfter(Duration.ofDays(5))
             .build();
 
-    scheduler.schedule(onetime.instance("id1"), clock.now());
+    scheduler.schedule(first.instance("id_f"), clock.now());
+    scheduler.schedule(second.instance("id_s"), clock.now().minus(1, ChronoUnit.DAYS));
     assertEquals(0, testableRegistry.getCount(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK));
 
     scheduler.runAnyDueExecutions();
-    assertEquals(1, testableRegistry.getCount(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(2, testableRegistry.getCount(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK));
 
-    assertEquals(1, DbUtils.countExecutions(postgres.getDataSource()));
+    assertEquals(2, DbUtils.countExecutions(postgres.getDataSource()));
 
+    scheduler.runDeadExecutionDetection();
+    assertEquals(2, DbUtils.countExecutions(postgres.getDataSource()));
+
+    clock.tick(Duration.ofDays(4));
     scheduler.runDeadExecutionDetection();
     assertEquals(1, DbUtils.countExecutions(postgres.getDataSource()));
 
-    clock.set(clock.now().plus(Duration.ofDays(30)));
+    clock.tick(Duration.ofDays(1));
     scheduler.runDeadExecutionDetection();
     assertEquals(0, DbUtils.countExecutions(postgres.getDataSource()));
 

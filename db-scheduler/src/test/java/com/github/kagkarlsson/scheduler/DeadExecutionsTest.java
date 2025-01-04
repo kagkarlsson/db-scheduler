@@ -118,6 +118,7 @@ public class DeadExecutionsTest {
     assertThat(nonCompletingExecutionHandler.timesExecuted.get(), is(2));
   }
 
+
   public static class NonCompletingTask<T> extends OneTimeTask<T> {
     private final VoidExecutionHandler<T> handler;
 

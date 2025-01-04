@@ -79,16 +79,6 @@ public class TaskResolver {
     return new ArrayList<>(unresolvedTasks.values());
   }
 
-  public List<String> getUnresolvedTaskNames(Duration unresolvedFor) {
-    return unresolvedTasks.values().stream()
-        .filter(
-            unresolved ->
-                Duration.between(unresolved.firstUnresolved, clock.now()).toMillis()
-                    > unresolvedFor.toMillis())
-        .map(UnresolvedTask::getTaskName)
-        .collect(Collectors.toList());
-  }
-
   public void clearUnresolved(String taskName) {
     unresolvedTasks.remove(taskName);
   }
