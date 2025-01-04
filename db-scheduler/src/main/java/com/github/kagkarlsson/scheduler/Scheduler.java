@@ -359,31 +359,29 @@ public class Scheduler implements SchedulerClient {
     LOG.debug("Deleting executions with unresolved tasks.");
 
     Map<String, Instant> unresolvedTaskToNewestExecution = new HashMap<>();
-    schedulerTaskRepository
-      .getScheduledExecutions(
+    schedulerTaskRepository.getScheduledExecutions(
         ScheduledExecutionsFilter.all(),
-        execution ->  unresolvedTaskToNewestExecution.merge(
-          execution.taskInstance.getTaskName(),
-          execution.executionTime,
-          (oldValue, newValue) -> oldValue.isAfter(newValue) ? oldValue : newValue
-        ));
+        execution ->
+            unresolvedTaskToNewestExecution.merge(
+                execution.taskInstance.getTaskName(),
+                execution.executionTime,
+                (oldValue, newValue) -> oldValue.isAfter(newValue) ? oldValue : newValue));
 
-    taskResolver
-        .getUnresolved()
-        .stream()
+    taskResolver.getUnresolved().stream()
         .map(UnresolvedTask::getTaskName)
-        .filter(taskName -> {
-          Instant newestExecution = unresolvedTaskToNewestExecution.get(taskName);
+        .filter(
+            taskName -> {
+              Instant newestExecution = unresolvedTaskToNewestExecution.get(taskName);
 
-          if (newestExecution == null) {
-            // probably deleted by other node
-            return true;
-          }
+              if (newestExecution == null) {
+                // probably deleted by other node
+                return true;
+              }
 
-          Duration age = Duration.between(newestExecution, clock.now());
+              Duration age = Duration.between(newestExecution, clock.now());
 
-          return age.compareTo(deleteUnresolvedAfter) >= 0;
-        })
+              return age.compareTo(deleteUnresolvedAfter) >= 0;
+            })
         .forEach(
             taskName -> {
               LOG.warn(
