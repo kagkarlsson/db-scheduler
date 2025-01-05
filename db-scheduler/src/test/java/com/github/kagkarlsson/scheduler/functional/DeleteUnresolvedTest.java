@@ -56,15 +56,16 @@ public class DeleteUnresolvedTest {
 
     scheduler.schedule(first.instance("id_f"), clock.now());
     scheduler.schedule(second.instance("id_s"), clock.now().minus(1, ChronoUnit.DAYS));
+    scheduler.schedule(second.instance("id_s_2"), clock.now().minus(2, ChronoUnit.DAYS));
     assertEquals(0, testableRegistry.getCount(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK));
 
     scheduler.runAnyDueExecutions();
-    assertEquals(2, testableRegistry.getCount(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(3, testableRegistry.getCount(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK));
 
-    assertEquals(2, DbUtils.countExecutions(postgres.getDataSource()));
+    assertEquals(3, DbUtils.countExecutions(postgres.getDataSource()));
 
     scheduler.runDeadExecutionDetection();
-    assertEquals(2, DbUtils.countExecutions(postgres.getDataSource()));
+    assertEquals(3, DbUtils.countExecutions(postgres.getDataSource()));
 
     clock.tick(Duration.ofDays(4));
     scheduler.runDeadExecutionDetection();

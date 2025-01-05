@@ -358,11 +358,11 @@ public class Scheduler implements SchedulerClient {
   protected void detectDeadExecutions() {
     LOG.debug("Deleting executions with unresolved tasks.");
 
-    Map<String, Instant> unresolvedTaskToNewestExecution = new HashMap<>();
+    Map<String, Instant> taskToNewestExecutionTime = new HashMap<>();
     schedulerTaskRepository.getScheduledExecutions(
         ScheduledExecutionsFilter.all(),
         execution ->
-            unresolvedTaskToNewestExecution.merge(
+            taskToNewestExecutionTime.merge(
                 execution.taskInstance.getTaskName(),
                 execution.executionTime,
                 (oldValue, newValue) -> oldValue.isAfter(newValue) ? oldValue : newValue));
@@ -371,7 +371,7 @@ public class Scheduler implements SchedulerClient {
         .map(UnresolvedTask::getTaskName)
         .filter(
             taskName -> {
-              Instant newestExecution = unresolvedTaskToNewestExecution.get(taskName);
+              Instant newestExecution = taskToNewestExecutionTime.get(taskName);
 
               if (newestExecution == null) {
                 // probably deleted by other node
