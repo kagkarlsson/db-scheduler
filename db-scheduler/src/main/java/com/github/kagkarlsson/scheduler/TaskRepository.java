@@ -24,11 +24,11 @@ import java.util.function.Consumer;
 
 public interface TaskRepository {
 
-  boolean createIfNotExists(SchedulableInstance execution);
+  boolean createIfNotExists(SchedulableInstance<?> execution);
 
   List<Execution> getDue(Instant now, int limit);
 
-  Instant replace(Execution toBeReplaced, SchedulableInstance newInstance);
+  Instant replace(Execution toBeReplaced, SchedulableInstance<?> newInstance);
 
   void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer);
 
