@@ -10,11 +10,13 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.junit.Assert.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.unruly.matchers.OptionalMatchers;
+import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
@@ -78,6 +80,37 @@ public class JdbcTaskRepositoryTest {
     assertFalse(taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance1, now)));
 
     assertTrue(taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance2, now)));
+  }
+
+  @Test
+  public void test_createBatch() {
+    Instant now = TimeHelper.truncatedInstantNow();
+    TaskInstance<Void> instance1 = oneTimeTask.instance("id1");
+    TaskInstance<Void> instance2 = oneTimeTask.instance("id2");
+    List<SchedulableInstance<?>> executions =
+        List.of(
+            new SchedulableTaskInstance<>(instance1, now),
+            new SchedulableTaskInstance<>(instance2, now));
+
+    taskRepository.createBatch(executions);
+
+    assertTrue(taskRepository.getExecution(instance1).isPresent());
+    assertTrue(taskRepository.getExecution(instance2).isPresent());
+  }
+
+  @Test
+  public void test_createBatch_fails_if_any_execution_already_exists() {
+    Instant now = TimeHelper.truncatedInstantNow();
+    TaskInstance<Void> instance1 = oneTimeTask.instance("id1");
+    TaskInstance<Void> instance2 = oneTimeTask.instance("id2");
+    List<SchedulableInstance<?>> executions =
+        List.of(
+            new SchedulableTaskInstance<>(instance1, now),
+            new SchedulableTaskInstance<>(instance2, now));
+    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance2, now));
+
+    assertThrows(
+        FailedToScheduleBatchException.class, () -> taskRepository.createBatch(executions));
   }
 
   @Test

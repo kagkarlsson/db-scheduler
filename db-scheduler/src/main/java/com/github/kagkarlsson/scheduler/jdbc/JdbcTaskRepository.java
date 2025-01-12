@@ -28,6 +28,7 @@ import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
+import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
@@ -144,7 +145,10 @@ public class JdbcTaskRepository implements TaskRepository {
     this.jdbcCustomization = jdbcCustomization;
     this.orderByPriority = orderByPriority;
     this.clock = clock;
+    this.insertQuery = getInsertQuery(tableName);
   }
+
+  private final String insertQuery;
 
   @Override
   public boolean createIfNotExists(SchedulableInstance instance) {
@@ -158,30 +162,7 @@ public class JdbcTaskRepository implements TaskRepository {
         return false;
       }
 
-      // FIXLATER: replace with some sort of generic SQL-builder, possibly extend micro-jdbc
-      //           with execute(query-and-pss) and have builder return that..
-      jdbcRunner.execute(
-          "insert into "
-              + tableName
-              + "(task_name, task_instance, task_data, execution_time, picked, version"
-              + (orderByPriority ? ", priority" : "")
-              + ") values(?, ?, ?, ?, ?, ? "
-              + (orderByPriority ? ", ?" : "")
-              + ")",
-          (PreparedStatement p) -> {
-            int parameterIndex = 1;
-            p.setString(parameterIndex++, taskInstance.getTaskName());
-            p.setString(parameterIndex++, taskInstance.getId());
-            jdbcCustomization.setTaskData(
-                p, parameterIndex++, serializer.serialize(taskInstance.getData()));
-            jdbcCustomization.setInstant(
-                p, parameterIndex++, instance.getNextExecutionTime(clock.now()));
-            p.setBoolean(parameterIndex++, false);
-            p.setLong(parameterIndex++, 1L);
-            if (orderByPriority) {
-              p.setInt(parameterIndex++, taskInstance.getPriority());
-            }
-          });
+      jdbcRunner.execute(insertQuery, (PreparedStatement p) -> setInsertParameters(instance, p));
       return true;
 
     } catch (SQLRuntimeException e) {
@@ -194,6 +175,43 @@ public class JdbcTaskRepository implements TaskRepository {
       LOG.debug("Execution not created, another thread created it.");
       return false;
     }
+  }
+
+  @Override
+  public void createBatch(List<SchedulableInstance<?>> executions) {
+    try {
+      jdbcRunner.executeBatch(insertQuery, executions, this::setInsertParameters);
+    } catch (SQLRuntimeException e) {
+      LOG.debug("Failed to create all executions. Some might already exist.", e);
+      throw new FailedToScheduleBatchException("Failed to create all executions.", e);
+    }
+  }
+
+  private void setInsertParameters(SchedulableInstance<?> value, PreparedStatement ps)
+      throws SQLException {
+    var taskInstance = value.getTaskInstance();
+    int index = 0;
+    ps.setString(++index, taskInstance.getTaskName());
+    ps.setString(++index, taskInstance.getId());
+    jdbcCustomization.setTaskData(ps, ++index, serializer.serialize(taskInstance.getData()));
+    jdbcCustomization.setInstant(ps, ++index, value.getNextExecutionTime(clock.now()));
+    ps.setBoolean(++index, false);
+    ps.setLong(++index, 1L);
+    if (orderByPriority) {
+      ps.setInt(++index, taskInstance.getPriority());
+    }
+  }
+
+  private String getInsertQuery(String tableName) {
+    // FIXLATER: replace with some sort of generic SQL-builder, possibly extend micro-jdbc
+    //           with execute(query-and-pss) and have builder return that..
+    return "insert into "
+        + tableName
+        + "(task_name, task_instance, task_data, execution_time, picked, version"
+        + (orderByPriority ? ", priority" : "")
+        + ") values(?, ?, ?, ?, ?, ? "
+        + (orderByPriority ? ", ?" : "")
+        + ")";
   }
 
   /**

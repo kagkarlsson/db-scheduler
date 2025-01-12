@@ -153,6 +153,21 @@ scheduler.schedule(
         .scheduledTo(Instant.now().plusSeconds(5)));
 ```
 
+### Batch scheduling
+
+It is possible to schedule a batch of executions at once. This is useful when scheduling a large number of executions for better performance.
+
+```java
+Stream<TaskInstance<?>> taskInstances = Stream.of(
+    MY_TASK.instance("my-task-1", 1),
+    MY_TASK.instance("my-task-2", 2),
+    MY_TASK.instance("my-task-3", 3));
+
+scheduler.scheduleBatch(taskInstances, Instant.now());
+```
+
+**Note:** If any of the executions already exists, the scheduling will fail and an exception will be thrown.
+
 ### More examples
 
 #### Plain Java

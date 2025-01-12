@@ -28,6 +28,8 @@ public interface TaskRepository {
 
   List<Execution> getDue(Instant now, int limit);
 
+  void createBatch(List<SchedulableInstance<?>> executions);
+
   Instant replace(Execution toBeReplaced, SchedulableInstance<?> newInstance);
 
   void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer);
@@ -71,7 +73,6 @@ public interface TaskRepository {
   default Optional<Execution> getExecution(TaskInstanceId taskInstance) {
     return getExecution(taskInstance.getTaskName(), taskInstance.getId());
   }
-  ;
 
   int removeExecutions(String taskName);
 

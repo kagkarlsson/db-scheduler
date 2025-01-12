@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -262,6 +263,16 @@ public class Scheduler implements SchedulerClient {
   @Override
   public <T> boolean scheduleIfNotExists(SchedulableInstance<T> schedulableInstance) {
     return this.delegate.scheduleIfNotExists(schedulableInstance);
+  }
+
+  @Override
+  public void scheduleBatch(Stream<TaskInstance<?>> taskInstances, Instant executionTime) {
+    this.delegate.scheduleBatch(taskInstances, executionTime);
+  }
+
+  @Override
+  public void scheduleBatch(Stream<SchedulableInstance<?>> schedulableInstances) {
+    this.delegate.scheduleBatch(schedulableInstances);
   }
 
   @Override

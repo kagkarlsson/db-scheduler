@@ -14,7 +14,7 @@
 package com.github.kagkarlsson.scheduler.exceptions;
 
 public abstract class DbSchedulerException extends RuntimeException {
-  static final long serialVersionUID = -2132850112553296790L;
+  private static final long serialVersionUID = -2132850112553296790L;
 
   public DbSchedulerException(String message) {
     super(message);
