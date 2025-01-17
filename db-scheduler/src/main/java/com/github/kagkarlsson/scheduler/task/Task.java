@@ -43,6 +43,8 @@ public interface Task<T> extends ExecutionHandler<T>, HasTaskName {
   }
 
   default int getDefaultPriority() {
-    return Priority.MEDIUM;
+    return DEFAULT_PRIORITY;
   }
+
+  int DEFAULT_PRIORITY = Priority.MEDIUM;
 }

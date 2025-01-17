@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.NextExecutionTime;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
+import com.github.kagkarlsson.scheduler.task.Priority;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import java.time.Instant;
@@ -27,7 +28,8 @@ import java.util.function.Function;
 
 public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup {
   private final NextExecutionTime defaultExecutionTime;
-  private ScheduleOnStartup<T> scheduleOnStartup;
+  private final ScheduleOnStartup<T> scheduleOnStartup;
+  public static final int DEFAULT_PRIORITY = Priority.MEDIUM;
 
   public CustomTask(
       String name,
@@ -36,7 +38,25 @@ public abstract class CustomTask<T> extends AbstractTask<T> implements OnStartup
       Function<Instant, Instant> defaultExecutionTime,
       FailureHandler<T> failureHandler,
       DeadExecutionHandler<T> deadExecutionHandler) {
-    super(name, dataClass, failureHandler, deadExecutionHandler);
+    this(
+        name,
+        dataClass,
+        scheduleOnStartup,
+        defaultExecutionTime,
+        failureHandler,
+        deadExecutionHandler,
+        DEFAULT_PRIORITY);
+  }
+
+  public CustomTask(
+      String name,
+      Class<T> dataClass,
+      ScheduleOnStartup<T> scheduleOnStartup,
+      Function<Instant, Instant> defaultExecutionTime,
+      FailureHandler<T> failureHandler,
+      DeadExecutionHandler<T> deadExecutionHandler,
+      int defaultPriority) {
+    super(name, dataClass, failureHandler, deadExecutionHandler, defaultPriority);
     this.scheduleOnStartup = scheduleOnStartup;
     this.defaultExecutionTime = NextExecutionTime.from(defaultExecutionTime);
   }
