@@ -34,7 +34,7 @@ public interface DeadExecutionHandler<T> {
   }
 
   class CancelDeadExecution<T> implements DeadExecutionHandler<T> {
-    private static final Logger LOG = LoggerFactory.getLogger(ReviveDeadExecution.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CancelDeadExecution.class);
 
     @Override
     public void deadExecution(
