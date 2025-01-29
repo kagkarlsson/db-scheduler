@@ -33,6 +33,7 @@ import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.sql.PreparedStatement;
@@ -151,7 +152,15 @@ public class JdbcTaskRepository implements TaskRepository {
   private final String insertQuery;
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean createIfNotExists(SchedulableInstance instance) {
+    return createIfNotExists(
+        new ScheduledTaskInstance(
+            instance.getTaskInstance(), instance.getNextExecutionTime(clock.now())));
+  }
+
+  @Override
+  public boolean createIfNotExists(ScheduledTaskInstance instance) {
     final TaskInstance taskInstance = instance.getTaskInstance();
     try {
       Optional<Execution> existingExecution = getExecution(taskInstance);
@@ -178,7 +187,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public void createBatch(List<SchedulableInstance<?>> executions) {
+  public void createBatch(List<ScheduledTaskInstance> executions) {
     try {
       jdbcRunner.executeBatch(insertQuery, executions, this::setInsertParameters);
     } catch (SQLRuntimeException e) {
@@ -187,14 +196,14 @@ public class JdbcTaskRepository implements TaskRepository {
     }
   }
 
-  private void setInsertParameters(SchedulableInstance<?> value, PreparedStatement ps)
+  private void setInsertParameters(ScheduledTaskInstance value, PreparedStatement ps)
       throws SQLException {
     var taskInstance = value.getTaskInstance();
     int index = 0;
     ps.setString(++index, taskInstance.getTaskName());
     ps.setString(++index, taskInstance.getId());
     jdbcCustomization.setTaskData(ps, ++index, serializer.serialize(taskInstance.getData()));
-    jdbcCustomization.setInstant(ps, ++index, value.getNextExecutionTime(clock.now()));
+    jdbcCustomization.setInstant(ps, ++index, value.getExecutionTime());
     ps.setBoolean(++index, false);
     ps.setLong(++index, 1L);
     if (orderByPriority) {
@@ -214,14 +223,23 @@ public class JdbcTaskRepository implements TaskRepository {
         + ")";
   }
 
+  @Override
+  @SuppressWarnings("unchecked")
+  public Instant replace(Execution toBeReplaced, SchedulableInstance newInstance) {
+    return replace(
+        toBeReplaced,
+        new ScheduledTaskInstance(
+            newInstance.getTaskInstance(), newInstance.getNextExecutionTime(clock.now())));
+  }
+
   /**
    * Instead of doing delete+insert, we allow updating an existing execution will all new fields
    *
    * @return the execution-time of the new execution
    */
   @Override
-  public Instant replace(Execution toBeReplaced, SchedulableInstance newInstance) {
-    Instant newExecutionTime = newInstance.getNextExecutionTime(clock.now());
+  public Instant replace(Execution toBeReplaced, ScheduledTaskInstance newInstance) {
+    Instant newExecutionTime = newInstance.getExecutionTime();
     Execution newExecution = new Execution(newExecutionTime, newInstance.getTaskInstance());
     Object newData = newInstance.getTaskInstance().getData();
 

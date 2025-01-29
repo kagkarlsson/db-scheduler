@@ -21,6 +21,7 @@ import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Instant;
+import java.util.stream.Stream;
 import javax.sql.DataSource;
 
 public class SchedulerClientMain extends Example {
@@ -51,6 +52,13 @@ public class SchedulerClientMain extends Example {
       clientWithTypeInformation.scheduleIfNotExists(
           MY_TASK.instance("id" + i).data(i).scheduledTo(now.plusSeconds(i)));
     }
+
+    clientWithTypeInformation.scheduleBatch(
+        Stream.of(
+            MY_TASK.instance("batch-id-1").data(1).build(),
+            MY_TASK.instance("batch-id-2").data(2).build(),
+            MY_TASK.instance("batch-id-3").data(3).build()),
+        now.plusSeconds(8));
 
     System.out.println("Listing scheduled executions");
     clientWithTypeInformation

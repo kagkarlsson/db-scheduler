@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.WhenExists;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
@@ -26,7 +27,7 @@ import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
-import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
+import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
@@ -42,6 +43,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface SchedulerClient {
+
+  int DEFAULT_BATCH_SIZE = 100;
 
   /**
    * Schedule a new execution for the given task instance.
@@ -122,21 +125,46 @@ public interface SchedulerClient {
    * Schedule a batch of executions. If any of the executions already exists, the scheduling will
    * fail and an exception will be thrown.
    *
-   * @param taskInstances Task-instance, optionally with data
+   * @param taskInstances Task-instance to schedule, optionally with data
    * @param executionTime Instant it should run
    * @see java.time.Instant
    * @see com.github.kagkarlsson.scheduler.task.TaskInstance
    */
-  void scheduleBatch(Stream<TaskInstance<?>> taskInstances, Instant executionTime);
+  void scheduleBatch(List<TaskInstance<?>> taskInstances, Instant executionTime);
 
   /**
    * Schedule a batch of executions. If any of the executions already exists, the scheduling will
    * fail and an exception will be thrown.
    *
-   * @param schedulableInstances Task-instances with invididual schedules
+   * @param schedulableInstances Task-instances with individual execution-times
    * @see com.github.kagkarlsson.scheduler.task.SchedulableInstance
    */
-  void scheduleBatch(Stream<SchedulableInstance<?>> schedulableInstances);
+  void scheduleBatch(List<SchedulableInstance<?>> schedulableInstances);
+
+  /**
+   * Schedule a batch of executions. If any of the executions already exists, the scheduling will
+   * fail and an exception will be thrown.
+   *
+   * @param taskInstances Task-instances to schedule, optionally with data
+   * @param executionTime Instant it should run
+   * @see java.time.Instant
+   * @see com.github.kagkarlsson.scheduler.task.TaskInstance
+   */
+  default void scheduleBatch(Stream<TaskInstance<?>> taskInstances, Instant executionTime) {
+    StreamUtils.chunkStream(taskInstances, DEFAULT_BATCH_SIZE)
+        .forEach(chunk -> scheduleBatch(chunk, executionTime));
+  }
+
+  /**
+   * Schedule a batch of executions. If any of the executions already exists, the scheduling will
+   * fail and an exception will be thrown.
+   *
+   * @param schedulableInstances Task-instances with individual execution-times
+   * @see com.github.kagkarlsson.scheduler.task.SchedulableInstance
+   */
+  default void scheduleBatch(Stream<SchedulableInstance<?>> schedulableInstances) {
+    StreamUtils.chunkStream(schedulableInstances, DEFAULT_BATCH_SIZE).forEach(this::scheduleBatch);
+  }
 
   /**
    * Update an existing execution to a new execution-time. If the execution does not exist or if it
@@ -377,8 +405,6 @@ public interface SchedulerClient {
     private final Clock clock;
     private final SchedulerListeners schedulerListeners;
 
-    private final int BATCH_SIZE = 100;
-
     StandardSchedulerClient(TaskRepository taskRepository, Clock clock) {
       this(taskRepository, SchedulerListeners.NOOP, clock);
     }
@@ -414,17 +440,31 @@ public interface SchedulerClient {
     }
 
     @Override
-    public void scheduleBatch(Stream<TaskInstance<?>> taskInstances, Instant executionTime) {
-      Stream<SchedulableInstance<?>> schedulableInstances =
-          taskInstances.map(
-              taskInstance -> new SchedulableTaskInstance<>(taskInstance, executionTime));
-      scheduleBatch(schedulableInstances);
+    public void scheduleBatch(List<TaskInstance<?>> taskInstances, Instant executionTime) {
+      List<ScheduledTaskInstance> batchToSchedule =
+          taskInstances.stream()
+              .map(taskInstance -> new ScheduledTaskInstance(taskInstance, executionTime))
+              .collect(toList());
+
+      taskRepository.createBatch(batchToSchedule);
+      notifyListenersOfScheduledBatch(batchToSchedule);
     }
 
     @Override
-    public void scheduleBatch(Stream<SchedulableInstance<?>> schedulableInstances) {
-      StreamUtils.chunkStream(schedulableInstances, BATCH_SIZE)
-          .forEach(taskRepository::createBatch);
+    public void scheduleBatch(List<SchedulableInstance<?>> schedulableInstances) {
+      List<ScheduledTaskInstance> batchToSchedule =
+          schedulableInstances.stream()
+              .map(schedulable -> ScheduledTaskInstance.fixExecutionTime(schedulable, clock))
+              .collect(toList());
+
+      taskRepository.createBatch(batchToSchedule);
+      notifyListenersOfScheduledBatch(batchToSchedule);
+    }
+
+    private void notifyListenersOfScheduledBatch(List<ScheduledTaskInstance> batchToSchedule) {
+      batchToSchedule.forEach(
+          instance ->
+              schedulerListeners.onExecutionScheduled(instance, instance.getExecutionTime()));
     }
 
     @Override
