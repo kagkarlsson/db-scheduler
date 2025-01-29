@@ -48,7 +48,7 @@
 		<micrometer.version>1.14.2</micrometer.version>
 		<gson.version>2.11.0</gson.version>
 		<jackson.version>2.18.2</jackson.version>
-		<postgresql.version>42.7.4</postgresql.version>
+		<postgresql.version>42.7.5</postgresql.version>
 		<guava.version>33.4.0-jre</guava.version>
 	</properties>
 
