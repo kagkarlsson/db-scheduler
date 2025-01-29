@@ -17,7 +17,7 @@ release:
     owner: kagkarlsson
     overwrite: false
     skipRelease: false
-    draft: true
+    draft: false
     skipTag: false
     releaseName: '{{tagName}}'
     changelog:

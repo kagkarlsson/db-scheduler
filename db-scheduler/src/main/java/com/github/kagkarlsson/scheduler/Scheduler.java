@@ -265,6 +265,16 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  public void scheduleBatch(List<TaskInstance<?>> taskInstances, Instant executionTime) {
+    this.delegate.scheduleBatch(taskInstances, executionTime);
+  }
+
+  @Override
+  public void scheduleBatch(List<SchedulableInstance<?>> schedulableInstances) {
+    this.delegate.scheduleBatch(schedulableInstances);
+  }
+
+  @Override
   public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
     this.delegate.schedule(taskInstance, executionTime);
   }

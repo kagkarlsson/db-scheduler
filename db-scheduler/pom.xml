@@ -369,15 +369,9 @@
             </properties>
         </profile>
         <profile>
-            <id>compatibility</id>
+            <id>tests-for-ci</id>
             <properties>
                 <test.excludedTags>compatibility-cluster</test.excludedTags>
-            </properties>
-        </profile>
-        <profile>
-            <id>compatibility-cluster</id>
-            <properties>
-                <test.excludedTags>compatibility</test.excludedTags>
             </properties>
         </profile>
     </profiles>

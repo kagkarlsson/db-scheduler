@@ -153,6 +153,17 @@ scheduler.schedule(
         .scheduledTo(Instant.now().plusSeconds(5)));
 ```
 
+... or schedule in batches using:
+
+```java
+Stream<TaskInstance<?>> taskInstances = Stream.of(
+    MY_TASK.instance("my-task-1", 1),
+    MY_TASK.instance("my-task-2", 2),
+    MY_TASK.instance("my-task-3", 3));
+
+scheduler.scheduleBatch(taskInstances, Instant.now());
+```
+
 ### More examples
 
 #### Plain Java

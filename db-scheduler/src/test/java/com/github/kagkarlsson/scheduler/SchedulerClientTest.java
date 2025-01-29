@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -96,6 +97,17 @@ public class SchedulerClientTest {
     assertFalse(client.scheduleIfNotExists(oneTimeTaskA.instance("1"), settableClock.now()));
 
     scheduler.runAnyDueExecutions();
+    assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(2));
+  }
+
+  @Test
+  public void client_should_be_able_to_schedule_batch_executions() {
+    SchedulerClient client = create(DB.getDataSource()).build();
+
+    client.scheduleBatch(
+        Stream.of(oneTimeTaskA.instance("1"), oneTimeTaskA.instance("2")), settableClock.now());
+    scheduler.runAnyDueExecutions();
+
     assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(2));
   }
 
