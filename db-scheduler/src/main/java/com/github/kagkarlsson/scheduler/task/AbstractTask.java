@@ -22,15 +22,32 @@ public abstract class AbstractTask<T> implements Task<T> {
   private final DeadExecutionHandler<T> deadExecutionHandler;
   private final Class<T> dataClass;
 
+  private final int defaultPriority;
+
   public AbstractTask(
       String name,
       Class<T> dataClass,
       FailureHandler<T> failureHandler,
       DeadExecutionHandler<T> deadExecutionHandler) {
+    this(name, dataClass, failureHandler, deadExecutionHandler, DEFAULT_PRIORITY);
+  }
+
+  public AbstractTask(
+      String name,
+      Class<T> dataClass,
+      FailureHandler<T> failureHandler,
+      DeadExecutionHandler<T> deadExecutionHandler,
+      int defaultPriority) {
     this.name = name;
     this.dataClass = dataClass;
     this.failureHandler = failureHandler;
     this.deadExecutionHandler = deadExecutionHandler;
+    this.defaultPriority = defaultPriority;
+  }
+
+  @Override
+  public int getDefaultPriority() {
+    return defaultPriority;
   }
 
   @Override

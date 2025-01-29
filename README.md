@@ -250,6 +250,14 @@ Set the priority per instance using the `TaskInstance.Builder`:
             .scheduledTo(Instant.now()));
 ```
 
+You can also set the default priority for all tasks of a given type:
+
+```java
+Tasks.recurring("my-task", FixedDelay.ofSeconds(5))
+    .defaultPriority(Priority.LOW)
+    .execute(...);
+```
+
 **Note:**
 * When enabling this feature, make sure you have the new necessary indexes defined. If you
 regularly have a state with large amounts of executions both due and future, it might be beneficial

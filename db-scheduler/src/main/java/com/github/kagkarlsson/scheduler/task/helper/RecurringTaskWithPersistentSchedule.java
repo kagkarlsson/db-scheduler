@@ -23,13 +23,25 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 public abstract class RecurringTaskWithPersistentSchedule<T extends ScheduleAndData>
     extends AbstractTask<T> {
 
+  public static final int DEFAULT_PRIORITY = RecurringTask.DEFAULT_PRIORITY;
+
   public RecurringTaskWithPersistentSchedule(String name, Class<T> dataClass) {
     this(name, dataClass, new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>());
   }
 
   public RecurringTaskWithPersistentSchedule(
       String name, Class<T> dataClass, FailureHandler<T> onFailure) {
-    super(name, dataClass, onFailure, new DeadExecutionHandler.ReviveDeadExecution<>());
+    this(name, dataClass, onFailure, DEFAULT_PRIORITY);
+  }
+
+  public RecurringTaskWithPersistentSchedule(
+      String name, Class<T> dataClass, FailureHandler<T> onFailure, int defaultPriority) {
+    super(
+        name,
+        dataClass,
+        onFailure,
+        new DeadExecutionHandler.ReviveDeadExecution<>(),
+        defaultPriority);
   }
 
   @Override

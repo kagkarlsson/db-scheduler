@@ -26,6 +26,7 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
   private final OnCompleteReschedule<T> onComplete;
   private final Schedule schedule;
   private final ScheduleOnStartup<T> scheduleOnStartup;
+  public static final int DEFAULT_PRIORITY = Priority.HIGH;
 
   public RecurringTask(String name, Schedule schedule, Class<T> dataClass) {
     this(
@@ -65,15 +66,28 @@ public abstract class RecurringTask<T> extends AbstractTask<T> implements OnStar
       ScheduleRecurringOnStartup<T> scheduleOnStartup,
       FailureHandler<T> failureHandler,
       DeadExecutionHandler<T> deadExecutionHandler) {
-    super(name, dataClass, failureHandler, deadExecutionHandler);
+    this(
+        name,
+        schedule,
+        dataClass,
+        scheduleOnStartup,
+        failureHandler,
+        deadExecutionHandler,
+        DEFAULT_PRIORITY);
+  }
+
+  public RecurringTask(
+      String name,
+      Schedule schedule,
+      Class<T> dataClass,
+      ScheduleRecurringOnStartup<T> scheduleOnStartup,
+      FailureHandler<T> failureHandler,
+      DeadExecutionHandler<T> deadExecutionHandler,
+      int defaultPriority) {
+    super(name, dataClass, failureHandler, deadExecutionHandler, defaultPriority);
     onComplete = new OnCompleteReschedule<>(schedule);
     this.schedule = schedule;
     this.scheduleOnStartup = scheduleOnStartup;
-  }
-
-  @Override
-  public int getDefaultPriority() {
-    return Priority.HIGH;
   }
 
   @Override
