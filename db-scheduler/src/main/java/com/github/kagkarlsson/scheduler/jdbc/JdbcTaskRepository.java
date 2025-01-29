@@ -199,15 +199,15 @@ public class JdbcTaskRepository implements TaskRepository {
   private void setInsertParameters(ScheduledTaskInstance value, PreparedStatement ps)
       throws SQLException {
     var taskInstance = value.getTaskInstance();
-    int index = 0;
-    ps.setString(++index, taskInstance.getTaskName());
-    ps.setString(++index, taskInstance.getId());
-    jdbcCustomization.setTaskData(ps, ++index, serializer.serialize(taskInstance.getData()));
-    jdbcCustomization.setInstant(ps, ++index, value.getExecutionTime());
-    ps.setBoolean(++index, false);
-    ps.setLong(++index, 1L);
+    int index = 1;
+    ps.setString(index++, taskInstance.getTaskName());
+    ps.setString(index++, taskInstance.getId());
+    jdbcCustomization.setTaskData(ps, index++, serializer.serialize(taskInstance.getData()));
+    jdbcCustomization.setInstant(ps, index++, value.getExecutionTime());
+    ps.setBoolean(index++, false);
+    ps.setLong(index++, 1L);
     if (orderByPriority) {
-      ps.setInt(++index, taskInstance.getPriority());
+      ps.setInt(index, taskInstance.getPriority());
     }
   }
 
@@ -263,22 +263,22 @@ public class JdbcTaskRepository implements TaskRepository {
                 + "and task_instance = ? "
                 + "and version = ?",
             ps -> {
-              int index = 0;
-              ps.setString(++index, newExecution.taskInstance.getTaskName()); // task_name
-              ps.setString(++index, newExecution.taskInstance.getId()); // task_instance
-              ps.setBoolean(++index, false); // picked
-              ps.setString(++index, null); // picked_by
-              jdbcCustomization.setInstant(ps, ++index, null); // last_heartbeat
-              jdbcCustomization.setInstant(ps, ++index, null); // last_success
-              jdbcCustomization.setInstant(ps, ++index, null); // last_failure
-              ps.setInt(++index, 0); // consecutive_failures
-              jdbcCustomization.setInstant(ps, ++index, newExecutionTime); // execution_time
+              int index = 1;
+              ps.setString(index++, newExecution.taskInstance.getTaskName()); // task_name
+              ps.setString(index++, newExecution.taskInstance.getId()); // task_instance
+              ps.setBoolean(index++, false); // picked
+              ps.setString(index++, null); // picked_by
+              jdbcCustomization.setInstant(ps, index++, null); // last_heartbeat
+              jdbcCustomization.setInstant(ps, index++, null); // last_success
+              jdbcCustomization.setInstant(ps, index++, null); // last_failure
+              ps.setInt(index++, 0); // consecutive_failures
+              jdbcCustomization.setInstant(ps, index++, newExecutionTime); // execution_time
               // may cause datbase-specific problems, might have to use setNull instead
               jdbcCustomization.setTaskData(
-                  ps, ++index, serializer.serialize(newData)); // task_data
-              ps.setString(++index, toBeReplaced.taskInstance.getTaskName()); // task_name
-              ps.setString(++index, toBeReplaced.taskInstance.getId()); // task_instance
-              ps.setLong(++index, toBeReplaced.version); // version
+                  ps, index++, serializer.serialize(newData)); // task_data
+              ps.setString(index++, toBeReplaced.taskInstance.getTaskName()); // task_name
+              ps.setString(index++, toBeReplaced.taskInstance.getId()); // task_instance
+              ps.setLong(index, toBeReplaced.version); // version
             });
 
     if (updated == 0) {
@@ -525,22 +525,22 @@ public class JdbcTaskRepository implements TaskRepository {
                 + "and task_instance = ? "
                 + "and version = ?",
             ps -> {
-              int index = 0;
-              ps.setBoolean(++index, false);
-              ps.setString(++index, null);
-              jdbcCustomization.setInstant(ps, ++index, null);
-              jdbcCustomization.setInstant(ps, ++index, lastSuccess);
-              jdbcCustomization.setInstant(ps, ++index, lastFailure);
-              ps.setInt(++index, consecutiveFailures);
-              jdbcCustomization.setInstant(ps, ++index, nextExecutionTime);
+              int index = 1;
+              ps.setBoolean(index++, false);
+              ps.setString(index++, null);
+              jdbcCustomization.setInstant(ps, index++, null);
+              jdbcCustomization.setInstant(ps, index++, lastSuccess);
+              jdbcCustomization.setInstant(ps, index++, lastFailure);
+              ps.setInt(index++, consecutiveFailures);
+              jdbcCustomization.setInstant(ps, index++, nextExecutionTime);
               if (newData != null) {
                 // may cause datbase-specific problems, might have to use setNull instead
                 // FIXLATER: optionally support bypassing serializer if byte[] already
-                jdbcCustomization.setTaskData(ps, ++index, serializer.serialize(newData.data));
+                jdbcCustomization.setTaskData(ps, index++, serializer.serialize(newData.data));
               }
-              ps.setString(++index, execution.taskInstance.getTaskName());
-              ps.setString(++index, execution.taskInstance.getId());
-              ps.setLong(++index, execution.version);
+              ps.setString(index++, execution.taskInstance.getTaskName());
+              ps.setString(index++, execution.taskInstance.getId());
+              ps.setLong(index, execution.version);
             });
 
     if (updated != 1) {
