@@ -40,6 +40,7 @@ public class SchedulerListeners implements SchedulerListener {
       .collect(Collectors.toList());
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime) {
     schedulerListeners.forEach(
@@ -51,6 +52,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionStart(CurrentlyExecuting currentlyExecuting) {
     schedulerListeners.forEach(
@@ -60,6 +62,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionComplete(ExecutionComplete executionComplete) {
     schedulerListeners.forEach(
@@ -71,6 +74,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionDead(Execution execution) {
     schedulerListeners.forEach(
@@ -79,6 +83,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting) {
     schedulerListeners.forEach(
@@ -90,6 +95,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onSchedulerEvent(SchedulerEventType type) {
     schedulerListeners.forEach(
@@ -98,6 +104,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onCandidateEvent(CandidateEventType type) {
     schedulerListeners.forEach(
