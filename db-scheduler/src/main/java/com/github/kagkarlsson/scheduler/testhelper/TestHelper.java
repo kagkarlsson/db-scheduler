@@ -17,6 +17,7 @@ import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
@@ -45,6 +46,8 @@ public class TestHelper {
 
   public static class ManualSchedulerBuilder extends SchedulerBuilder {
     private SettableClock clock;
+
+    protected List<SchedulerListener> schedulerListeners = List.of(new StatsRegistryAdapter(statsRegistry));
 
     public ManualSchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
       super(dataSource, knownTasks);
@@ -106,7 +109,7 @@ public class TestHelper {
           waiter,
           heartbeatInterval,
           enableImmediateExecution,
-          List.of(new StatsRegistryAdapter(statsRegistry)),
+          schedulerListeners,
           Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
           deleteUnresolvedAfter,
           LogLevel.DEBUG,
