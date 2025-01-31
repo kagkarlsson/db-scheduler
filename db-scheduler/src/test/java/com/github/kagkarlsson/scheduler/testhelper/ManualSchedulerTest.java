@@ -64,15 +64,10 @@ public class ManualSchedulerTest {
   public void manual_scheduler_listener() {
     LOG.info("manual_scheduler_add_listener()");
 
-    ManualScheduler scheduler = TestHelper
-      .createManualScheduler(postgres.getDataSource())
-      .addSchedulerListener(listener)
-      .build();
+    ManualScheduler scheduler = TestHelper.createManualScheduler(postgres.getDataSource())
+      .addSchedulerListener(listener).build();
 
-    assertThat(
-      scheduler.getSchedulerListeners().getSchedulerListeners(),
-      hasItem(listener)
-    );
+    assertThat(scheduler.getSchedulerListeners().getSchedulerListeners(), hasItem(listener));
   }
 
 }
