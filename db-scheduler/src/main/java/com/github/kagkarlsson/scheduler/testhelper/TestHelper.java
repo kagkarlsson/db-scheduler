@@ -49,7 +49,8 @@ public class TestHelper {
   public static class ManualSchedulerBuilder extends SchedulerBuilder {
     private SettableClock clock;
 
-    protected List<SchedulerListener> schedulerListeners = List.of(new StatsRegistryAdapter(statsRegistry));
+    protected List<SchedulerListener> schedulerListeners =
+        List.of(new StatsRegistryAdapter(statsRegistry));
 
     public ManualSchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
       super(dataSource, knownTasks);
@@ -76,9 +77,9 @@ public class TestHelper {
     }
 
     public ManualSchedulerBuilder addSchedulerListener(SchedulerListener schedulerListener) {
-      schedulerListeners = Stream
-        .concat(schedulerListeners.stream(), Stream.of(schedulerListener))
-        .collect(Collectors.toList());
+      schedulerListeners =
+          Stream.concat(schedulerListeners.stream(), Stream.of(schedulerListener))
+              .collect(Collectors.toList());
       return this;
     }
 

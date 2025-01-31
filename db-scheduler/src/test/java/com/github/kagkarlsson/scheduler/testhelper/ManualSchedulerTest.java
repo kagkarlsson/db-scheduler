@@ -22,52 +22,54 @@ public class ManualSchedulerTest {
   @RegisterExtension
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
 
-  private final SchedulerListener listener = new SchedulerListener() {
+  private final SchedulerListener listener =
+      new SchedulerListener() {
 
-    @Override
-    public void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime) {
-      LOG.info("onExecutionScheduled()");
-    }
+        @Override
+        public void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime) {
+          LOG.info("onExecutionScheduled()");
+        }
 
-    @Override
-    public void onExecutionStart(CurrentlyExecuting currentlyExecuting) {
-      LOG.info("onExecutionStart()");
-    }
+        @Override
+        public void onExecutionStart(CurrentlyExecuting currentlyExecuting) {
+          LOG.info("onExecutionStart()");
+        }
 
-    @Override
-    public void onExecutionComplete(ExecutionComplete executionComplete) {
-      LOG.info("onExecutionComplete()");
-    }
+        @Override
+        public void onExecutionComplete(ExecutionComplete executionComplete) {
+          LOG.info("onExecutionComplete()");
+        }
 
-    @Override
-    public void onExecutionDead(Execution execution) {
-      LOG.info("onExecutionDead()");
-    }
+        @Override
+        public void onExecutionDead(Execution execution) {
+          LOG.info("onExecutionDead()");
+        }
 
-    @Override
-    public void onExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting) {
-      LOG.info("onExecutionFailedHeartbeat()");
-    }
+        @Override
+        public void onExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting) {
+          LOG.info("onExecutionFailedHeartbeat()");
+        }
 
-    @Override
-    public void onSchedulerEvent(SchedulerEventType type) {
-      LOG.info("onSchedulerEvent()");
-    }
+        @Override
+        public void onSchedulerEvent(SchedulerEventType type) {
+          LOG.info("onSchedulerEvent()");
+        }
 
-    @Override
-    public void onCandidateEvent(CandidateEventType type) {
-      LOG.info("onCandidateEvent()");
-    }
-  };
+        @Override
+        public void onCandidateEvent(CandidateEventType type) {
+          LOG.info("onCandidateEvent()");
+        }
+      };
 
   @Test
   public void manual_scheduler_listener() {
     LOG.info("manual_scheduler_add_listener()");
 
-    ManualScheduler scheduler = TestHelper.createManualScheduler(postgres.getDataSource())
-      .addSchedulerListener(listener).build();
+    ManualScheduler scheduler =
+        TestHelper.createManualScheduler(postgres.getDataSource())
+            .addSchedulerListener(listener)
+            .build();
 
     assertThat(scheduler.getSchedulerListeners().getSchedulerListeners(), hasItem(listener));
   }
-
 }

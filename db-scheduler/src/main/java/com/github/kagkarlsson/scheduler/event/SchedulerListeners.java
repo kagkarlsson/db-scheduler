@@ -35,9 +35,9 @@ public class SchedulerListeners implements SchedulerListener {
   }
 
   public void add(SchedulerListener listener) {
-    schedulerListeners = Stream
-      .concat(schedulerListeners.stream(), Stream.of(listener))
-      .collect(Collectors.toList());
+    schedulerListeners =
+        Stream.concat(schedulerListeners.stream(), Stream.of(listener))
+            .collect(Collectors.toList());
   }
 
   public List<SchedulerListener> getSchedulerListeners() {
