@@ -30,6 +30,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.sql.DataSource;
 
 public class TestHelper {
@@ -70,6 +72,13 @@ public class TestHelper {
 
     public ManualSchedulerBuilder pollingStrategy(PollingStrategyConfig pollingStrategyConfig) {
       super.pollingStrategyConfig = pollingStrategyConfig;
+      return this;
+    }
+
+    public ManualSchedulerBuilder addSchedulerListener(SchedulerListener schedulerListener) {
+      schedulerListeners = Stream
+        .concat(schedulerListeners.stream(), Stream.of(schedulerListener))
+        .collect(Collectors.toList());
       return this;
     }
 

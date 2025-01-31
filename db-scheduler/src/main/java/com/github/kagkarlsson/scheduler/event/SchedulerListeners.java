@@ -40,6 +40,10 @@ public class SchedulerListeners implements SchedulerListener {
       .collect(Collectors.toList());
   }
 
+  public List<SchedulerListener> getSchedulerListeners() {
+    return this.schedulerListeners;
+  }
+
   @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime) {
