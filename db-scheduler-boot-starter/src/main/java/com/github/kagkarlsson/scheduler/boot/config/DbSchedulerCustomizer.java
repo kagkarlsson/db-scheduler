@@ -19,6 +19,7 @@ import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import javax.sql.DataSource;
 
 /**
  * Provides functionality for customizing various aspects of the db-scheduler configuration that is
@@ -52,6 +53,11 @@ public interface DbSchedulerCustomizer {
 
   /** Provide a custom JdbcCustomization. */
   default Optional<JdbcCustomization> jdbcCustomization() {
+    return Optional.empty();
+  }
+
+  /** Provide a custom DataSource. */
+  default Optional<DataSource> dataSource() {
     return Optional.empty();
   }
 }

@@ -113,7 +113,8 @@ public class DbSchedulerAutoConfiguration {
     log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
 
     // Ensure that we are using a transactional aware data source
-    DataSource transactionalDataSource = configureDataSource(existingDataSource);
+    DataSource transactionalDataSource =
+        configureDataSource(customizer.dataSource().orElse(existingDataSource));
 
     // Instantiate a new builder
     final SchedulerBuilder builder =
