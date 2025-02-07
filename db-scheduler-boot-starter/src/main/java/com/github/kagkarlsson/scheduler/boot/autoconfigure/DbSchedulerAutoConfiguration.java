@@ -68,22 +68,18 @@ public class DbSchedulerAutoConfiguration {
   private static final Predicate<Task<?>> shouldBeStarted = task -> task instanceof OnStartup;
 
   private final DbSchedulerProperties config;
-  private final DataSource existingDataSource;
   private final List<Task<?>> configuredTasks;
   private final List<SchedulerListener> schedulerListeners;
   private final List<ExecutionInterceptor> executionInterceptors;
 
   public DbSchedulerAutoConfiguration(
       DbSchedulerProperties dbSchedulerProperties,
-      DataSource dataSource,
       List<Task<?>> configuredTasks,
       List<SchedulerListener> schedulerListeners,
       List<ExecutionInterceptor> executionInterceptors) {
     this.config =
         Objects.requireNonNull(
             dbSchedulerProperties, "Can't configure db-scheduler without required configuration");
-    this.existingDataSource =
-        Objects.requireNonNull(dataSource, "An existing javax.sql.DataSource is required");
     this.configuredTasks =
         Objects.requireNonNull(configuredTasks, "At least one Task must be configured");
     this.schedulerListeners = schedulerListeners;
@@ -105,15 +101,24 @@ public class DbSchedulerAutoConfiguration {
     return StatsRegistry.NOOP;
   }
 
+  @ConditionalOnMissingBean(DataSourceSupplier.class)
+  @Bean
+  public DataSourceSupplier dataSourceSupplier(final DataSource existingDataSource) {
+    return () -> existingDataSource;
+  }
+
   @ConditionalOnBean(DataSource.class)
   @ConditionalOnMissingBean
   @DependsOnDatabaseInitialization
   @Bean(destroyMethod = "stop")
-  public Scheduler scheduler(DbSchedulerCustomizer customizer, StatsRegistry registry) {
+  public Scheduler scheduler(
+      DbSchedulerCustomizer customizer,
+      StatsRegistry registry,
+      DataSourceSupplier dataSourceSupplier) {
     log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
 
     // Ensure that we are using a transactional aware data source
-    DataSource transactionalDataSource = configureDataSource(existingDataSource);
+    DataSource transactionalDataSource = configureDataSource(dataSourceSupplier.dataSource());
 
     // Instantiate a new builder
     final SchedulerBuilder builder =
@@ -217,6 +222,8 @@ public class DbSchedulerAutoConfiguration {
   }
 
   private static DataSource configureDataSource(DataSource existingDataSource) {
+    Objects.requireNonNull(existingDataSource, "An existing javax.sql.DataSource is required");
+
     if (existingDataSource instanceof TransactionAwareDataSourceProxy) {
       log.debug("Using an already transaction aware DataSource");
       return existingDataSource;
