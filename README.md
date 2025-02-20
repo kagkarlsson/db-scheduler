@@ -454,7 +454,9 @@ Configuration is mainly done via `application.properties`. Configuration of sche
 db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
 db-scheduler.polling-interval=10s
-db-scheduler.polling-limit=
+db-scheduler.polling-strategy=fetch
+db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
+db-scheduler.polling-strategy-upper-limit-fraction-of-threads=3.0
 db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=

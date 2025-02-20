@@ -14,7 +14,7 @@
 
     <properties>
         <license.dir>${project.parent.parent.basedir}/.license</license.dir>
-        <kotlin.version>2.1.0</kotlin.version>
+        <kotlin.version>2.1.10</kotlin.version>
         <serialization.version>1.7.3</serialization.version>
     </properties>
 
@@ -75,7 +75,7 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>26.0.1</version>
+            <version>26.0.2</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
