@@ -14,13 +14,13 @@
 package com.github.kagkarlsson.scheduler.event;
 
 import com.github.kagkarlsson.scheduler.CurrentlyExecuting;
-import com.github.kagkarlsson.scheduler.event.SchedulerListener.CandidateEventType;
-import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Instant;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,16 +28,23 @@ public class SchedulerListeners implements SchedulerListener {
   public static final SchedulerListeners NOOP = new SchedulerListeners(List.of());
   private static final Logger LOG = LoggerFactory.getLogger(SchedulerListeners.class);
 
-  private final List<SchedulerListener> schedulerListeners;
+  private List<SchedulerListener> schedulerListeners;
 
   public SchedulerListeners(List<SchedulerListener> schedulerListeners) {
     this.schedulerListeners = schedulerListeners;
   }
 
   public void add(SchedulerListener listener) {
-    schedulerListeners.add(listener);
+    schedulerListeners =
+        Stream.concat(schedulerListeners.stream(), Stream.of(listener))
+            .collect(Collectors.toList());
   }
 
+  public List<SchedulerListener> getSchedulerListeners() {
+    return this.schedulerListeners;
+  }
+
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime) {
     schedulerListeners.forEach(
@@ -49,6 +56,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionStart(CurrentlyExecuting currentlyExecuting) {
     schedulerListeners.forEach(
@@ -58,6 +66,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionComplete(ExecutionComplete executionComplete) {
     schedulerListeners.forEach(
@@ -69,6 +78,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionDead(Execution execution) {
     schedulerListeners.forEach(
@@ -77,6 +87,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting) {
     schedulerListeners.forEach(
@@ -88,6 +99,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onSchedulerEvent(SchedulerEventType type) {
     schedulerListeners.forEach(
@@ -96,6 +108,7 @@ public class SchedulerListeners implements SchedulerListener {
         });
   }
 
+  @SuppressWarnings("CodeBlock2Expr")
   @Override
   public void onCandidateEvent(CandidateEventType type) {
     schedulerListeners.forEach(

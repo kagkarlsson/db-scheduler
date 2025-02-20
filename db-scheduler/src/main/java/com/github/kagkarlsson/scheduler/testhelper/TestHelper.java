@@ -17,6 +17,7 @@ import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
@@ -29,6 +30,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.sql.DataSource;
 
 public class TestHelper {
@@ -45,6 +48,9 @@ public class TestHelper {
 
   public static class ManualSchedulerBuilder extends SchedulerBuilder {
     private SettableClock clock;
+
+    protected List<SchedulerListener> schedulerListeners =
+        List.of(new StatsRegistryAdapter(statsRegistry));
 
     public ManualSchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
       super(dataSource, knownTasks);
@@ -67,6 +73,13 @@ public class TestHelper {
 
     public ManualSchedulerBuilder pollingStrategy(PollingStrategyConfig pollingStrategyConfig) {
       super.pollingStrategyConfig = pollingStrategyConfig;
+      return this;
+    }
+
+    public ManualSchedulerBuilder addSchedulerListener(SchedulerListener schedulerListener) {
+      schedulerListeners =
+          Stream.concat(schedulerListeners.stream(), Stream.of(schedulerListener))
+              .collect(Collectors.toList());
       return this;
     }
 
@@ -106,7 +119,7 @@ public class TestHelper {
           waiter,
           heartbeatInterval,
           enableImmediateExecution,
-          List.of(new StatsRegistryAdapter(statsRegistry)),
+          schedulerListeners,
           Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
           deleteUnresolvedAfter,
           LogLevel.DEBUG,
