@@ -689,6 +689,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   public Optional<Execution> getExecution(String taskName, String taskInstanceId) {
+
     final List<Execution> executions =
         jdbcRunner.query(
             "select * from " + tableName + " where task_name = ? and task_instance = ?",
