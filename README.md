@@ -299,7 +299,7 @@ The number of executions fetched each time is equal to `(upperLimitFractionOfThr
 Fetched executions are already locked/picked for this scheduler-instance thus saving one `UPDATE` statement.
 <br/>For normal usage, set to for example `0.5, 1.0`.
 <br/>For high throughput
-(i.e. keep threads busy), set to for example `1.0, 4.0`. Currently hearbeats are not updated for picked executions
+(i.e. keep threads busy), set to for example `1.0, 4.0`. Currently heartbeats are not updated for picked executions
 in queue (applicable if `upperLimitFractionOfThreads > 1.0`). If they stay there for more than
 `4 * heartbeat-interval` (default `20m`), not starting execution, they will be detected as _dead_ and likely be
 unlocked again (determined by `DeadExecutionHandler`).  Currently supported by PostgreSQL, SQL Server, MySQL v8+.
@@ -333,7 +333,7 @@ but db-scheduler also bundles a `GsonSerializer` and `JacksonSerializer`. See ex
 See also additional documentation under [Serializers](#Serializers).
 
 :gear: `.executorService(ExecutorService)`<br/>
-If specified, use this externally managed executor service to run executions. Ideally the number of threads it
+If specified, use this externally managed executor service to run executions. Ideally, the number of threads it
 will use should still be supplied (for scheduler polling optimizations). Default `null`.
 
 :gear: `.deleteUnresolvedAfter(Duration)`<br/>
@@ -395,7 +395,7 @@ and it will remove any existing executions for that task.
 ### Serializers
 
 A task-instance may have some associated data in the field `task_data`. The scheduler uses a `Serializer` to read and write this
-data to the database. By default, standard Java serialization is used, but a number of options is provided:
+data to the database. By default, standard Java serialization is used, but a number of options are provided:
 
 * `GsonSerializer`
 * `JacksonSerializer`
@@ -453,6 +453,7 @@ Configuration is mainly done via `application.properties`. Configuration of sche
 
 db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
+db-scheduler.missed-heartbeats-limit=6
 db-scheduler.polling-interval=10s
 db-scheduler.polling-strategy=fetch
 db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
@@ -553,7 +554,7 @@ Use-cases might be:
 
 During execution, the scheduler regularly updates a heartbeat-time for the task-execution.
 If an execution is marked as executing, but is not receiving updates to the heartbeat-time,
-it will be considered a _dead execution_ after time X. That may for example happen if the
+it will be considered a _dead execution_ after time X. That may, for example, happen if the
 JVM running the scheduler suddenly exits.
 
 When a dead execution is found, the `Task`is consulted to see what should be done. A dead
@@ -580,9 +581,9 @@ In v10, a new polling strategy (`lock-and-fetch`) was added. It utilizes the fac
 Using such a strategy, it is possible to fetch executions pre-locked, and thus getting one statement less:
 
 1. `select for update .. skip locked` a batch of due executions. These will already be picked by the scheduler-instance.
-3. When execution is done, `update` or `delete` the record according to handlers.
+2. When execution is done, `update` or `delete` the record according to handlers.
 
-In sum per batch: 1 select-and-update, 1 * batch-size updates   (no misses)
+In sum per batch: 1 select-and-update, 1 * batch-size updates (no misses)
 
 
 ### Benchmark test
