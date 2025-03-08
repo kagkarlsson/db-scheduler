@@ -476,4 +476,8 @@ public class Scheduler implements SchedulerClient {
   public static SchedulerBuilder create(DataSource dataSource, List<Task<?>> knownTasks) {
     return new SchedulerBuilder(dataSource, knownTasks);
   }
+
+  public SchedulerListeners getSchedulerListeners() {
+    return this.schedulerListeners;
+  }
 }
