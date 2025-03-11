@@ -687,7 +687,6 @@ Some users have experienced intermittent test failures when running on a single-
 
 The goal of `db-scheduler` is to be non-invasive and simple to use, but still solve the persistence problem, and the cluster-coordination problem.
  It was originally targeted at applications with modest database schemas, to which adding 11 tables would feel a bit overkill..
-**Update:** Also, as of now (2024), Quartz does not seem to be actively maintained either.
 
 #### Why use a RDBMS for persistence and coordination?
 
