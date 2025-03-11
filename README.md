@@ -633,9 +633,6 @@ There are a number of users that are using db-scheduler for high throughput use-
 
 See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
 
-**Upgrading to 16.x**
-* The behavior of tasks with a defined `maxRetriesExceededHandler` for the `MaxRetriesFailureHandler` has been updated for greater flexibility. Tasks will no longer be automatically removed. To maintain the previous behavior of task removal, please invoke `executionOperations.stop()` within your `maxRetriesExceededHandler`. If you have not defined a `maxRetriesExceededHandler`, the behavior remains unchanged, and no further action is required.
-
 **Upgrading to 15.x**
 * Priority is a new opt-in feature. To be able to use it, column `priority` and index `priority_execution_time_idx`
   must be added to the database schema. See table definitions for
