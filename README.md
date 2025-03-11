@@ -44,7 +44,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>15.0.0</version>
+    <version>15.1.1</version>
 </dependency>
 ```
 
@@ -153,6 +153,17 @@ scheduler.schedule(
         .scheduledTo(Instant.now().plusSeconds(5)));
 ```
 
+... or schedule in batches using:
+
+```java
+Stream<TaskInstance<?>> taskInstances = Stream.of(
+    MY_TASK.instance("my-task-1", 1),
+    MY_TASK.instance("my-task-2", 2),
+    MY_TASK.instance("my-task-3", 3));
+
+scheduler.scheduleBatch(taskInstances, Instant.now());
+```
+
 ### More examples
 
 #### Plain Java
@@ -250,6 +261,14 @@ Set the priority per instance using the `TaskInstance.Builder`:
             .scheduledTo(Instant.now()));
 ```
 
+You can also set the default priority for all tasks of a given type:
+
+```java
+Tasks.recurring("my-task", FixedDelay.ofSeconds(5))
+    .defaultPriority(Priority.LOW)
+    .execute(...);
+```
+
 **Note:**
 * When enabling this feature, make sure you have the new necessary indexes defined. If you
 regularly have a state with large amounts of executions both due and future, it might be beneficial
@@ -283,8 +302,7 @@ Fetched executions are already locked/picked for this scheduler-instance thus sa
 (i.e. keep threads busy), set to for example `1.0, 4.0`. Currently hearbeats are not updated for picked executions
 in queue (applicable if `upperLimitFractionOfThreads > 1.0`). If they stay there for more than
 `4 * heartbeat-interval` (default `20m`), not starting execution, they will be detected as _dead_ and likely be
-unlocked again (determined by `DeadExecutionHandler`).  Currently supported by **postgres**. **sql-server** also supports
-this, but testing has shown this is prone to deadlocks and thus not recommended until understood/resolved.
+unlocked again (determined by `DeadExecutionHandler`).  Currently supported by PostgreSQL, SQL Server, MySQL v8+.
 
 
 #### Less commonly tuned
@@ -418,7 +436,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>15.0.0</version>
+        <version>15.1.1</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -436,7 +454,9 @@ Configuration is mainly done via `application.properties`. Configuration of sche
 db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
 db-scheduler.polling-interval=10s
-db-scheduler.polling-limit=
+db-scheduler.polling-strategy=fetch
+db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
+db-scheduler.polling-strategy-upper-limit-fraction-of-threads=3.0
 db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=
@@ -670,7 +690,6 @@ Some users have experienced intermittent test failures when running on a single-
 
 The goal of `db-scheduler` is to be non-invasive and simple to use, but still solve the persistence problem, and the cluster-coordination problem.
  It was originally targeted at applications with modest database schemas, to which adding 11 tables would feel a bit overkill..
-**Update:** Also, as of now (2024), Quartz does not seem to be actively maintained either.
 
 #### Why use a RDBMS for persistence and coordination?
 

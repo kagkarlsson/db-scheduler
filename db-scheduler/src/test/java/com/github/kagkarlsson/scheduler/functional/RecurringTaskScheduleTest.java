@@ -26,7 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class RecurringTaskTest {
+public class RecurringTaskScheduleTest {
 
   public static final ZoneId ZONE = ZoneId.systemDefault();
   private static final LocalDate DATE = LocalDate.of(2018, 3, 1);

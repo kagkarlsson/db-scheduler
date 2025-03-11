@@ -8,8 +8,9 @@ project:
   license: Apache-2.0
   links:
     homepage: https://github.com/kagkarlsson/db-scheduler
-  java:
-    groupId: com.github.kagkarlsson
+  languages:
+    java:
+      groupId: com.github.kagkarlsson
   inceptionYear: 2015
 
 release:
@@ -20,14 +21,8 @@ release:
     draft: true
     skipTag: false
     releaseName: '{{tagName}}'
-    changelog:
-      formatted: ALWAYS
-      preset: conventional-commits
-      contributors:
-        format: '- {{contributorName}}{{#contributorUsernameAsLink}} ({{.}}){{/contributorUsernameAsLink}}'
-      hide:
-        contributors:
-          - 'GitHub'
+    releaseNotes:
+      enabled: true
     issues:
       enabled: true
 

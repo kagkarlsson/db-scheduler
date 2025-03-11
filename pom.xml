@@ -45,12 +45,11 @@
 		<slf4j.version>1.7.36</slf4j.version>
 		<logback.version>1.2.13</logback.version>
 		<spring-boot.version>2.7.18</spring-boot.version>
-<!--		<spring-boot.version>3.2.4</spring-boot.version>-->
-		<micrometer.version>1.11.1</micrometer.version>
-		<gson.version>2.10.1</gson.version>
-		<jackson.version>2.15.2</jackson.version>
-		<postgresql.version>42.6.0</postgresql.version>
-		<guava.version>32.0.1-jre</guava.version>
+		<micrometer.version>1.14.2</micrometer.version>
+		<gson.version>2.11.0</gson.version>
+		<jackson.version>2.18.2</jackson.version>
+		<postgresql.version>42.7.5</postgresql.version>
+		<guava.version>33.4.0-jre</guava.version>
 	</properties>
 
 	<modules>
@@ -64,21 +63,21 @@
 			<dependency>
 				<groupId>org.junit</groupId>
 				<artifactId>junit-bom</artifactId>
-				<version>5.9.0</version>
+				<version>5.11.4</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
 			<dependency>
 				<groupId>org.mockito</groupId>
 				<artifactId>mockito-bom</artifactId>
-				<version>4.11.0</version>
+				<version>5.15.2</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
 			<dependency>
 				<groupId>org.testcontainers</groupId>
 				<artifactId>testcontainers-bom</artifactId>
-				<version>1.19.7</version>
+				<version>1.20.4</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -86,12 +85,12 @@
 			<dependency>
 				<groupId>net.java.dev.jna</groupId>
 				<artifactId>jna</artifactId>
-				<version>5.14.0</version>
+				<version>5.15.0</version>
 			</dependency>
 			<dependency>
 				<groupId>org.apache.commons</groupId>
 				<artifactId>commons-lang3</artifactId>
-				<version>3.12.0</version>
+				<version>3.17.0</version>
 				<scope>test</scope>
 			</dependency>
 
@@ -109,11 +108,11 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-surefire-plugin</artifactId>
-					<version>3.0.0</version>
+					<version>3.5.2</version>
 				</plugin>
 				<plugin>
 					<artifactId>maven-dependency-plugin</artifactId>
-					<version>3.5.0</version>
+					<version>3.8.1</version>
 					<executions>
 						<execution>
 							<goals>
@@ -133,7 +132,7 @@
 				<plugin>
 					<groupId>com.mycila</groupId>
 					<artifactId>license-maven-plugin</artifactId>
-					<version>4.2</version>
+					<version>4.6</version>
 					<configuration>
 						<licenseSets>
 							<licenseSet>
@@ -163,7 +162,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-shade-plugin</artifactId>
-					<version>3.4.1</version>
+					<version>3.6.0</version>
 					<configuration>
 						<createSourcesJar>true</createSourcesJar>
 						<shadeSourcesContent>true</shadeSourcesContent>
@@ -213,7 +212,7 @@
 				<!-- Release plugins -->
 				<plugin>
 					<artifactId>maven-javadoc-plugin</artifactId>
-					<version>3.5.0</version>
+					<version>3.11.2</version>
 					<executions>
 						<execution>
 							<id>attach-javadocs</id>
@@ -228,7 +227,7 @@
 				</plugin>
 				<plugin>
 					<artifactId>maven-source-plugin</artifactId>
-					<version>3.2.1</version>
+					<version>3.3.1</version>
 					<executions>
 						<execution>
 							<id>attach-sources</id>
@@ -241,10 +240,30 @@
 						</execution>
 					</executions>
 				</plugin>
-				<plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>3.5.0</version>
+          <executions>
+            <execution>
+              <id>enforce-maven</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <requireMavenVersion>
+                    <version>3.8.0</version>
+                  </requireMavenVersion>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-deploy-plugin</artifactId>
-					<version>3.1.1</version>
+					<version>3.1.3</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -278,10 +297,13 @@
 			<plugin>
 				<artifactId>maven-surefire-plugin</artifactId>
 			</plugin>
+      <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+      </plugin>
 			<plugin>
 				<groupId>com.diffplug.spotless</groupId>
 				<artifactId>spotless-maven-plugin</artifactId>
-				<version>2.43.0</version>
+				<version>2.44.3</version>
 				<configuration>
 					<java>
 						<includes>

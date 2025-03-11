@@ -75,11 +75,11 @@ public class SchedulerBuilder {
   protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
   protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
   protected boolean enablePriority = false;
-  private boolean registerShutdownHook = false;
-  private int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
-  private boolean alwaysPersistTimestampInUTC = false;
-  private List<SchedulerListener> schedulerListeners = new ArrayList<>();
-  private List<ExecutionInterceptor> executionInterceptors = new ArrayList<>();
+  protected boolean registerShutdownHook = false;
+  protected int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
+  protected boolean alwaysPersistTimestampInUTC = false;
+  protected List<SchedulerListener> schedulerListeners = new ArrayList<>();
+  protected List<ExecutionInterceptor> executionInterceptors = new ArrayList<>();
 
   public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
     this.dataSource = dataSource;

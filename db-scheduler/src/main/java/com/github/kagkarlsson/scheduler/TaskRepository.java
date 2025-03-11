@@ -15,6 +15,7 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Duration;
 import java.time.Instant;
@@ -24,11 +25,21 @@ import java.util.function.Consumer;
 
 public interface TaskRepository {
 
-  boolean createIfNotExists(SchedulableInstance execution);
+  /** Prefer ScheduledTaskInstance which has a fixed execution-time */
+  @Deprecated
+  boolean createIfNotExists(SchedulableInstance<?> execution);
+
+  boolean createIfNotExists(ScheduledTaskInstance execution);
 
   List<Execution> getDue(Instant now, int limit);
 
-  Instant replace(Execution toBeReplaced, SchedulableInstance newInstance);
+  void createBatch(List<ScheduledTaskInstance> executions);
+
+  Instant replace(Execution toBeReplaced, ScheduledTaskInstance newInstance);
+
+  /** Prefer ScheduledTaskInstance which has a fixed execution-time */
+  @Deprecated
+  Instant replace(Execution toBeReplaced, SchedulableInstance<?> newInstance);
 
   void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer);
 
@@ -71,7 +82,6 @@ public interface TaskRepository {
   default Optional<Execution> getExecution(TaskInstanceId taskInstance) {
     return getExecution(taskInstance.getTaskName(), taskInstance.getId());
   }
-  ;
 
   int removeExecutions(String taskName);
 

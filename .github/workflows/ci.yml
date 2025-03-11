@@ -18,6 +18,6 @@ jobs:
         cache: 'maven'
 
     - name: Run all tests
-      run: mvn -B -Pall-tests,publication clean package --file pom.xml
+      run: mvn -B -Ptests-for-ci,publication clean package --file pom.xml
       env:
         TZ: UTC

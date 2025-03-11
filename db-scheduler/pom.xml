@@ -16,14 +16,13 @@
         <license.dir>${project.parent.basedir}/.license</license.dir>
         <!-- Dependencies -->
         <cron-utils.version>9.2.1</cron-utils.version>
-        <hamcrest.version>1.3</hamcrest.version>
-        <hikaricp.version>4.0.3</hikaricp.version>
-        <hsqldb.version>2.7.2</hsqldb.version>
+        <hamcrest.version>3.0</hamcrest.version>
+        <hikaricp.version>6.2.1</hikaricp.version>
+        <hsqldb.version>2.7.4</hsqldb.version>
         <java8-matchers.version>1.6</java8-matchers.version>
-        <equals-verifier.version>3.14.2</equals-verifier.version>
-        <bytebuddy.version>1.14.5</bytebuddy.version>
-        <zonky-pg-embedded.version>2.0.4</zonky-pg-embedded.version>
-        <postgresql.version>42.5.5</postgresql.version>
+        <equals-verifier.version>3.19.1</equals-verifier.version>
+        <bytebuddy.version>1.17.1</bytebuddy.version>
+        <zonky-pg-embedded.version>2.1.0</zonky-pg-embedded.version>
         <slf4j.version>1.7.36</slf4j.version>
         <test.excludedTags>compatibility,compatibility-cluster</test.excludedTags>
     </properties>
@@ -156,6 +155,12 @@
             <artifactId>junit-jupiter-params</artifactId>
             <scope>test</scope>
         </dependency>
+      <dependency>
+        <groupId>org.hamcrest</groupId>
+        <artifactId>hamcrest</artifactId>
+        <version>${hamcrest.version}</version>
+        <scope>test</scope>
+      </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
@@ -226,7 +231,7 @@
         <dependency>
             <groupId>net.ttddyy</groupId>
             <artifactId>datasource-proxy</artifactId>
-            <version>1.9</version>
+            <version>1.10.1</version>
             <scope>test</scope>
         </dependency>
 
@@ -266,27 +271,27 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.28</version>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>9.2.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
-            <version>12.4.2.jre8</version>
+            <version>12.9.0.jre8-preview</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc8</artifactId>
-            <version>21.5.0.0</version>
+            <version>23.6.0.24.10</version>
             <scope>test</scope>
         </dependency>
       <dependency>
         <groupId>org.mariadb.jdbc</groupId>
         <artifactId>mariadb-java-client</artifactId>
-        <version>3.3.2</version>
+        <version>3.5.1</version>
         <scope>test</scope>
       </dependency>
 
@@ -294,7 +299,6 @@
       <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.8.0</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -365,15 +369,9 @@
             </properties>
         </profile>
         <profile>
-            <id>compatibility</id>
+            <id>tests-for-ci</id>
             <properties>
                 <test.excludedTags>compatibility-cluster</test.excludedTags>
-            </properties>
-        </profile>
-        <profile>
-            <id>compatibility-cluster</id>
-            <properties>
-                <test.excludedTags>compatibility</test.excludedTags>
             </properties>
         </profile>
     </profiles>
