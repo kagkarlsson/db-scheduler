@@ -38,6 +38,13 @@ public class DbSchedulerProperties {
   private Duration heartbeatInterval = SchedulerBuilder.DEFAULT_HEARTBEAT_INTERVAL;
 
   /**
+   * How many heart beats can be missed before an execution is considered dead.
+   *
+   * <p>Must be greater than or equal to 4
+   */
+  private int missedHeartbeatsLimit = SchedulerBuilder.DEFAULT_MISSED_HEARTBEATS_LIMIT;
+
+  /**
    * Name of this scheduler-instance. The name is stored in the database when an execution is picked
    * by a scheduler.
    *
@@ -139,6 +146,14 @@ public class DbSchedulerProperties {
 
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = heartbeatInterval;
+  }
+
+  public int getMissedHeartbeatsLimit() {
+    return missedHeartbeatsLimit;
+  }
+
+  public void setMissedHeartbeatsLimit(final int missedHeartbeatsLimit) {
+    this.missedHeartbeatsLimit = missedHeartbeatsLimit;
   }
 
   public String getSchedulerName() {
