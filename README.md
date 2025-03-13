@@ -131,7 +131,7 @@ TaskDescriptor<MyTaskData> MY_TASK =
 OneTimeTask<MyTaskData> myTaskImplementation =
     Tasks.oneTime(MY_TASK)
         .execute((inst, ctx) -> {
-              System.out.println("Executed! Custom data, Id: " + inst.getData().id);
+              System.out.println("Executed! Custom data, Id: " + inst.getId());
         });
 
 final Scheduler scheduler = Scheduler
