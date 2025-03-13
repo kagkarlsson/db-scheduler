@@ -24,6 +24,7 @@ import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistryAdapter;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -67,6 +68,11 @@ public class TestHelper {
 
     public ManualSchedulerBuilder pollingStrategy(PollingStrategyConfig pollingStrategyConfig) {
       super.pollingStrategyConfig = pollingStrategyConfig;
+      return this;
+    }
+
+    public ManualSchedulerBuilder deleteUnresolvedAfter(Duration deleteUnresolvedAfter) {
+      super.deleteUnresolvedAfter = deleteUnresolvedAfter;
       return this;
     }
 

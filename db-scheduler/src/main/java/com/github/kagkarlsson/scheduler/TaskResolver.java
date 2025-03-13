@@ -17,7 +17,6 @@ import static java.util.function.Function.identity;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Task;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,16 +76,6 @@ public class TaskResolver {
 
   public List<UnresolvedTask> getUnresolved() {
     return new ArrayList<>(unresolvedTasks.values());
-  }
-
-  public List<String> getUnresolvedTaskNames(Duration unresolvedFor) {
-    return unresolvedTasks.values().stream()
-        .filter(
-            unresolved ->
-                Duration.between(unresolved.firstUnresolved, clock.now()).toMillis()
-                    > unresolvedFor.toMillis())
-        .map(UnresolvedTask::getTaskName)
-        .collect(Collectors.toList());
   }
 
   public void clearUnresolved(String taskName) {
