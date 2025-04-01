@@ -46,18 +46,18 @@ public class ImmediateExecutionTest {
           TestableListener.Condition executeDueCondition =
               TestableListener.Conditions.ranExecuteDue(1);
 
-          TestableListener registry =
+          TestableListener listener =
               TestableListener.create()
                   .waitConditions(executeDueCondition, completedCondition)
                   .build();
 
-          Scheduler scheduler = createAndStartScheduler(task, registry);
+          Scheduler scheduler = createAndStartScheduler(task, listener);
           executeDueCondition.waitFor();
 
           scheduler.schedule(task.instance("1"), clock.now());
           completedCondition.waitFor();
 
-          List<ExecutionComplete> completed = registry.getCompleted();
+          List<ExecutionComplete> completed = listener.getCompleted();
           assertThat(completed, hasSize(1));
           completed.forEach(
               e -> {
@@ -65,7 +65,7 @@ public class ImmediateExecutionTest {
                 Duration durationUntilExecuted = Duration.between(now, e.getTimeDone());
                 assertThat(durationUntilExecuted, TimeMatchers.shorterThan(Duration.ofSeconds(1)));
               });
-          registry.assertNoFailures();
+          listener.assertNoFailures();
         });
   }
 
