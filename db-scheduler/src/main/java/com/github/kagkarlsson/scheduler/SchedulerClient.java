@@ -24,7 +24,6 @@ import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
@@ -375,7 +374,7 @@ public interface SchedulerClient {
     }
 
     public SchedulerClient build() {
-      TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, knownTasks);
+      TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, knownTasks);
       final SystemClock clock = new SystemClock();
 
       final JdbcCustomization jdbcCustomization =

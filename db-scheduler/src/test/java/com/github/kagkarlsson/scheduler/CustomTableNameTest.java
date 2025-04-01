@@ -4,8 +4,8 @@ import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.RowMapper;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -39,7 +39,7 @@ public class CustomTableNameTest {
             DB.getDataSource(),
             false,
             CUSTOM_TABLENAME,
-            new TaskResolver(StatsRegistry.NOOP, knownTasks),
+            new TaskResolver(SchedulerListeners.NOOP, knownTasks),
             new SchedulerName.Fixed(SCHEDULER_NAME),
             false,
             new SystemClock());

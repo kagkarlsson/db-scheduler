@@ -12,7 +12,7 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName.Fixed;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.TestTasks;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import java.time.Duration;
@@ -33,15 +33,15 @@ public class PriorityExecutionTest {
 
   @Test
   public void test_when_priority_is_enabled() {
-    TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(4);
-    TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
+    TestableListener.Condition condition = TestableListener.Conditions.completed(4);
+    TestableListener listener = TestableListener.create().waitConditions(condition).build();
 
     Scheduler scheduler =
         Scheduler.create(postgres.getDataSource(), oneTimeTask)
             .threads(1) // 1 thread to force being sequential
             .pollingInterval(ofMinutes(1))
             .schedulerName(new Fixed("test"))
-            .statsRegistry(registry)
+            .addSchedulerListener(listener)
             .enablePriority()
             .build();
 
@@ -70,7 +70,7 @@ public class PriorityExecutionTest {
           scheduler.start();
           condition.waitFor();
 
-          List<ExecutionComplete> completed = registry.getCompleted();
+          List<ExecutionComplete> completed = listener.getCompleted();
           assertThat(completed, hasSize(4));
 
           // when priority is enabled
@@ -97,21 +97,21 @@ public class PriorityExecutionTest {
                   Instant.parse("2020-01-01T18:00:00Z"),
                   Instant.parse("2020-01-01T10:00:00Z")));
 
-          registry.assertNoFailures();
+          listener.assertNoFailures();
         });
   }
 
   @Test
   public void test_when_priority_is_disabled() {
-    TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(4);
-    TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
+    TestableListener.Condition condition = TestableListener.Conditions.completed(4);
+    TestableListener listener = TestableListener.create().waitConditions(condition).build();
 
     Scheduler scheduler =
         Scheduler.create(postgres.getDataSource(), oneTimeTask)
             .threads(1) // 1 thread to force being sequential
             .pollingInterval(ofMinutes(1))
             .schedulerName(new Fixed("test"))
-            .statsRegistry(registry)
+            .addSchedulerListener(listener)
             .build();
 
     stopScheduler.register(scheduler);
@@ -141,7 +141,7 @@ public class PriorityExecutionTest {
           scheduler.start();
           condition.waitFor();
 
-          List<ExecutionComplete> completed = registry.getCompleted();
+          List<ExecutionComplete> completed = listener.getCompleted();
           assertThat(completed, hasSize(4));
 
           // when priority is disabled
@@ -166,7 +166,7 @@ public class PriorityExecutionTest {
                   .map(e -> e.taskInstance.getPriority())
                   .collect(Collectors.toList());
 
-          registry.assertNoFailures();
+          listener.assertNoFailures();
         });
   }
 }

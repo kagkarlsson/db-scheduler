@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import co.unruly.matchers.TimeMatchers;
 import com.github.kagkarlsson.scheduler.*;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -42,12 +42,12 @@ public class ImmediateExecutionTest {
         () -> {
           Instant now = Instant.now();
           OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
-          TestableRegistry.Condition completedCondition = TestableRegistry.Conditions.completed(1);
-          TestableRegistry.Condition executeDueCondition =
-              TestableRegistry.Conditions.ranExecuteDue(1);
+          TestableListener.Condition completedCondition = TestableListener.Conditions.completed(1);
+          TestableListener.Condition executeDueCondition =
+              TestableListener.Conditions.ranExecuteDue(1);
 
-          TestableRegistry registry =
-              TestableRegistry.create()
+          TestableListener registry =
+              TestableListener.create()
                   .waitConditions(executeDueCondition, completedCondition)
                   .build();
 
@@ -87,22 +87,22 @@ public class ImmediateExecutionTest {
                         }
                       });
 
-          TestableRegistry.Condition completedCondition = TestableRegistry.Conditions.completed(2);
-          TestableRegistry.Condition executeDueCondition =
-              TestableRegistry.Conditions.ranExecuteDue(1);
+          TestableListener.Condition completedCondition = TestableListener.Conditions.completed(2);
+          TestableListener.Condition executeDueCondition =
+              TestableListener.Conditions.ranExecuteDue(1);
 
-          TestableRegistry registry =
-              TestableRegistry.create()
+          TestableListener listener =
+              TestableListener.create()
                   .waitConditions(executeDueCondition, completedCondition)
                   .build();
 
-          Scheduler scheduler = createAndStartScheduler(task, registry);
+          Scheduler scheduler = createAndStartScheduler(task, listener);
           executeDueCondition.waitFor();
 
           scheduler.schedule(task.instance("id1", 1), clock.now());
           completedCondition.waitFor();
 
-          List<ExecutionComplete> completed = registry.getCompleted();
+          List<ExecutionComplete> completed = listener.getCompleted();
           assertThat(completed, hasSize(2));
           completed.forEach(
               e -> {
@@ -111,17 +111,17 @@ public class ImmediateExecutionTest {
                 assertThat(durationUntilExecuted, TimeMatchers.shorterThan(Duration.ofSeconds(1)));
               });
           assertEquals(scheduler.getScheduledExecutions().size(), 0);
-          registry.assertNoFailures();
+          listener.assertNoFailures();
         });
   }
 
-  private Scheduler createAndStartScheduler(Task task, TestableRegistry registry) {
+  private Scheduler createAndStartScheduler(Task task, TestableListener listener) {
     Scheduler scheduler =
         Scheduler.create(postgres.getDataSource(), task)
             .pollingInterval(Duration.ofMinutes(1))
             .enableImmediateExecution()
             .schedulerName(new SchedulerName.Fixed("test"))
-            .statsRegistry(registry)
+            .addSchedulerListener(listener)
             .build();
     stopScheduler.register(scheduler);
 

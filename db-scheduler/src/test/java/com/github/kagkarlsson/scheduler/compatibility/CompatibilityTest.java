@@ -24,12 +24,12 @@ import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.helper.ExecutionCompletedCondition;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
@@ -76,7 +76,7 @@ public abstract class CompatibilityTest {
   private RecurringTask<Void> recurring;
   private RecurringTask<Integer> recurringWithData;
 
-  private TestableRegistry testableRegistry;
+  private TestableListener testableListener;
   private ExecutionCompletedCondition completed12Condition;
 
   public CompatibilityTest(boolean supportsSelectForUpdate, boolean shouldHavePersistentTimezone) {
@@ -114,7 +114,7 @@ public abstract class CompatibilityTest {
             new DoNothingHandler<>());
 
     completed12Condition = new ExecutionCompletedCondition(12);
-    testableRegistry = new TestableRegistry(false, singletonList(completed12Condition));
+    testableListener = new TestableListener(false, singletonList(completed12Condition));
   }
 
   @AfterEach
@@ -130,7 +130,7 @@ public abstract class CompatibilityTest {
             .pollUsingFetchAndLockOnExecute(0, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH)
             .heartbeatInterval(Duration.ofMillis(100))
             .schedulerName(new SchedulerName.Fixed("test"))
-            .statsRegistry(testableRegistry)
+            .addSchedulerListener(testableListener)
             .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
             .build();
     stopScheduler.register(scheduler);
@@ -150,7 +150,7 @@ public abstract class CompatibilityTest {
             .pollUsingLockAndFetch(0.5, 1.0)
             .heartbeatInterval(Duration.ofMillis(500))
             .schedulerName(new SchedulerName.Fixed("test"))
-            .statsRegistry(testableRegistry)
+            .addSchedulerListener(testableListener)
             .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled());
 
     getJdbcCustomization().ifPresent(builder::jdbcCustomization);
@@ -175,7 +175,7 @@ public abstract class CompatibilityTest {
           scheduler.start();
           completed12Condition.waitFor();
           scheduler.stop();
-          testableRegistry.assertNoFailures();
+          testableListener.assertNoFailures();
 
           assertThat(delayingHandlerRecurring.timesExecuted.get(), greaterThan(10));
           assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
@@ -270,7 +270,7 @@ public abstract class CompatibilityTest {
   }
 
   private JdbcTaskRepository createJdbcTaskRepository(boolean orderByPriority) {
-    TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
@@ -295,7 +295,7 @@ public abstract class CompatibilityTest {
       return;
     }
 
-    TaskResolver defaultTaskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    TaskResolver defaultTaskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
     defaultTaskResolver.addTask(oneTime);
 
     JdbcTaskRepository winterTaskRepo = createRepositoryForForZone(defaultTaskResolver, "CET");
@@ -312,7 +312,7 @@ public abstract class CompatibilityTest {
   }
 
   private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
-    TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
@@ -376,7 +376,7 @@ public abstract class CompatibilityTest {
 
   @Test
   public void test_jdbc_repository_compatibility_set_data() {
-    TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
     taskResolver.addTask(recurringWithData);
 
     DataSource dataSource = getDataSource();
@@ -429,7 +429,7 @@ public abstract class CompatibilityTest {
         "Running  test_jdbc_customization_supports_timestamps_in_utc for: "
             + jdbcCustomization.get().getName());
 
-    TaskResolver defaultTaskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    TaskResolver defaultTaskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
     defaultTaskResolver.addTask(oneTime);
 
     JdbcTaskRepository taskRepo =
