@@ -15,6 +15,7 @@ package com.github.kagkarlsson.scheduler;
 
 import static java.util.function.Function.identity;
 
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -38,12 +39,25 @@ public class TaskResolver {
   private final Map<String, Task> taskMap;
   private final Map<String, UnresolvedTask> unresolvedTasks = new ConcurrentHashMap<>();
 
+  public TaskResolver(SchedulerListener schedulerListener, Task<?>... knownTasks) {
+    this(new SchedulerListeners(List.of(schedulerListener)), knownTasks);
+  }
+
   public TaskResolver(SchedulerListeners schedulerListeners, Task<?>... knownTasks) {
     this(schedulerListeners, Arrays.asList(knownTasks));
   }
 
+  public TaskResolver(SchedulerListener schedulerListener, List<Task<?>> knownTasks) {
+    this(List.of(schedulerListener), new SystemClock(), knownTasks);
+  }
+
   public TaskResolver(SchedulerListeners schedulerListeners, List<Task<?>> knownTasks) {
     this(schedulerListeners, new SystemClock(), knownTasks);
+  }
+
+  public TaskResolver(
+      List<SchedulerListener> schedulerListeners, Clock clock, List<Task<?>> knownTasks) {
+    this(new SchedulerListeners(schedulerListeners), clock, knownTasks);
   }
 
   public TaskResolver(

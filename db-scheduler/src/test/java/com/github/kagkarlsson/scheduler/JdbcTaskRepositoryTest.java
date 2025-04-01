@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
-import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
@@ -65,7 +64,7 @@ public class JdbcTaskRepositoryTest {
     knownTasks.add(oneTimeTaskWithData);
     knownTasks.add(alternativeOneTimeTask);
     testableListener = new TestableListener(true, Collections.emptyList());
-    taskResolver = new TaskResolver(new SchedulerListeners(List.of(testableListener)), knownTasks);
+    taskResolver = new TaskResolver(testableListener, knownTasks);
     taskRepository = createRepository(taskResolver, false);
   }
 
@@ -428,8 +427,7 @@ public class JdbcTaskRepositoryTest {
     final Instant timeDied = now.minus(Duration.ofDays(5));
     createDeadExecution(oneTimeTask.instance("id1"), timeDied);
 
-    TaskResolver taskResolverMissingTask =
-        new TaskResolver(new SchedulerListeners(List.of(testableListener)));
+    TaskResolver taskResolverMissingTask = new TaskResolver(testableListener);
     JdbcTaskRepository repoMissingTask = createRepository(taskResolverMissingTask, false);
 
     assertThat(taskResolverMissingTask.getUnresolved(), hasSize(0));
