@@ -37,6 +37,7 @@ public class TaskResolver {
   private final Map<String, Task> taskMap;
   private final Map<String, UnresolvedTask> unresolvedTasks = new ConcurrentHashMap<>();
 
+
   public TaskResolver(StatsRegistry statsRegistry, Task<?>... knownTasks) {
     this(statsRegistry, Arrays.asList(knownTasks));
   }
