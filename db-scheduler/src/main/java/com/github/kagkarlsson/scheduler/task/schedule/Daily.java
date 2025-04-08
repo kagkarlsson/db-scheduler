@@ -51,7 +51,7 @@ public class Daily implements Schedule, Serializable {
 
   public Daily(ZoneId zone, List<LocalTime> times) {
     this.zone = Objects.requireNonNull(zone, "zone cannot be null");
-    if (times.size() < 1) {
+    if (times.isEmpty()) {
       throw new IllegalArgumentException("times cannot be empty");
     }
     this.times = times.stream().sorted().collect(Collectors.toList());
@@ -69,7 +69,7 @@ public class Daily implements Schedule, Serializable {
       }
     }
 
-    return ZonedDateTime.of(doneDate, times.get(0), zone).plusDays(1).toInstant();
+    return ZonedDateTime.of(doneDate.plusDays(1), times.get(0), zone).toInstant();
   }
 
   @Override
