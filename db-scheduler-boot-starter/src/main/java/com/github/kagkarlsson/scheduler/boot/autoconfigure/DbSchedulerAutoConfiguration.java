@@ -141,6 +141,8 @@ public class DbSchedulerAutoConfiguration {
 
     builder.heartbeatInterval(config.getHeartbeatInterval());
 
+    builder.missedHeartbeatsLimit(config.getMissedHeartbeatsLimit());
+
     // Use scheduler name implementation from customizer if available, otherwise use
     // configured scheduler name (String). If both is absent, use the library default
     if (customizer.schedulerName().isPresent()) {
