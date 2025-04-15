@@ -17,6 +17,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.scheduler.SchedulerState.SettableSchedulerState;
+import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
@@ -34,7 +35,9 @@ import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -364,8 +367,31 @@ public class Scheduler implements SchedulerClient {
   @SuppressWarnings({"rawtypes", "unchecked"})
   protected void detectDeadExecutions() {
     LOG.debug("Deleting executions with unresolved tasks.");
-    taskResolver
-        .getUnresolvedTaskNames(deleteUnresolvedAfter)
+
+    Map<String, Instant> taskToNewestExecutionTime = new HashMap<>();
+    schedulerTaskRepository.getScheduledExecutions(
+        ScheduledExecutionsFilter.all(),
+        execution ->
+            taskToNewestExecutionTime.merge(
+                execution.taskInstance.getTaskName(),
+                execution.executionTime,
+                (oldValue, newValue) -> oldValue.isAfter(newValue) ? oldValue : newValue));
+
+    taskResolver.getUnresolved().stream()
+        .map(UnresolvedTask::getTaskName)
+        .filter(
+            taskName -> {
+              Instant newestExecution = taskToNewestExecutionTime.get(taskName);
+
+              if (newestExecution == null) {
+                // probably deleted by other node
+                return true;
+              }
+
+              Duration age = Duration.between(newestExecution, clock.now());
+
+              return age.compareTo(deleteUnresolvedAfter) >= 0;
+            })
         .forEach(
             taskName -> {
               LOG.warn(
