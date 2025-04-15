@@ -33,8 +33,9 @@ jobs:
         uses: jreleaser/release-action@v2
         with:
           setup-java: false
-          version: 1.13.1
+          version: 1.17.0
         env:
+          JRELEASER_BRANCH: master
           JRELEASER_PROJECT_VERSION: ${{ github.event.inputs.version }}
           JRELEASER_GITHUB_TOKEN: ${{ secrets.JRELEASER_GITHUB_TOKEN }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.JRELEASER_GPG_PASSPHRASE }}
