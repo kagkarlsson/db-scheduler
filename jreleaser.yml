@@ -18,11 +18,17 @@ release:
     owner: kagkarlsson
     overwrite: false
     skipRelease: false
-    draft: true
+    draft: false
     skipTag: false
     releaseName: '{{tagName}}'
-    releaseNotes:
-      enabled: true
+    changelog:
+      formatted: ALWAYS
+      preset: conventional-commits
+      contributors:
+        format: '- {{contributorName}}{{#contributorUsernameAsLink}} ({{.}}){{/contributorUsernameAsLink}}'
+      hide:
+        contributors:
+          - 'GitHub'
     issues:
       enabled: true
 
