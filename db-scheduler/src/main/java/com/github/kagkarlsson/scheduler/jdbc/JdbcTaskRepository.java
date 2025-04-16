@@ -647,7 +647,7 @@ public class JdbcTaskRepository implements TaskRepository {
     if (updated == 0) {
       // There is a race-condition: Executions are not removed from currently-executing until after
       // the execution has been updated in the database, so this might happen.
-      LOG.warn(
+      LOG.debug(
           "Did not update heartbeat. Execution must have been removed or rescheduled"
               + "(i.e. CompletionHandler ran and finished just before heartbeat-update). "
               + "This is a race-condition that may occur, but is very unlikely. "
