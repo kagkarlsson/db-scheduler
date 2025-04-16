@@ -44,7 +44,7 @@ public class MssqlClusterTest {
   @Container
   private static final MSSQLServerContainer MSSQL =
       new MSSQLServerContainer<>(
-          DockerImageName.parse("mcr.microsoft.com/mssql/server:2019-latest"));
+          DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"));
 
   private static DataSource pooledDatasource;
 
