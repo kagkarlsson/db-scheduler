@@ -18,6 +18,7 @@ import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
@@ -45,6 +46,7 @@ public class TestHelper {
   }
 
   public static class ManualSchedulerBuilder extends SchedulerBuilder {
+
     private SettableClock clock;
 
     public ManualSchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
@@ -77,7 +79,8 @@ public class TestHelper {
     }
 
     public ManualScheduler build() {
-      final TaskResolver taskResolver = new TaskResolver(schedulerListeners, clock, knownTasks);
+      final TaskResolver taskResolver =
+          new TaskResolver(new SchedulerListeners(schedulerListeners), clock, knownTasks);
       final JdbcTaskRepository schedulerTaskRepository =
           new JdbcTaskRepository(
               dataSource,

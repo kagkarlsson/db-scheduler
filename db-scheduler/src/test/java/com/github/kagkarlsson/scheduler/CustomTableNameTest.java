@@ -39,7 +39,7 @@ public class CustomTableNameTest {
             DB.getDataSource(),
             false,
             CUSTOM_TABLENAME,
-            new TaskResolver(SchedulerListeners.NOOP, knownTasks),
+            new TaskResolver(SchedulerListeners.NOOP, new SystemClock(), knownTasks),
             new SchedulerName.Fixed(SCHEDULER_NAME),
             false,
             new SystemClock());

@@ -374,8 +374,8 @@ public interface SchedulerClient {
     }
 
     public SchedulerClient build() {
-      TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, knownTasks);
       final SystemClock clock = new SystemClock();
+      TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, knownTasks);
 
       final JdbcCustomization jdbcCustomization =
           ofNullable(this.jdbcCustomization)

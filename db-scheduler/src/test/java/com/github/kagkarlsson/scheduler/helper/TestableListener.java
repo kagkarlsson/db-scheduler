@@ -60,7 +60,7 @@ public class TestableListener implements SchedulerListener {
 
   @Override
   public void onExecutionDead(Execution execution) {
-    log(execution);
+    logOnExecutionDead(execution);
   }
 
   @Override
@@ -142,7 +142,7 @@ public class TestableListener implements SchedulerListener {
     log("Execution started: " + currentlyExecuting);
   }
 
-  public void log(Execution execution) {
+  public void logOnExecutionDead(Execution execution) {
     log("Execution died: " + execution);
   }
 

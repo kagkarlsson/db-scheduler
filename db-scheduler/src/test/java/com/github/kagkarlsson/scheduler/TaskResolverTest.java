@@ -5,6 +5,8 @@ import static org.mockito.Mockito.verify;
 
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -17,7 +19,9 @@ class TaskResolverTest {
 
   @Test
   void shouldProduceUnresolvedTaskEventWhenTheTaskResolverIsUnableToResolveTheTask() {
-    TaskResolver taskResolver = new TaskResolver(mockScheduleListener);
+    TaskResolver taskResolver =
+        new TaskResolver(
+            new SchedulerListeners(mockScheduleListener), new SystemClock(), List.of());
 
     taskResolver.resolve("unknown-task");
 

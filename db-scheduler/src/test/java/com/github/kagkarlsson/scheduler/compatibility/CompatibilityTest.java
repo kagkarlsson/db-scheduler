@@ -270,7 +270,8 @@ public abstract class CompatibilityTest {
   }
 
   private JdbcTaskRepository createJdbcTaskRepository(boolean orderByPriority) {
-    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
+    SystemClock clock = new SystemClock();
+    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, new ArrayList<>());
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
@@ -285,7 +286,7 @@ public abstract class CompatibilityTest {
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
             orderByPriority,
-            new SystemClock());
+            clock);
     return jdbcTaskRepository;
   }
 
@@ -295,7 +296,8 @@ public abstract class CompatibilityTest {
       return;
     }
 
-    TaskResolver defaultTaskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
+    TaskResolver defaultTaskResolver =
+        new TaskResolver(SchedulerListeners.NOOP, new SystemClock(), List.of());
     defaultTaskResolver.addTask(oneTime);
 
     JdbcTaskRepository winterTaskRepo = createRepositoryForForZone(defaultTaskResolver, "CET");
@@ -312,7 +314,8 @@ public abstract class CompatibilityTest {
   }
 
   private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
-    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
+    SystemClock clock = new SystemClock();
+    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, List.of());
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
@@ -324,7 +327,7 @@ public abstract class CompatibilityTest {
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
             false,
-            new SystemClock());
+            clock);
 
     final JdbcTaskRepository jdbcTaskRepositoryWithPriority =
         new JdbcTaskRepository(
@@ -334,7 +337,7 @@ public abstract class CompatibilityTest {
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
             true,
-            new SystemClock());
+            clock);
 
     final Instant now = truncatedInstantNow();
 
@@ -376,7 +379,8 @@ public abstract class CompatibilityTest {
 
   @Test
   public void test_jdbc_repository_compatibility_set_data() {
-    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
+    SystemClock clock = new SystemClock();
+    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, List.of());
     taskResolver.addTask(recurringWithData);
 
     DataSource dataSource = getDataSource();
@@ -388,7 +392,7 @@ public abstract class CompatibilityTest {
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
             false,
-            new SystemClock());
+            clock);
 
     final Instant now = truncatedInstantNow();
 
@@ -429,7 +433,8 @@ public abstract class CompatibilityTest {
         "Running  test_jdbc_customization_supports_timestamps_in_utc for: "
             + jdbcCustomization.get().getName());
 
-    TaskResolver defaultTaskResolver = new TaskResolver(SchedulerListeners.NOOP, new ArrayList<>());
+    TaskResolver defaultTaskResolver =
+        new TaskResolver(SchedulerListeners.NOOP, new SystemClock(), List.of());
     defaultTaskResolver.addTask(oneTime);
 
     JdbcTaskRepository taskRepo =

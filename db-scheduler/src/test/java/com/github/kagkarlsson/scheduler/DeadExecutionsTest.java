@@ -48,7 +48,8 @@ public class DeadExecutionsTest {
             "NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
 
     TaskResolver taskResolver =
-        new TaskResolver(SchedulerListeners.NOOP, oneTimeTask, nonCompleting);
+        new TaskResolver(
+            SchedulerListeners.NOOP, settableClock, List.of(oneTimeTask, nonCompleting));
 
     jdbcTaskRepository =
         new JdbcTaskRepository(
