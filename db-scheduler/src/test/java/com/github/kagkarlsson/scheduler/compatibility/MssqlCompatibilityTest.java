@@ -28,9 +28,11 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 public class MssqlCompatibilityTest extends CompatibilityTest {
 
-  @Container private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer<>(
-    DockerImageName.parse("mcr.microsoft.com/mssql/server:2019-latest")
-  );
+  @Container
+  private static final MSSQLServerContainer MSSQL =
+      new MSSQLServerContainer<>(
+          DockerImageName.parse("mcr.microsoft.com/mssql/server:2019-latest"));
+
   private static DataSource pooledDatasource;
 
   public MssqlCompatibilityTest() {

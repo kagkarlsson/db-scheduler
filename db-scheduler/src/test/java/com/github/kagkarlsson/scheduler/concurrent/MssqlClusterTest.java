@@ -41,9 +41,11 @@ public class MssqlClusterTest {
   //        new LogLevelOverride("com.github.kagkarlsson.scheduler.FetchCandidates", Level.DEBUG)
   //    );
 
-  @Container private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer<>(
-    DockerImageName.parse("mcr.microsoft.com/mssql/server:2019-latest")
-  );
+  @Container
+  private static final MSSQLServerContainer MSSQL =
+      new MSSQLServerContainer<>(
+          DockerImageName.parse("mcr.microsoft.com/mssql/server:2019-latest"));
+
   private static DataSource pooledDatasource;
 
   @BeforeAll
