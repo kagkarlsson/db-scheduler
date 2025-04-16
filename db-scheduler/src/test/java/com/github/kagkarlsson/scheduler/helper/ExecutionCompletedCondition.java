@@ -1,12 +1,13 @@
 package com.github.kagkarlsson.scheduler.helper;
 
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.CandidateEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete.Result;
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.LoggerFactory;
 
-public class ExecutionCompletedCondition implements TestableRegistry.Condition {
+public class ExecutionCompletedCondition implements TestableListener.Condition {
 
   private final CountDownLatch completed;
   private final int numberCompleted;
@@ -28,13 +29,10 @@ public class ExecutionCompletedCondition implements TestableRegistry.Condition {
   }
 
   @Override
-  public void apply(StatsRegistry.SchedulerStatsEvent e) {}
+  public void apply(SchedulerEventType e) {}
 
   @Override
-  public void apply(StatsRegistry.CandidateStatsEvent e) {}
-
-  @Override
-  public void apply(StatsRegistry.ExecutionStatsEvent e) {}
+  public void apply(CandidateEventType e) {}
 
   @Override
   public void applyExecutionComplete(ExecutionComplete complete) {

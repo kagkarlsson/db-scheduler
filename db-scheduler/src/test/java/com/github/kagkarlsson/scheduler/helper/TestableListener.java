@@ -1,7 +1,11 @@
 package com.github.kagkarlsson.scheduler.helper;
 
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.CurrentlyExecuting;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -9,61 +13,74 @@ import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestableRegistry implements StatsRegistry {
+public class TestableListener implements SchedulerListener {
 
-  public static final EnumSet<SchedulerStatsEvent> FAILURE_EVENTS =
+  public static final EnumSet<SchedulerEventType> FAILURE_EVENTS =
       EnumSet.of(
-          SchedulerStatsEvent.UNEXPECTED_ERROR,
-          SchedulerStatsEvent.COMPLETIONHANDLER_ERROR,
-          SchedulerStatsEvent.FAILUREHANDLER_ERROR,
-          SchedulerStatsEvent.DEAD_EXECUTION);
+          SchedulerEventType.UNEXPECTED_ERROR,
+          SchedulerEventType.COMPLETIONHANDLER_ERROR,
+          SchedulerEventType.FAILUREHANDLER_ERROR,
+          SchedulerEventType.DEAD_EXECUTION);
 
-  private static final Logger REGISTRY_LOGGER = LoggerFactory.getLogger(TestableRegistry.class);
+  private static final Logger LISTENER_LOGGER = LoggerFactory.getLogger(TestableListener.class);
 
   private final List<ExecutionComplete> completed;
-  private final List<SchedulerStatsEvent> stats;
+  private final List<SchedulerEventType> stats;
   private List<Condition> waitConditions;
   private Map<String, AtomicLong> counters = new ConcurrentHashMap();
   private final boolean logEvents;
 
-  public TestableRegistry(boolean logEvents, List<Condition> waitConditions) {
+  public TestableListener(boolean logEvents, List<Condition> waitConditions) {
     this.logEvents = logEvents;
     this.waitConditions = Collections.synchronizedList(waitConditions);
     this.completed = Collections.synchronizedList(new ArrayList<>());
     this.stats = Collections.synchronizedList(new ArrayList<>());
   }
 
-  public static TestableRegistry.Builder create() {
-    return new TestableRegistry.Builder();
+  public static TestableListener.Builder create() {
+    return new TestableListener.Builder();
   }
 
   @Override
-  public void register(SchedulerStatsEvent e) {
-    this.stats.add(e);
-    applyToConditions(e);
-    log(e);
-    countEvent(e);
+  public void onExecutionScheduled(TaskInstanceId taskInstanceId, Instant executionTime) {
+    log(taskInstanceId, executionTime);
   }
 
   @Override
-  public void register(CandidateStatsEvent e) {
-    applyToConditions(e);
-    log(e);
-    countEvent(e);
+  public void onExecutionStart(CurrentlyExecuting currentlyExecuting) {
+    logOnExecutionStart(currentlyExecuting);
   }
 
   @Override
-  public void register(ExecutionStatsEvent e) {
-    applyToConditions(e);
-    log(e);
-    countEvent(e);
+  public void onExecutionComplete(ExecutionComplete executionComplete) {
+    completed.add(executionComplete);
+    applyToConditions(executionComplete);
+    log(executionComplete);
   }
 
   @Override
-  public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {
-    completed.add(completeEvent);
-    applyToConditions(completeEvent);
-    log(completeEvent);
+  public void onExecutionDead(Execution execution) {
+    logOnExecutionDead(execution);
+  }
+
+  @Override
+  public void onExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting) {
+    logOnExecutionFailedHeartbeat(currentlyExecuting);
+  }
+
+  @Override
+  public void onSchedulerEvent(SchedulerEventType type) {
+    this.stats.add(type);
+    applyToConditions(type);
+    log(type);
+    countEvent(type);
+  }
+
+  @Override
+  public void onCandidateEvent(CandidateEventType type) {
+    applyToConditions(type);
+    log(type);
+    countEvent(type);
   }
 
   public List<ExecutionComplete> getCompleted() {
@@ -84,15 +101,11 @@ public class TestableRegistry implements StatsRegistry {
         });
   }
 
-  private void applyToConditions(SchedulerStatsEvent e) {
+  private void applyToConditions(SchedulerEventType e) {
     waitConditions.forEach(c -> c.apply(e));
   }
 
-  private void applyToConditions(CandidateStatsEvent e) {
-    waitConditions.forEach(c -> c.apply(e));
-  }
-
-  private void applyToConditions(ExecutionStatsEvent e) {
+  private void applyToConditions(CandidateEventType e) {
     waitConditions.forEach(c -> c.apply(e));
   }
 
@@ -121,15 +134,27 @@ public class TestableRegistry implements StatsRegistry {
     return enumClass.getName() + "." + enumName;
   }
 
-  private void log(SchedulerStatsEvent e) {
+  public void log(TaskInstanceId taskInstanceId, Instant executionTime) {
+    log("Execution scheduled: " + taskInstanceId + " at " + executionTime);
+  }
+
+  public void logOnExecutionStart(CurrentlyExecuting currentlyExecuting) {
+    log("Execution started: " + currentlyExecuting);
+  }
+
+  public void logOnExecutionDead(Execution execution) {
+    log("Execution died: " + execution);
+  }
+
+  public void logOnExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting) {
+    log("Execution failed heartbeat: " + currentlyExecuting);
+  }
+
+  private void log(SchedulerEventType e) {
     log("Event: " + e.name());
   }
 
-  private void log(CandidateStatsEvent e) {
-    log("Event: " + e.name());
-  }
-
-  private void log(ExecutionStatsEvent e) {
+  private void log(CandidateEventType e) {
     log("Event: " + e.name());
   }
 
@@ -139,39 +164,37 @@ public class TestableRegistry implements StatsRegistry {
 
   private void log(String s) {
     if (logEvents) {
-      REGISTRY_LOGGER.info(s);
+      LISTENER_LOGGER.info(s);
     }
   }
 
   public interface Condition {
     void waitFor();
 
-    void apply(SchedulerStatsEvent e);
+    void apply(SchedulerEventType e);
 
-    void apply(CandidateStatsEvent e);
-
-    void apply(ExecutionStatsEvent e);
+    void apply(CandidateEventType e);
 
     void applyExecutionComplete(ExecutionComplete complete);
   }
 
   public static class Builder {
 
-    private List<Condition> waitConditions = new ArrayList<>();
+    private final List<Condition> waitConditions = new ArrayList<>();
     private boolean logEvents = false;
 
-    public Builder waitConditions(Condition... waitConditions) {
+    public TestableListener.Builder waitConditions(Condition... waitConditions) {
       this.waitConditions.addAll(Arrays.asList(waitConditions));
       return this;
     }
 
-    public Builder logEvents() {
+    public TestableListener.Builder logEvents() {
       this.logEvents = true;
       return this;
     }
 
-    public TestableRegistry build() {
-      return new TestableRegistry(logEvents, waitConditions);
+    public TestableListener build() {
+      return new TestableListener(logEvents, waitConditions);
     }
   }
 
