@@ -13,15 +13,15 @@
  */
 package com.github.kagkarlsson.examples;
 
-import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
-
 import com.github.kagkarlsson.examples.helpers.Example;
-import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.scheduler.HeartbeatState;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
 import javax.sql.DataSource;
@@ -64,11 +64,18 @@ public class HeartbeatMonitoringMain extends Example {
     scheduler.schedule(WAIT_FOR_STALE_HEARTBEAT_TASK.instance("1045").scheduledTo(Instant.now()));
 
     sleep(4000);
-    JdbcRunner jdbcRunner = new JdbcRunner(dataSource);
-
     // simulate something that will cause heartbeating to fail
     System.out.println("Fake update on execution to cause heartbeat-update to fail.");
-    jdbcRunner.execute("update scheduled_tasks set version = version + 1", NOOP);
+    runSql(dataSource, "update scheduled_tasks set version = version + 1");
+  }
+
+  private void runSql(DataSource ds, String sql) {
+    try (Connection c = ds.getConnection();
+        Statement s = c.createStatement()) {
+      s.execute(sql);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void printHeartbeat(HeartbeatState heartbeatState) {

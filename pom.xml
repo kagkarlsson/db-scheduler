@@ -41,7 +41,6 @@
 		<dependency-plugin.failOnWarning>true</dependency-plugin.failOnWarning>
 
 		<!-- Dependency versions -->
-		<micro-jdbc.version>0.6.0</micro-jdbc.version>
 		<slf4j.version>1.7.36</slf4j.version>
 		<logback.version>1.2.13</logback.version>
 		<spring-boot.version>2.7.18</spring-boot.version>
@@ -102,6 +101,7 @@
 			<plugins>
 				<plugin>
 					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.14.0</version>
 					<configuration>
 						<compilerArgument>${compilerArgument}</compilerArgument>
 					</configuration>
@@ -169,7 +169,6 @@
 						<artifactSet>
 							<includes>
 								<include>com.cronutils:*</include>
-								<include>com.github.kagkarlsson:micro-jdbc:*</include>
 							</includes>
 						</artifactSet>
 						<filters>
@@ -181,12 +180,6 @@
 									<exclude>META-INF/**</exclude>
 								</excludes>
 							</filter>
-              <filter>
-                <artifact>com.github.kagkarlsson:micro-jdbc:*</artifact>
-                <excludes>
-                  <exclude>META-INF/**</exclude>
-                </excludes>
-              </filter>
 						</filters>
 						<relocations>
 							<relocation>
