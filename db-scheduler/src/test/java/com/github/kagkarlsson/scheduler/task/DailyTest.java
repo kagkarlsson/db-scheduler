@@ -143,7 +143,6 @@ public class DailyTest {
     // Europe/Rome is UTC+2 during daylight saving time
     // Daylight saving begins on 29 March 2020 at 2AM
     LocalDate currentDate = LocalDate.of(2020, 3, 29);
-    LocalDate nextDay = currentDate.plusDays(1);
 
     assertThat(
         new Daily(ROME, HOUR_2).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
@@ -167,6 +166,62 @@ public class DailyTest {
     assertThat(
         new Daily(ROME, HOUR_3).getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
         is(instant(currentDate, HOUR_2, UTC)));
+  }
+
+  @Test
+  public void
+      should_generate_next_date_correctly_on_the_day_when_time_changes_to_standard_exists_twice_should_run_once() {
+    // Europe/Rome is UTC+1 during standard time
+    // Europe/Rome is UTC+2 during daylight saving time
+    // Standard time begins in Rome on 25 October 2020
+    LocalDate currentDate = LocalDate.of(2020, 10, 25);
+    LocalDate previousDate = currentDate.minusDays(1);
+    LocalDate nextDate = currentDate.plusDays(1);
+
+    // 02:00 appear twice in Rome at 2020-10-25, one at 00:00 UTC, one at 01:00 UTC
+    Daily dailyAt2 = new Daily(ROME, HOUR_2);
+    // expect the instance with earlier offset (02:00 UTC+2)
+    Instant expectedCurrentDateExecutionTime = instant(currentDate, HOUR_0, UTC);
+    assertThat(expectedCurrentDateExecutionTime, is(instant(currentDate, HOUR_2, ROME)));
+    // next execution time should be the day after with new offset (UTC+1)
+    Instant expectedNextDateExecutionTime = instant(nextDate, HOUR_1, UTC);
+    assertThat(expectedNextDateExecutionTime, is(instant(nextDate, HOUR_2, ROME)));
+
+    assertThat(
+        dailyAt2.getNextExecutionTime(complete(instant(previousDate, HOUR_0, UTC))),
+        is(expectedCurrentDateExecutionTime));
+    assertThat(
+        dailyAt2.getNextExecutionTime(complete(instant(currentDate, HOUR_0, UTC))),
+        is(expectedNextDateExecutionTime));
+  }
+
+  @Test
+  public void
+      should_generate_next_date_correctly_on_the_day_when_time_changes_to_daylight_saving_time_doesnt_exists_should_run_later_then_recover() {
+    // Europe/Rome is UTC+1 during standard time
+    // Europe/Rome is UTC+2 during daylight saving time
+    // Daylight saving begins on 29 March 2020 at 2AM
+    LocalDate currentDate = LocalDate.of(2020, 3, 29);
+    LocalDate previousDate = currentDate.minusDays(1);
+    LocalDate nextDate = currentDate.plusDays(1);
+
+    // 02:00 never appear in Rome at 2020-03-29, because after 01:59 UTC+1, we have 03:00 UTC+2
+    Daily dailyAtTwo = new Daily(ROME, HOUR_2);
+
+    // expect the instance with earlier offset (02:00 UTC+1, which is 03:00 UTC+2 or 01:00 UTC+0)
+    Instant expectedCurrentDateExecutionTime = instant(currentDate, HOUR_1, UTC);
+    assertThat(expectedCurrentDateExecutionTime, is(instant(currentDate, HOUR_2, ROME)));
+
+    // next execution time should be the day after with new offset (UTC+2)
+    Instant expectedNextDateExecutionTime = instant(nextDate, HOUR_0, UTC);
+    assertThat(expectedNextDateExecutionTime, is(instant(nextDate, HOUR_2, ROME)));
+
+    assertThat(
+        dailyAtTwo.getNextExecutionTime(complete(instant(previousDate, HOUR_2, ROME))),
+        is(expectedCurrentDateExecutionTime));
+    assertThat(
+        dailyAtTwo.getNextExecutionTime(complete(instant(currentDate, HOUR_2, ROME))),
+        is(expectedNextDateExecutionTime));
   }
 
   @Test
