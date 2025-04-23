@@ -81,11 +81,6 @@
         </dependency>
         <!-- Shaded -->
         <dependency>
-            <groupId>com.github.kagkarlsson</groupId>
-            <artifactId>micro-jdbc</artifactId>
-            <version>${micro-jdbc.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.cronutils</groupId>
             <artifactId>cron-utils</artifactId>
             <version>${cron-utils.version}</version>
