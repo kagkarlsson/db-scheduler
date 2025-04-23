@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 
 import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
 import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_HEARTBEAT_INTERVAL;
+import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_MISSED_HEARTBEATS_LIMIT;
 import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_POLLING_INTERVAL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -89,6 +90,7 @@ public class DbSchedulerAutoConfigurationTest {
           DbSchedulerProperties props = ctx.getBean(DbSchedulerProperties.class);
           assertThat(props.getPollingInterval()).isEqualTo(DEFAULT_POLLING_INTERVAL);
           assertThat(props.getHeartbeatInterval()).isEqualTo(DEFAULT_HEARTBEAT_INTERVAL);
+          assertThat(props.getMissedHeartbeatsLimit()).isEqualTo(DEFAULT_MISSED_HEARTBEATS_LIMIT);
           assertThat(props.getDeleteUnresolvedAfter())
               .isEqualTo(DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION);
         });

@@ -1,13 +1,13 @@
 package com.github.kagkarlsson.scheduler.functional;
 
-import static com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
@@ -44,17 +44,17 @@ public class DeadExecutionTest {
                             }
                           });
 
-          TestableRegistry.Condition completedCondition = TestableRegistry.Conditions.completed(2);
+          TestableListener.Condition completedCondition = TestableListener.Conditions.completed(2);
 
-          TestableRegistry registry =
-              TestableRegistry.create().waitConditions(completedCondition).build();
+          TestableListener listener =
+              TestableListener.create().waitConditions(completedCondition).build();
 
           Scheduler scheduler =
               Scheduler.create(postgres.getDataSource(), customTask)
                   .pollingInterval(Duration.ofMillis(100))
                   .heartbeatInterval(Duration.ofMillis(100))
                   .schedulerName(new SchedulerName.Fixed("test"))
-                  .statsRegistry(registry)
+                  .addSchedulerListener(listener)
                   .build();
           stopScheduler.register(scheduler);
 
@@ -62,7 +62,7 @@ public class DeadExecutionTest {
           scheduler.start();
           completedCondition.waitFor();
 
-          assertEquals(registry.getCount(SchedulerStatsEvent.DEAD_EXECUTION), 1);
+          assertEquals(listener.getCount(SchedulerEventType.DEAD_EXECUTION), 1);
         });
   }
 }

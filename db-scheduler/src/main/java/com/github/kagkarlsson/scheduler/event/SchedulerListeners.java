@@ -13,6 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler.event;
 
+import static java.util.Arrays.asList;
+
 import com.github.kagkarlsson.scheduler.CurrentlyExecuting;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.CandidateEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
@@ -29,6 +31,10 @@ public class SchedulerListeners implements SchedulerListener {
   private static final Logger LOG = LoggerFactory.getLogger(SchedulerListeners.class);
 
   private final List<SchedulerListener> schedulerListeners;
+
+  public SchedulerListeners(SchedulerListener... schedulerListeners) {
+    this(asList(schedulerListeners));
+  }
 
   public SchedulerListeners(List<SchedulerListener> schedulerListeners) {
     this.schedulerListeners = schedulerListeners;

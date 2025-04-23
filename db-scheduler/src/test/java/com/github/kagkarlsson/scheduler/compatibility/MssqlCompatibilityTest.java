@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Tag;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * To test manually, disable testcontainers stuff and use Azure SQL Edge
@@ -27,7 +28,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class MssqlCompatibilityTest extends CompatibilityTest {
 
-  @Container private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer();
+  @Container
+  private static final MSSQLServerContainer MSSQL =
+      new MSSQLServerContainer<>(
+          DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"));
+
   private static DataSource pooledDatasource;
 
   public MssqlCompatibilityTest() {

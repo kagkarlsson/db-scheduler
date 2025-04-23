@@ -10,7 +10,7 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.TestTasks;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
@@ -74,15 +74,15 @@ public class ExecutorPoolTest {
   private void testExecuteUntilNoneLeft(int pollingLimit, int threads, int executionsToRun) {
     Instant now = Instant.now();
     OneTimeTask<Void> task = TestTasks.oneTime("onetime-a", Void.class, TestTasks.DO_NOTHING);
-    TestableRegistry.Condition condition = TestableRegistry.Conditions.completed(executionsToRun);
-    TestableRegistry registry = TestableRegistry.create().waitConditions(condition).build();
+    TestableListener.Condition condition = TestableListener.Conditions.completed(executionsToRun);
+    TestableListener listener = TestableListener.create().waitConditions(condition).build();
 
     Scheduler scheduler =
         Scheduler.create(postgres.getDataSource(), task)
             .threads(threads)
             .pollingInterval(Duration.ofMinutes(1))
             .schedulerName(new SchedulerName.Fixed("test"))
-            .statsRegistry(registry)
+            .addSchedulerListener(listener)
             .build();
     stopScheduler.register(scheduler);
 
@@ -95,7 +95,7 @@ public class ExecutorPoolTest {
           scheduler.start();
           condition.waitFor();
 
-          List<ExecutionComplete> completed = registry.getCompleted();
+          List<ExecutionComplete> completed = listener.getCompleted();
           assertThat(completed, hasSize(executionsToRun));
           completed.forEach(
               e -> {
@@ -104,7 +104,7 @@ public class ExecutorPoolTest {
                 assertThat(
                     durationUntilExecuted, TimeMatchers.shorterThan(Duration.ofMillis(1100)));
               });
-          registry.assertNoFailures();
+          listener.assertNoFailures();
         },
         waitingForConditionTimedOut(scheduler));
   }

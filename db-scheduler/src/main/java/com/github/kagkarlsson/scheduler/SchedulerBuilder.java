@@ -19,6 +19,7 @@ import static java.util.Optional.ofNullable;
 
 import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
@@ -241,7 +242,8 @@ public class SchedulerBuilder {
       schedulerName = new SchedulerName.Hostname();
     }
 
-    final TaskResolver taskResolver = new TaskResolver(statsRegistry, clock, knownTasks);
+    final TaskResolver taskResolver =
+        new TaskResolver(new SchedulerListeners(schedulerListeners), clock, knownTasks);
     final JdbcCustomization jdbcCustomization =
         ofNullable(this.jdbcCustomization)
             .orElseGet(

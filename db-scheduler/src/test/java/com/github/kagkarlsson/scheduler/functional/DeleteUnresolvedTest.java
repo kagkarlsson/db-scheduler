@@ -5,8 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.TestTasks;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
@@ -43,19 +43,19 @@ public class DeleteUnresolvedTest {
 
     OneTimeTask<Void> onetime = Tasks.oneTime("onetime").execute(TestTasks.DO_NOTHING);
 
-    TestableRegistry testableRegistry = new TestableRegistry(false, Collections.emptyList());
+    TestableListener testableListener = new TestableListener(false, Collections.emptyList());
     // Missing task with name 'onetime'
     ManualScheduler scheduler =
         TestHelper.createManualScheduler(postgres.getDataSource())
             .clock(clock)
-            .statsRegistry(testableRegistry)
+            .addSchedulerListener(testableListener)
             .build();
 
     scheduler.schedule(onetime.instance("id1"), clock.now());
-    assertEquals(0, testableRegistry.getCount(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(0, testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK));
 
     scheduler.runAnyDueExecutions();
-    assertEquals(1, testableRegistry.getCount(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(1, testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK));
 
     assertEquals(1, DbUtils.countExecutions(postgres.getDataSource()));
 

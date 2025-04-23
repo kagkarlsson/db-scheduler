@@ -16,11 +16,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.unruly.matchers.OptionalMatchers;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import java.time.Duration;
@@ -50,7 +51,7 @@ public class JdbcTaskRepositoryTest {
   private OneTimeTask<Void> alternativeOneTimeTask;
   private OneTimeTask<Integer> oneTimeTaskWithData;
   private TaskResolver taskResolver;
-  private TestableRegistry testableRegistry;
+  private TestableListener testableListener;
 
   @BeforeEach
   public void setUp() {
@@ -63,8 +64,9 @@ public class JdbcTaskRepositoryTest {
     knownTasks.add(oneTimeTask);
     knownTasks.add(oneTimeTaskWithData);
     knownTasks.add(alternativeOneTimeTask);
-    testableRegistry = new TestableRegistry(true, Collections.emptyList());
-    taskResolver = new TaskResolver(testableRegistry, knownTasks);
+    testableListener = new TestableListener(true, Collections.emptyList());
+    taskResolver =
+        new TaskResolver(new SchedulerListeners(testableListener), new SystemClock(), knownTasks);
     taskRepository = createRepository(taskResolver, false);
   }
 
@@ -214,13 +216,13 @@ public class JdbcTaskRepositoryTest {
         new SchedulableTaskInstance<>(unresolved1.instance("id"), now));
     assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
-    assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(1, testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK));
 
     assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
     assertEquals(
         1,
-        testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK),
+        testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK),
         "Execution should not have have been in the ResultSet");
 
     // 1, 2
@@ -228,14 +230,14 @@ public class JdbcTaskRepositoryTest {
         new SchedulableTaskInstance<>(unresolved2.instance("id"), now));
     assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(2));
-    assertEquals(2, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(2, testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK));
 
     // 1, 2, 3
     taskRepository.createIfNotExists(
         new SchedulableTaskInstance<>(unresolved3.instance("id"), now));
     assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(3));
-    assertEquals(3, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(3, testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK));
   }
 
   @Test
@@ -427,19 +429,20 @@ public class JdbcTaskRepositoryTest {
     final Instant timeDied = now.minus(Duration.ofDays(5));
     createDeadExecution(oneTimeTask.instance("id1"), timeDied);
 
-    TaskResolver taskResolverMissingTask = new TaskResolver(testableRegistry);
+    TaskResolver taskResolverMissingTask =
+        new TaskResolver(new SchedulerListeners(testableListener), new SystemClock(), List.of());
     JdbcTaskRepository repoMissingTask = createRepository(taskResolverMissingTask, false);
 
     assertThat(taskResolverMissingTask.getUnresolved(), hasSize(0));
-    assertEquals(0, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(0, testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK));
 
     assertThat(repoMissingTask.getDeadExecutions(timeDied), hasSize(0));
     assertThat(taskResolverMissingTask.getUnresolved(), hasSize(1));
-    assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(1, testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK));
 
     assertThat(repoMissingTask.getDeadExecutions(timeDied), hasSize(0));
     assertThat(taskResolverMissingTask.getUnresolved(), hasSize(1));
-    assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(1, testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK));
   }
 
   @Test
@@ -488,7 +491,7 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskRepository.lockAndGetDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
-    assertEquals(1, testableRegistry.getCount(SchedulerStatsEvent.UNRESOLVED_TASK));
+    assertEquals(1, testableListener.getCount(SchedulerEventType.UNRESOLVED_TASK));
   }
 
   @Test
