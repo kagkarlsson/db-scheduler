@@ -673,12 +673,12 @@ public class JdbcTaskRepository implements TaskRepository {
         "select * from "
             + tableName
             + " where "
-            + "    ((last_success is null and last_failure is not null)"
-            + "    or (last_failure is not null and last_success < ?)) "
+            + "    consecutive_failures > 0 "
+            + "    and (last_success is null or last_success < ?) "
             + unresolvedFilter.andCondition(),
         (PreparedStatement p) -> {
           int index = 1;
-          jdbcCustomization.setInstant(p, index++, Instant.now().minus(interval));
+          jdbcCustomization.setInstant(p, index++, clock.now().minus(interval));
           unresolvedFilter.setParameters(p, index);
         },
         new ExecutionResultSetMapper(false, false));

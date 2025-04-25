@@ -3,6 +3,8 @@ package com.github.kagkarlsson.scheduler;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.onlyResolved;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
+import static java.time.Duration.ofDays;
+import static java.time.Duration.ofMinutes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -175,13 +177,13 @@ public class JdbcTaskRepositoryTest {
     Instant now = TimeHelper.truncatedInstantNow();
     SchedulableTaskInstance<Void> id1 =
         new SchedulableTaskInstance<>(
-            oneTimeTask.instanceBuilder("id1").priority(1).build(), now.minus(Duration.ofDays(1)));
+            oneTimeTask.instanceBuilder("id1").priority(1).build(), now.minus(ofDays(1)));
     SchedulableTaskInstance<Void> id2 =
         new SchedulableTaskInstance<>(
-            oneTimeTask.instanceBuilder("id2").priority(10).build(), now.minus(Duration.ofDays(2)));
+            oneTimeTask.instanceBuilder("id2").priority(10).build(), now.minus(ofDays(2)));
     SchedulableTaskInstance<Void> id3 =
         new SchedulableTaskInstance<>(
-            oneTimeTask.instanceBuilder("id3").priority(5).build(), now.minus(Duration.ofDays(3)));
+            oneTimeTask.instanceBuilder("id3").priority(5).build(), now.minus(ofDays(3)));
 
     Stream.of(id1, id2, id3).forEach(taskRespositoryWithPriority::createIfNotExists);
 
@@ -295,7 +297,7 @@ public class JdbcTaskRepositoryTest {
 
     Execution execution = due.get(0);
     final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
-    final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
+    final Instant nextExecutionTime = now.plus(ofMinutes(1));
     taskRepository.reschedule(pickedExecution.get(), nextExecutionTime, now, null, 0);
 
     assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
@@ -318,7 +320,7 @@ public class JdbcTaskRepositoryTest {
 
     Execution execution = due.get(0);
     final Optional<Execution> pickedExecution = taskRepository.pick(execution, now);
-    final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
+    final Instant nextExecutionTime = now.plus(ofMinutes(1));
     taskRepository.reschedule(
         pickedExecution.get(), nextExecutionTime, now.minusSeconds(1), now, 1);
 
@@ -336,7 +338,7 @@ public class JdbcTaskRepositoryTest {
     Execution created = taskRepository.getExecution(instance).get();
     assertEquals(created.taskInstance.getData(), 1);
 
-    final Instant nextExecutionTime = now.plus(Duration.ofMinutes(1));
+    final Instant nextExecutionTime = now.plus(ofMinutes(1));
     taskRepository.reschedule(created, nextExecutionTime, 2, now, null, 0);
 
     final Execution rescheduled = taskRepository.getExecution(instance).get();
@@ -359,17 +361,45 @@ public class JdbcTaskRepositoryTest {
 
     taskRepository.reschedule(getSingleDueExecution(), now, null, now, 1);
     assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
-    assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofMinutes(1)), hasSize(1));
-    assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofDays(1)), hasSize(1));
+    assertThat(taskRepository.getExecutionsFailingLongerThan(ofMinutes(1)), hasSize(1));
+    assertThat(taskRepository.getExecutionsFailingLongerThan(ofDays(1)), hasSize(1));
 
     taskRepository.reschedule(
-        getSingleDueExecution(), now, now.minus(Duration.ofMinutes(1)), now, 1);
+        getSingleDueExecution(), now, now.minus(ofMinutes(1)), now, 1);
     assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
     assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofSeconds(1)), hasSize(1));
     assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofHours(1)), hasSize(0));
   }
 
   @Test
+  public void get_failing_executions_should_not_return_previously_failed_but_currently_successful() {
+    Instant third = TimeHelper.truncatedInstantNow();
+    Instant second = third.minus(ofMinutes(1));
+    Instant first = second.minus(ofMinutes(1));
+
+    Instant timeToRun = first;
+
+    final TaskInstance<Void> instance = oneTimeTask.instance("id1");
+    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, timeToRun));
+
+    assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
+
+    // simulate success
+    taskRepository.reschedule(getSingleDueExecution(), timeToRun, first, null, 0);
+    assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
+
+    // simulate failure
+    taskRepository.reschedule(getSingleDueExecution(), timeToRun, first, second, 1);
+    assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
+    assertThat(taskRepository.getExecutionsFailingLongerThan(ofMinutes(5)), hasSize(0));
+
+    // simulate success
+    taskRepository.reschedule(getSingleDueExecution(), timeToRun, third, second, 0);
+    assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
+  }
+
+
+    @Test
   public void get_scheduled_executions() {
     Instant now = TimeHelper.truncatedInstantNow();
     IntStream.range(0, 100)
@@ -426,7 +456,7 @@ public class JdbcTaskRepositoryTest {
     Instant now = TimeHelper.truncatedInstantNow();
 
     // 1
-    final Instant timeDied = now.minus(Duration.ofDays(5));
+    final Instant timeDied = now.minus(ofDays(5));
     createDeadExecution(oneTimeTask.instance("id1"), timeDied);
 
     TaskResolver taskResolverMissingTask =
