@@ -364,15 +364,15 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.getExecutionsFailingLongerThan(ofMinutes(1)), hasSize(1));
     assertThat(taskRepository.getExecutionsFailingLongerThan(ofDays(1)), hasSize(1));
 
-    taskRepository.reschedule(
-        getSingleDueExecution(), now, now.minus(ofMinutes(1)), now, 1);
+    taskRepository.reschedule(getSingleDueExecution(), now, now.minus(ofMinutes(1)), now, 1);
     assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(1));
     assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofSeconds(1)), hasSize(1));
     assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ofHours(1)), hasSize(0));
   }
 
   @Test
-  public void get_failing_executions_should_not_return_previously_failed_but_currently_successful() {
+  public void
+      get_failing_executions_should_not_return_previously_failed_but_currently_successful() {
     Instant third = TimeHelper.truncatedInstantNow();
     Instant second = third.minus(ofMinutes(1));
     Instant first = second.minus(ofMinutes(1));
@@ -398,8 +398,7 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.getExecutionsFailingLongerThan(Duration.ZERO), hasSize(0));
   }
 
-
-    @Test
+  @Test
   public void get_scheduled_executions() {
     Instant now = TimeHelper.truncatedInstantNow();
     IntStream.range(0, 100)
