@@ -13,6 +13,10 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public interface SchedulerState {
 
   boolean isShuttingDown();
@@ -23,9 +27,10 @@ public interface SchedulerState {
 
   class SettableSchedulerState implements SchedulerState {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SettableSchedulerState.class);
     private boolean isShuttingDown;
     private boolean isStarted;
-    private boolean isPaused;
+    private final AtomicBoolean isPaused = new AtomicBoolean(false);
 
     @Override
     public boolean isShuttingDown() {
@@ -39,7 +44,7 @@ public interface SchedulerState {
 
     @Override
     public boolean isPaused() {
-      return isPaused;
+      return isPaused.get();
     }
 
     public void setIsShuttingDown() {
@@ -51,7 +56,10 @@ public interface SchedulerState {
     }
 
     public void setPaused(boolean isPaused) {
-      this.isPaused = isPaused;
+      boolean isChanged = this.isPaused.compareAndSet(!isPaused, isPaused);
+      if (isChanged) {
+        LOG.info(isPaused ? "Scheduler is paused." : "Scheduler is resumed.");
+      }
     }
   }
 }
