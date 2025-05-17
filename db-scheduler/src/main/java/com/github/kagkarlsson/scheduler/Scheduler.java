@@ -236,12 +236,10 @@ public class Scheduler implements SchedulerClient {
   }
 
   public void pause() {
-    LOG.info("Pausing scheduler.");
     this.schedulerState.setPaused(true);
   }
 
   public void resume() {
-    LOG.info("Resuming scheduler.");
     this.schedulerState.setPaused(false);
   }
 
