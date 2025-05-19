@@ -19,6 +19,7 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
 /** Spring-style cron-pattern schedule */
 public class CronSchedule implements Schedule, Serializable {
 
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
   private static final String DISABLED = "-";
   private static final Logger LOG = LoggerFactory.getLogger(CronSchedule.class);
@@ -76,7 +77,7 @@ public class CronSchedule implements Schedule, Serializable {
     ZonedDateTime lastDone = ZonedDateTime.ofInstant(executionComplete.getTimeDone(), zoneId);
 
     Optional<ZonedDateTime> nextTime = cronExecutionTime.nextExecution(lastDone);
-    if (!nextTime.isPresent()) {
+    if (nextTime.isEmpty()) {
       LOG.error(
           "Cron-pattern did not return any further execution-times. This behavior is currently "
               + "not supported by the scheduler. Setting next execution-time to far-future, "
@@ -126,7 +127,7 @@ public class CronSchedule implements Schedule, Serializable {
         return CronType.SPRING53;
       default:
         throw new IllegalArgumentException(
-            String.format("No cron definition found for %s", this.cronStyle));
+            "No cron definition found for %s".formatted(this.cronStyle));
     }
   }
 

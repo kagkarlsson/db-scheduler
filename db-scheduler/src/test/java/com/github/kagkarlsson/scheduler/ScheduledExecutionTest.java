@@ -37,11 +37,11 @@ public class ScheduledExecutionTest {
     Instant now = Instant.now();
     OneTimeTask<Integer> task =
         TestTasks.oneTime("OneTime", Integer.class, (instance, executionContext) -> {});
-    Execution execution = new Execution(now, task.instance("id1", new Integer(1)));
+    Execution execution = new Execution(now, task.instance("id1", Integer.valueOf(1)));
 
     ScheduledExecution<Integer> scheduledExecution =
         new ScheduledExecution<>(Integer.class, execution);
-    assertEquals(new Integer(1), scheduledExecution.getData());
+    assertEquals(Integer.valueOf(1), scheduledExecution.getData());
   }
 
   @Test
@@ -55,7 +55,7 @@ public class ScheduledExecutionTest {
                   TestTasks.oneTime("OneTime", Integer.class, (instance, executionContext) -> {});
               Execution execution =
                   new Execution(
-                      now, task.instance("id1", new Integer(1))); // Data class is an integer
+                      now, task.instance("id1", Integer.valueOf(1))); // Data class is an integer
 
               new ScheduledExecution<>(String.class, execution)
                   .getData(); // Instantiate with incorrect type

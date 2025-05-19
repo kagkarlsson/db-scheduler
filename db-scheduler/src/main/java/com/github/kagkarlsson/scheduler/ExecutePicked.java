@@ -94,7 +94,7 @@ class ExecutePicked implements Runnable {
 
   private void executePickedExecution(Execution execution, CurrentlyExecuting currentlyExecuting) {
     final Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
-    if (!task.isPresent()) {
+    if (task.isEmpty()) {
       LOG.error(
           "Failed to find implementation for task with name '{}'. Should have been excluded in JdbcRepository.",
           execution.taskInstance.getTaskName());

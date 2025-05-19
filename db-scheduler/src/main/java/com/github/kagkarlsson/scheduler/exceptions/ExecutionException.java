@@ -14,9 +14,10 @@
 package com.github.kagkarlsson.scheduler.exceptions;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
+import java.io.Serial;
 
 public class ExecutionException extends TaskInstanceException {
-  private static final long serialVersionUID = -4732028463501966553L;
+  @Serial private static final long serialVersionUID = -4732028463501966553L;
   private final long version;
 
   public ExecutionException(String message, Execution execution) {

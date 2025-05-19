@@ -14,11 +14,12 @@
 package com.github.kagkarlsson.scheduler.task.helper;
 
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
 public class PlainScheduleAndData implements ScheduleAndData, Serializable {
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
   private final Schedule schedule;
   private final Object data;
 
