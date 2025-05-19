@@ -13,21 +13,23 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
+import java.io.Serial;
+
 public class TaskInstanceException extends DbSchedulerException {
-  private static final long serialVersionUID = -2132850112553296791L;
+  @Serial private static final long serialVersionUID = -2132850112553296791L;
   private static final String TASK_NAME_INSTANCE_MESSAGE_PART = " (task name: %s, instance id: %s)";
 
   private final String taskName;
   private final String instanceId;
 
   public TaskInstanceException(String message, String taskName, String instanceId, Throwable ex) {
-    super(message + String.format(TASK_NAME_INSTANCE_MESSAGE_PART, taskName, instanceId), ex);
+    super(message + TASK_NAME_INSTANCE_MESSAGE_PART.formatted(taskName, instanceId), ex);
     this.taskName = taskName;
     this.instanceId = instanceId;
   }
 
   public TaskInstanceException(String message, String taskName, String instanceId) {
-    super(message + String.format(TASK_NAME_INSTANCE_MESSAGE_PART, taskName, instanceId));
+    super(message + TASK_NAME_INSTANCE_MESSAGE_PART.formatted(taskName, instanceId));
     this.taskName = taskName;
     this.instanceId = instanceId;
   }

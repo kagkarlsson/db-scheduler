@@ -35,7 +35,7 @@ public class MultiInstanceRecurringConfiguration {
 
   /** Start the example */
   public static void start(ExampleContext ctx) {
-    CronSchedule cron = new CronSchedule(String.format("%s * * * * *", new Random().nextInt(59)));
+    CronSchedule cron = new CronSchedule("%s * * * * *".formatted(new Random().nextInt(59)));
     Customer customer = new Customer(String.valueOf(new Random().nextInt(10000)));
     ScheduleAndCustomer data = new ScheduleAndCustomer(cron, customer);
 
@@ -59,9 +59,8 @@ public class MultiInstanceRecurringConfiguration {
               ScheduleAndCustomer data = taskInstance.getData();
               EventLogger.logTask(
                   MULTI_INSTANCE_RECURRING_TASK,
-                  String.format(
-                      "Ran according to schedule '%s' for customer %s",
-                      data.getSchedule(), data.getData()));
+                  "Ran according to schedule '%s' for customer %s"
+                      .formatted(data.getSchedule(), data.getData()));
             });
   }
 

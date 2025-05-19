@@ -13,8 +13,10 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
+import java.io.Serial;
+
 public abstract class DbSchedulerException extends RuntimeException {
-  private static final long serialVersionUID = -2132850112553296790L;
+  @Serial private static final long serialVersionUID = -2132850112553296790L;
 
   public DbSchedulerException(String message) {
     super(message);

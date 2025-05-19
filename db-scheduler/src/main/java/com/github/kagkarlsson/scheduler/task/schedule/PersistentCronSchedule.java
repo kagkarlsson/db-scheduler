@@ -14,10 +14,11 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
+import java.io.Serial;
 import java.time.ZoneId;
 
 public class PersistentCronSchedule implements ScheduleAndData {
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
   private final String cronPattern;
   private final String zoneId;
   private final Object data;

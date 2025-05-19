@@ -44,7 +44,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>15.1.1</version>
+    <version>16.0.0</version>
 </dependency>
 ```
 
@@ -436,7 +436,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>15.1.1</version>
+        <version>16.0.0</version>
     </dependency>
     ```
    **NOTE**: This includes the db-scheduler dependency itself.
@@ -634,6 +634,9 @@ There are a number of users that are using db-scheduler for high throughput use-
 
 See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
 
+**Upgrading to 16.x**
+* Java 17+ is required now, since we migrated our codebase to Java 17
+
 **Upgrading to 15.x**
 * Priority is a new opt-in feature. To be able to use it, column `priority` and index `priority_execution_time_idx`
   must be added to the database schema. See table definitions for
@@ -659,7 +662,7 @@ See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release
 
 **Prerequisites**
 
-* Java 8+
+* Java 17+
 * Maven
 
 Follow these steps:

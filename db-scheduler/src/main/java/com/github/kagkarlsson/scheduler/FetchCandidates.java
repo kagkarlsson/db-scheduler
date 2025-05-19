@@ -154,7 +154,7 @@ public class FetchCandidates implements PollStrategy {
 
       final Optional<Execution> pickedExecution = taskRepository.pick(candidate, clock.now());
 
-      if (!pickedExecution.isPresent()) {
+      if (pickedExecution.isEmpty()) {
         // someone else picked id
         LOG.debug("Execution picked by another scheduler. Continuing to next due execution.");
         schedulerListeners.onCandidateEvent(CandidateEventType.ALREADY_PICKED);

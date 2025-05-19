@@ -29,8 +29,7 @@ final class CompositeParser implements Parser {
   public Optional<Schedule> parse(String scheduleString) {
     return delegates.stream()
         .map(it -> it.parse(scheduleString))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
+        .flatMap(Optional::stream)
         .findFirst();
   }
 

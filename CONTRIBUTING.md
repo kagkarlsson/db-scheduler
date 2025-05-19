@@ -14,7 +14,7 @@
 * Ensure your Pull Request passes tests either locally or via Github Actions (once triggered by a maintainer it will run automatically on your PR)
 
 ### Tools needed to do development and execute tests
-* Java 11 (since it's the lowest supported java version to date, although we do support newer versions and execute tests again those as well)
+* Java 17 (since it's the lowest supported java version to date, although we do support newer versions and execute tests again those as well)
 * Docker
 
 ### Running tests
