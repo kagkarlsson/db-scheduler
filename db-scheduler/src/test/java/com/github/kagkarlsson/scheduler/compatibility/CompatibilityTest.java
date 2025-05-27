@@ -30,6 +30,7 @@ import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.jdbc.PostgreSqlJdbcCustomization;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
@@ -38,6 +39,9 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
+import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
+import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import com.google.common.collect.Lists;
 import java.time.Duration;
 import java.time.Instant;
@@ -447,6 +451,23 @@ public abstract class CompatibilityTest {
     taskRepo.createIfNotExists(SchedulableInstance.of(instance1, zonedDateTime.toInstant()));
 
     assertThat(taskRepo.getExecution(instance1).get().executionTime, is(zonedDateTime.toInstant()));
+  }
+
+  @Test
+  void test_compatibility_test_helper() {
+    final SettableClock clock = new SettableClock();
+    final ManualScheduler scheduler =
+        (ManualScheduler)
+            new TestHelper.ManualSchedulerBuilder(getDataSource(), List.of(oneTime))
+                .clock(clock)
+              .jdbcCustomization(new PostgreSqlJdbcCustomization(true, true))
+                .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
+                .build();
+
+    scheduler.schedule(oneTime.instance("1"), clock.now());
+    scheduler.runAnyDueExecutions();
+
+    assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
   }
 
   private JdbcTaskRepository createRepositoryForForZone(
