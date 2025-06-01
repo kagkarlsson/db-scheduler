@@ -172,6 +172,8 @@ public interface SchedulerClient {
    * @param taskInstanceId Task-instance to reschedule, expected to exist
    * @param newExecutionTime the new execution-time
    * @return true if rescheduled successfully
+   * @throws TaskInstanceNotFoundException if the given instance does not exist
+   * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
    * @see java.time.Instant
    * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
    */
@@ -185,6 +187,8 @@ public interface SchedulerClient {
    * @param newExecutionTime the new execution-time
    * @param newData the new task-data
    * @return true if rescheduled successfully
+   * @throws TaskInstanceNotFoundException if the given instance does not exist
+   * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
    * @see java.time.Instant
    * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
    */
@@ -196,6 +200,8 @@ public interface SchedulerClient {
    *
    * @param schedulableInstance the updated instance
    * @return true if rescheduled successfully
+   * @throws TaskInstanceNotFoundException if the given instance does not exist
+   * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
    */
   <T> boolean reschedule(SchedulableInstance<T> schedulableInstance);
 
