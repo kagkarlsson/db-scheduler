@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,6 +82,23 @@ public class SchedulerBuilder {
   protected boolean alwaysPersistTimestampInUTC = false;
   protected List<SchedulerListener> schedulerListeners = new ArrayList<>();
   protected List<ExecutionInterceptor> executionInterceptors = new ArrayList<>();
+  protected List<WorkerPoolConfig> workerPools = new ArrayList<>();
+
+  protected record WorkerPoolConfig(
+      int threads, int priorityThreshold, ExecutorService executorService) {}
+
+  private int getWorkerPoolThreads(WorkerPoolConfig config) {
+    if (config.threads() > 0) {
+      return config.threads();
+    }
+    // Try to extract from ExecutorService
+    if (config.executorService() instanceof java.util.concurrent.ThreadPoolExecutor tpe) {
+      return tpe.getMaximumPoolSize();
+    }
+    throw new IllegalStateException(
+        "Cannot determine thread count for custom ExecutorService in worker pool. "
+            + "Please use addWorkerPool(int threads, int priorityThreshold, ExecutorService) instead.");
+  }
 
   public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
     this.dataSource = dataSource;
@@ -242,6 +260,99 @@ public class SchedulerBuilder {
     return this;
   }
 
+  /**
+   * Adds a worker pool that will only execute tasks with a priority greater than or equal to the
+   * specified threshold.
+   *
+   * <p>Note: The scheduler's fetch limits (lowerLimit and upperLimit) are calculated based on the
+   * TOTAL thread capacity across all pools. This ensures that when high-priority tasks are
+   * available, all pools can be fully utilized.
+   *
+   * @param threads the number of threads in the worker pool
+   * @param priorityThreshold the minimum priority of tasks that this worker pool will execute
+   * @return this builder
+   */
+  public SchedulerBuilder addWorkerPool(int threads, int priorityThreshold) {
+    if (threads <= 0) {
+      throw new IllegalArgumentException("Number of threads must be greater than 0");
+    }
+
+    if (!enablePriority) {
+      throw new IllegalStateException(
+          "Priority must be enabled to add a worker pool with priority threshold");
+    }
+
+    ExecutorService executorService =
+        Executors.newFixedThreadPool(
+            threads,
+            defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-p" + priorityThreshold + "-"));
+
+    this.workerPools.add(new WorkerPoolConfig(threads, priorityThreshold, executorService));
+    return this;
+  }
+
+  /**
+   * Adds a worker pool that will only execute tasks with a priority greater than or equal to the
+   * specified threshold, using a custom ExecutorService.
+   *
+   * <p>Note: The scheduler's fetch limits (lowerLimit and upperLimit) are calculated based on the
+   * TOTAL thread capacity across all pools. For custom ExecutorService instances, the thread count
+   * will be extracted from ThreadPoolExecutor.getMaximumPoolSize() if possible.
+   *
+   * @param executorService the executor service to use for this worker pool
+   * @param priorityThreshold the minimum priority of tasks that this worker pool will execute
+   * @return this builder
+   */
+  public SchedulerBuilder addWorkerPool(ThreadPoolExecutor executorService, int priorityThreshold) {
+    if (executorService == null) {
+      throw new IllegalArgumentException("ExecutorService must not be null");
+    }
+
+    if (!enablePriority) {
+      throw new IllegalStateException(
+          "Priority must be enabled to add a worker pool with priority threshold");
+    }
+
+    this.workerPools.add(
+        new WorkerPoolConfig(
+            executorService.getMaximumPoolSize(), priorityThreshold, executorService));
+    return this;
+  }
+
+  /**
+   * Adds a worker pool that will only execute tasks with a priority greater than or equal to the
+   * specified threshold, using a custom ExecutorService with an explicit thread count.
+   *
+   * <p>Use this overload when providing a custom ExecutorService that is not a ThreadPoolExecutor,
+   * or when you want to explicitly specify the thread count for limit calculations.
+   *
+   * <p>Note: The scheduler's fetch limits (lowerLimit and upperLimit) are calculated based on the
+   * TOTAL thread capacity across all pools.
+   *
+   * @param threads the number of threads in the worker pool (used for limit calculations)
+   * @param priorityThreshold the minimum priority of tasks that this worker pool will execute
+   * @param executorService the executor service to use for this worker pool
+   * @return this builder
+   */
+  public SchedulerBuilder addWorkerPool(
+      int threads, int priorityThreshold, ExecutorService executorService) {
+    if (threads <= 0) {
+      throw new IllegalArgumentException("Number of threads must be greater than 0");
+    }
+
+    if (executorService == null) {
+      throw new IllegalArgumentException("ExecutorService must not be null");
+    }
+
+    if (!enablePriority) {
+      throw new IllegalStateException(
+          "Priority must be enabled to add a worker pool with priority threshold");
+    }
+
+    this.workerPools.add(new WorkerPoolConfig(threads, priorityThreshold, executorService));
+    return this;
+  }
+
   public Scheduler build() {
     if (schedulerName == null) {
       schedulerName = new SchedulerName.Hostname();
@@ -303,9 +414,45 @@ public class SchedulerBuilder {
 
     Waiter waiter = buildWaiter();
 
+    double upperFraction = pollingStrategyConfig.upperLimitFractionOfThreads();
+    double lowerFraction = pollingStrategyConfig.lowerLimitFractionOfThreads();
+
+    // Create all executors
+    List<Executor> executors = new ArrayList<>();
+
+    // Default executor (accepts all priorities)
+    int defaultUpperLimit = (int) (executorThreads * upperFraction);
+    int defaultLowerLimit = (int) (executorThreads * lowerFraction);
+    Executor defaultExecutor =
+        new Executor(
+            candidateExecutorService,
+            clock,
+            Integer.MIN_VALUE,
+            defaultUpperLimit,
+            defaultLowerLimit);
+    executors.add(defaultExecutor);
+
+    // Worker pool executors
+    int totalThreads = executorThreads;
+    for (WorkerPoolConfig workerPool : workerPools) {
+      int poolThreads = getWorkerPoolThreads(workerPool);
+      totalThreads += poolThreads;
+      int poolUpperLimit = (int) (poolThreads * upperFraction);
+      int poolLowerLimit = (int) (poolThreads * lowerFraction);
+      Executor executor =
+          new Executor(
+              workerPool.executorService(),
+              clock,
+              workerPool.priorityThreshold(),
+              poolUpperLimit,
+              poolLowerLimit);
+      executors.add(executor);
+    }
+
     LOG.info(
-        "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s, enable-immediate-execution={}, enable-priority={}, table-name={}, name={}",
+        "Creating scheduler with configuration: threads={} (total across all pools: {}), pollInterval={}s, heartbeat={}s, enable-immediate-execution={}, enable-priority={}, table-name={}, name={}",
         executorThreads,
+        totalThreads,
         waiter.getWaitDuration().getSeconds(),
         heartbeatInterval.getSeconds(),
         enableImmediateExecution,
@@ -319,8 +466,7 @@ public class SchedulerBuilder {
             schedulerTaskRepository,
             clientTaskRepository,
             taskResolver,
-            executorThreads,
-            candidateExecutorService,
+            executors,
             schedulerName,
             waiter,
             heartbeatInterval,

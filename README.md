@@ -278,6 +278,37 @@ to add an index on `(execution_time asc, priority desc)` (replacing the old `exe
 as they do not support descending indexes.
 * Value `null` for priority may be interpreted differently depending on database (low or high).
 
+:gear: `.addWorkerPool(int threads, int priorityThreshold)`<br/>
+When priority is enabled, you can create additional worker pools that will only execute tasks with a priority greater than or equal to the specified threshold. This is useful for ensuring that high-priority tasks are executed even when all worker threads in the default pool are busy.
+
+```java
+Scheduler scheduler = Scheduler.create(dataSource, tasks)
+    .threads(5)                    // 5 threads in the default pool
+    .enablePriority()              // enable priority
+    .addWorkerPool(3, Priority.HIGH) // 3 threads dedicated to high-priority tasks
+    .build();
+```
+
+In this example, tasks with priority >= Priority.HIGH (90) will be executed by either the high-priority pool or the default pool, whichever has available threads. Tasks with priority < Priority.HIGH will only be executed by the default pool.
+
+You can add multiple worker pools with different priority thresholds:
+
+```java
+Scheduler scheduler = Scheduler.create(dataSource, tasks)
+    .threads(5)                     // 5 threads in the default pool
+    .enablePriority()               // enable priority
+    .addWorkerPool(3, Priority.HIGH) // 3 threads for high-priority tasks
+    .addWorkerPool(2, Priority.MEDIUM) // 2 threads for medium-priority tasks
+    .build();
+```
+
+In this configuration:
+- Tasks with priority >= Priority.HIGH (90) can be executed by any pool
+- Tasks with Priority.MEDIUM (50) <= priority < Priority.HIGH (90) can be executed by the default pool or the medium-priority pool
+- Tasks with priority < Priority.MEDIUM (50) can only be executed by the default pool
+
+**Note:** This feature requires priority to be enabled.
+
 #### Polling strategy
 
 If you are running >1000 executions/s you might want to use the `lock-and-fetch` polling-strategy for lower overhead

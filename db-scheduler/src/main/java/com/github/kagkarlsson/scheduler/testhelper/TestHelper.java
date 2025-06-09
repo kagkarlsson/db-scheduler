@@ -15,6 +15,7 @@ package com.github.kagkarlsson.scheduler.testhelper;
 
 import static java.util.Optional.ofNullable;
 
+import com.github.kagkarlsson.scheduler.Executor;
 import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -114,19 +115,35 @@ public class TestHelper {
 
       Waiter waiter = buildWaiter();
 
+      PollingStrategyConfig effectivePollingConfig =
+          Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH);
+
+      int poolUpperLimit =
+          (int) (executorThreads * effectivePollingConfig.upperLimitFractionOfThreads());
+      int poolLowerLimit =
+          (int) (executorThreads * effectivePollingConfig.lowerLimitFractionOfThreads());
+
+      List<Executor> executors =
+          List.of(
+              new Executor(
+                  new DirectExecutorService(),
+                  clock,
+                  Integer.MIN_VALUE,
+                  poolUpperLimit,
+                  poolLowerLimit));
+
       return new ManualScheduler(
           clock,
           schedulerTaskRepository,
           clientTaskRepository,
           taskResolver,
-          executorThreads,
-          new DirectExecutorService(),
+          executors,
           schedulerName,
           waiter,
           heartbeatInterval,
           enableImmediateExecution,
           List.of(new StatsRegistryAdapter(statsRegistry)),
-          Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
+          effectivePollingConfig,
           deleteUnresolvedAfter,
           LogLevel.DEBUG,
           true,

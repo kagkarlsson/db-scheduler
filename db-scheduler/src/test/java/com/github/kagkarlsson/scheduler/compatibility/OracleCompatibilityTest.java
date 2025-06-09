@@ -13,14 +13,17 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.oracle.OracleContainer;
 
 @Tag("compatibility")
 @Testcontainers
-public class Oracle11gCompatibilityTest extends CompatibilityTest {
-  @Container private static final OracleContainer ORACLE = new OracleContainer("gvenzl/oracle-xe");
+public class OracleCompatibilityTest extends CompatibilityTest {
+  @Container
+  private static final OracleContainer ORACLE =
+      new OracleContainer("gvenzl/oracle-free:slim-faststart");
+
   private static HikariDataSource pooledDatasource;
 
   //        Enable if test gets flaky!
@@ -30,7 +33,7 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
   //          new ChangeLogLevelsExtension.LogLevelOverride(
   //              "com.github.kagkarlsson.scheduler", Level.DEBUG));
 
-  public Oracle11gCompatibilityTest() {
+  public OracleCompatibilityTest() {
     super(false, true); // FIXLATER: fix syntax and enable
   }
 

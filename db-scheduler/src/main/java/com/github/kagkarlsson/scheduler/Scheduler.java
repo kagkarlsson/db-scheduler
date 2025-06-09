@@ -33,6 +33,7 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -53,11 +54,9 @@ public class Scheduler implements SchedulerClient {
   final TaskRepository schedulerTaskRepository;
   final TaskResolver taskResolver;
   protected final PollStrategy executeDueStrategy;
-  protected final Executor executor;
+  protected final List<Executor> executors;
   private final ScheduledExecutorService housekeeperExecutor;
-  private final HeartbeatConfig heartbeatConfig;
   private final int numberOfMissedHeartbeatsBeforeDead;
-  int threadpoolSize;
   private final Waiter executeDueWaiter;
   private final Duration deleteUnresolvedAfter;
   private final Duration shutdownMaxWait;
@@ -75,8 +74,7 @@ public class Scheduler implements SchedulerClient {
       TaskRepository schedulerTaskRepository,
       TaskRepository clientTaskRepository,
       TaskResolver taskResolver,
-      int threadpoolSize,
-      ExecutorService executorService,
+      List<Executor> executors,
       SchedulerName schedulerName,
       Waiter executeDueWaiter,
       Duration heartbeatInterval,
@@ -94,8 +92,7 @@ public class Scheduler implements SchedulerClient {
     this.clock = clock;
     this.schedulerTaskRepository = schedulerTaskRepository;
     this.taskResolver = taskResolver;
-    this.threadpoolSize = threadpoolSize;
-    this.executor = new Executor(executorService, clock);
+    this.executors = new ArrayList<>(executors);
     this.executeDueWaiter = executeDueWaiter;
     this.deleteUnresolvedAfter = deleteUnresolvedAfter;
     this.shutdownMaxWait = shutdownMaxWait;
@@ -104,7 +101,7 @@ public class Scheduler implements SchedulerClient {
     this.heartbeatInterval = heartbeatInterval;
     this.numberOfMissedHeartbeatsBeforeDead = numberOfMissedHeartbeatsBeforeDead;
     this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
-    this.heartbeatConfig =
+    HeartbeatConfig heartbeatConfig =
         new HeartbeatConfig(
             heartbeatInterval, numberOfMissedHeartbeatsBeforeDead, getMaxAgeBeforeConsideredDead());
     this.schedulerListeners = new SchedulerListeners(schedulerListeners);
@@ -113,44 +110,40 @@ public class Scheduler implements SchedulerClient {
     delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 
-    if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
+    if (pollingStrategyConfig.type() == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
       schedulerTaskRepository.verifySupportsLockAndFetch();
       executeDueStrategy =
           new LockAndFetchCandidates(
-              executor,
+              this.executors,
               schedulerTaskRepository,
               this,
-              threadpoolSize,
               this.schedulerListeners,
               executionInterceptors,
               schedulerState,
               failureLogger,
               taskResolver,
               clock,
-              pollingStrategyConfig,
               this::triggerCheckForDueExecutions,
               heartbeatConfig);
-    } else if (pollingStrategyConfig.type == PollingStrategyConfig.Type.FETCH) {
+    } else if (pollingStrategyConfig.type() == PollingStrategyConfig.Type.FETCH) {
       executeDueStrategy =
           new FetchCandidates(
-              executor,
+              this.executors,
               schedulerTaskRepository,
               this,
-              threadpoolSize,
               this.schedulerListeners,
               executionInterceptors,
               schedulerState,
               failureLogger,
               taskResolver,
               clock,
-              pollingStrategyConfig,
               this::triggerCheckForDueExecutions,
               heartbeatConfig);
     } else {
       throw new IllegalArgumentException(
-          "Unknown polling-strategy type: " + pollingStrategyConfig.type);
+          "Unknown polling-strategy type: " + pollingStrategyConfig.type());
     }
-    LOG.info("Using polling-strategy: " + pollingStrategyConfig.describe());
+    LOG.info("Using polling-strategy: {}", pollingStrategyConfig.describe());
   }
 
   public void registerSchedulerListener(SchedulerListener listener) {
@@ -226,7 +219,9 @@ public class Scheduler implements SchedulerClient {
       }
     }
 
-    executor.stop(shutdownMaxWait);
+    for (Executor executor : executors) {
+      executor.stop(shutdownMaxWait);
+    }
 
     // Shutdown heartbeating thread last
     if (!ExecutorUtils.shutdownAndAwaitTermination(
@@ -249,7 +244,7 @@ public class Scheduler implements SchedulerClient {
 
   @Override
   public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
-    this.delegate.schedule(schedulableInstance);
+    this.delegate.scheduleIfNotExists(schedulableInstance);
   }
 
   @Override
@@ -274,7 +269,7 @@ public class Scheduler implements SchedulerClient {
 
   @Override
   public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
-    this.delegate.schedule(taskInstance, executionTime);
+    this.delegate.scheduleIfNotExists(taskInstance, executionTime);
   }
 
   @Override
@@ -350,11 +345,15 @@ public class Scheduler implements SchedulerClient {
   }
 
   public List<CurrentlyExecuting> getCurrentlyExecuting() {
-    return executor.getCurrentlyExecuting();
+    List<CurrentlyExecuting> result = new ArrayList<>();
+    for (Executor executor : executors) {
+      result.addAll(executor.getCurrentlyExecuting());
+    }
+    return result;
   }
 
   public List<CurrentlyExecuting> getCurrentlyExecutingWithStaleHeartbeat() {
-    return executor.getCurrentlyExecuting().stream()
+    return getCurrentlyExecuting().stream()
         .filter(c -> c.getHeartbeatState().hasStaleHeartbeat())
         .collect(toList());
   }
@@ -383,7 +382,7 @@ public class Scheduler implements SchedulerClient {
     if (!oldExecutions.isEmpty()) {
       oldExecutions.forEach(
           execution -> {
-            LOG.info("Found dead execution. Delegating handling to task. Execution: " + execution);
+            LOG.info("Found dead execution. Delegating handling to task. Execution: {}", execution);
             try {
 
               Optional<Task> task = taskResolver.resolve(execution);
@@ -417,7 +416,7 @@ public class Scheduler implements SchedulerClient {
   }
 
   void updateHeartbeats() {
-    final List<CurrentlyExecuting> currentlyProcessing = executor.getCurrentlyExecuting();
+    final List<CurrentlyExecuting> currentlyProcessing = getCurrentlyExecuting();
     if (currentlyProcessing.isEmpty()) {
       LOG.trace("No executions to update heartbeats for. Skipping.");
       return;
@@ -434,7 +433,7 @@ public class Scheduler implements SchedulerClient {
     // this update to fail (or update 0 rows). This may happen once, but not multiple times.
 
     Execution e = currentlyExecuting.getExecution();
-    LOG.trace("Updating heartbeat for execution: " + e);
+    LOG.trace("Updating heartbeat for execution: {}", e);
 
     try {
       boolean successfulHeartbeat = schedulerTaskRepository.updateHeartbeatWithRetry(e, now, 3);

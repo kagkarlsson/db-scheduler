@@ -17,8 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 public class HeartbeatState {
-  private Clock clock;
-  private final Instant startTime;
+  private final Clock clock;
   private final HeartbeatConfig heartbeatConfig;
   private int heartbeatSuccessesSinceLastFailure = 0;
   private int heartbeatFailuresSinceLastSuccess = 0;
@@ -27,7 +26,6 @@ public class HeartbeatState {
 
   public HeartbeatState(Clock clock, Instant startTime, HeartbeatConfig heartbeatConfig) {
     this.clock = clock;
-    this.startTime = startTime;
     this.heartbeatConfig = heartbeatConfig;
     heartbeatLastSuccess = startTime;
   }
@@ -35,7 +33,7 @@ public class HeartbeatState {
   public boolean hasStaleHeartbeat() {
     Duration sinceLastSuccess = Duration.between(heartbeatLastSuccess, clock.now());
 
-    long heartbeatMillis = heartbeatConfig.heartbeatInterval.toMillis();
+    long heartbeatMillis = heartbeatConfig.heartbeatInterval().toMillis();
     long millisUntilConsideredStale =
         heartbeatMillis + Math.min(10_000, (int) (heartbeatMillis * 0.25));
     return heartbeatFailuresSinceLastSuccess > 0
@@ -45,7 +43,7 @@ public class HeartbeatState {
   public double getFractionDead() {
     Duration sinceLastSuccess = Duration.between(heartbeatLastSuccess, clock.now());
     return (double) sinceLastSuccess.toMillis()
-        / heartbeatConfig.maxAgeBeforeConsideredDead.toMillis();
+        / heartbeatConfig.maxAgeBeforeConsideredDead().toMillis();
   }
 
   public int getFailedHeartbeats() {
@@ -75,7 +73,7 @@ public class HeartbeatState {
         + ", lastFailure="
         + heartbeatLastFailure
         + ", missedHeartbeatsLimit="
-        + heartbeatConfig.missedHeartbeatsLimit
+        + heartbeatConfig.missedHeartbeatsLimit()
         + '}';
   }
 }

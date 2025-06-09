@@ -48,7 +48,7 @@ class ExecutePicked implements Runnable {
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
   private final Clock clock;
-  private HeartbeatConfig heartbeatConfig;
+  private final HeartbeatConfig heartbeatConfig;
   private final Execution pickedExecution;
 
   public ExecutePicked(

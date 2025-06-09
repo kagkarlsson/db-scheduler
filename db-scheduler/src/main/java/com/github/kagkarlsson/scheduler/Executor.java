@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -33,13 +34,32 @@ public class Executor {
 
   final Map<UUID, CurrentlyExecuting> currentlyProcessing =
       Collections.synchronizedMap(new HashMap<>());
-  private AtomicInteger currentlyInQueueOrProcessing = new AtomicInteger(0);
+  private final AtomicInteger currentlyInQueueOrProcessing = new AtomicInteger(0);
   private final ExecutorService executorService;
   private final Clock clock;
+  private final int priorityThreshold;
+  private final int poolUpperLimit;
+  private final int poolLowerLimit;
 
   public Executor(ExecutorService executorService, Clock clock) {
+    this(executorService, clock, Integer.MIN_VALUE, 0, 0);
+  }
+
+  public Executor(ExecutorService executorService, Clock clock, int priorityThreshold) {
+    this(executorService, clock, priorityThreshold, 0, 0);
+  }
+
+  public Executor(
+      ExecutorService executorService,
+      Clock clock,
+      int priorityThreshold,
+      int poolUpperLimit,
+      int poolLowerLimit) {
     this.executorService = executorService;
     this.clock = clock;
+    this.priorityThreshold = priorityThreshold;
+    this.poolUpperLimit = poolUpperLimit;
+    this.poolLowerLimit = poolLowerLimit;
   }
 
   public void addToQueue(Runnable r, Runnable afterDone) {
@@ -94,17 +114,52 @@ public class Executor {
     return currentlyInQueueOrProcessing.get();
   }
 
+  public int getPoolUpperLimit() {
+    return poolUpperLimit;
+  }
+
+  public int getPoolLowerLimit() {
+    return poolLowerLimit;
+  }
+
+  public boolean isRunningLow() {
+    return getNumberInQueueOrProcessing() <= poolLowerLimit;
+  }
+
+  public int getAvailableCapacity() {
+    if (poolUpperLimit > 0) {
+      return Math.max(0, poolUpperLimit - getNumberInQueueOrProcessing());
+    }
+    // Fallback for custom executors
+    if (executorService instanceof ThreadPoolExecutor tpe) {
+      return Math.max(0, tpe.getMaximumPoolSize() - getNumberInQueueOrProcessing());
+    }
+    return Math.max(0, 10 - getNumberInQueueOrProcessing()); // Conservative default
+  }
+
   public UUID addCurrentlyProcessing(CurrentlyExecuting currentlyExecuting) {
     final UUID executionId = UUID.randomUUID();
     currentlyProcessing.put(executionId, currentlyExecuting);
     return executionId;
   }
 
+  public boolean canExecute(Execution execution) {
+    return execution.taskInstance.getPriority() >= priorityThreshold;
+  }
+
+  public int getPriorityThreshold() {
+    return priorityThreshold;
+  }
+
+  public boolean hasCapacity() {
+    return getAvailableCapacity() > 0;
+  }
+
   public void removeCurrentlyProcessing(UUID executionId) {
     if (currentlyProcessing.remove(executionId) == null) {
       LOG.warn(
-          "Released execution was not found in collection of executions currently being processed. Should never happen. Execution-id: "
-              + executionId);
+          "Released execution was not found in collection of executions currently being processed. Should never happen. Execution-id: {}",
+          executionId);
     }
   }
 }
