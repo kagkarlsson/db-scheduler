@@ -26,7 +26,8 @@ import org.slf4j.LoggerFactory;
 
 public class LockAndFetchCandidates implements PollStrategy {
   private static final Logger LOG = LoggerFactory.getLogger(LockAndFetchCandidates.class);
-  private final Executor executor;
+  private final List<Executor> executors;
+  private final Executor defaultExecutor;
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
   private final SchedulerListeners schedulerListeners;
@@ -43,7 +44,7 @@ public class LockAndFetchCandidates implements PollStrategy {
   private AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
 
   public LockAndFetchCandidates(
-      Executor executor,
+      Executor defaultExecutor,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
       int threadpoolSize,
@@ -56,7 +57,38 @@ public class LockAndFetchCandidates implements PollStrategy {
       PollingStrategyConfig pollingStrategyConfig,
       Runnable triggerCheckForNewExecutions,
       HeartbeatConfig maxAgeBeforeConsideredDead) {
-    this.executor = executor;
+    this(
+        List.of(defaultExecutor),
+        taskRepository,
+        schedulerClient,
+        threadpoolSize,
+        schedulerListeners,
+        executionInterceptors,
+        schedulerState,
+        failureLogger,
+        taskResolver,
+        clock,
+        pollingStrategyConfig,
+        triggerCheckForNewExecutions,
+        maxAgeBeforeConsideredDead);
+  }
+
+  public LockAndFetchCandidates(
+      List<Executor> executors,
+      TaskRepository taskRepository,
+      SchedulerClient schedulerClient,
+      int threadpoolSize,
+      SchedulerListeners schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
+      SchedulerState schedulerState,
+      ConfigurableLogger failureLogger,
+      TaskResolver taskResolver,
+      Clock clock,
+      PollingStrategyConfig pollingStrategyConfig,
+      Runnable triggerCheckForNewExecutions,
+      HeartbeatConfig maxAgeBeforeConsideredDead) {
+    this.executors = executors;
+    this.defaultExecutor = executors.get(0);
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
     this.schedulerListeners = schedulerListeners;
@@ -72,11 +104,17 @@ public class LockAndFetchCandidates implements PollStrategy {
     upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
   }
 
+  private Executor findExecutorForExecution(Execution execution) {
+    return ExecutorSelector.findExecutorForExecution(execution, executors, defaultExecutor);
+  }
+
   @Override
   public void run() {
     Instant now = clock.now();
 
-    int executionsToFetch = upperLimit - executor.getNumberInQueueOrProcessing();
+    int totalInQueueOrProcessing =
+        executors.stream().mapToInt(Executor::getNumberInQueueOrProcessing).sum();
+    int executionsToFetch = upperLimit - totalInQueueOrProcessing;
 
     // Might happen if upperLimit == threads and all threads are busy
     if (executionsToFetch <= 0) {
@@ -100,9 +138,10 @@ public class LockAndFetchCandidates implements PollStrategy {
     }
 
     for (Execution picked : pickedExecutions) {
-      executor.addToQueue(
+      Executor selectedExecutor = findExecutorForExecution(picked);
+      selectedExecutor.addToQueue(
           new ExecutePicked(
-              executor,
+              selectedExecutor,
               taskRepository,
               schedulerClient,
               schedulerListeners,
@@ -114,9 +153,12 @@ public class LockAndFetchCandidates implements PollStrategy {
               maxAgeBeforeConsideredDead,
               picked),
           () -> {
-            if (moreExecutionsInDatabase.get()
-                && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
-              triggerCheckForNewExecutions.run();
+            if (moreExecutionsInDatabase.get()) {
+              int totalInQueue =
+                  executors.stream().mapToInt(Executor::getNumberInQueueOrProcessing).sum();
+              if (totalInQueue <= lowerLimit) {
+                triggerCheckForNewExecutions.run();
+              }
             }
           });
     }
