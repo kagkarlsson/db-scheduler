@@ -634,6 +634,9 @@ There are a number of users that are using db-scheduler for high throughput use-
 
 See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
 
+**Upgrading to 16.x**
+* Java 17+ is required now, since we migrated our codebase to Java 17
+
 **Upgrading to 15.x**
 * Priority is a new opt-in feature. To be able to use it, column `priority` and index `priority_execution_time_idx`
   must be added to the database schema. See table definitions for
@@ -659,7 +662,7 @@ See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release
 
 **Prerequisites**
 
-* Java 8+
+* Java 17+
 * Maven
 
 Follow these steps:

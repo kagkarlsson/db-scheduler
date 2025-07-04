@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
@@ -21,7 +22,7 @@ import java.util.Objects;
 
 public class FixedDelay implements Schedule, Serializable {
 
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
   private final Duration duration;
 

@@ -13,13 +13,14 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
+import java.io.Serial;
+
 public class MissingRawDataException extends DbSchedulerException {
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
   public MissingRawDataException(Class<?> dataClass) {
     super(
-        String.format(
-            "Scheduled execution has typed data, use getData() to read the deserialized object. Data-class : %s",
-            dataClass));
+        "Scheduled execution has typed data, use getData() to read the deserialized object. Data-class : %s"
+            .formatted(dataClass));
   }
 }
