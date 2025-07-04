@@ -460,7 +460,7 @@ public abstract class CompatibilityTest {
         (ManualScheduler)
             new TestHelper.ManualSchedulerBuilder(getDataSource(), List.of(oneTime))
                 .clock(clock)
-              .jdbcCustomization(new PostgreSqlJdbcCustomization(true, true))
+                .jdbcCustomization(new PostgreSqlJdbcCustomization(true, true))
                 .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
                 .build();
 
