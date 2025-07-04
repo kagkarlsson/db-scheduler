@@ -20,6 +20,7 @@ import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.logging.ConfigurableLogger;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
@@ -29,7 +30,8 @@ import org.slf4j.LoggerFactory;
 
 public class FetchCandidates implements PollStrategy {
   private static final Logger LOG = LoggerFactory.getLogger(FetchCandidates.class);
-  private final Executor executor;
+  private final List<Executor> executors;
+  private final Executor defaultExecutor;
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
   private final SchedulerListeners schedulerListeners;
@@ -59,7 +61,9 @@ public class FetchCandidates implements PollStrategy {
       PollingStrategyConfig pollingStrategyConfig,
       Runnable triggerCheckForNewExecutions,
       HeartbeatConfig heartbeatConfig) {
-    this.executor = executor;
+    this.defaultExecutor = executor;
+    this.executors = new ArrayList<>();
+    this.executors.add(executor);
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
     this.schedulerListeners = schedulerListeners;
@@ -75,6 +79,43 @@ public class FetchCandidates implements PollStrategy {
     // FIXLATER: this is not "upper limit", but rather nr of executions to get. those already in
     // queue will become stale
     upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
+  }
+
+  public FetchCandidates(
+      List<Executor> executors,
+      TaskRepository taskRepository,
+      SchedulerClient schedulerClient,
+      int threadpoolSize,
+      SchedulerListeners schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
+      SchedulerState schedulerState,
+      ConfigurableLogger failureLogger,
+      TaskResolver taskResolver,
+      Clock clock,
+      PollingStrategyConfig pollingStrategyConfig,
+      Runnable triggerCheckForNewExecutions,
+      HeartbeatConfig heartbeatConfig) {
+    this.executors = executors;
+    this.defaultExecutor = executors.get(0);
+    this.taskRepository = taskRepository;
+    this.schedulerClient = schedulerClient;
+    this.schedulerListeners = schedulerListeners;
+    this.executionInterceptors = executionInterceptors;
+    this.schedulerState = schedulerState;
+    this.failureLogger = failureLogger;
+    this.taskResolver = taskResolver;
+    this.clock = clock;
+    this.pollingStrategyConfig = pollingStrategyConfig;
+    this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
+    this.heartbeatConfig = heartbeatConfig;
+    lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
+    // FIXLATER: this is not "upper limit", but rather nr of executions to get. those already in
+    // queue will become stale
+    upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
+  }
+
+  private Executor findExecutorForExecution(Execution execution) {
+    return ExecutorSelector.findExecutorForExecution(execution, executors, defaultExecutor);
   }
 
   @Override
@@ -97,13 +138,14 @@ public class FetchCandidates implements PollStrategy {
             (Integer leftInBatch) -> leftInBatch <= lowerLimit);
 
     for (Execution e : fetchedDueExecutions) {
-      executor.addToQueue(
+      Executor selectedExecutor = findExecutorForExecution(e);
+      selectedExecutor.addToQueue(
           () -> {
             final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
             candidate.ifPresent(
                 picked ->
                     new ExecutePicked(
-                            executor,
+                            selectedExecutor,
                             taskRepository,
                             schedulerClient,
                             schedulerListeners,

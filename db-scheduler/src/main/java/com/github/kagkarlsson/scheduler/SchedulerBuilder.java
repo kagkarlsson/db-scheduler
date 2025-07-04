@@ -81,6 +81,31 @@ public class SchedulerBuilder {
   protected boolean alwaysPersistTimestampInUTC = false;
   protected List<SchedulerListener> schedulerListeners = new ArrayList<>();
   protected List<ExecutionInterceptor> executionInterceptors = new ArrayList<>();
+  protected List<WorkerPoolConfig> workerPools = new ArrayList<>();
+
+  protected static class WorkerPoolConfig {
+    private final int threads;
+    private final int priorityThreshold;
+    private final ExecutorService executorService;
+
+    public WorkerPoolConfig(int threads, int priorityThreshold, ExecutorService executorService) {
+      this.threads = threads;
+      this.priorityThreshold = priorityThreshold;
+      this.executorService = executorService;
+    }
+
+    public int getThreads() {
+      return threads;
+    }
+
+    public int getPriorityThreshold() {
+      return priorityThreshold;
+    }
+
+    public ExecutorService getExecutorService() {
+      return executorService;
+    }
+  }
 
   public SchedulerBuilder(DataSource dataSource, List<Task<?>> knownTasks) {
     this.dataSource = dataSource;
@@ -237,6 +262,55 @@ public class SchedulerBuilder {
     return this;
   }
 
+  /**
+   * Adds a worker pool that will only execute tasks with a priority greater than or equal to the
+   * specified threshold.
+   *
+   * @param threads the number of threads in the worker pool
+   * @param priorityThreshold the minimum priority of tasks that this worker pool will execute
+   * @return this builder
+   */
+  public SchedulerBuilder addWorkerPool(int threads, int priorityThreshold) {
+    if (threads <= 0) {
+      throw new IllegalArgumentException("Number of threads must be greater than 0");
+    }
+
+    if (!enablePriority) {
+      throw new IllegalStateException(
+          "Priority must be enabled to add a worker pool with priority threshold");
+    }
+
+    ExecutorService executorService =
+        Executors.newFixedThreadPool(
+            threads,
+            defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-p" + priorityThreshold + "-"));
+
+    this.workerPools.add(new WorkerPoolConfig(threads, priorityThreshold, executorService));
+    return this;
+  }
+
+  /**
+   * Adds a worker pool that will only execute tasks with a priority greater than or equal to the
+   * specified threshold.
+   *
+   * @param executorService the executor service to use for this worker pool
+   * @param priorityThreshold the minimum priority of tasks that this worker pool will execute
+   * @return this builder
+   */
+  public SchedulerBuilder addWorkerPool(ExecutorService executorService, int priorityThreshold) {
+    if (executorService == null) {
+      throw new IllegalArgumentException("ExecutorService must not be null");
+    }
+
+    if (!enablePriority) {
+      throw new IllegalStateException(
+          "Priority must be enabled to add a worker pool with priority threshold");
+    }
+
+    this.workerPools.add(new WorkerPoolConfig(0, priorityThreshold, executorService));
+    return this;
+  }
+
   public Scheduler build() {
     if (schedulerName == null) {
       schedulerName = new SchedulerName.Hostname();
@@ -328,6 +402,13 @@ public class SchedulerBuilder {
             startTasks,
             candidateDueExecutor,
             candidateHousekeeperExecutor);
+
+    // Add additional worker pools
+    for (WorkerPoolConfig workerPool : workerPools) {
+      Executor executor =
+          new Executor(workerPool.getExecutorService(), clock, workerPool.getPriorityThreshold());
+      scheduler.executors.add(executor);
+    }
 
     if (enableImmediateExecution) {
       scheduler.registerSchedulerListener(new ImmediateCheckForDueExecutions(scheduler, clock));
