@@ -38,11 +38,11 @@ signing:
 
 deploy:
   maven:
-    nexus2:
-      maven-central:
+    mavenCentral:
+      sonatype:
+        applyMavenCentralRules: true
         active: ALWAYS
-        url: https://oss.sonatype.org/service/local
-        closeRepository: true
-        releaseRepository: true
+        url: https://central.sonatype.com/api/v1/publisher
+        authorization: BASIC
         stagingRepositories:
           - target/staging-deploy
