@@ -186,6 +186,8 @@ public class Tasks {
     private final Class<T> dataClass;
     private FailureHandler<T> onFailure =
         new FailureHandler.OnFailureRescheduleUsingTaskDataSchedule<>();
+    private DeadExecutionHandler<T> onDeadExecution =
+        new DeadExecutionHandler.ReviveDeadExecution<>();
 
     private int defaultPriority = RecurringTaskWithPersistentSchedule.DEFAULT_PRIORITY;
 
@@ -205,10 +207,21 @@ public class Tasks {
       return this;
     }
 
+    public RecurringTaskWithPersistentScheduleBuilder<T> onDeadExecutionRevive() {
+      this.onDeadExecution = new DeadExecutionHandler.ReviveDeadExecution<>();
+      return this;
+    }
+
+    public RecurringTaskWithPersistentScheduleBuilder<T> onDeadExecution(
+        DeadExecutionHandler<T> deadExecutionHandler) {
+      this.onDeadExecution = deadExecutionHandler;
+      return this;
+    }
+
     public RecurringTaskWithPersistentSchedule<T> execute(
         VoidExecutionHandler<T> executionHandler) {
       return new RecurringTaskWithPersistentSchedule<>(
-          name, dataClass, onFailure, defaultPriority) {
+          name, dataClass, onFailure, onDeadExecution, defaultPriority) {
         @Override
         public CompletionHandler<T> execute(
             TaskInstance<T> taskInstance, ExecutionContext executionContext) {
