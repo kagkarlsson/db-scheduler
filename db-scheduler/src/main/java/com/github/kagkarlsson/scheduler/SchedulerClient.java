@@ -210,7 +210,8 @@ public interface SchedulerClient {
    *
    * @param taskInstanceId
    * @throws TaskInstanceNotFoundException if the given instance does not exist
-   * @throws TaskInstanceCurrentlyExecutingException if the given instance is currently being executed
+   * @throws TaskInstanceCurrentlyExecutingException if the given instance is currently being
+   *     executed
    * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
    */
   void cancel(TaskInstanceId taskInstanceId);
