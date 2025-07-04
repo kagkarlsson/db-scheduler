@@ -1,8 +1,0 @@
-
-Todo?
----------------
-- improve compatibility tasks, get rid of Thread.sleep
-
-- move getFailingExecutions(Duration failingAtLeastFor) into client
-
-- redesign api so that an ad-hoc task can be scheduled without having a reference to the Task-object
