@@ -36,12 +36,21 @@ public abstract class RecurringTaskWithPersistentSchedule<T extends ScheduleAndD
 
   public RecurringTaskWithPersistentSchedule(
       String name, Class<T> dataClass, FailureHandler<T> onFailure, int defaultPriority) {
-    super(
+    this(
         name,
         dataClass,
         onFailure,
         new DeadExecutionHandler.ReviveDeadExecution<>(),
         defaultPriority);
+  }
+
+  public RecurringTaskWithPersistentSchedule(
+      String name,
+      Class<T> dataClass,
+      FailureHandler<T> onFailure,
+      DeadExecutionHandler<T> deadExecutionHandler,
+      int defaultPriority) {
+    super(name, dataClass, onFailure, deadExecutionHandler, defaultPriority);
   }
 
   @Override
