@@ -301,7 +301,7 @@ public class SchedulerBuilder {
       addSchedulerListener(new StatsRegistryAdapter(statsRegistry));
     }
 
-    Waiter waiter = new Waiter(this.poolingInterval, clock);
+    Waiter waiter = buildWaiter();
 
     LOG.info(
         "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s, enable-immediate-execution={}, enable-priority={}, table-name={}, name={}",
@@ -351,5 +351,9 @@ public class SchedulerBuilder {
     }
 
     return scheduler;
+  }
+
+  protected Waiter buildWaiter() {
+    return new Waiter(poolingInterval, clock);
   }
 }
