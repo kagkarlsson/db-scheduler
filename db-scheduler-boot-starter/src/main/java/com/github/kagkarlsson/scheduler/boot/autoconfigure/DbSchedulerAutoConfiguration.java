@@ -13,10 +13,12 @@
  */
 package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 
+import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
+import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
@@ -105,11 +107,17 @@ public class DbSchedulerAutoConfiguration {
     return StatsRegistry.NOOP;
   }
 
+  @ConditionalOnMissingBean
+  @Bean
+  public Clock clock() {
+    return new SystemClock();
+  }
+
   @ConditionalOnBean(DataSource.class)
   @ConditionalOnMissingBean
   @DependsOnDatabaseInitialization
   @Bean(destroyMethod = "stop")
-  public Scheduler scheduler(DbSchedulerCustomizer customizer, StatsRegistry registry) {
+  public Scheduler scheduler(DbSchedulerCustomizer customizer, StatsRegistry registry, Clock clock) {
     log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
 
     // Ensure that we are using a transactional aware data source
@@ -119,6 +127,8 @@ public class DbSchedulerAutoConfiguration {
     // Instantiate a new builder
     final SchedulerBuilder builder =
         Scheduler.create(transactionalDataSource, nonStartupTasks(configuredTasks));
+
+    builder.clock(clock);
 
     builder.threads(config.getThreads());
 
