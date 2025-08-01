@@ -17,8 +17,11 @@ import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDela
 
 import com.github.kagkarlsson.examples.boot.CounterService;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
+import com.github.kagkarlsson.scheduler.boot.autoconfigure.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
 import java.time.Instant;
@@ -62,6 +65,22 @@ public class BasicExamplesConfiguration {
               EventLogger.logTask(
                   BASIC_RECURRING_TASK, "Ran. Run-counter current-value=" + counter.read());
             });
+  }
+
+  /** Alternative way to define a recurring task with dependencies using annotation. */
+  @RecurringTask(name = "recurring-sample-task-annotation", cron = "*/30 * * * * *")
+  void recurringSampleTaskAnnotation(
+      TaskInstance<Void> instance, ExecutionContext ctx, CounterService counter) {
+    log.info("Running recurring-sample-task-annotation. Instance: {}, ctx: {}", instance, ctx);
+    counter.increase();
+    EventLogger.logTask(
+        "recurring-sample-task-annotation", "Ran. Run-counter current-value=" + counter.read());
+  }
+
+  /** Define a recurring task with no dependencies and no inputs using annotation. */
+  @RecurringTask(name = "recurring-sample-task-annotation-no-inputs", cron = "0 * * * * *")
+  void recurringSampleTaskAnnotationNoInputs() {
+    log.info("Running recurring-sample-task-annotation-no-inputs.");
   }
 
   /** Define a one-time task which have to be manually scheduled. */
