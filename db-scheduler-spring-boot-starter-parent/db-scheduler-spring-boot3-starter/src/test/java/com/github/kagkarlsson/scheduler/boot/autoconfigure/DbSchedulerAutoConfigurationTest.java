@@ -7,6 +7,7 @@ import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_POLLING_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
@@ -19,11 +20,14 @@ import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.DefaultStatsRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.sql.DataSource;
@@ -62,6 +66,7 @@ public class DbSchedulerAutoConfigurationTest {
                     HealthContributorAutoConfiguration.class,
                     DbSchedulerMetricsAutoConfiguration.class,
                     DbSchedulerActuatorAutoConfiguration.class,
+                    RecurringTaskAnnotationAutoConfiguration.class,
                     DbSchedulerAutoConfiguration.class));
   }
 
@@ -276,6 +281,62 @@ public class DbSchedulerAutoConfigurationTest {
         });
   }
 
+  @Test
+  void it_should_mix_bean_tasks_and_annotation_tasks() {
+    ctxRunner
+        .withUserConfiguration(MixingAnnotationAndBeanTaskConfiguration.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+
+              ImmutableList.of("taskFromAnnotation", "firstTask", "secondTask", "thirdTask")
+                  .forEach(beanName -> assertThat(ctx).getBean(beanName, Task.class).isNotNull());
+            });
+  }
+
+  @Test
+  void it_should_create_valid_cron_from_annotation() {
+    ctxRunner
+        .withUserConfiguration(TaskFromAnnotationWithCron.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+
+              Task<Void> task = (Task<Void>) ctx.getBean("taskFromAnnotationWithCron", Task.class);
+              assertThat(task).isNotNull();
+
+              Scheduler scheduler = ctx.getBean(Scheduler.class);
+              List<ScheduledExecution<Object>> scheduledExecutions =
+                  scheduler.getScheduledExecutionsForTask("taskFromAnnotationWithCron");
+              assertThat(scheduledExecutions).hasSize(1);
+            });
+  }
+
+  @Test
+  void it_should_parse_input_arguments_for_tasks_from_annotation() {
+    ctxRunner
+        .withUserConfiguration(TasksFromAnnotationWithDifferentInputs.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+
+              ImmutableList.of(
+                      "taskNoInputs",
+                      "taskWithExecutionContextInput",
+                      "taskWithTaskInstanceInput",
+                      "taskWithBothInputsExpectedOrder",
+                      "taskWithBothInputsReverseOrder")
+                  .forEach(
+                      beanName -> {
+                        Task<Void> task = (Task<Void>) ctx.getBean(beanName, Task.class);
+                        assertThat(task).isNotNull();
+
+                        // Runtime validation that input parameters are passed correctly
+                        task.execute(task.instance("1"), null);
+                      });
+            });
+  }
+
   @Configuration
   static class SingleTaskConfiguration {
     @Bean
@@ -341,6 +402,54 @@ public class DbSchedulerAutoConfigurationTest {
         @Override
         public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {}
       };
+    }
+  }
+
+  @Configuration
+  static class MixingAnnotationAndBeanTaskConfiguration extends MultipleTasksConfiguration {
+
+    @RecurringTask(name = "taskFromAnnotation")
+    public void taskFromAnnotation() {
+      log.info("I'm a task from annotation");
+    }
+  }
+
+  @Configuration
+  static class TaskFromAnnotationWithCron {
+    @RecurringTask(name = "taskFromAnnotationWithCron", cron = "0 0 7 19 * *")
+    public void taskFromAnnotationWithCron() {
+      log.info("I'm a task from annotation");
+    }
+  }
+
+  @Configuration
+  static class TasksFromAnnotationWithDifferentInputs {
+
+    @RecurringTask(name = "taskNoInputs")
+    public void taskNoInputs() {
+      log.info("I'm a task without inputs");
+    }
+
+    @RecurringTask(name = "taskWithExecutionContextInput")
+    public void taskWithExecutionContextInput(ExecutionContext ctx) {
+      log.info("I'm a task with the execution context input");
+    }
+
+    @RecurringTask(name = "taskWithTaskInstanceInput")
+    public void taskWithTaskInstanceInput(TaskInstance<Void> taskInstance) {
+      log.info("I'm a task with the task instance input");
+    }
+
+    @RecurringTask(name = "taskWithBothInputsExpectedOrder")
+    public void taskWithBothInputsExpectedOrder(
+        TaskInstance<Void> taskInstance, ExecutionContext ctx) {
+      log.info("I'm a task with both inputs expected order");
+    }
+
+    @RecurringTask(name = "taskWithBothInputsReverseOrder")
+    public void taskWithBothInputsReverseOrder(
+        ExecutionContext ctx, TaskInstance<Void> taskInstance) {
+      log.info("I'm a task with both inputs reverse order");
     }
   }
 
