@@ -89,6 +89,7 @@ List of organizations known to be running db-scheduler in production:
 | [Diffia](https://www.diffia.com/)         |  Norwegian eHealth company                                   |
 | [Swan](https://www.swan.io/)              | Swan helps developers to embed banking services easily into their product. |
 | [TOMRA](https://www.tomra.com/)           | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling. |
+| [Kartverket](https://kartverket.no/)      | The Norwegian Mapping Authority.                             |
 
 Feel free to open a PR to add your organization to the list.
 
