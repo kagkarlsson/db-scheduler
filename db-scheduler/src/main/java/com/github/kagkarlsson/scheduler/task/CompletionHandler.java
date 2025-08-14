@@ -73,7 +73,7 @@ public interface CompletionHandler<T> {
   class OnCompleteReplace<T> implements CompletionHandler<T> {
     private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReplace.class);
     private String newTaskName = "<hidden>"; // used for logging purposes only
-    private final Function<TaskInstance<T>, SchedulableInstance<T>> newInstanceCreator;
+    private final Function<TaskInstance<T>, SchedulableInstance<?>> newInstanceCreator;
 
     public OnCompleteReplace(String newTaskName) {
       this(newTaskName, null);
@@ -98,7 +98,7 @@ public interface CompletionHandler<T> {
       this.newTaskName = newTask.getTaskName();
     }
 
-    public OnCompleteReplace(Function<TaskInstance<T>, SchedulableInstance<T>> newInstanceCreator) {
+    public OnCompleteReplace(Function<TaskInstance<T>, SchedulableInstance<?>> newInstanceCreator) {
       this.newInstanceCreator = newInstanceCreator;
     }
 
@@ -107,7 +107,7 @@ public interface CompletionHandler<T> {
     public void complete(
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
       TaskInstance<T> currentInstance = executionComplete.getExecution().taskInstance;
-      SchedulableInstance<T> nextInstance = newInstanceCreator.apply(currentInstance);
+      SchedulableInstance<?> nextInstance = newInstanceCreator.apply(currentInstance);
       LOG.debug(
           "Removing instance {} and scheduling instance {}",
           executionComplete.getExecution().taskInstance,
