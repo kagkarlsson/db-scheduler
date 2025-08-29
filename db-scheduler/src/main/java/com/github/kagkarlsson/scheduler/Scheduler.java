@@ -456,7 +456,7 @@ public class Scheduler implements SchedulerClient {
       }
 
     } catch (Throwable ex) { // just-in-case to avoid any "poison-pills"
-      LOG.error("Unexpteced failure while while updating heartbeat for execution {}.", e, ex);
+      LOG.error("Unexpected failure while while updating heartbeat for execution {}.", e, ex);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILED_HEARTBEAT);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
       schedulerListeners.onExecutionFailedHeartbeat(currentlyExecuting);
