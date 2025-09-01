@@ -25,6 +25,7 @@ class QueryBuilder {
   private final String tableName;
   private final List<AndCondition> andConditions = new ArrayList<>();
   private Optional<String> orderBy = empty();
+  private Optional<Integer> limitValue = empty();
 
   QueryBuilder(String tableName) {
     this.tableName = tableName;
@@ -44,7 +45,15 @@ class QueryBuilder {
     return this;
   }
 
-  String getQuery() {
+  QueryBuilder limit(int limit) {
+    if (limit < 0) {
+      throw new IllegalArgumentException("Limit must be non-negative, was: " + limit);
+    }
+    this.limitValue = Optional.of(limit);
+    return this;
+  }
+
+  String getQuery(JdbcCustomization jdbcCustomization) {
     StringBuilder s = new StringBuilder();
     s.append("select * from ").append(tableName);
 
@@ -55,14 +64,21 @@ class QueryBuilder {
 
     orderBy.ifPresent(o -> s.append(" order by ").append(o));
 
+    if (limitValue.isPresent() && jdbcCustomization.supportsExplicitQueryLimitPart()) {
+      s.append(jdbcCustomization.getQueryLimitPart(limitValue.get()));
+    }
+
     return s.toString();
   }
 
-  PreparedStatementSetter getPreparedStatementSetter() {
+  PreparedStatementSetter getPreparedStatementSetter(JdbcCustomization jdbcCustomization) {
     return p -> {
       int parameterIndex = 1;
       for (AndCondition andCondition : andConditions) {
         parameterIndex = andCondition.setParameters(p, parameterIndex);
+      }
+      if (limitValue.isPresent() && !jdbcCustomization.supportsExplicitQueryLimitPart()) {
+        p.setMaxRows(limitValue.get());
       }
     };
   }

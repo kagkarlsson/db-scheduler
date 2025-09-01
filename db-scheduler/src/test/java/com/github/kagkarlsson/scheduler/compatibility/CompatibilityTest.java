@@ -16,6 +16,9 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
+import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
+import com.github.kagkarlsson.scheduler.ScheduledExecution;
+import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -192,6 +195,61 @@ public abstract class CompatibilityTest {
         () -> {
           doJDBCRepositoryCompatibilityTestUsingData(null);
         });
+  }
+
+  @Test
+  public void test_jdbc_limit_before_after_compatibility() {
+    var jdbcTaskRepository = createJdbcTaskRepository(false);
+    jdbcTaskRepository.createIfNotExists(
+        ONETIME.instance("1").scheduledTo(truncatedInstantNow().plusSeconds(10)));
+    jdbcTaskRepository.createIfNotExists(
+        ONETIME.instance("2").scheduledTo(truncatedInstantNow().plusSeconds(20)));
+    jdbcTaskRepository.createIfNotExists(
+        ONETIME.instance("3").scheduledTo(truncatedInstantNow().plusSeconds(30)));
+    jdbcTaskRepository.createIfNotExists(
+        ONETIME.instance("4").scheduledTo(truncatedInstantNow().plusSeconds(40)));
+    jdbcTaskRepository.createIfNotExists(
+        ONETIME.instance("5").scheduledTo(truncatedInstantNow().plusSeconds(50)));
+
+    ScheduledExecutionsFilter filter = ScheduledExecutionsFilter.all().limit(3);
+    List<Execution> firstPage = new ArrayList<>();
+    jdbcTaskRepository.getScheduledExecutions(filter, firstPage::add);
+    assertThat(firstPage, hasSize(3));
+    assertThat(firstPage.get(0).getId(), is("1"));
+    assertThat(firstPage.get(1).getId(), is("2"));
+    assertThat(firstPage.get(2).getId(), is("3"));
+
+    var theSecond = firstPage.get(1); // id=2
+
+    var middle = new ScheduledExecution<>(String.class, firstPage.get(2));
+
+    var beforePage = new ArrayList<Execution>();
+    filter = ScheduledExecutionsFilter.all().before(ExecutionTimeAndId.from(middle)).limit(10);
+    jdbcTaskRepository.getScheduledExecutions(filter, beforePage::add);
+    assertThat(beforePage, hasSize(2));
+    assertThat(beforePage.get(0).getId(), is("2"));
+    assertThat(beforePage.get(1).getId(), is("1"));
+
+    var afterPage = new ArrayList<Execution>();
+    filter = ScheduledExecutionsFilter.all().after(ExecutionTimeAndId.from(middle)).limit(10);
+    jdbcTaskRepository.getScheduledExecutions(filter, afterPage::add);
+    assertThat(afterPage, hasSize(2));
+    assertThat(afterPage.get(0).getId(), is("4"));
+    assertThat(afterPage.get(1).getId(), is("5"));
+
+    var theFourth = afterPage.get(0); // id=4
+
+    var theSecondSE = new ScheduledExecution<>(String.class, theSecond);
+    var theFourthSE = new ScheduledExecution<>(String.class, theFourth);
+    var rangePage = new ArrayList<Execution>();
+    filter =
+        ScheduledExecutionsFilter.all()
+            .after(ExecutionTimeAndId.from(theSecondSE))
+            .before(ExecutionTimeAndId.from(theFourthSE))
+            .limit(10);
+    jdbcTaskRepository.getScheduledExecutions(filter, rangePage::add);
+    assertThat(rangePage, hasSize(1));
+    assertThat(rangePage.get(0).getId(), is("3"));
   }
 
   @Test

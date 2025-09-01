@@ -22,6 +22,7 @@ import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.Clock;
+import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
 import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskRepository;
@@ -305,8 +306,8 @@ public class JdbcTaskRepository implements TaskRepository {
     }
 
     jdbcRunner.query(
-        q.getQuery(),
-        q.getPreparedStatementSetter(),
+        q.getQuery(jdbcCustomization),
+        q.getPreparedStatementSetter(jdbcCustomization),
         new ExecutionResultSetConsumer(consumer, filter.getIncludeUnresolved(), false));
   }
 
@@ -322,8 +323,8 @@ public class JdbcTaskRepository implements TaskRepository {
     q.andCondition(new TaskCondition(taskName));
 
     jdbcRunner.query(
-        q.getQuery(),
-        q.getPreparedStatementSetter(),
+        q.getQuery(jdbcCustomization),
+        q.getPreparedStatementSetter(jdbcCustomization),
         new ExecutionResultSetConsumer(consumer, filter.getIncludeUnresolved(), false));
   }
 
@@ -739,7 +740,16 @@ public class JdbcTaskRepository implements TaskRepository {
 
     filter.getPickedValue().ifPresent(value -> q.andCondition(new PickedCondition(value)));
 
-    q.orderBy(orderByPriority ? "priority desc, execution_time asc" : "execution_time asc");
+    filter.getAfterExecution().ifPresent(e -> q.andCondition(new ExecutionTimeAfterCondition(e)));
+
+    filter.getBeforeExecution().ifPresent(e -> q.andCondition(new ExecutionTimeBeforeCondition(e)));
+
+    ScrollingType scrollingType = ScrollingType.determine(filter);
+    OrderingStrategy strategy = OrderingStrategy.from(orderByPriority, scrollingType);
+    q.orderBy(strategy.getClause());
+
+    filter.getLimit().ifPresent(q::limit);
+
     return q;
   }
 
@@ -941,6 +951,96 @@ public class JdbcTaskRepository implements TaskRepository {
     public int setParameters(PreparedStatement p, int index) throws SQLException {
       p.setString(index++, value);
       return index;
+    }
+  }
+
+  private class ExecutionTimeAfterCondition implements AndCondition {
+    private final ExecutionTimeAndId execution;
+
+    public ExecutionTimeAfterCondition(ExecutionTimeAndId execution) {
+      this.execution = execution;
+    }
+
+    @Override
+    public String getQueryPart() {
+      return "(execution_time >= ? AND (execution_time > ? OR task_instance > ?))";
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      jdbcCustomization.setInstant(p, index++, execution.executionTime());
+      jdbcCustomization.setInstant(p, index++, execution.executionTime());
+      p.setString(index++, execution.taskInstanceId());
+      return index;
+    }
+  }
+
+  private class ExecutionTimeBeforeCondition implements AndCondition {
+    private final ExecutionTimeAndId execution;
+
+    public ExecutionTimeBeforeCondition(ExecutionTimeAndId execution) {
+      this.execution = execution;
+    }
+
+    @Override
+    public String getQueryPart() {
+      return "(execution_time <= ? AND (execution_time < ? OR task_instance < ?))";
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      jdbcCustomization.setInstant(p, index++, execution.executionTime());
+      jdbcCustomization.setInstant(p, index++, execution.executionTime());
+      p.setString(index++, execution.taskInstanceId());
+      return index;
+    }
+  }
+
+  private enum ScrollingType {
+    NONE,
+    FORWARD,
+    BACKWARD,
+    RANGE;
+
+    public static ScrollingType determine(ScheduledExecutionsFilter filter) {
+      boolean hasAfter = filter.getAfterExecution().isPresent();
+      boolean hasBefore = filter.getBeforeExecution().isPresent();
+
+      if (hasAfter && hasBefore) {
+        return RANGE;
+      } else if (hasAfter) {
+        return FORWARD;
+      } else if (hasBefore) {
+        return BACKWARD;
+      } else {
+        return NONE;
+      }
+    }
+  }
+
+  private enum OrderingStrategy {
+    PRIORITY_FORWARD("priority desc, execution_time asc, task_instance asc"),
+    PRIORITY_BACKWARD("priority asc, execution_time desc, task_instance desc"),
+    TIME_FORWARD("execution_time asc, task_instance asc"),
+    TIME_BACKWARD("execution_time desc, task_instance desc");
+
+    private final String clause;
+
+    OrderingStrategy(String clause) {
+      this.clause = clause;
+    }
+
+    public String getClause() {
+      return clause;
+    }
+
+    public static OrderingStrategy from(boolean orderByPriority, ScrollingType scrollingType) {
+      boolean useBackwardOrdering = (scrollingType == ScrollingType.BACKWARD);
+      if (orderByPriority) {
+        return useBackwardOrdering ? PRIORITY_BACKWARD : PRIORITY_FORWARD;
+      } else {
+        return useBackwardOrdering ? TIME_BACKWARD : TIME_FORWARD;
+      }
     }
   }
 }
