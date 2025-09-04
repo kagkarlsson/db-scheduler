@@ -17,5 +17,5 @@ public @interface RecurringTask {
 
   String name();
 
-  String cron() default "-";
+  String cron();
 }
