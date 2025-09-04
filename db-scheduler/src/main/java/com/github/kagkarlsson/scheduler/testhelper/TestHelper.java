@@ -17,6 +17,7 @@ import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.Waiter;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
@@ -103,6 +104,8 @@ public class TestHelper {
               serializer,
               enablePriority,
               clock);
+
+      Waiter waiter = buildWaiter();
 
       return new ManualScheduler(
           clock,

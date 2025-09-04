@@ -59,7 +59,7 @@ public class SchedulerBuilder {
   protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
   protected SchedulerName schedulerName;
   protected int executorThreads = 10;
-  protected Waiter waiter = new Waiter(DEFAULT_POLLING_INTERVAL, clock);
+  protected Duration poolingInterval = DEFAULT_POLLING_INTERVAL;
   protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
   protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
@@ -99,7 +99,7 @@ public class SchedulerBuilder {
   }
 
   public SchedulerBuilder pollingInterval(Duration pollingInterval) {
-    waiter = new Waiter(pollingInterval, clock);
+    this.poolingInterval = pollingInterval;
     return this;
   }
 
@@ -237,6 +237,11 @@ public class SchedulerBuilder {
     return this;
   }
 
+  public SchedulerBuilder clock(Clock clock) {
+    this.clock = clock;
+    return this;
+  }
+
   public Scheduler build() {
     if (schedulerName == null) {
       schedulerName = new SchedulerName.Hostname();
@@ -296,6 +301,8 @@ public class SchedulerBuilder {
       addSchedulerListener(new StatsRegistryAdapter(statsRegistry));
     }
 
+    Waiter waiter = buildWaiter();
+
     LOG.info(
         "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s, enable-immediate-execution={}, enable-priority={}, table-name={}, name={}",
         executorThreads,
@@ -344,5 +351,9 @@ public class SchedulerBuilder {
     }
 
     return scheduler;
+  }
+
+  protected Waiter buildWaiter() {
+    return new Waiter(poolingInterval, clock);
   }
 }
