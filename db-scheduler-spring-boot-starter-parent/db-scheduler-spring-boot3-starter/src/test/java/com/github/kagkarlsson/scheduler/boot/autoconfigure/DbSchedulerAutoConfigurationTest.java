@@ -408,7 +408,7 @@ public class DbSchedulerAutoConfigurationTest {
   @Configuration
   static class MixingAnnotationAndBeanTaskConfiguration extends MultipleTasksConfiguration {
 
-    @RecurringTask(name = "taskFromAnnotation")
+    @RecurringTask(name = "taskFromAnnotation", cron = "0 0 7 19 * *")
     public void taskFromAnnotation() {
       log.info("I'm a task from annotation");
     }
@@ -425,28 +425,28 @@ public class DbSchedulerAutoConfigurationTest {
   @Configuration
   static class TasksFromAnnotationWithDifferentInputs {
 
-    @RecurringTask(name = "taskNoInputs")
+    @RecurringTask(name = "taskNoInputs", cron = "0 0 7 19 * *")
     public void taskNoInputs() {
       log.info("I'm a task without inputs");
     }
 
-    @RecurringTask(name = "taskWithExecutionContextInput")
+    @RecurringTask(name = "taskWithExecutionContextInput", cron = "0 0 7 19 * *")
     public void taskWithExecutionContextInput(ExecutionContext ctx) {
       log.info("I'm a task with the execution context input");
     }
 
-    @RecurringTask(name = "taskWithTaskInstanceInput")
+    @RecurringTask(name = "taskWithTaskInstanceInput", cron = "0 0 7 19 * *")
     public void taskWithTaskInstanceInput(TaskInstance<Void> taskInstance) {
       log.info("I'm a task with the task instance input");
     }
 
-    @RecurringTask(name = "taskWithBothInputsExpectedOrder")
+    @RecurringTask(name = "taskWithBothInputsExpectedOrder", cron = "0 0 7 19 * *")
     public void taskWithBothInputsExpectedOrder(
         TaskInstance<Void> taskInstance, ExecutionContext ctx) {
       log.info("I'm a task with both inputs expected order");
     }
 
-    @RecurringTask(name = "taskWithBothInputsReverseOrder")
+    @RecurringTask(name = "taskWithBothInputsReverseOrder", cron = "0 0 7 19 * *")
     public void taskWithBothInputsReverseOrder(
         ExecutionContext ctx, TaskInstance<Void> taskInstance) {
       log.info("I'm a task with both inputs reverse order");
