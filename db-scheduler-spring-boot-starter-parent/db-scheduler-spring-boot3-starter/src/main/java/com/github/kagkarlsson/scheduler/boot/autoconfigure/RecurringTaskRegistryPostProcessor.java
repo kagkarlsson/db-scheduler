@@ -25,7 +25,7 @@ import org.springframework.util.ReflectionUtils;
  * RecurringTask} and registers them as {@link Task}s in the Spring context.
  *
  * <p>The methods must have a return type of {@code void} and can accept parameters of type {@link
- * TaskInstance}, {@link ExecutionContext}, or any other Spring bean.
+ * TaskInstance}, {@link ExecutionContext}.
  */
 public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistryPostProcessor {
 
@@ -96,12 +96,10 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
     }
 
     if (method.getParameterCount() != 0) {
-      for (int i = 0; i < method.getParameterTypes().length; i++) {
-        Class<?> parameterType = method.getParameterTypes()[i];
-        if (!INPUT_ARGUMENTS_AVAILABLE_CLASSES.contains(parameterType)
-            && context.getBeanNamesForType(parameterType).length == 0) {
+      for (Class<?> parameterType :  method.getParameterTypes()) {
+        if (!INPUT_ARGUMENTS_AVAILABLE_CLASSES.contains(parameterType)) {
           throw new IllegalArgumentException(
-              "RecurringTask annotated method is required to have specific inputs: TaskInstance, ExecutionContext or a Spring bean");
+            "RecurringTask annotated method is required to have specific inputs: " + INPUT_ARGUMENTS_AVAILABLE_CLASSES);
         }
       }
     }
@@ -119,11 +117,11 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
                           paramType -> {
                             if (paramType.equals(TaskInstance.class)) {
                               return instance;
-                            }
-                            if (paramType.equals(ExecutionContext.class)) {
+                            } else if (paramType.equals(ExecutionContext.class)) {
                               return ctx;
                             }
-                            return context.getBean(paramType);
+                            throw new IllegalArgumentException(
+                              "RecurringTask annotated method is required to have specific inputs: " + INPUT_ARGUMENTS_AVAILABLE_CLASSES);
                           })
                       .toArray();
               try {

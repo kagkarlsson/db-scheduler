@@ -41,6 +41,12 @@ public class BasicExamplesConfiguration {
   private static final Logger log = LoggerFactory.getLogger(BasicExamplesConfiguration.class);
   private static int ID = 1;
 
+  private final CounterService counter;
+
+  public BasicExamplesConfiguration(CounterService counter) {
+    this.counter = counter;
+  }
+
   /** Start the example */
   public static void triggerOneTime(ExampleContext ctx) {
     ctx.log(
@@ -67,10 +73,10 @@ public class BasicExamplesConfiguration {
             });
   }
 
-  /** Alternative way to define a recurring task with dependencies using annotation. */
+  /** A recurring task with dependencies from the current class using annotation. */
   @RecurringTask(name = "recurring-sample-task-annotation", cron = "*/30 * * * * *")
   public void recurringSampleTaskAnnotation(
-      TaskInstance<Void> instance, ExecutionContext ctx, CounterService counter) {
+      TaskInstance<Void> instance, ExecutionContext ctx) {
     log.info("Running recurring-sample-task-annotation. Instance: {}, ctx: {}", instance, ctx);
     counter.increase();
     EventLogger.logTask(
