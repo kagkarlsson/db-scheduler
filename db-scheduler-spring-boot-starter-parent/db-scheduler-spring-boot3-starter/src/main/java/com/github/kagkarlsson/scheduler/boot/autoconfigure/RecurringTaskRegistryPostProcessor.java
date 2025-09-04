@@ -7,6 +7,7 @@ import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -57,7 +58,7 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
             method -> {
               RecurringTask recurringTask = method.getAnnotation(RecurringTask.class);
               if (recurringTask != null) {
-                validateInputs(method);
+                validateMethod(method);
                 GenericBeanDefinition taskDef =
                     buildTaskBeanDefinition(recurringTask, method, beanName);
                 registry.registerBeanDefinition(recurringTask.name(), taskDef);
@@ -84,7 +85,11 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
     return taskDef;
   }
 
-  private void validateInputs(Method method) {
+  private void validateMethod(Method method) {
+    if (!Modifier.isPublic(method.getModifiers())) {
+      throw new IllegalArgumentException(
+        "RecurringTask annotated method must be public, see the annotation javadoc");
+    }
     if (!method.getReturnType().equals(Void.TYPE)) {
       throw new IllegalArgumentException(
           "RecurringTask annotated method must have return type Void, see the annotation javadoc");
@@ -122,7 +127,6 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
                           })
                       .toArray();
               try {
-                ReflectionUtils.makeAccessible(method);
                 method.invoke(existingObject, inputs);
               } catch (IllegalAccessException | InvocationTargetException e) {
                 throw new RuntimeException(
