@@ -69,7 +69,7 @@ public class BasicExamplesConfiguration {
 
   /** Alternative way to define a recurring task with dependencies using annotation. */
   @RecurringTask(name = "recurring-sample-task-annotation", cron = "*/30 * * * * *")
-  void recurringSampleTaskAnnotation(
+  public void recurringSampleTaskAnnotation(
       TaskInstance<Void> instance, ExecutionContext ctx, CounterService counter) {
     log.info("Running recurring-sample-task-annotation. Instance: {}, ctx: {}", instance, ctx);
     counter.increase();
@@ -79,7 +79,7 @@ public class BasicExamplesConfiguration {
 
   /** Define a recurring task with no dependencies and no inputs using annotation. */
   @RecurringTask(name = "recurring-sample-task-annotation-no-inputs", cron = "0 * * * * *")
-  void recurringSampleTaskAnnotationNoInputs() {
+  public void recurringSampleTaskAnnotationNoInputs() {
     log.info("Running recurring-sample-task-annotation-no-inputs.");
   }
 
