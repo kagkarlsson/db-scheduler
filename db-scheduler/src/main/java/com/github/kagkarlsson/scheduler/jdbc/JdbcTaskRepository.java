@@ -305,7 +305,7 @@ public class JdbcTaskRepository implements TaskRepository {
     }
 
     jdbcRunner.query(
-        q.getQuery(),
+        q.getQuery(jdbcCustomization),
         q.getPreparedStatementSetter(),
         new ExecutionResultSetConsumer(consumer, filter.getIncludeUnresolved(), false));
   }
@@ -322,7 +322,7 @@ public class JdbcTaskRepository implements TaskRepository {
     q.andCondition(new TaskCondition(taskName));
 
     jdbcRunner.query(
-        q.getQuery(),
+        q.getQuery(jdbcCustomization),
         q.getPreparedStatementSetter(),
         new ExecutionResultSetConsumer(consumer, filter.getIncludeUnresolved(), false));
   }
@@ -739,7 +739,27 @@ public class JdbcTaskRepository implements TaskRepository {
 
     filter.getPickedValue().ifPresent(value -> q.andCondition(new PickedCondition(value)));
 
-    q.orderBy(orderByPriority ? "priority desc, execution_time asc" : "execution_time asc");
+    if (filter.getAfterExecutionTime().isPresent()) {
+      q.andCondition(
+          new ExecutionTimeAfterCondition(
+              filter.getAfterExecutionTime().get(), filter.getAfterTaskInstanceId().orElse(null)));
+    }
+
+    if (filter.getBeforeExecutionTime().isPresent()) {
+      q.andCondition(
+          new ExecutionTimeBeforeCondition(
+              filter.getBeforeExecutionTime().get(),
+              filter.getBeforeTaskInstanceId().orElse(null)));
+    }
+
+    if (orderByPriority) {
+      q.orderBy("priority desc, execution_time asc, task_instance asc");
+    } else {
+      q.orderBy("execution_time asc, task_instance asc");
+    }
+
+    filter.getLimit().ifPresent(q::limit);
+
     return q;
   }
 
@@ -940,6 +960,64 @@ public class JdbcTaskRepository implements TaskRepository {
     @Override
     public int setParameters(PreparedStatement p, int index) throws SQLException {
       p.setString(index++, value);
+      return index;
+    }
+  }
+
+  private class ExecutionTimeAfterCondition implements AndCondition {
+    private final Instant executionTime;
+    private final String taskInstanceId;
+
+    public ExecutionTimeAfterCondition(Instant executionTime, String taskInstanceId) {
+      this.executionTime = executionTime;
+      this.taskInstanceId = taskInstanceId;
+    }
+
+    @Override
+    public String getQueryPart() {
+      if (taskInstanceId != null) {
+        return "(execution_time > ? OR (execution_time = ? AND task_instance > ?))";
+      } else {
+        return "execution_time > ?";
+      }
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      jdbcCustomization.setInstant(p, index++, executionTime);
+      if (taskInstanceId != null) {
+        jdbcCustomization.setInstant(p, index++, executionTime);
+        p.setString(index++, taskInstanceId);
+      }
+      return index;
+    }
+  }
+
+  private class ExecutionTimeBeforeCondition implements AndCondition {
+    private final Instant executionTime;
+    private final String taskInstanceId;
+
+    public ExecutionTimeBeforeCondition(Instant executionTime, String taskInstanceId) {
+      this.executionTime = executionTime;
+      this.taskInstanceId = taskInstanceId;
+    }
+
+    @Override
+    public String getQueryPart() {
+      if (taskInstanceId != null) {
+        return "(execution_time < ? OR (execution_time = ? AND task_instance < ?))";
+      } else {
+        return "execution_time < ?";
+      }
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      jdbcCustomization.setInstant(p, index++, executionTime);
+      if (taskInstanceId != null) {
+        jdbcCustomization.setInstant(p, index++, executionTime);
+        p.setString(index++, taskInstanceId);
+      }
       return index;
     }
   }

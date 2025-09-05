@@ -34,6 +34,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   public static final String ORACLE = "Oracle";
   public static final String MYSQL = "MySQL";
   public static final String MARIADB = "MariaDB";
+  public static final String HSQL = "HSQL";
   private final JdbcCustomization jdbcCustomization;
 
   public AutodetectJdbcCustomization(DataSource dataSource) {
@@ -75,6 +76,9 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
           LOG.info("Using MySQL jdbc-overrides for version older than 8. (v {})", dbVersion);
           detectedCustomization = new MySQLJdbcCustomization(persistTimestampInUTC);
         }
+      } else if (databaseProductName.contains(HSQL)) {
+        LOG.info("Using HSQL jdbc-overrides.");
+        detectedCustomization = new HsqlJdbcCustomization(persistTimestampInUTC);
       } else {
         if (persistTimestampInUTC) {
           LOG.info(
