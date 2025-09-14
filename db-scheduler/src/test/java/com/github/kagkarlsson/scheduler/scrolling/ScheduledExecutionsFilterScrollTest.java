@@ -1,8 +1,12 @@
 package com.github.kagkarlsson.scheduler.scrolling;
 
+import static co.unruly.matchers.OptionalMatchers.contains;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
 import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import java.time.Instant;
@@ -10,26 +14,27 @@ import org.junit.jupiter.api.Test;
 
 public class ScheduledExecutionsFilterScrollTest {
 
+  private final Instant anInstant = Instant.now();
+
   @Test
   void testScrollingAndLimiting() {
-    Instant time = Instant.now();
-    ExecutionTimeAndId afterBoundary = new ExecutionTimeAndId(time, "task-after");
-    ExecutionTimeAndId beforeBoundary = new ExecutionTimeAndId(time.plusSeconds(10), "task-before");
+    var afterBoundary = new ExecutionTimeAndId(anInstant, "task-after");
+    var beforeBoundary = new ExecutionTimeAndId(anInstant.plusSeconds(10), "task-before");
 
-    ScheduledExecutionsFilter filter =
-        ScheduledExecutionsFilter.all().after(afterBoundary).before(beforeBoundary).limit(100);
+    var filter = all().after(afterBoundary).before(beforeBoundary).limit(100);
 
-    assertEquals(afterBoundary, filter.getAfterExecution().get());
-    assertEquals(beforeBoundary, filter.getBeforeExecution().get());
-    assertEquals(100, filter.getLimit().get());
+    assertThat(filter.getAfterExecution(), contains(afterBoundary));
+    assertThat(filter.getBeforeExecution(), contains(beforeBoundary));
+    assertThat(filter.getLimit(), contains(100));
 
-    filter = ScheduledExecutionsFilter.all().withPicked(false).withIncludeUnresolved(true);
+  }
 
-    ScheduledExecutionsFilter finalFilter = filter;
-    assertThrows(NullPointerException.class, () -> finalFilter.after(null));
-    assertThrows(NullPointerException.class, () -> finalFilter.before(null));
+  @Test
+  void testValidation() {
+    assertThrows(NullPointerException.class, () -> all().after(null));
+    assertThrows(NullPointerException.class, () -> all().before(null));
 
-    assertThrows(IllegalArgumentException.class, () -> finalFilter.limit(0));
-    assertThrows(IllegalArgumentException.class, () -> finalFilter.limit(-1));
+    assertThrows(IllegalArgumentException.class, () -> all().limit(0));
+    assertThrows(IllegalArgumentException.class, () -> all().limit(-1));
   }
 }
