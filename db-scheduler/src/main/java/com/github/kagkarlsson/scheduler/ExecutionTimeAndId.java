@@ -32,11 +32,11 @@ public record ExecutionTimeAndId(Instant executionTime, String taskInstanceId) {
   }
 
   private static final Pattern PATTERN =
-      Pattern.compile("time\\((\\d+),(\\d+)\\)taskInstanceId\\((.*)\\)");
+      Pattern.compile("executionTime\\((\\d+),(\\d+)\\)taskInstanceId\\((.*)\\)");
 
   public String toEncodedString() {
     String template =
-        "time("
+        "executionTime("
             + executionTime.getEpochSecond()
             + ","
             + executionTime.getNano()
@@ -63,16 +63,5 @@ public record ExecutionTimeAndId(Instant executionTime, String taskInstanceId) {
     } catch (Exception e) {
       throw new IllegalArgumentException("Invalid execution time and id: " + encoded, e);
     }
-  }
-
-  @Override
-  public String toString() {
-    return "ExecutionTimeAndId{"
-        + "executionTime="
-        + executionTime
-        + ", taskInstanceId='"
-        + taskInstanceId
-        + '\''
-        + '}';
   }
 }
