@@ -3,12 +3,9 @@ package com.github.kagkarlsson.scheduler.scrolling;
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
-import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +23,6 @@ public class ScheduledExecutionsFilterScrollTest {
     assertThat(filter.getAfterExecution(), contains(afterBoundary));
     assertThat(filter.getBeforeExecution(), contains(beforeBoundary));
     assertThat(filter.getLimit(), contains(100));
-
   }
 
   @Test

@@ -1,171 +1,106 @@
 package com.github.kagkarlsson.scheduler.scrolling;
 
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
-import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
-import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
-import com.github.kagkarlsson.scheduler.TestTasks;
-import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import javax.sql.DataSource;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ScrollingPostgresTest {
 
   @RegisterExtension
-  private static final EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
+  public static final EmbeddedPostgresqlExtension DB = new EmbeddedPostgresqlExtension();
 
-  @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
-
-  private SchedulerClient schedulerClient;
-  private SchedulerClient prioritySchedulerClient;
-  private OneTimeTask<Void> task;
+  private static final Instant NOW = Instant.now();
+  private static final TaskDescriptor<Void> A_TASK = TaskDescriptor.of("testTask");
 
   private DataSource getDataSource() {
     return DB.getDataSource();
   }
 
-  private void performDatabaseSpecificSetup() {
-    DbUtils.clearTables(getDataSource());
-  }
-
-  private final String taskName = "testTask";
-
-  @BeforeEach
-  void setUp() {
-    performDatabaseSpecificSetup();
-
-    task = TestTasks.oneTime(taskName, Void.class, TestTasks.DO_NOTHING);
-
-    Scheduler scheduler =
-        Scheduler.create(getDataSource(), task)
-            .threads(1)
-            .pollingInterval(java.time.Duration.ofSeconds(1))
-            .build();
-    schedulerClient = SchedulerClient.Builder.create(getDataSource(), task).build();
-
-    Scheduler priorityScheduler =
-        Scheduler.create(getDataSource(), task)
-            .enablePriority()
-            .threads(1)
-            .pollingInterval(java.time.Duration.ofSeconds(1))
-            .build();
-    prioritySchedulerClient =
-        SchedulerClient.Builder.create(getDataSource(), task).enablePriority().build();
-
-    stopScheduler.register(scheduler, priorityScheduler);
-  }
-
   @Test
   void test_scrolling() {
-    createTestExecutions(10);
+    var client = SchedulerClient.Builder.create(getDataSource()).build();
 
-    var half = getScheduledForTask(f -> f.withPicked(false).limit(5));
-    assertEquals(5, half.size());
+    createTestExecutions(client, 10);
 
-    ExecutionTimeAndId middle = ExecutionTimeAndId.from(half.get(4));
-    var secondPage = getScheduledForTask(f -> f.withPicked(false).after(middle).limit(10));
-    assertEquals(5, secondPage.size());
+    var firstHalf = getScheduledForTask(client, all().limit(5));
+    assertEquals(5, firstHalf.size());
 
-    var thirdPage = getScheduledForTask(f -> f.withPicked(false).before(middle).limit(10));
-    assertEquals(4, thirdPage.size());
+    ExecutionTimeAndId fifth = ExecutionTimeAndId.from(firstHalf.get(4));
+    var secondHalf = getScheduledForTask(client, all().after(fifth).limit(10));
+    assertEquals(5, secondHalf.size());
 
-    var allResults = getScheduledForTask(f -> f.withPicked(false).limit(200));
+    var allBeforeFifth = getScheduledForTask(client, all().before(fifth).limit(10));
+    assertEquals(4, allBeforeFifth.size());
+
+    var allResults = getScheduledForTask(client, all().limit(200));
     assertEquals(10, allResults.size());
 
-    var afterBoundary = ExecutionTimeAndId.from(allResults.get(0));
-    var beforeBoundary = ExecutionTimeAndId.from(allResults.get(4));
-    var rangeResults =
-        getScheduledForTask(f -> f.withPicked(false).after(afterBoundary).before(beforeBoundary));
-    assertEquals(3, rangeResults.size());
+    var first = ExecutionTimeAndId.from(allResults.get(0));
+    var betweenFirstAndFifth = getScheduledForTask(client, all().after(first).before(fifth));
+    assertEquals(3, betweenFirstAndFifth.size());
   }
 
   @Test
   void test_scrolling_with_priority() {
+    var client = SchedulerClient.Builder.create(getDataSource()).enablePriority().build();
+
     // P0 = highest priority
-    var now = Instant.now();
-    prioritySchedulerClient.scheduleIfNotExists(
-        task.instanceBuilder("P0").priority(99).build(), now.plusSeconds(10));
-    prioritySchedulerClient.scheduleIfNotExists(
-        task.instanceBuilder("P1").priority(98).build(), now.plusSeconds(10));
-    prioritySchedulerClient.scheduleIfNotExists(
-        task.instanceBuilder("P2").priority(97).build(), now.plusSeconds(10));
-    prioritySchedulerClient.scheduleIfNotExists(
-        task.instanceBuilder("P3").priority(96).build(), now.plusSeconds(10));
-    prioritySchedulerClient.scheduleIfNotExists(
-        task.instanceBuilder("P4").priority(95).build(), now.plusSeconds(10));
-    prioritySchedulerClient.scheduleIfNotExists(
-        task.instanceBuilder("P5").priority(94).build(), now.plusSeconds(10));
+    Instant futureInstant = NOW.plusSeconds(10);
+    client.scheduleIfNotExists(A_TASK.instance("P0").priority(99).build(), futureInstant);
+    client.scheduleIfNotExists(A_TASK.instance("P1").priority(98).build(), futureInstant);
+    client.scheduleIfNotExists(A_TASK.instance("P2").priority(97).build(), futureInstant);
+    client.scheduleIfNotExists(A_TASK.instance("P3").priority(96).build(), futureInstant);
+    client.scheduleIfNotExists(A_TASK.instance("P4").priority(95).build(), futureInstant);
+    client.scheduleIfNotExists(A_TASK.instance("P5").priority(94).build(), futureInstant);
 
-    var forwardResults =
-        getScheduledForTask(prioritySchedulerClient, f -> f.withPicked(false).limit(2));
-    assertEquals(2, forwardResults.size());
-    assertEquals("P0", forwardResults.get(0).getTaskInstance().getId());
-    assertEquals("P1", forwardResults.get(1).getTaskInstance().getId());
+    var forwardResults = getScheduledForTask(client, all().limit(2));
+    assertThat(idsFrom(forwardResults), contains("P0", "P1"));
 
-    ExecutionTimeAndId boundary = ExecutionTimeAndId.from(forwardResults.get(1)); // P1
-    var backwardResults =
-        getScheduledForTask(
-            prioritySchedulerClient, f -> f.withPicked(false).before(boundary).limit(2));
-    assertEquals(1, backwardResults.size());
-    assertEquals("P0", backwardResults.get(0).getTaskInstance().getId());
+    ExecutionTimeAndId p1 = ExecutionTimeAndId.from(forwardResults.get(1)); // P1
+    var backwardResults = getScheduledForTask(client, all().before(p1).limit(2));
+    assertThat(idsFrom(backwardResults), contains("P0"));
 
-    var allResults =
-        getScheduledForTask(prioritySchedulerClient, f -> f.withPicked(false).limit(100));
-    assertEquals(6, allResults.size());
+    var allResults = getScheduledForTask(client, all().limit(100));
+    assertThat(idsFrom(allResults), contains("P0", "P1", "P2", "P3", "P4", "P5"));
 
-    ExecutionTimeAndId afterBoundary = ExecutionTimeAndId.from(allResults.get(1)); // P1
-    ExecutionTimeAndId beforeBoundary = ExecutionTimeAndId.from(allResults.get(4)); // P4
-    var rangeResults =
-        getScheduledForTask(
-            prioritySchedulerClient,
-            f -> f.withPicked(false).after(afterBoundary).before(beforeBoundary).limit(2));
-    assertEquals(2, rangeResults.size());
-    assertEquals("P2", rangeResults.get(0).getTaskInstance().getId());
-    assertEquals("P3", rangeResults.get(1).getTaskInstance().getId());
+    ExecutionTimeAndId p4 = ExecutionTimeAndId.from(allResults.get(4)); // P4
 
-    var beforeP5 = ExecutionTimeAndId.from(allResults.get(5)); // P5
-    var beforeP5Page =
-        getScheduledForTask(
-            prioritySchedulerClient, f -> f.withPicked(false).before(beforeP5).limit(10));
-    assertEquals(5, beforeP5Page.size());
-    assertEquals("P4", beforeP5Page.get(0).getTaskInstance().getId());
-    assertEquals("P3", beforeP5Page.get(1).getTaskInstance().getId());
-    assertEquals("P2", beforeP5Page.get(2).getTaskInstance().getId());
-    assertEquals("P1", beforeP5Page.get(3).getTaskInstance().getId());
-    assertEquals("P0", beforeP5Page.get(4).getTaskInstance().getId());
+    var rangeResults = getScheduledForTask(client, all().after(p1).before(p4).limit(2));
+    assertThat(idsFrom(rangeResults), contains("P2", "P3"));
+
+    var p5 = ExecutionTimeAndId.from(allResults.get(5)); // P5
+    var beforeP5 = getScheduledForTask(client, all().before(p5).limit(10));
+    assertThat(idsFrom(beforeP5), contains("P4", "P3", "P2", "P1", "P0"));
   }
 
-  private List<ScheduledExecution<Void>> getScheduledForTask(
-      SchedulerClient client,
-      Function<ScheduledExecutionsFilter, ScheduledExecutionsFilter> filterFn) {
-    var filter = filterFn.apply(ScheduledExecutionsFilter.all());
-    List<ScheduledExecution<Void>> results = new ArrayList<>();
-    client.fetchScheduledExecutionsForTask(taskName, task.getDataClass(), filter, results::add);
-    return results;
-  }
-
-  private List<ScheduledExecution<Void>> getScheduledForTask(
-      Function<ScheduledExecutionsFilter, ScheduledExecutionsFilter> filterFn) {
-    return getScheduledForTask(schedulerClient, filterFn);
-  }
-
-  private void createTestExecutions(int count) {
+  private void createTestExecutions(SchedulerClient client, int count) {
     for (int i = 1; i <= count; i++) {
-      schedulerClient.scheduleIfNotExists(
-          task.instanceBuilder("task-" + String.format("%03d", i)).build(),
+      client.scheduleIfNotExists(
+          A_TASK.instance("task-" + String.format("%03d", i)).build(),
           Instant.now().plusSeconds(i));
     }
+  }
+
+  private List<ScheduledExecution<Void>> getScheduledForTask(
+      SchedulerClient client, ScheduledExecutionsFilter filter) {
+    return client.getScheduledExecutionsForTask(
+        A_TASK.getTaskName(), A_TASK.getDataClass(), filter);
+  }
+
+  private static List<String> idsFrom(List<ScheduledExecution<Void>> firstPage) {
+    return firstPage.stream().map(se -> se.getTaskInstance().getId()).toList();
   }
 }
