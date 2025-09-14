@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler.scrolling;
 
+import static com.github.kagkarlsson.scheduler.ExecutionTimeAndId.fromEncodedString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -12,61 +13,42 @@ import org.junit.jupiter.api.Test;
 
 class ExecutionTimeAndIdTest {
 
-  @Test
-  void testConstruction() {
-    var time = Instant.now();
-    String taskId = "task-001";
-
-    ExecutionTimeAndId boundary = new ExecutionTimeAndId(time, taskId);
-
-    assertEquals(time, boundary.executionTime());
-    assertEquals(taskId, boundary.taskInstanceId());
-  }
+  private Instant anInstant = Instant.now();
+  private String aTaskId = "task-001";
 
   @Test
   void testNullValidation() {
-    var time = Instant.now();
-    String taskId = "task-001";
-
-    assertThrows(NullPointerException.class, () -> new ExecutionTimeAndId(null, taskId));
-    assertThrows(NullPointerException.class, () -> new ExecutionTimeAndId(time, null));
+    assertThrows(NullPointerException.class, () -> new ExecutionTimeAndId(null, aTaskId));
+    assertThrows(NullPointerException.class, () -> new ExecutionTimeAndId(anInstant, null));
   }
 
   @Test
   void testEncoding() {
-    var time = Instant.now();
-    String taskId = "task-001";
-
-    ExecutionTimeAndId boundary = new ExecutionTimeAndId(time, taskId);
-    String encoded = boundary.toEncodedString();
-
-    assertNotNull(encoded);
-    assertFalse(encoded.isEmpty());
-
-    ExecutionTimeAndId decoded = ExecutionTimeAndId.fromEncodedString(encoded);
-    assertEquals(boundary, decoded);
+    ExecutionTimeAndId boundary = new ExecutionTimeAndId(anInstant, aTaskId);
+    assertEquals(boundary, fromEncodedString(boundary.toEncodedString()));
   }
 
   @Test
   void testInvalidEncoding() {
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> ExecutionTimeAndId.fromEncodedString("invalid-base64"));
-    assertThrows(
-        IllegalArgumentException.class, () -> ExecutionTimeAndId.fromEncodedString("aW52YWxpZA=="));
+    assertThrowsInvalidEncoding("invalid-base64");
+    assertThrowsInvalidEncoding("aW52YWxpZA==");
   }
 
   @Test
   void testEqualsAndHashCode() {
-    var time = Instant.now();
-    String taskId = "task-001";
-
-    ExecutionTimeAndId boundary1 = new ExecutionTimeAndId(time, taskId);
-    ExecutionTimeAndId boundary2 = new ExecutionTimeAndId(time, taskId);
-    ExecutionTimeAndId boundary3 = new ExecutionTimeAndId(time.plusSeconds(1), taskId);
+    ExecutionTimeAndId boundary1 = new ExecutionTimeAndId(anInstant, aTaskId);
+    ExecutionTimeAndId boundary2 = new ExecutionTimeAndId(anInstant, aTaskId);
+    ExecutionTimeAndId boundary3 = new ExecutionTimeAndId(anInstant.plusSeconds(1), aTaskId);
 
     assertEquals(boundary1, boundary2);
-    assertEquals(boundary1.hashCode(), boundary2.hashCode());
     assertNotEquals(boundary1, boundary3);
+
+    assertEquals(boundary1.hashCode(), boundary2.hashCode());
+  }
+
+  private void assertThrowsInvalidEncoding(String encoded) {
+    assertThrows(
+      IllegalArgumentException.class,
+      () -> fromEncodedString(encoded));
   }
 }
