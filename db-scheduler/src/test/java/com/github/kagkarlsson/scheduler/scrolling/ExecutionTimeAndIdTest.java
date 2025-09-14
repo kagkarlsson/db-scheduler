@@ -2,9 +2,7 @@ package com.github.kagkarlsson.scheduler.scrolling;
 
 import static com.github.kagkarlsson.scheduler.ExecutionTimeAndId.fromEncodedString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
@@ -47,8 +45,6 @@ class ExecutionTimeAndIdTest {
   }
 
   private void assertThrowsInvalidEncoding(String encoded) {
-    assertThrows(
-      IllegalArgumentException.class,
-      () -> fromEncodedString(encoded));
+    assertThrows(IllegalArgumentException.class, () -> fromEncodedString(encoded));
   }
 }

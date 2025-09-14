@@ -1,11 +1,13 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
 import static com.github.kagkarlsson.scheduler.SchedulerBuilder.UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH;
 import static com.github.kagkarlsson.scheduler.helper.TimeHelper.truncatedInstantNow;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -18,7 +20,6 @@ import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
-import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -72,10 +73,11 @@ public abstract class CompatibilityTest {
 
   private static final int POLLING_LIMIT = 10_000;
   private static final TaskDescriptor<String> ONETIME = TaskDescriptor.of("oneTime", String.class);
+  private static final Instant anInstant = truncatedInstantNow();
+  private Logger LOG = LoggerFactory.getLogger(getClass());
   private final boolean supportsSelectForUpdate;
   private final boolean shouldHavePersistentTimezone;
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
-  private final Logger LOG = LoggerFactory.getLogger(getClass());
   private TestTasks.CountingHandler<String> delayingHandlerOneTime;
   private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
   private OneTimeTask<String> oneTime;
@@ -199,57 +201,40 @@ public abstract class CompatibilityTest {
 
   @Test
   public void test_jdbc_limit_before_after_compatibility() {
-    var jdbcTaskRepository = createJdbcTaskRepository(false);
-    jdbcTaskRepository.createIfNotExists(
-        ONETIME.instance("1").scheduledTo(truncatedInstantNow().plusSeconds(10)));
-    jdbcTaskRepository.createIfNotExists(
-        ONETIME.instance("2").scheduledTo(truncatedInstantNow().plusSeconds(20)));
-    jdbcTaskRepository.createIfNotExists(
-        ONETIME.instance("3").scheduledTo(truncatedInstantNow().plusSeconds(30)));
-    jdbcTaskRepository.createIfNotExists(
-        ONETIME.instance("4").scheduledTo(truncatedInstantNow().plusSeconds(40)));
-    jdbcTaskRepository.createIfNotExists(
-        ONETIME.instance("5").scheduledTo(truncatedInstantNow().plusSeconds(50)));
+    var repo = createJdbcTaskRepository(false);
+    schedule(repo, ONETIME, "1", anInstant.plusSeconds(10));
+    schedule(repo, ONETIME, "2", anInstant.plusSeconds(20));
+    schedule(repo, ONETIME, "3", anInstant.plusSeconds(30));
+    schedule(repo, ONETIME, "4", anInstant.plusSeconds(40));
+    schedule(repo, ONETIME, "5", anInstant.plusSeconds(50));
 
-    ScheduledExecutionsFilter filter = ScheduledExecutionsFilter.all().limit(3);
-    List<Execution> firstPage = new ArrayList<>();
-    jdbcTaskRepository.getScheduledExecutions(filter, firstPage::add);
-    assertThat(firstPage, hasSize(3));
-    assertThat(firstPage.get(0).getId(), is("1"));
-    assertThat(firstPage.get(1).getId(), is("2"));
-    assertThat(firstPage.get(2).getId(), is("3"));
+    List<Execution> firstPage = repo.getScheduledExecutions(all().limit(3));
+    assertThat(idsFrom(firstPage), contains("1", "2", "3"));
 
     var theSecond = firstPage.get(1); // id=2
+    var theThird = firstPage.get(2); // id=3
 
-    var middle = new ScheduledExecution<>(String.class, firstPage.get(2));
+    var beforePage =
+      repo.getScheduledExecutions(
+        all().before(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
 
-    var beforePage = new ArrayList<Execution>();
-    filter = ScheduledExecutionsFilter.all().before(ExecutionTimeAndId.from(middle)).limit(10);
-    jdbcTaskRepository.getScheduledExecutions(filter, beforePage::add);
-    assertThat(beforePage, hasSize(2));
-    assertThat(beforePage.get(0).getId(), is("2"));
-    assertThat(beforePage.get(1).getId(), is("1"));
+    assertThat(idsFrom(beforePage), contains("2", "1"));
 
-    var afterPage = new ArrayList<Execution>();
-    filter = ScheduledExecutionsFilter.all().after(ExecutionTimeAndId.from(middle)).limit(10);
-    jdbcTaskRepository.getScheduledExecutions(filter, afterPage::add);
-    assertThat(afterPage, hasSize(2));
-    assertThat(afterPage.get(0).getId(), is("4"));
-    assertThat(afterPage.get(1).getId(), is("5"));
+    var afterPage =
+      repo.getScheduledExecutions(
+        all().after(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
+    assertThat(idsFrom(afterPage), contains("4", "5"));
 
     var theFourth = afterPage.get(0); // id=4
 
-    var theSecondSE = new ScheduledExecution<>(String.class, theSecond);
-    var theFourthSE = new ScheduledExecution<>(String.class, theFourth);
-    var rangePage = new ArrayList<Execution>();
-    filter =
-        ScheduledExecutionsFilter.all()
-            .after(ExecutionTimeAndId.from(theSecondSE))
-            .before(ExecutionTimeAndId.from(theFourthSE))
-            .limit(10);
-    jdbcTaskRepository.getScheduledExecutions(filter, rangePage::add);
-    assertThat(rangePage, hasSize(1));
-    assertThat(rangePage.get(0).getId(), is("3"));
+    var rangePage =
+      repo.getScheduledExecutions(
+        all()
+          .after(ExecutionTimeAndId.from(toScheduled(theSecond)))
+          .before(ExecutionTimeAndId.from(toScheduled(theFourth)))
+          .limit(10));
+
+    assertThat(idsFrom(rangePage), contains("3"));
   }
 
   @Test
@@ -306,6 +291,22 @@ public abstract class CompatibilityTest {
     }
 
     assertCorrectOrder(false, (r) -> r.lockAndGetDue(truncatedInstantNow(), POLLING_LIMIT));
+  }
+
+  private ScheduledExecution<?> toScheduled(Execution execution) {
+    return new ScheduledExecution<>(String.class, execution);
+  }
+
+  private static List<String> idsFrom(List<Execution> firstPage) {
+    return firstPage.stream().map(Execution::getId).toList();
+  }
+
+  private void schedule(
+    JdbcTaskRepository repo,
+    TaskDescriptor<String> descriptor,
+    String id,
+    Instant executionTime) {
+    repo.createIfNotExists(descriptor.instance(id).scheduledTo(executionTime.plusSeconds(10)));
   }
 
   private void assertCorrectOrder(
