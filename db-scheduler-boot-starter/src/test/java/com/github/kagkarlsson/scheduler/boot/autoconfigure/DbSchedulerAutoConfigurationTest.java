@@ -235,11 +235,18 @@ public class DbSchedulerAutoConfigurationTest {
 
   @Test
   public void it_should_provide_noop_registry_if_actuator_not_present() {
-    ctxRunner
-        .withUserConfiguration(SingleTaskConfiguration.class)
-        .with(
-            classesRemovedFromClasspath(
-                MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class))
+    new ApplicationContextRunner()
+        .withPropertyValues(
+            "spring.application.name=db-scheduler-boot-starter-test",
+            "spring.profiles.active=integration-test")
+        .withConfiguration(
+            AutoConfigurations.of(
+                DataSourceAutoConfiguration.class,
+                SqlInitializationAutoConfiguration.class,
+                HealthContributorAutoConfiguration.class,
+                DbSchedulerMetricsAutoConfiguration.class,
+                DbSchedulerActuatorAutoConfiguration.class,
+                DbSchedulerAutoConfiguration.class))
         .run(
             (AssertableApplicationContext ctx) -> {
               assertThat(ctx).hasSingleBean(DefaultStatsRegistry.class);
