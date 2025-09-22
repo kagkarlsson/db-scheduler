@@ -76,19 +76,29 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
     taskDef.setBeanClass(Task.class);
     taskDef.setInstanceSupplier(
         () -> {
+          String resolvedCron = resolveCron(recurringTask.cron());
           log.info(
               "Creating a task from @RecurringTask with name={} and cron={}",
               recurringTask.name(),
-              recurringTask.cron());
-          return createTaskFromMethod(recurringTask, method, context.getBean(beanName));
+              resolvedCron);
+          return createTaskFromMethod(
+              recurringTask, method, context.getBean(beanName), resolvedCron);
         });
     return taskDef;
+  }
+
+  private String resolveCron(String rawCron) {
+    if (rawCron.startsWith("$")) {
+      return context.getEnvironment().resolveRequiredPlaceholders(rawCron);
+    } else {
+      return rawCron;
+    }
   }
 
   private void validateMethod(Method method) {
     if (!Modifier.isPublic(method.getModifiers())) {
       throw new IllegalArgumentException(
-        "RecurringTask annotated method must be public, see the annotation javadoc");
+          "RecurringTask annotated method must be public, see the annotation javadoc");
     }
     if (!method.getReturnType().equals(Void.TYPE)) {
       throw new IllegalArgumentException(
@@ -96,19 +106,20 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
     }
 
     if (method.getParameterCount() != 0) {
-      for (Class<?> parameterType :  method.getParameterTypes()) {
+      for (Class<?> parameterType : method.getParameterTypes()) {
         if (!INPUT_ARGUMENTS_AVAILABLE_CLASSES.contains(parameterType)) {
           throw new IllegalArgumentException(
-            "RecurringTask annotated method is required to have specific inputs: " + INPUT_ARGUMENTS_AVAILABLE_CLASSES);
+              "RecurringTask annotated method is required to have specific inputs: "
+                  + INPUT_ARGUMENTS_AVAILABLE_CLASSES);
         }
       }
     }
   }
 
   private Task<?> createTaskFromMethod(
-      RecurringTask recurringTask, Method method, Object existingObject) {
+      RecurringTask recurringTask, Method method, Object existingObject, String resolvedCron) {
 
-    return Tasks.recurring(recurringTask.name(), Schedules.cron(recurringTask.cron()))
+    return Tasks.recurring(recurringTask.name(), Schedules.cron(resolvedCron))
         .execute(
             (instance, ctx) -> {
               Object[] inputs =
@@ -121,7 +132,8 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
                               return ctx;
                             }
                             throw new IllegalArgumentException(
-                              "RecurringTask annotated method is required to have specific inputs: " + INPUT_ARGUMENTS_AVAILABLE_CLASSES);
+                                "RecurringTask annotated method is required to have specific inputs: "
+                                    + INPUT_ARGUMENTS_AVAILABLE_CLASSES);
                           })
                       .toArray();
               try {

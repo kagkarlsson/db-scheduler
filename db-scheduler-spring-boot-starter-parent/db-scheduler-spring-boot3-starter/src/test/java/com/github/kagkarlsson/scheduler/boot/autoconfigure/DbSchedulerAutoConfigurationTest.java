@@ -300,16 +300,31 @@ public class DbSchedulerAutoConfigurationTest {
         .withUserConfiguration(TaskFromAnnotationWithCron.class)
         .run(
             (AssertableApplicationContext ctx) -> {
-              assertThat(ctx).hasSingleBean(Scheduler.class);
-
-              Task<Void> task = (Task<Void>) ctx.getBean("taskFromAnnotationWithCron", Task.class);
-              assertThat(task).isNotNull();
-
-              Scheduler scheduler = ctx.getBean(Scheduler.class);
-              List<ScheduledExecution<Object>> scheduledExecutions =
-                  scheduler.getScheduledExecutionsForTask("taskFromAnnotationWithCron");
-              assertThat(scheduledExecutions).hasSize(1);
+              assertTaskScheduled("taskFromAnnotationWithCron", ctx);
             });
+  }
+
+  @Test
+  void it_should_resolve_cron_from_properties() {
+    ctxRunner
+        .withPropertyValues("my-custom-property.cron=0 0 7 19 * *")
+        .withUserConfiguration(TaskFromAnnotationWithCronProperty.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertTaskScheduled("taskFromAnnotationWithCronProperty", ctx);
+            });
+  }
+
+  private void assertTaskScheduled(String taskName, AssertableApplicationContext ctx) {
+    assertThat(ctx).hasSingleBean(Scheduler.class);
+
+    Task<Void> task = (Task<Void>) ctx.getBean(taskName, Task.class);
+    assertThat(task).isNotNull();
+
+    Scheduler scheduler = ctx.getBean(Scheduler.class);
+    List<ScheduledExecution<Object>> scheduledExecutions =
+        scheduler.getScheduledExecutionsForTask(taskName);
+    assertThat(scheduledExecutions).hasSize(1);
   }
 
   @Test
@@ -419,6 +434,14 @@ public class DbSchedulerAutoConfigurationTest {
     @RecurringTask(name = "taskFromAnnotationWithCron", cron = "0 0 7 19 * *")
     public void taskFromAnnotationWithCron() {
       log.info("I'm a task from annotation");
+    }
+  }
+
+  @Configuration
+  static class TaskFromAnnotationWithCronProperty {
+    @RecurringTask(name = "taskFromAnnotationWithCronProperty", cron = "${my-custom-property.cron}")
+    public void taskFromAnnotationWithCronProperty() {
+      log.info("I'm a task from annotation with property");
     }
   }
 

@@ -75,8 +75,7 @@ public class BasicExamplesConfiguration {
 
   /** A recurring task with dependencies from the current class using annotation. */
   @RecurringTask(name = "recurring-sample-task-annotation", cron = "*/30 * * * * *")
-  public void recurringSampleTaskAnnotation(
-      TaskInstance<Void> instance, ExecutionContext ctx) {
+  public void recurringSampleTaskAnnotation(TaskInstance<Void> instance, ExecutionContext ctx) {
     log.info("Running recurring-sample-task-annotation. Instance: {}, ctx: {}", instance, ctx);
     counter.increase();
     EventLogger.logTask(
@@ -84,7 +83,9 @@ public class BasicExamplesConfiguration {
   }
 
   /** Define a recurring task with no dependencies and no inputs using annotation. */
-  @RecurringTask(name = "recurring-sample-task-annotation-no-inputs", cron = "0 * * * * *")
+  @RecurringTask(
+      name = "recurring-sample-task-annotation-no-inputs",
+      cron = "${recurring-sample-task-annotation-no-inputs.cron}")
   public void recurringSampleTaskAnnotationNoInputs() {
     log.info("Running recurring-sample-task-annotation-no-inputs.");
   }
