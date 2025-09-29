@@ -31,18 +31,11 @@ public record ExecutionTimeAndId(Instant executionTime, String taskInstanceId) {
         execution.getExecutionTime(), execution.getTaskInstance().getId());
   }
 
-  private static final Pattern PATTERN =
-      Pattern.compile("executionTime\\((\\d+),(\\d+)\\)taskInstanceId\\((.*)\\)");
+  private static final Pattern PATTERN = Pattern.compile("(\\d+),(\\d+):(.*)");
 
   public String toEncodedString() {
     String template =
-        "executionTime("
-            + executionTime.getEpochSecond()
-            + ","
-            + executionTime.getNano()
-            + ")taskInstanceId("
-            + taskInstanceId
-            + ")";
+        executionTime.getEpochSecond() + "," + executionTime.getNano() + ":" + taskInstanceId;
     return Base64.getEncoder().encodeToString(template.getBytes());
   }
 
