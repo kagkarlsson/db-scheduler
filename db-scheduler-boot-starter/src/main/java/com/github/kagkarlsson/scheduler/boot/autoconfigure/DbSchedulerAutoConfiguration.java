@@ -117,7 +117,8 @@ public class DbSchedulerAutoConfiguration {
   @ConditionalOnMissingBean
   @DependsOnDatabaseInitialization
   @Bean(destroyMethod = "stop")
-  public Scheduler scheduler(DbSchedulerCustomizer customizer, StatsRegistry registry, Clock clock) {
+  public Scheduler scheduler(
+      DbSchedulerCustomizer customizer, StatsRegistry registry, Clock clock) {
     log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
 
     // Ensure that we are using a transactional aware data source
