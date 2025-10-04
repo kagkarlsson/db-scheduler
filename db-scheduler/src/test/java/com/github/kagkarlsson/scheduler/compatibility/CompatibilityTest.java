@@ -30,7 +30,6 @@ import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.jdbc.PostgreSqlJdbcCustomization;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
@@ -454,7 +453,7 @@ public abstract class CompatibilityTest {
   }
 
   @Test
-  void test_compatibility_test_helper() {
+  void test_compatibility_manual_scheduler() {
     final SettableClock clock = new SettableClock();
     final ManualScheduler scheduler =
         (ManualScheduler)
