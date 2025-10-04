@@ -13,6 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler.testhelper;
 
+import static java.util.Optional.ofNullable;
+
 import com.github.kagkarlsson.scheduler.PollingStrategyConfig;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -20,7 +22,8 @@ import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.Waiter;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
-import com.github.kagkarlsson.scheduler.jdbc.DefaultJdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
@@ -82,11 +85,15 @@ public class TestHelper {
     public ManualScheduler build() {
       final TaskResolver taskResolver =
           new TaskResolver(new SchedulerListeners(schedulerListeners), clock, knownTasks);
+      final JdbcCustomization jdbcCustomization =
+          ofNullable(this.jdbcCustomization)
+              .orElseGet(
+                  () -> new AutodetectJdbcCustomization(dataSource, alwaysPersistTimestampInUTC));
       final JdbcTaskRepository schedulerTaskRepository =
           new JdbcTaskRepository(
               dataSource,
               true,
-              new DefaultJdbcCustomization(false),
+              jdbcCustomization,
               tableName,
               taskResolver,
               new SchedulerName.Fixed("manual"),
@@ -97,7 +104,7 @@ public class TestHelper {
           new JdbcTaskRepository(
               dataSource,
               commitWhenAutocommitDisabled,
-              new DefaultJdbcCustomization(false),
+              jdbcCustomization,
               tableName,
               taskResolver,
               new SchedulerName.Fixed("manual"),
