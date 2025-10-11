@@ -33,6 +33,7 @@ public interface CompletionHandler<T> {
   }
 
   class OnCompleteReschedule<T> implements CompletionHandler<T> {
+
     private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReschedule.class);
     private final Schedule schedule;
     private final boolean setNewData;
@@ -70,44 +71,45 @@ public interface CompletionHandler<T> {
     }
   }
 
-  class OnCompleteReplace<T> implements CompletionHandler<T> {
+  class OnCompleteReplace<CURRENT_TYPE, NEXT_TYPE> implements CompletionHandler<CURRENT_TYPE> {
+
     private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReplace.class);
     private String newTaskName = "<hidden>"; // used for logging purposes only
-    private final Function<TaskInstance<T>, SchedulableInstance<?>> newInstanceCreator;
+    private final Function<TaskInstance<CURRENT_TYPE>, SchedulableInstance<NEXT_TYPE>>
+        newInstanceCreator;
 
     public OnCompleteReplace(String newTaskName) {
       this(newTaskName, null);
     }
 
-    public OnCompleteReplace(String newTaskName, T newData) {
+    public OnCompleteReplace(String newTaskName, NEXT_TYPE newData) {
       this(
-          (TaskInstance<T> currentInstance) -> {
+          (TaskInstance<CURRENT_TYPE> currentInstance) -> {
             return SchedulableInstance.of(
                 new TaskInstance<>(newTaskName, currentInstance.getId(), newData), Instant.now());
           });
       this.newTaskName = newTaskName;
     }
 
-    public OnCompleteReplace(TaskDescriptor<T> newTask, T newData) {
+    public OnCompleteReplace(TaskDescriptor<NEXT_TYPE> newTask, NEXT_TYPE newData) {
       this(
-          (TaskInstance<T> currentInstance) -> {
-            return SchedulableInstance.of(
-                new TaskInstance<>(newTask.getTaskName(), currentInstance.getId(), newData),
-                Instant.now());
-          });
+          (TaskInstance<CURRENT_TYPE> currentInstance) ->
+              newTask.instance(currentInstance.getId()).data(newData).scheduledTo(Instant.now()));
       this.newTaskName = newTask.getTaskName();
     }
 
-    public OnCompleteReplace(Function<TaskInstance<T>, SchedulableInstance<?>> newInstanceCreator) {
+    public OnCompleteReplace(
+        Function<TaskInstance<CURRENT_TYPE>, SchedulableInstance<NEXT_TYPE>> newInstanceCreator) {
       this.newInstanceCreator = newInstanceCreator;
     }
 
     @Override
     @SuppressWarnings({"unchecked"})
     public void complete(
-        ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-      TaskInstance<T> currentInstance = executionComplete.getExecution().taskInstance;
-      SchedulableInstance<?> nextInstance = newInstanceCreator.apply(currentInstance);
+        ExecutionComplete executionComplete,
+        ExecutionOperations<CURRENT_TYPE> executionOperations) {
+      TaskInstance<CURRENT_TYPE> currentInstance = executionComplete.getExecution().taskInstance;
+      SchedulableInstance<NEXT_TYPE> nextInstance = newInstanceCreator.apply(currentInstance);
       LOG.debug(
           "Removing instance {} and scheduling instance {}",
           executionComplete.getExecution().taskInstance,
