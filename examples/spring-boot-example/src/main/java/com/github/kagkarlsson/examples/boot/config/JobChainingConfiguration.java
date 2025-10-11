@@ -15,6 +15,7 @@ package com.github.kagkarlsson.examples.boot.config;
 
 import com.github.kagkarlsson.examples.boot.ExampleContext;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.CustomTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -33,8 +34,8 @@ public class JobChainingConfiguration {
       TaskDescriptor.of("chained-step-1", JobState.class);
   public static final TaskDescriptor<JobState> CHAINED_STEP_2_TASK =
       TaskDescriptor.of("chained-step-2", JobState.class);
-  public static final TaskDescriptor<JobState> CHAINED_STEP_3_TASK =
-      TaskDescriptor.of("chained-step-3", JobState.class);
+  public static final TaskDescriptor<JobState2> CHAINED_STEP_3_TASK =
+      TaskDescriptor.of("chained-step-3", JobState2.class);
   private static int CHAINED_JOB_ID = 1;
 
   /** Start the example */
@@ -84,7 +85,15 @@ public class JobChainingConfiguration {
                     CHAINED_STEP_2_TASK,
                     "Ran step2. Condition met. Schedules final step (step3) after successful run. Data: "
                         + data);
-                return new CompletionHandler.OnCompleteReplace<>(CHAINED_STEP_3_TASK, nextJobState);
+
+                JobState2 jobState2 = new JobState2(nextJobState.id, nextJobState.counter);
+                SchedulableInstance<JobState2> nextInstance =
+                    CHAINED_STEP_3_TASK
+                        .instance("chain-" + jobState2.id)
+                        .data(jobState2)
+                        .scheduledTo(Instant.now());
+
+                return new CompletionHandler.OnCompleteReplace<>(t -> nextInstance);
               } else {
                 EventLogger.logTask(
                     CHAINED_STEP_2_TASK,
@@ -98,7 +107,7 @@ public class JobChainingConfiguration {
 
   /** Bean definition */
   @Bean
-  public CustomTask<JobState> chainedStep3() {
+  public CustomTask<JobState2> chainedStep3() {
     return Tasks.custom(CHAINED_STEP_3_TASK)
         .execute(
             (taskInstance, executionContext) -> {
@@ -121,6 +130,27 @@ public class JobChainingConfiguration {
     } // for serializing
 
     public JobState(int id, int counter) {
+      this.id = id;
+      this.counter = counter;
+    }
+
+    @Override
+    public String toString() {
+      return "JobState{" + "id=" + id + ", counter=" + counter + '}';
+    }
+  }
+
+  public static class JobState2 implements Serializable {
+
+    private static final long serialVersionUID = 1L; // recommended when using Java serialization
+    public final int id;
+    public final int counter;
+
+    public JobState2() {
+      this(0, 0);
+    } // for serializing
+
+    public JobState2(int id, int counter) {
       this.id = id;
       this.counter = counter;
     }

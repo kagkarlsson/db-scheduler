@@ -38,7 +38,7 @@ public class ExecutionOperations<T> {
     taskRepository.remove(execution);
   }
 
-  public void removeAndScheduleNew(SchedulableInstance<T> schedulableInstance) {
+  public void removeAndScheduleNew(SchedulableInstance<?> schedulableInstance) {
     Instant executionTime = taskRepository.replace(execution, schedulableInstance);
     hintExecutionScheduled(schedulableInstance.getTaskInstance(), executionTime);
   }
