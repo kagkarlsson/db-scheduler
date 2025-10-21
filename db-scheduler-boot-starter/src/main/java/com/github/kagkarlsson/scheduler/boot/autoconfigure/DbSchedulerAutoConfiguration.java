@@ -108,7 +108,7 @@ public class DbSchedulerAutoConfiguration {
   }
 
   @ConditionalOnMissingBean
-  @Bean
+  @Bean("dbSchedulerClock")
   public Clock clock() {
     return new SystemClock();
   }
