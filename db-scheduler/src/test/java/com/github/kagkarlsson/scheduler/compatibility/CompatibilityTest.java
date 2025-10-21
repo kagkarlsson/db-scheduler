@@ -28,6 +28,7 @@ import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.helper.ExecutionCompletedCondition;
 import com.github.kagkarlsson.scheduler.helper.TestableListener;
+import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
@@ -464,7 +465,7 @@ public abstract class CompatibilityTest {
                 .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
                 .build();
 
-    Instant now = clock.now();
+    Instant now = TimeHelper.truncated(clock.now());
     LOG.info("DEBUG scheduling to {}", now);
     scheduler.schedule(oneTime.instance("1"), now);
 
