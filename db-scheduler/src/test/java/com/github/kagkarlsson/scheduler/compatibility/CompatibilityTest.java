@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
+import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -67,12 +68,10 @@ public abstract class CompatibilityTest {
 
   private static final int POLLING_LIMIT = 10_000;
   private static final TaskDescriptor<String> ONETIME = TaskDescriptor.of("oneTime", String.class);
-  private Logger LOG = LoggerFactory.getLogger(getClass());
   private final boolean supportsSelectForUpdate;
   private final boolean shouldHavePersistentTimezone;
-
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
-
+  private Logger LOG = LoggerFactory.getLogger(getClass());
   private TestTasks.CountingHandler<String> delayingHandlerOneTime;
   private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
   private OneTimeTask<String> oneTime;
@@ -462,8 +461,15 @@ public abstract class CompatibilityTest {
                 .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
                 .build();
 
-    scheduler.schedule(oneTime.instance("1"), clock.now());
+    Instant now = clock.now();
+    LOG.info("DEBUG scheduling to {}", now);
+    scheduler.schedule(oneTime.instance("1"), now);
     scheduler.runAnyDueExecutions();
+
+    createJdbcTaskRepository(false)
+        .getScheduledExecutions(ScheduledExecutionsFilter.all(), ex -> {
+          LOG.info("DEBUG found scheduled to {}", ex.executionTime);
+          });
 
     assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
   }
