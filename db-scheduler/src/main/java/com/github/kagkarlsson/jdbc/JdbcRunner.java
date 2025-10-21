@@ -133,6 +133,10 @@ public class JdbcRunner {
           PreparedStatement preparedStatement = null;
           try {
 
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("Executing SQL query [{}]", query);
+            }
+
             try {
               preparedStatement = c.prepareStatement(query);
             } catch (SQLException e) {
