@@ -43,6 +43,8 @@ import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import com.google.common.collect.Lists;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -58,6 +60,7 @@ import org.hamcrest.Matchers;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
@@ -451,7 +454,7 @@ public abstract class CompatibilityTest {
     assertThat(taskRepo.getExecution(instance1).get().executionTime, is(zonedDateTime.toInstant()));
   }
 
-  @Test
+  @RepeatedTest(5)
   void test_compatibility_manual_scheduler() {
     final SettableClock clock = new SettableClock();
     final ManualScheduler scheduler =
@@ -464,7 +467,7 @@ public abstract class CompatibilityTest {
     Instant now = clock.now();
     LOG.info("DEBUG scheduling to {}", now);
     scheduler.schedule(oneTime.instance("1"), now);
-    
+
     scheduler.runAnyDueExecutions();
 
     createJdbcTaskRepository(false)
