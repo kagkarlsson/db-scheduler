@@ -464,6 +464,7 @@ public abstract class CompatibilityTest {
     Instant now = clock.now();
     LOG.info("DEBUG scheduling to {}", now);
     scheduler.schedule(oneTime.instance("1"), now);
+    
     scheduler.runAnyDueExecutions();
 
     createJdbcTaskRepository(false)
