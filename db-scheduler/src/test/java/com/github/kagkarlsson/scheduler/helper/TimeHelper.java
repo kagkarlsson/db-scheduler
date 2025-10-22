@@ -16,7 +16,7 @@ public final class TimeHelper {
     return truncated(Instant.now());
   }
 
-  private static Instant truncated(Instant instant) {
+  public static Instant truncated(Instant instant) {
     return instant.truncatedTo(MILLIS);
   }
 }

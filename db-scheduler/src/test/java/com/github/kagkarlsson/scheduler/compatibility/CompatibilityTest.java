@@ -27,6 +27,7 @@ import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.helper.ExecutionCompletedCondition;
 import com.github.kagkarlsson.scheduler.helper.TestableListener;
+import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
@@ -57,6 +58,7 @@ import org.hamcrest.Matchers;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
@@ -67,12 +69,10 @@ public abstract class CompatibilityTest {
 
   private static final int POLLING_LIMIT = 10_000;
   private static final TaskDescriptor<String> ONETIME = TaskDescriptor.of("oneTime", String.class);
-  private Logger LOG = LoggerFactory.getLogger(getClass());
   private final boolean supportsSelectForUpdate;
   private final boolean shouldHavePersistentTimezone;
-
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
-
+  private final Logger LOG = LoggerFactory.getLogger(getClass());
   private TestTasks.CountingHandler<String> delayingHandlerOneTime;
   private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
   private OneTimeTask<String> oneTime;
@@ -452,7 +452,7 @@ public abstract class CompatibilityTest {
     assertThat(taskRepo.getExecution(instance1).get().executionTime, is(zonedDateTime.toInstant()));
   }
 
-  @Test
+  @RepeatedTest(5)
   void test_compatibility_manual_scheduler() {
     final SettableClock clock = new SettableClock();
     final ManualScheduler scheduler =
@@ -462,7 +462,8 @@ public abstract class CompatibilityTest {
                 .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
                 .build();
 
-    scheduler.schedule(oneTime.instance("1"), clock.now());
+    scheduler.schedule(oneTime.instance("1"), TimeHelper.truncated(clock.now()));
+
     scheduler.runAnyDueExecutions();
 
     assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
