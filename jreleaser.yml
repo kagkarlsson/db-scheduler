@@ -46,3 +46,5 @@ deploy:
         authorization: BASIC
         stagingRepositories:
           - target/staging-deploy
+        retryDelay: 20
+        maxRetries: 150
