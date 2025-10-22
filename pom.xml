@@ -45,10 +45,10 @@
 		<logback.version>1.2.13</logback.version>
 		<spring-boot.version>3.5.5</spring-boot.version>
 		<micrometer.version>1.15.3</micrometer.version>
-		<gson.version>2.11.0</gson.version>
-		<jackson.version>2.18.3</jackson.version>
+		<gson.version>2.13.2</gson.version>
+		<jackson.version>2.20.0</jackson.version>
 		<postgresql.version>42.7.8</postgresql.version>
-		<guava.version>33.4.8-jre</guava.version>
+		<guava.version>33.5.0-jre</guava.version>
 	</properties>
 
 	<modules>
@@ -62,14 +62,14 @@
 			<dependency>
 				<groupId>org.junit</groupId>
 				<artifactId>junit-bom</artifactId>
-				<version>5.12.2</version>
+				<version>5.14.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
 			<dependency>
 				<groupId>org.mockito</groupId>
 				<artifactId>mockito-bom</artifactId>
-				<version>5.17.0</version>
+				<version>5.20.0</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
