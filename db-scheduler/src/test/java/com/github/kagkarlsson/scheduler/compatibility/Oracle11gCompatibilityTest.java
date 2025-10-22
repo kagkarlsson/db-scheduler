@@ -1,8 +1,6 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
-import ch.qos.logback.classic.Level;
 import com.github.kagkarlsson.scheduler.DbUtils;
-import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.OracleJdbcCustomization;
 import com.zaxxer.hikari.HikariConfig;
@@ -15,7 +13,6 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -26,12 +23,12 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
   @Container private static final OracleContainer ORACLE = new OracleContainer("gvenzl/oracle-xe");
   private static HikariDataSource pooledDatasource;
 
-//        Enable if test gets flaky!
-//  @RegisterExtension
-//  public ChangeLogLevelsExtension changeLogLevels =
-//      new ChangeLogLevelsExtension(
-//          new ChangeLogLevelsExtension.LogLevelOverride(
-//              "com.github.kagkarlsson.scheduler", Level.DEBUG));
+  //        Enable if test gets flaky!
+  //  @RegisterExtension
+  //  public ChangeLogLevelsExtension changeLogLevels =
+  //      new ChangeLogLevelsExtension(
+  //          new ChangeLogLevelsExtension.LogLevelOverride(
+  //              "com.github.kagkarlsson.scheduler", Level.DEBUG));
 
   public Oracle11gCompatibilityTest() {
     super(false, true); // FIXLATER: fix syntax and enable
