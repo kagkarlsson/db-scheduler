@@ -44,8 +44,6 @@ import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import com.google.common.collect.Lists;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -75,7 +73,7 @@ public abstract class CompatibilityTest {
   private final boolean supportsSelectForUpdate;
   private final boolean shouldHavePersistentTimezone;
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
-  private Logger LOG = LoggerFactory.getLogger(getClass());
+  private final Logger LOG = LoggerFactory.getLogger(getClass());
   private TestTasks.CountingHandler<String> delayingHandlerOneTime;
   private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
   private OneTimeTask<String> oneTime;
@@ -465,16 +463,9 @@ public abstract class CompatibilityTest {
                 .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
                 .build();
 
-    Instant now = TimeHelper.truncated(clock.now());
-    LOG.info("DEBUG scheduling to {}", now);
-    scheduler.schedule(oneTime.instance("1"), now);
+    scheduler.schedule(oneTime.instance("1"), TimeHelper.truncated(clock.now()));
 
     scheduler.runAnyDueExecutions();
-
-    createJdbcTaskRepository(false)
-        .getScheduledExecutions(ScheduledExecutionsFilter.all(), ex -> {
-          LOG.info("DEBUG found scheduled to {}", ex.executionTime);
-          });
 
     assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
   }

@@ -26,16 +26,12 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
   @Container private static final OracleContainer ORACLE = new OracleContainer("gvenzl/oracle-xe");
   private static HikariDataSource pooledDatasource;
 
-  //      Enable if test gets flaky!
-  @RegisterExtension
-  public ChangeLogLevelsExtension changeLogLevels =
-      new ChangeLogLevelsExtension(
+//        Enable if test gets flaky!
+//  @RegisterExtension
+//  public ChangeLogLevelsExtension changeLogLevels =
+//      new ChangeLogLevelsExtension(
 //          new ChangeLogLevelsExtension.LogLevelOverride(
-//              "com.github.kagkarlsson.scheduler.DueExecutionsBatch", Level.TRACE),
-          new ChangeLogLevelsExtension.LogLevelOverride(
-              "com.github.kagkarlsson.scheduler", Level.DEBUG));
-//          new ChangeLogLevelsExtension.LogLevelOverride(
-//              "com.github.kagkarlsson.scheduler.Scheduler", Level.DEBUG));
+//              "com.github.kagkarlsson.scheduler", Level.DEBUG));
 
   public Oracle11gCompatibilityTest() {
     super(false, true); // FIXLATER: fix syntax and enable
