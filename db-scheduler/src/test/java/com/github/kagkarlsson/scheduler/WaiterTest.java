@@ -48,7 +48,7 @@ public class WaiterTest {
 
   @Test
   public void should_wait_for_duration_even_if_prematurely_notified()
-    throws ExecutionException, InterruptedException {
+      throws ExecutionException, InterruptedException {
     ReentrantLock lock = new ReentrantLock();
     Condition condition = lock.newCondition();
 
@@ -62,7 +62,7 @@ public class WaiterTest {
 
   @Test
   public void should_not_wait_if_instructed_to_skip_next()
-    throws ExecutionException, InterruptedException {
+      throws ExecutionException, InterruptedException {
     Waiter waiter = new Waiter(Duration.ofMillis(1000));
     waiter.wakeOrSkipNextWait(); // set skip
     Future<Long> waitTime = executor.submit(new WaitForWaiter(waiter));

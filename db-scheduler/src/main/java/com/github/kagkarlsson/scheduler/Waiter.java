@@ -76,8 +76,8 @@ public class Waiter {
         this.isWaiting = false;
         if (woken) {
           LOG.debug(
-            "Waiter woken, it had {}ms left to wait.",
-            (waitUntil.toEpochMilli() - clock.now().toEpochMilli()));
+              "Waiter woken, it had {}ms left to wait.",
+              (waitUntil.toEpochMilli() - clock.now().toEpochMilli()));
           return;
         }
 
@@ -88,27 +88,31 @@ public class Waiter {
   }
 
   boolean wake() {
-    return withLock(lock, () -> {
-      if (!isWaiting) {
-        return false;
-      } else {
-        woken = true;
-        condition.signal();
-        return true;
-      }
-    });
+    return withLock(
+        lock,
+        () -> {
+          if (!isWaiting) {
+            return false;
+          } else {
+            woken = true;
+            condition.signal();
+            return true;
+          }
+        });
   }
 
   public void wakeOrSkipNextWait() {
     // Take early lock to avoid race-conditions. Lock is also taken in wake() (lock is re-entrant)
-    withLock(lock, () -> {
-      final boolean awoken = wake();
-      if (!awoken) {
-        LOG.debug("Waiter not waiting, instructing to skip next wait.");
-        this.skipNextWait = true;
-      }
-      return null;
-    });
+    withLock(
+        lock,
+        () -> {
+          final boolean awoken = wake();
+          if (!awoken) {
+            LOG.debug("Waiter not waiting, instructing to skip next wait.");
+            this.skipNextWait = true;
+          }
+          return null;
+        });
   }
 
   public Duration getWaitDuration() {
@@ -129,9 +133,11 @@ public class Waiter {
   }
 
   public static <T> T withLock(ReentrantLock lock, Runnable action) {
-    return withLock(lock, () -> {
-      action.run();
-      return null;
-    });
+    return withLock(
+        lock,
+        () -> {
+          action.run();
+          return null;
+        });
   }
 }
