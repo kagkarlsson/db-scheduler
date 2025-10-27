@@ -11,7 +11,6 @@ import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import java.time.Instant;
 import java.util.List;
-import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -23,13 +22,9 @@ public class ScrollingPostgresTest {
   private static final Instant NOW = Instant.now();
   private static final TaskDescriptor<Void> A_TASK = TaskDescriptor.of("testTask");
 
-  private DataSource getDataSource() {
-    return DB.getDataSource();
-  }
-
   @Test
   void test_scrolling() {
-    var client = SchedulerClient.Builder.create(getDataSource()).build();
+    var client = SchedulerClient.Builder.create(DB.getDataSource()).build();
 
     createTestExecutions(client, 10);
 
@@ -63,9 +58,5 @@ public class ScrollingPostgresTest {
       SchedulerClient client, ScheduledExecutionsFilter filter) {
     return client.getScheduledExecutionsForTask(
         A_TASK.getTaskName(), A_TASK.getDataClass(), filter);
-  }
-
-  private static List<String> idsFrom(List<ScheduledExecution<Void>> firstPage) {
-    return firstPage.stream().map(se -> se.getTaskInstance().getId()).toList();
   }
 }
