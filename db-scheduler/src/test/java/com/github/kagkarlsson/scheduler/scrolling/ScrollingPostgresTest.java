@@ -1,8 +1,6 @@
 package com.github.kagkarlsson.scheduler.scrolling;
 
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.collection.IsIterableContainingInOrder.contains;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
@@ -51,39 +49,6 @@ public class ScrollingPostgresTest {
     var first = ExecutionTimeAndId.from(allResults.get(0));
     var betweenFirstAndFifth = getScheduledForTask(client, all().after(first).before(fifth));
     assertEquals(3, betweenFirstAndFifth.size());
-  }
-
-  @Test
-  void test_scrolling_with_priority() {
-    var client = SchedulerClient.Builder.create(getDataSource()).enablePriority().build();
-
-    // P0 = highest priority
-    Instant futureInstant = NOW.plusSeconds(10);
-    client.scheduleIfNotExists(A_TASK.instance("P0").priority(99).build(), futureInstant);
-    client.scheduleIfNotExists(A_TASK.instance("P1").priority(98).build(), futureInstant);
-    client.scheduleIfNotExists(A_TASK.instance("P2").priority(97).build(), futureInstant);
-    client.scheduleIfNotExists(A_TASK.instance("P3").priority(96).build(), futureInstant);
-    client.scheduleIfNotExists(A_TASK.instance("P4").priority(95).build(), futureInstant);
-    client.scheduleIfNotExists(A_TASK.instance("P5").priority(94).build(), futureInstant);
-
-    var forwardResults = getScheduledForTask(client, all().limit(2));
-    assertThat(idsFrom(forwardResults), contains("P0", "P1"));
-
-    ExecutionTimeAndId p1 = ExecutionTimeAndId.from(forwardResults.get(1)); // P1
-    var backwardResults = getScheduledForTask(client, all().before(p1).limit(2));
-    assertThat(idsFrom(backwardResults), contains("P0"));
-
-    var allResults = getScheduledForTask(client, all().limit(100));
-    assertThat(idsFrom(allResults), contains("P0", "P1", "P2", "P3", "P4", "P5"));
-
-    ExecutionTimeAndId p4 = ExecutionTimeAndId.from(allResults.get(4)); // P4
-
-    var rangeResults = getScheduledForTask(client, all().after(p1).before(p4).limit(2));
-    assertThat(idsFrom(rangeResults), contains("P2", "P3"));
-
-    var p5 = ExecutionTimeAndId.from(allResults.get(5)); // P5
-    var beforeP5 = getScheduledForTask(client, all().before(p5).limit(10));
-    assertThat(idsFrom(beforeP5), contains("P4", "P3", "P2", "P1", "P0"));
   }
 
   private void createTestExecutions(SchedulerClient client, int count) {

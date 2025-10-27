@@ -215,24 +215,24 @@ public abstract class CompatibilityTest {
     var theThird = firstPage.get(2); // id=3
 
     var beforePage =
-      repo.getScheduledExecutions(
-        all().before(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
+        repo.getScheduledExecutions(
+            all().before(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
 
     assertThat(idsFrom(beforePage), contains("2", "1"));
 
     var afterPage =
-      repo.getScheduledExecutions(
-        all().after(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
+        repo.getScheduledExecutions(
+            all().after(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
     assertThat(idsFrom(afterPage), contains("4", "5"));
 
     var theFourth = afterPage.get(0); // id=4
 
     var rangePage =
-      repo.getScheduledExecutions(
-        all()
-          .after(ExecutionTimeAndId.from(toScheduled(theSecond)))
-          .before(ExecutionTimeAndId.from(toScheduled(theFourth)))
-          .limit(10));
+        repo.getScheduledExecutions(
+            all()
+                .after(ExecutionTimeAndId.from(toScheduled(theSecond)))
+                .before(ExecutionTimeAndId.from(toScheduled(theFourth)))
+                .limit(10));
 
     assertThat(idsFrom(rangePage), contains("3"));
   }
@@ -302,10 +302,10 @@ public abstract class CompatibilityTest {
   }
 
   private void schedule(
-    JdbcTaskRepository repo,
-    TaskDescriptor<String> descriptor,
-    String id,
-    Instant executionTime) {
+      JdbcTaskRepository repo,
+      TaskDescriptor<String> descriptor,
+      String id,
+      Instant executionTime) {
     repo.createIfNotExists(descriptor.instance(id).scheduledTo(executionTime.plusSeconds(10)));
   }
 

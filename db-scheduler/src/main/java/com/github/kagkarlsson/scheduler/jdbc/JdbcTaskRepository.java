@@ -300,7 +300,7 @@ public class JdbcTaskRepository implements TaskRepository {
       ScheduledExecutionsFilter filter, Consumer<Execution> consumer) {
     UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
 
-    QueryBuilder q = queryForFilter(filter, orderByPriority);
+    QueryBuilder q = queryForFilter(filter);
     if (unresolvedFilter.isActive() && !filter.getIncludeUnresolved()) {
       q.andCondition(unresolvedFilter);
     }
@@ -316,7 +316,7 @@ public class JdbcTaskRepository implements TaskRepository {
       ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer) {
     UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
 
-    QueryBuilder q = queryForFilter(filter, orderByPriority);
+    QueryBuilder q = queryForFilter(filter);
     if (unresolvedFilter.isActive() && !filter.getIncludeUnresolved()) {
       q.andCondition(unresolvedFilter);
     }
@@ -735,7 +735,7 @@ public class JdbcTaskRepository implements TaskRepository {
         () -> new ExecutionResultSetMapper(false, true));
   }
 
-  private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter, boolean orderByPriority) {
+  private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
     final QueryBuilder q = QueryBuilder.selectFromTable(tableName);
 
     filter.getPickedValue().ifPresent(value -> q.andCondition(new PickedCondition(value)));
@@ -745,7 +745,7 @@ public class JdbcTaskRepository implements TaskRepository {
     filter.getBeforeExecution().ifPresent(e -> q.andCondition(new ExecutionTimeBeforeCondition(e)));
 
     ScrollingType scrollingType = ScrollingType.determine(filter);
-    OrderingStrategy strategy = OrderingStrategy.from(orderByPriority, scrollingType);
+    OrderingStrategy strategy = OrderingStrategy.from(scrollingType);
     q.orderBy(strategy.getClause());
 
     filter.getLimit().ifPresent(q::limit);
@@ -1019,8 +1019,6 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   private enum OrderingStrategy {
-    PRIORITY_FORWARD("priority desc, execution_time asc, task_instance asc"),
-    PRIORITY_BACKWARD("priority asc, execution_time desc, task_instance desc"),
     TIME_FORWARD("execution_time asc, task_instance asc"),
     TIME_BACKWARD("execution_time desc, task_instance desc");
 
@@ -1034,13 +1032,9 @@ public class JdbcTaskRepository implements TaskRepository {
       return clause;
     }
 
-    public static OrderingStrategy from(boolean orderByPriority, ScrollingType scrollingType) {
+    public static OrderingStrategy from(ScrollingType scrollingType) {
       boolean useBackwardOrdering = (scrollingType == ScrollingType.BACKWARD);
-      if (orderByPriority) {
-        return useBackwardOrdering ? PRIORITY_BACKWARD : PRIORITY_FORWARD;
-      } else {
-        return useBackwardOrdering ? TIME_BACKWARD : TIME_FORWARD;
-      }
+      return useBackwardOrdering ? TIME_BACKWARD : TIME_FORWARD;
     }
   }
 }
