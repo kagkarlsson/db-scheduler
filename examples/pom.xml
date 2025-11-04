@@ -20,7 +20,8 @@
 
     <modules>
         <module>features</module>
-        <module>spring-boot-example</module>
+        <module>spring-boot-3-example</module>
+        <module>spring-boot-4-example</module>
     </modules>
 
 </project>
