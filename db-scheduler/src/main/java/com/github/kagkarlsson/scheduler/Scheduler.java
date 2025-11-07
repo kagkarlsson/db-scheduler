@@ -386,7 +386,7 @@ public class Scheduler implements SchedulerClient {
             LOG.info("Found dead execution. Delegating handling to task. Execution: " + execution);
             try {
 
-              Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
+              Optional<Task> task = taskResolver.resolve(execution);
               if (task.isPresent()) {
                 schedulerListeners.onSchedulerEvent(SchedulerEventType.DEAD_EXECUTION);
                 schedulerListeners.onExecutionDead(execution);
