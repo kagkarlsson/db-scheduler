@@ -13,12 +13,16 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class ScheduledExecutionsFilter {
 
   private Boolean pickedValue;
   private boolean includeUnresolved = false;
+  private ExecutionTimeAndId afterExecution;
+  private ExecutionTimeAndId beforeExecution;
+  private Integer limit;
 
   private ScheduledExecutionsFilter() {}
 
@@ -46,5 +50,35 @@ public class ScheduledExecutionsFilter {
 
   public boolean getIncludeUnresolved() {
     return includeUnresolved;
+  }
+
+  public ScheduledExecutionsFilter limit(int limit) {
+    if (limit <= 0) {
+      throw new IllegalArgumentException("Limit must be positive, was: " + limit);
+    }
+    this.limit = limit;
+    return this;
+  }
+
+  public ScheduledExecutionsFilter after(ExecutionTimeAndId execution) {
+    this.afterExecution = Objects.requireNonNull(execution);
+    return this;
+  }
+
+  public ScheduledExecutionsFilter before(ExecutionTimeAndId execution) {
+    this.beforeExecution = Objects.requireNonNull(execution);
+    return this;
+  }
+
+  public Optional<ExecutionTimeAndId> getAfterExecution() {
+    return Optional.ofNullable(afterExecution);
+  }
+
+  public Optional<ExecutionTimeAndId> getBeforeExecution() {
+    return Optional.ofNullable(beforeExecution);
+  }
+
+  public Optional<Integer> getLimit() {
+    return Optional.ofNullable(limit);
   }
 }

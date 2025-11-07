@@ -19,6 +19,7 @@ import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -43,8 +44,21 @@ public interface TaskRepository {
 
   void getScheduledExecutions(ScheduledExecutionsFilter filter, Consumer<Execution> consumer);
 
+  default List<Execution> getScheduledExecutions(ScheduledExecutionsFilter filter) {
+    var results = new ArrayList<Execution>();
+    getScheduledExecutions(filter, results::add);
+    return results;
+  }
+
   void getScheduledExecutions(
       ScheduledExecutionsFilter filter, String taskName, Consumer<Execution> consumer);
+
+  default List<Execution> getScheduledExecutions(
+      ScheduledExecutionsFilter filter, String taskName) {
+    var results = new ArrayList<Execution>();
+    getScheduledExecutions(filter, taskName, results::add);
+    return results;
+  }
 
   List<Execution> lockAndFetchGeneric(Instant now, int limit);
 
