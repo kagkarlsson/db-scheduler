@@ -13,11 +13,12 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.Resolvable;
 import java.time.Instant;
 import java.util.Objects;
 
 @SuppressWarnings("rawtypes")
-public final class Execution implements TaskInstanceId {
+public final class Execution implements TaskInstanceId, Resolvable {
   public final TaskInstance taskInstance;
   public final Instant executionTime;
   public final boolean picked;
@@ -53,6 +54,7 @@ public final class Execution implements TaskInstanceId {
     this.version = version;
   }
 
+  @Override
   public Instant getExecutionTime() {
     return executionTime;
   }

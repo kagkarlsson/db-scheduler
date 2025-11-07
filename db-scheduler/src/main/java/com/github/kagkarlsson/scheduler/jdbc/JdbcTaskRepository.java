@@ -23,6 +23,7 @@ import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
+import com.github.kagkarlsson.scheduler.Resolvable;
 import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskRepository;
@@ -799,7 +800,10 @@ public class JdbcTaskRepository implements TaskRepository {
 
       while (rs.next()) {
         String taskName = rs.getString("task_name");
-        Optional<Task> task = taskResolver.resolve(taskName, addUnresolvedToExclusionFilter);
+        Instant executionTime = jdbcCustomization.getInstant(rs, "execution_time");
+        Optional<Task> task =
+            taskResolver.resolve(
+                Resolvable.of(taskName, executionTime), addUnresolvedToExclusionFilter);
 
         if (task.isEmpty() && !includeUnresolved) {
           if (addUnresolvedToExclusionFilter) {
@@ -814,8 +818,6 @@ public class JdbcTaskRepository implements TaskRepository {
 
         String instanceId = rs.getString("task_instance");
         byte[] data = jdbcCustomization.getTaskData(rs, "task_data");
-
-        Instant executionTime = jdbcCustomization.getInstant(rs, "execution_time");
 
         boolean picked = rs.getBoolean("picked");
         final String pickedBy = rs.getString("picked_by");
@@ -878,6 +880,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   private static class NewData {
+
     private final Object data;
 
     NewData(Object data) {
@@ -886,6 +889,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   static class UnresolvedFilter implements AndCondition {
+
     private final List<UnresolvedTask> unresolved;
 
     public UnresolvedFilter(List<UnresolvedTask> unresolved) {
@@ -917,6 +921,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   private static class PickedCondition implements AndCondition {
+
     private final boolean value;
 
     public PickedCondition(boolean value) {
@@ -936,6 +941,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   private static class TaskCondition implements AndCondition {
+
     private final String value;
 
     public TaskCondition(String value) {
@@ -955,6 +961,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   private class ExecutionTimeAfterCondition implements AndCondition {
+
     private final ExecutionTimeAndId execution;
 
     public ExecutionTimeAfterCondition(ExecutionTimeAndId execution) {
@@ -976,6 +983,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   private class ExecutionTimeBeforeCondition implements AndCondition {
+
     private final ExecutionTimeAndId execution;
 
     public ExecutionTimeBeforeCondition(ExecutionTimeAndId execution) {

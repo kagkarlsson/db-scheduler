@@ -6,6 +6,9 @@ import static org.mockito.Mockito.verify;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +26,7 @@ class TaskResolverTest {
         new TaskResolver(
             new SchedulerListeners(mockScheduleListener), new SystemClock(), List.of());
 
-    taskResolver.resolve("unknown-task");
+    taskResolver.resolve(new Execution(Instant.now(), new TaskInstance<Void>("unresolved", "id1")));
 
     verify(mockScheduleListener, times(1)).onSchedulerEvent(SchedulerEventType.UNRESOLVED_TASK);
   }
