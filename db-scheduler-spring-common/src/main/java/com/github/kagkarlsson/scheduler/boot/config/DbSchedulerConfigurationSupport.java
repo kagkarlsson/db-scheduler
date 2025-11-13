@@ -40,9 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.core.ConfigurableObjectInputStream;
 import org.springframework.jdbc.datasource.TransactionAwareDataSourceProxy;
 
-/**
- * Helper for building {@link Scheduler} instances shared between Spring Boot starters.
- */
+/** Helper for building {@link Scheduler} instances shared between Spring Boot starters. */
 public final class DbSchedulerConfigurationSupport {
   private static final Logger log = LoggerFactory.getLogger(DbSchedulerConfigurationSupport.class);
   private static final Predicate<Task<?>> SHOULD_BE_STARTED = task -> task instanceof OnStartup;
