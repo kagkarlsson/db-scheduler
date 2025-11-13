@@ -17,7 +17,7 @@
         <!-- Dependencies -->
         <cron-utils.version>9.2.1</cron-utils.version>
         <hamcrest.version>3.0</hamcrest.version>
-        <hikaricp.version>6.2.1</hikaricp.version>
+        <hikaricp.version>7.0.2</hikaricp.version>
         <hsqldb.version>2.7.4</hsqldb.version>
         <java8-matchers.version>1.6</java8-matchers.version>
         <equals-verifier.version>3.19.1</equals-verifier.version>
