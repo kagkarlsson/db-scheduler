@@ -53,7 +53,7 @@ import org.springframework.test.context.jdbc.Sql;
  * SQL schema is loaded via application-integration-test.properties.
  */
 @ActiveProfiles("integration-test")
-@Sql(scripts = "/schema.sql")
+@Sql(scripts = "classpath:schema.sql")
 class DbSchedulerAutoConfigurationTest {
 
   private static final Logger log =
@@ -87,7 +87,7 @@ class DbSchedulerAutoConfigurationTest {
     @Autowired ApplicationContext ctx;
 
     @Test
-    @Sql(scripts = "/schema.sql")
+    @Sql(scripts = "classpath:schema.sql")
     void it_should_initialize_an_empty_scheduler() {
       assertSingleBean(DataSource.class);
       assertSingleBean(Scheduler.class);
