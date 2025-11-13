@@ -39,7 +39,6 @@ import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegi
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -64,7 +63,6 @@ class DbSchedulerAutoConfigurationTest {
    * ------------------------------------------------------------------------- */
   @ImportAutoConfiguration({
     DataSourceAutoConfiguration.class,
-    SqlInitializationAutoConfiguration.class,
     MetricsAutoConfiguration.class,
     CompositeMeterRegistryAutoConfiguration.class,
     HealthContributorAutoConfiguration.class,
@@ -292,7 +290,6 @@ class DbSchedulerAutoConfigurationTest {
   @SpringBootTest(classes = { SingleTaskConfiguration.class }) // do NOT load CommonAutoConfig to remove metrics
   @ImportAutoConfiguration({
     DataSourceAutoConfiguration.class,
-    SqlInitializationAutoConfiguration.class,
     HealthContributorAutoConfiguration.class,
     DbSchedulerMetricsAutoConfiguration.class,
     DbSchedulerActuatorAutoConfiguration.class,
@@ -316,7 +313,6 @@ class DbSchedulerAutoConfigurationTest {
   @SpringBootTest(classes = { SingleTaskConfiguration.class })
   @ImportAutoConfiguration({
     DataSourceAutoConfiguration.class,
-    SqlInitializationAutoConfiguration.class,
     // Actuator/metrics excluded to simulate the other scenario from your original class
     DbSchedulerMetricsAutoConfiguration.class,
     DbSchedulerActuatorAutoConfiguration.class,
