@@ -16,6 +16,10 @@ import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerSta
 import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
+import com.github.kagkarlsson.scheduler.boot.testsupport.CustomStarterConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testsupport.CustomStatsRegistryConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testsupport.MultipleTasksConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testsupport.SingleTaskConfiguration;
 import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.DefaultStatsRegistry;
@@ -335,61 +339,4 @@ class DbSchedulerAutoConfigurationTest {
     }
   }
 
-  /* =======================================================================
-   *  Test support configurations (WITHOUT inheritance between them)
-   * ======================================================================= */
-  @Configuration(proxyBeanMethods = false)
-  static class SingleTaskConfiguration {
-    @Bean("singleStringTask")
-    Task<String> singleStringTask() {
-      return namedStringTask("single-string-task");
-    }
-  }
-
-  @Configuration(proxyBeanMethods = false)
-  static class MultipleTasksConfiguration {
-    @Bean Task<String> firstTask()  { return namedStringTask("first-task"); }
-    @Bean Task<String> secondTask() { return namedStringTask("second-task"); }
-    @Bean Task<String> thirdTask()  { return namedStringTask("third-task"); }
-  }
-
-  @Configuration(proxyBeanMethods = false)
-  static class CustomStarterConfiguration {
-    @Bean
-    DbSchedulerStarter someCustomStarter(Scheduler scheduler) {
-      return new SomeCustomStarter(scheduler);
-    }
-    static class SomeCustomStarter extends AbstractSchedulerStarter {
-      SomeCustomStarter(Scheduler scheduler) {
-        super(scheduler);
-        try {
-          log.info("Thinking 5 seconds before starting the scheduler");
-          Thread.sleep(5_000);
-          doStart();
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
-  }
-
-  @Configuration(proxyBeanMethods = false)
-  static class CustomStatsRegistry {
-    @Bean
-    StatsRegistry customStatsRegistry() {
-      return new StatsRegistry() {
-        public void register(SchedulerStatsEvent e) {}
-        public void register(CandidateStatsEvent e) {}
-        public void register(ExecutionStatsEvent e) {}
-        public void registerSingleCompletedExecution(ExecutionComplete e) {}
-      };
-    }
-  }
-
-  private static Task<String> namedStringTask(String name) {
-    Objects.requireNonNull(name);
-    return Tasks.oneTime(name, String.class)
-      .execute((instance, context) ->
-        log.info("Executed task: {}, ctx: {}", instance, context));
-  }
 }
