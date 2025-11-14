@@ -53,6 +53,7 @@ import org.springframework.test.context.jdbc.Sql;
  * SQL schema is loaded via application-integration-test.properties.
  */
 @ActiveProfiles("integration-test")
+@Sql(scripts = "classpath:schema.sql")
 class DbSchedulerAutoConfigurationTest {
 
   private static final Logger log =
