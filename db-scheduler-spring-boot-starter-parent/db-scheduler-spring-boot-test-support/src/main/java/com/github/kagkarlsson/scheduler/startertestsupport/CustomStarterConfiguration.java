@@ -1,4 +1,4 @@
-package com.github.kagkarlsson.scheduler.boot.testsupport;
+package com.github.kagkarlsson.scheduler.startertestsupport;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;

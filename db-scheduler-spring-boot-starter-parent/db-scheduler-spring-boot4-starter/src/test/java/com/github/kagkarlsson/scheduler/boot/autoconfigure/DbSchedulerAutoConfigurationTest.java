@@ -16,10 +16,10 @@ import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerSta
 import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
-import com.github.kagkarlsson.scheduler.boot.testsupport.CustomStarterConfiguration;
-import com.github.kagkarlsson.scheduler.boot.testsupport.CustomStatsRegistryConfiguration;
-import com.github.kagkarlsson.scheduler.boot.testsupport.MultipleTasksConfiguration;
-import com.github.kagkarlsson.scheduler.boot.testsupport.SingleTaskConfiguration;
+import com.github.kagkarlsson.scheduler.startertestsupport.CustomStarterConfiguration;
+import com.github.kagkarlsson.scheduler.startertestsupport.CustomStatsRegistryConfiguration;
+import com.github.kagkarlsson.scheduler.startertestsupport.MultipleTasksConfiguration;
+import com.github.kagkarlsson.scheduler.startertestsupport.SingleTaskConfiguration;
 import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.DefaultStatsRegistry;
@@ -326,7 +326,7 @@ class DbSchedulerAutoConfigurationTest {
    *  Custom StatsRegistry provided by the user
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class, SingleTaskConfiguration.class, CustomStatsRegistry.class })
+  @SpringBootTest(classes = { CommonAutoConfig.class, SingleTaskConfiguration.class, CustomStatsRegistryConfiguration.class })
   class WithCustomStatsRegistry {
 
     @Autowired ApplicationContext ctx;
