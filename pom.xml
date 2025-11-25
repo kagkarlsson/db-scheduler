@@ -44,6 +44,7 @@
 		<slf4j.version>1.7.36</slf4j.version>
 		<logback.version>1.2.13</logback.version>
 		<spring-boot.version>3.5.5</spring-boot.version>
+		<spring-boot-4.version>4.0.0-RC1</spring-boot-4.version>
 		<micrometer.version>1.15.3</micrometer.version>
 		<gson.version>2.13.2</gson.version>
 		<jackson.version>2.20.0</jackson.version>
@@ -53,8 +54,7 @@
 
 	<modules>
 		<module>db-scheduler</module>
-		<module>db-scheduler-spring-common</module>
-		<module>db-scheduler-boot-starter</module>
+		<module>db-scheduler-spring-boot-starter-parent</module>
 		<module>examples</module>
 	</modules>
 
