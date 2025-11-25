@@ -12,7 +12,6 @@ import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
-import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.startertestsupport.CustomStarterConfiguration;
@@ -22,20 +21,13 @@ import com.github.kagkarlsson.scheduler.startertestsupport.SingleTaskConfigurati
 import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.DefaultStatsRegistry;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry.CandidateStatsEvent;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry.ExecutionStatsEvent;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry.SchedulerStatsEvent;
-import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.Task;
-import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.util.Map;
-import java.util.Objects;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.LazyInitializationExcludeFilter;
 import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
@@ -46,22 +38,19 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 
 /**
- * SpringBootTest version with isolated scenarios using @Nested classes.
- * SQL schema is loaded via application-integration-test.properties.
+ * SpringBootTest version with isolated scenarios using @Nested classes. SQL schema is loaded via
+ * application-integration-test.properties.
  */
 @ActiveProfiles("integration-test")
 @Sql(scripts = "classpath:schema.sql")
 class DbSchedulerAutoConfigurationTest {
 
-  private static final Logger log =
-    LoggerFactory.getLogger(DbSchedulerAutoConfigurationTest.class);
+  private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfigurationTest.class);
 
   /* -------------------------------------------------------------------------
    *  Common configuration: enable required auto-configurations.
@@ -76,17 +65,15 @@ class DbSchedulerAutoConfigurationTest {
     DbSchedulerActuatorAutoConfiguration.class,
     DbSchedulerAutoConfiguration.class
   })
-  static class CommonAutoConfig { }
+  static class CommonAutoConfig {}
 
   /* -------------------------------------------------------------------------
    *  Schema loading via spring.sql.init.* (schema.sql file on classpath)
    *  - If JPA is used elsewhere: add spring.jpa.defer-datasource-initialization=true
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class })
-  @TestPropertySource(properties = {
-    "db-scheduler.delay-startup-until-context-ready=true"
-  })
+  @SpringBootTest(classes = {CommonAutoConfig.class})
+  @TestPropertySource(properties = {"db-scheduler.delay-startup-until-context-ready=true"})
   class DefaultsAndHealthAndPriority {
 
     @Autowired ApplicationContext ctx;
@@ -97,8 +84,8 @@ class DbSchedulerAutoConfigurationTest {
       assertSingleBean(Scheduler.class);
 
       ctx.getBean(Scheduler.class)
-        .fetchScheduledExecutions(execution ->
-          fail("No scheduled executions should be present", execution));
+          .fetchScheduledExecutions(
+              execution -> fail("No scheduled executions should be present", execution));
     }
 
     @Test
@@ -108,7 +95,7 @@ class DbSchedulerAutoConfigurationTest {
       assertThat(props.getHeartbeatInterval()).isEqualTo(DEFAULT_HEARTBEAT_INTERVAL);
       assertThat(props.getMissedHeartbeatsLimit()).isEqualTo(DEFAULT_MISSED_HEARTBEATS_LIMIT);
       assertThat(props.getDeleteUnresolvedAfter())
-        .isEqualTo(DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION);
+          .isEqualTo(DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION);
     }
 
     @Test
@@ -139,11 +126,12 @@ class DbSchedulerAutoConfigurationTest {
    *  Actuator absent => no health indicator
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class })
-  @ImportAutoConfiguration(exclude = {
-    HealthContributorAutoConfiguration.class,
-    DbSchedulerActuatorAutoConfiguration.class
-  })
+  @SpringBootTest(classes = {CommonAutoConfig.class})
+  @ImportAutoConfiguration(
+      exclude = {
+        HealthContributorAutoConfiguration.class,
+        DbSchedulerActuatorAutoConfiguration.class
+      })
   class WithoutActuatorHealth {
 
     @Autowired ApplicationContext ctx;
@@ -158,10 +146,8 @@ class DbSchedulerAutoConfigurationTest {
    *  db-scheduler.enabled=false => skip all autoconfig
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class })
-  @TestPropertySource(properties = {
-    "db-scheduler.enabled=false"
-  })
+  @SpringBootTest(classes = {CommonAutoConfig.class})
+  @TestPropertySource(properties = {"db-scheduler.enabled=false"})
   class DisabledAutoConfiguration {
 
     @Autowired ApplicationContext ctx;
@@ -180,10 +166,8 @@ class DbSchedulerAutoConfigurationTest {
    *  Startup strategies
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class })
-  @TestPropertySource(properties = {
-    "db-scheduler.delay-startup-until-context-ready=false"
-  })
+  @SpringBootTest(classes = {CommonAutoConfig.class})
+  @TestPropertySource(properties = {"db-scheduler.delay-startup-until-context-ready=false"})
   class StartAsSoonAsPossible {
 
     @Autowired ApplicationContext ctx;
@@ -198,10 +182,8 @@ class DbSchedulerAutoConfigurationTest {
   }
 
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class })
-  @TestPropertySource(properties = {
-    "db-scheduler.delay-startup-until-context-ready=true"
-  })
+  @SpringBootTest(classes = {CommonAutoConfig.class})
+  @TestPropertySource(properties = {"db-scheduler.delay-startup-until-context-ready=true"})
   class StartWhenContextReady {
 
     @Autowired ApplicationContext ctx;
@@ -220,7 +202,7 @@ class DbSchedulerAutoConfigurationTest {
    *  -> avoid inheritance that duplicated the "singleStringTask" bean
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class, SingleTaskConfiguration.class })
+  @SpringBootTest(classes = {CommonAutoConfig.class, SingleTaskConfiguration.class})
   class WithSingleTask {
 
     @Autowired ApplicationContext ctx;
@@ -234,7 +216,7 @@ class DbSchedulerAutoConfigurationTest {
   }
 
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class, MultipleTasksConfiguration.class })
+  @SpringBootTest(classes = {CommonAutoConfig.class, MultipleTasksConfiguration.class})
   class WithMultipleTasks {
 
     @Autowired ApplicationContext ctx;
@@ -252,7 +234,12 @@ class DbSchedulerAutoConfigurationTest {
    *  Custom startup strategy (via custom DbSchedulerStarter)
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class, SingleTaskConfiguration.class, CustomStarterConfiguration.class })
+  @SpringBootTest(
+      classes = {
+        CommonAutoConfig.class,
+        SingleTaskConfiguration.class,
+        CustomStarterConfiguration.class
+      })
   class WithCustomStarter {
 
     @Autowired ApplicationContext ctx;
@@ -271,7 +258,7 @@ class DbSchedulerAutoConfigurationTest {
    *  Micrometer absent (no MeterRegistry bean) => DefaultStatsRegistry
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class, SingleTaskConfiguration.class })
+  @SpringBootTest(classes = {CommonAutoConfig.class, SingleTaskConfiguration.class})
   class WithMicrometer {
 
     @Autowired ApplicationContext ctx;
@@ -283,7 +270,8 @@ class DbSchedulerAutoConfigurationTest {
   }
 
   @Nested
-  @SpringBootTest(classes = { SingleTaskConfiguration.class }) // do NOT load CommonAutoConfig to remove metrics
+  @SpringBootTest(
+      classes = {SingleTaskConfiguration.class}) // do NOT load CommonAutoConfig to remove metrics
   @ImportAutoConfiguration({
     DataSourceAutoConfiguration.class,
     SqlInitializationAutoConfiguration.class,
@@ -306,7 +294,7 @@ class DbSchedulerAutoConfigurationTest {
   }
 
   @Nested
-  @SpringBootTest(classes = { SingleTaskConfiguration.class })
+  @SpringBootTest(classes = {SingleTaskConfiguration.class})
   @ImportAutoConfiguration({
     DataSourceAutoConfiguration.class,
     SqlInitializationAutoConfiguration.class,
@@ -329,7 +317,12 @@ class DbSchedulerAutoConfigurationTest {
    *  Custom StatsRegistry provided by the user
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = { CommonAutoConfig.class, SingleTaskConfiguration.class, CustomStatsRegistryConfiguration.class })
+  @SpringBootTest(
+      classes = {
+        CommonAutoConfig.class,
+        SingleTaskConfiguration.class,
+        CustomStatsRegistryConfiguration.class
+      })
   class WithCustomStatsRegistry {
 
     @Autowired ApplicationContext ctx;
@@ -341,5 +334,4 @@ class DbSchedulerAutoConfigurationTest {
       assertThat(ctx.getBeansOfType(MicrometerStatsRegistry.class)).isEmpty();
     }
   }
-
 }
