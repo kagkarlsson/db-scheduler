@@ -26,7 +26,8 @@ import org.slf4j.LoggerFactory;
 
 public class LockAndFetchCandidates implements PollStrategy {
   private static final Logger LOG = LoggerFactory.getLogger(LockAndFetchCandidates.class);
-  private final Executor executor;
+  private final List<Executor> executors;
+  private final Executor defaultExecutor;
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
   private final SchedulerListeners schedulerListeners;
@@ -35,18 +36,17 @@ public class LockAndFetchCandidates implements PollStrategy {
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
   private final Clock clock;
-  private final PollingStrategyConfig pollingStrategyConfig;
   private final Runnable triggerCheckForNewExecutions;
-  private HeartbeatConfig maxAgeBeforeConsideredDead;
+  private final HeartbeatConfig maxAgeBeforeConsideredDead;
   private final int lowerLimit;
   private final int upperLimit;
-  private AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
+  private final AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
 
   public LockAndFetchCandidates(
-      Executor executor,
+      Executor defaultExecutor,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
-      int threadpoolSize,
+      int totalThreads,
       SchedulerListeners schedulerListeners,
       List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
@@ -56,7 +56,42 @@ public class LockAndFetchCandidates implements PollStrategy {
       PollingStrategyConfig pollingStrategyConfig,
       Runnable triggerCheckForNewExecutions,
       HeartbeatConfig maxAgeBeforeConsideredDead) {
-    this.executor = executor;
+    this(
+        List.of(defaultExecutor),
+        taskRepository,
+        schedulerClient,
+        totalThreads,
+        schedulerListeners,
+        executionInterceptors,
+        schedulerState,
+        failureLogger,
+        taskResolver,
+        clock,
+        pollingStrategyConfig,
+        triggerCheckForNewExecutions,
+        maxAgeBeforeConsideredDead);
+  }
+
+  /**
+   * @param totalThreads Total thread capacity across all executor pools (used to calculate fetch
+   *     limits)
+   */
+  public LockAndFetchCandidates(
+      List<Executor> executors,
+      TaskRepository taskRepository,
+      SchedulerClient schedulerClient,
+      int totalThreads,
+      SchedulerListeners schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
+      SchedulerState schedulerState,
+      ConfigurableLogger failureLogger,
+      TaskResolver taskResolver,
+      Clock clock,
+      PollingStrategyConfig pollingStrategyConfig,
+      Runnable triggerCheckForNewExecutions,
+      HeartbeatConfig maxAgeBeforeConsideredDead) {
+    this.executors = executors;
+    this.defaultExecutor = executors.get(0);
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
     this.schedulerListeners = schedulerListeners;
@@ -65,18 +100,23 @@ public class LockAndFetchCandidates implements PollStrategy {
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
     this.clock = clock;
-    this.pollingStrategyConfig = pollingStrategyConfig;
     this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
     this.maxAgeBeforeConsideredDead = maxAgeBeforeConsideredDead;
-    lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
-    upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
+    lowerLimit = pollingStrategyConfig.getLowerLimit(totalThreads);
+    upperLimit = pollingStrategyConfig.getUpperLimit(totalThreads);
+  }
+
+  private Executor findExecutorForExecution(Execution execution) {
+    return ExecutorSelector.findExecutorForExecution(execution, executors, defaultExecutor);
   }
 
   @Override
   public void run() {
     Instant now = clock.now();
 
-    int executionsToFetch = upperLimit - executor.getNumberInQueueOrProcessing();
+    int totalInQueueOrProcessing =
+        executors.stream().mapToInt(Executor::getNumberInQueueOrProcessing).sum();
+    int executionsToFetch = upperLimit - totalInQueueOrProcessing;
 
     // Might happen if upperLimit == threads and all threads are busy
     if (executionsToFetch <= 0) {
@@ -100,9 +140,10 @@ public class LockAndFetchCandidates implements PollStrategy {
     }
 
     for (Execution picked : pickedExecutions) {
-      executor.addToQueue(
+      Executor selectedExecutor = findExecutorForExecution(picked);
+      selectedExecutor.addToQueue(
           new ExecutePicked(
-              executor,
+              selectedExecutor,
               taskRepository,
               schedulerClient,
               schedulerListeners,
@@ -114,9 +155,12 @@ public class LockAndFetchCandidates implements PollStrategy {
               maxAgeBeforeConsideredDead,
               picked),
           () -> {
-            if (moreExecutionsInDatabase.get()
-                && executor.getNumberInQueueOrProcessing() <= lowerLimit) {
-              triggerCheckForNewExecutions.run();
+            if (moreExecutionsInDatabase.get()) {
+              int totalInQueue =
+                  executors.stream().mapToInt(Executor::getNumberInQueueOrProcessing).sum();
+              if (totalInQueue <= lowerLimit) {
+                triggerCheckForNewExecutions.run();
+              }
             }
           });
     }

@@ -29,7 +29,8 @@ import org.slf4j.LoggerFactory;
 
 public class FetchCandidates implements PollStrategy {
   private static final Logger LOG = LoggerFactory.getLogger(FetchCandidates.class);
-  private final Executor executor;
+  private final List<Executor> executors;
+  private final Executor defaultExecutor;
   private final TaskRepository taskRepository;
   private final SchedulerClient schedulerClient;
   private final SchedulerListeners schedulerListeners;
@@ -38,18 +39,17 @@ public class FetchCandidates implements PollStrategy {
   private final ConfigurableLogger failureLogger;
   private final TaskResolver taskResolver;
   private final Clock clock;
-  private final PollingStrategyConfig pollingStrategyConfig;
   private final Runnable triggerCheckForNewExecutions;
-  private HeartbeatConfig heartbeatConfig;
+  private final HeartbeatConfig heartbeatConfig;
   AtomicInteger currentGenerationNumber = new AtomicInteger(0);
   private final int lowerLimit;
   private final int upperLimit;
 
   public FetchCandidates(
-      Executor executor,
+      Executor defaultExecutor,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
-      int threadpoolSize,
+      int totalThreads,
       SchedulerListeners schedulerListeners,
       List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
@@ -59,7 +59,42 @@ public class FetchCandidates implements PollStrategy {
       PollingStrategyConfig pollingStrategyConfig,
       Runnable triggerCheckForNewExecutions,
       HeartbeatConfig heartbeatConfig) {
-    this.executor = executor;
+    this(
+        List.of(defaultExecutor),
+        taskRepository,
+        schedulerClient,
+        totalThreads,
+        schedulerListeners,
+        executionInterceptors,
+        schedulerState,
+        failureLogger,
+        taskResolver,
+        clock,
+        pollingStrategyConfig,
+        triggerCheckForNewExecutions,
+        heartbeatConfig);
+  }
+
+  /**
+   * @param totalThreads Total thread capacity across all executor pools (used to calculate fetch
+   *     limits)
+   */
+  public FetchCandidates(
+      List<Executor> executors,
+      TaskRepository taskRepository,
+      SchedulerClient schedulerClient,
+      int totalThreads,
+      SchedulerListeners schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
+      SchedulerState schedulerState,
+      ConfigurableLogger failureLogger,
+      TaskResolver taskResolver,
+      Clock clock,
+      PollingStrategyConfig pollingStrategyConfig,
+      Runnable triggerCheckForNewExecutions,
+      HeartbeatConfig heartbeatConfig) {
+    this.executors = executors;
+    this.defaultExecutor = executors.get(0);
     this.taskRepository = taskRepository;
     this.schedulerClient = schedulerClient;
     this.schedulerListeners = schedulerListeners;
@@ -68,13 +103,16 @@ public class FetchCandidates implements PollStrategy {
     this.failureLogger = failureLogger;
     this.taskResolver = taskResolver;
     this.clock = clock;
-    this.pollingStrategyConfig = pollingStrategyConfig;
     this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
     this.heartbeatConfig = heartbeatConfig;
-    lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
+    lowerLimit = pollingStrategyConfig.getLowerLimit(totalThreads);
     // FIXLATER: this is not "upper limit", but rather nr of executions to get. those already in
     // queue will become stale
-    upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
+    upperLimit = pollingStrategyConfig.getUpperLimit(totalThreads);
+  }
+
+  private Executor findExecutorForExecution(Execution execution) {
+    return ExecutorSelector.findExecutorForExecution(execution, executors, defaultExecutor);
   }
 
   @Override
@@ -97,13 +135,14 @@ public class FetchCandidates implements PollStrategy {
             (Integer leftInBatch) -> leftInBatch <= lowerLimit);
 
     for (Execution e : fetchedDueExecutions) {
-      executor.addToQueue(
+      Executor selectedExecutor = findExecutorForExecution(e);
+      selectedExecutor.addToQueue(
           () -> {
             final Optional<Execution> candidate = new PickDue(e, newDueBatch).call();
             candidate.ifPresent(
                 picked ->
                     new ExecutePicked(
-                            executor,
+                            selectedExecutor,
                             taskRepository,
                             schedulerClient,
                             schedulerListeners,

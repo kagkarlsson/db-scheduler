@@ -13,7 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-public class PollingStrategyConfig {
+public record PollingStrategyConfig(
+    Type type, double lowerLimitFractionOfThreads, double upperLimitFractionOfThreads) {
 
   public static final PollingStrategyConfig DEFAULT_FETCH =
       new PollingStrategyConfig(Type.FETCH, 0.5, 3.0);
@@ -33,10 +34,6 @@ public class PollingStrategyConfig {
     LOCK_AND_FETCH,
     FETCH,
   }
-
-  public final Type type;
-  public final double lowerLimitFractionOfThreads;
-  public final double upperLimitFractionOfThreads;
 
   public PollingStrategyConfig(
       Type type, double lowerLimitFractionOfThreads, double upperLimitFractionOfThreads) {

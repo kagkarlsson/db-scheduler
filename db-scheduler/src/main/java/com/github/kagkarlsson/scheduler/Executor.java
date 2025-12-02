@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -33,13 +34,20 @@ public class Executor {
 
   final Map<UUID, CurrentlyExecuting> currentlyProcessing =
       Collections.synchronizedMap(new HashMap<>());
-  private AtomicInteger currentlyInQueueOrProcessing = new AtomicInteger(0);
+  private final AtomicInteger currentlyInQueueOrProcessing = new AtomicInteger(0);
   private final ExecutorService executorService;
   private final Clock clock;
+  private final int priorityThreshold;
+  private final AtomicInteger tasksExecuted = new AtomicInteger(0);
 
   public Executor(ExecutorService executorService, Clock clock) {
+    this(executorService, clock, Integer.MIN_VALUE);
+  }
+
+  public Executor(ExecutorService executorService, Clock clock, int priorityThreshold) {
     this.executorService = executorService;
     this.clock = clock;
+    this.priorityThreshold = priorityThreshold;
   }
 
   public void addToQueue(Runnable r, Runnable afterDone) {
@@ -51,6 +59,7 @@ public class Executor {
           // Execute
           try {
             r.run();
+            tasksExecuted.incrementAndGet(); // Track tasks executed by this pool
           } finally {
             currentlyInQueueOrProcessing.decrementAndGet();
             // Run callbacks after decrementing currentlyInQueueOrProcessing
@@ -98,6 +107,39 @@ public class Executor {
     final UUID executionId = UUID.randomUUID();
     currentlyProcessing.put(executionId, currentlyExecuting);
     return executionId;
+  }
+
+  public boolean canExecute(Execution execution) {
+    return execution.taskInstance.getPriority() >= priorityThreshold;
+  }
+
+  public int getPriorityThreshold() {
+    return priorityThreshold;
+  }
+
+  public int getTasksExecuted() {
+    return tasksExecuted.get();
+  }
+
+  /**
+   * Check if this executor has capacity to accept more tasks. This is a best-effort check that
+   * works with ThreadPoolExecutor.
+   *
+   * @return true if the executor likely has capacity, false if it's likely at capacity
+   */
+  public boolean hasCapacity() {
+    if (executorService instanceof java.util.concurrent.ThreadPoolExecutor) {
+      ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) executorService;
+      int maximumPoolSize = threadPoolExecutor.getMaximumPoolSize();
+      int activeThreads = threadPoolExecutor.getActiveCount();
+
+      // Executor has capacity if not all threads are active
+      return activeThreads < maximumPoolSize;
+    }
+
+    // For other ExecutorService implementations, fall back to a conservative approach
+    // Assume it has capacity unless we know it's very busy
+    return getNumberInQueueOrProcessing() < 10; // Conservative threshold
   }
 
   public void removeCurrentlyProcessing(UUID executionId) {

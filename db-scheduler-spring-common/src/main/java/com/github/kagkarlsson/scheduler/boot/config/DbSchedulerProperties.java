@@ -74,13 +74,13 @@ public class DbSchedulerProperties {
 
   /** What polling-strategy to use. Valid values are: FETCH,LOCK_AND_FETCH */
   private PollingStrategyConfig.Type pollingStrategy =
-      SchedulerBuilder.DEFAULT_POLLING_STRATEGY.type;
+      SchedulerBuilder.DEFAULT_POLLING_STRATEGY.type();
 
   /**
    * The limit at which more executions are fetched from the database after fetching a full batch.
    */
   private double pollingStrategyLowerLimitFractionOfThreads =
-      SchedulerBuilder.DEFAULT_POLLING_STRATEGY.lowerLimitFractionOfThreads;
+      SchedulerBuilder.DEFAULT_POLLING_STRATEGY.lowerLimitFractionOfThreads();
 
   /**
    * For Type=FETCH, the number of due executions fetched from the database in each batch.
@@ -88,7 +88,7 @@ public class DbSchedulerProperties {
    * <p>For Type=LOCK_AND_FETCH, the maximum number of executions to pick and queue for execution.
    */
   private double pollingStrategyUpperLimitFractionOfThreads =
-      SchedulerBuilder.DEFAULT_POLLING_STRATEGY.upperLimitFractionOfThreads;
+      SchedulerBuilder.DEFAULT_POLLING_STRATEGY.upperLimitFractionOfThreads();
 
   /**
    * Whether to start the scheduler when the application context has been loaded or as soon as
