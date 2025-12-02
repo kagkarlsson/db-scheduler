@@ -380,4 +380,96 @@ public class PriorityPoolsTest {
           listener.assertNoFailures();
         });
   }
+
+  @Test
+  public void should_utilize_all_pools_with_LOCK_AND_FETCH_strategy() {
+    // This test verifies that with the fix, all thread pools are properly utilized
+    // when there are sufficient high-priority tasks available
+    CountDownLatch allTasksStarted = new CountDownLatch(15);
+    CountDownLatch allowTasksToComplete = new CountDownLatch(1);
+
+    // Task that blocks until we allow it to complete, simulating work
+    OneTimeTask<Void> workTask =
+        TestTasks.oneTime(
+            "work-task",
+            Void.class,
+            (instance, ctx) -> {
+              try {
+                String threadName = Thread.currentThread().getName();
+                tracker.trackExecution(threadName);
+                allTasksStarted.countDown();
+                // Hold the thread until we allow completion
+                allowTasksToComplete.await(10, TimeUnit.SECONDS);
+              } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+              }
+            });
+
+    TestableListener.Condition condition = TestableListener.Conditions.completed(20);
+    TestableListener listener = TestableListener.create().waitConditions(condition).build();
+
+    // Configuration: 10 default + 5 high = 15 total threads
+    // Using LOCK_AND_FETCH strategy which is more sensitive to the limits issue
+    Scheduler scheduler =
+        Scheduler.create(postgres.getDataSource(), workTask)
+            .threads(10) // 10 threads in default pool
+            .pollingInterval(ofMillis(50))
+            .schedulerName(new Fixed("test"))
+            .addSchedulerListener(listener)
+            .enablePriority()
+            .addWorkerPool(5, Priority.HIGH) // 5 threads for high-priority
+            .pollUsingLockAndFetch(0.5, 1.0) // LOCK_AND_FETCH strategy
+            .build();
+
+    stopScheduler.register(scheduler);
+
+    assertTimeoutPreemptively(
+        Duration.ofSeconds(10),
+        () -> {
+          // Schedule 20 tasks: 10 high-priority and 10 low-priority
+          for (int i = 0; i < 10; i++) {
+            scheduler.schedule(
+                workTask.instanceBuilder("high-" + i).priority(Priority.HIGH).build(), now());
+            scheduler.schedule(
+                workTask.instanceBuilder("low-" + i).priority(Priority.LOW).build(), now());
+          }
+
+          scheduler.start();
+
+          // Wait for all 15 threads to be busy (may take a moment for polling)
+          boolean allStarted = allTasksStarted.await(5, TimeUnit.SECONDS);
+          assertThat("All 15 threads should be executing tasks", allStarted, equalTo(true));
+
+          // Verify the distribution:
+          // - High-priority pool should be full: 5 high-priority tasks
+          // - Default pool should be full: 10 tasks (5 high + 5 low)
+          // Note: High-priority tasks can execute on either pool, but low can only use default
+
+          assertThat(
+              "High pool should execute 5 tasks",
+              tracker.getHighPoolExecutions(),
+              greaterThanOrEqualTo(5));
+          assertThat(
+              "Default pool should execute at least 5 tasks (the low-priority ones)",
+              tracker.getDefaultPoolExecutions(),
+              greaterThanOrEqualTo(5));
+          assertThat(
+              "Total of 15 threads should be utilized",
+              tracker.getTotalExecutions(),
+              equalTo(15));
+
+          // Allow tasks to complete
+          allowTasksToComplete.countDown();
+
+          // Wait for all tasks to finish
+          condition.waitFor();
+          listener.assertNoFailures();
+
+          // Final verification: all 20 tasks should have executed
+          assertThat(
+              "All 20 tasks should have been executed",
+              tracker.getTotalExecutions(),
+              equalTo(20));
+        });
+  }
 }

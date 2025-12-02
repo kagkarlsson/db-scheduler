@@ -36,18 +36,17 @@ public class LockAndFetchCandidates implements PollStrategy {
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
   private final Clock clock;
-  private final PollingStrategyConfig pollingStrategyConfig;
   private final Runnable triggerCheckForNewExecutions;
-  private HeartbeatConfig maxAgeBeforeConsideredDead;
+  private final HeartbeatConfig maxAgeBeforeConsideredDead;
   private final int lowerLimit;
   private final int upperLimit;
-  private AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
+  private final AtomicBoolean moreExecutionsInDatabase = new AtomicBoolean(false);
 
   public LockAndFetchCandidates(
       Executor defaultExecutor,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
-      int threadpoolSize,
+      int totalThreads,
       SchedulerListeners schedulerListeners,
       List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
@@ -61,7 +60,7 @@ public class LockAndFetchCandidates implements PollStrategy {
         List.of(defaultExecutor),
         taskRepository,
         schedulerClient,
-        threadpoolSize,
+        totalThreads,
         schedulerListeners,
         executionInterceptors,
         schedulerState,
@@ -73,11 +72,15 @@ public class LockAndFetchCandidates implements PollStrategy {
         maxAgeBeforeConsideredDead);
   }
 
+  /**
+   * @param totalThreads Total thread capacity across all executor pools (used to calculate fetch
+   *     limits)
+   */
   public LockAndFetchCandidates(
       List<Executor> executors,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
-      int threadpoolSize,
+      int totalThreads,
       SchedulerListeners schedulerListeners,
       List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
@@ -97,11 +100,10 @@ public class LockAndFetchCandidates implements PollStrategy {
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
     this.clock = clock;
-    this.pollingStrategyConfig = pollingStrategyConfig;
     this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
     this.maxAgeBeforeConsideredDead = maxAgeBeforeConsideredDead;
-    lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
-    upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
+    lowerLimit = pollingStrategyConfig.getLowerLimit(totalThreads);
+    upperLimit = pollingStrategyConfig.getUpperLimit(totalThreads);
   }
 
   private Executor findExecutorForExecution(Execution execution) {

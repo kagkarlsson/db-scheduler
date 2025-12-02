@@ -39,9 +39,8 @@ public class FetchCandidates implements PollStrategy {
   private final ConfigurableLogger failureLogger;
   private final TaskResolver taskResolver;
   private final Clock clock;
-  private final PollingStrategyConfig pollingStrategyConfig;
   private final Runnable triggerCheckForNewExecutions;
-  private HeartbeatConfig heartbeatConfig;
+  private final HeartbeatConfig heartbeatConfig;
   AtomicInteger currentGenerationNumber = new AtomicInteger(0);
   private final int lowerLimit;
   private final int upperLimit;
@@ -50,7 +49,7 @@ public class FetchCandidates implements PollStrategy {
       Executor defaultExecutor,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
-      int threadpoolSize,
+      int totalThreads,
       SchedulerListeners schedulerListeners,
       List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
@@ -64,7 +63,7 @@ public class FetchCandidates implements PollStrategy {
         List.of(defaultExecutor),
         taskRepository,
         schedulerClient,
-        threadpoolSize,
+        totalThreads,
         schedulerListeners,
         executionInterceptors,
         schedulerState,
@@ -76,11 +75,15 @@ public class FetchCandidates implements PollStrategy {
         heartbeatConfig);
   }
 
+  /**
+   * @param totalThreads Total thread capacity across all executor pools (used to calculate fetch
+   *     limits)
+   */
   public FetchCandidates(
       List<Executor> executors,
       TaskRepository taskRepository,
       SchedulerClient schedulerClient,
-      int threadpoolSize,
+      int totalThreads,
       SchedulerListeners schedulerListeners,
       List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
@@ -100,13 +103,12 @@ public class FetchCandidates implements PollStrategy {
     this.failureLogger = failureLogger;
     this.taskResolver = taskResolver;
     this.clock = clock;
-    this.pollingStrategyConfig = pollingStrategyConfig;
     this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
     this.heartbeatConfig = heartbeatConfig;
-    lowerLimit = pollingStrategyConfig.getLowerLimit(threadpoolSize);
+    lowerLimit = pollingStrategyConfig.getLowerLimit(totalThreads);
     // FIXLATER: this is not "upper limit", but rather nr of executions to get. those already in
     // queue will become stale
-    upperLimit = pollingStrategyConfig.getUpperLimit(threadpoolSize);
+    upperLimit = pollingStrategyConfig.getUpperLimit(totalThreads);
   }
 
   private Executor findExecutorForExecution(Execution execution) {
