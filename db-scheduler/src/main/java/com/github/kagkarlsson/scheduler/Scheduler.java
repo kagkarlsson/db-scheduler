@@ -105,15 +105,16 @@ public class Scheduler implements SchedulerClient {
     this.heartbeatInterval = heartbeatInterval;
     this.numberOfMissedHeartbeatsBeforeDead = numberOfMissedHeartbeatsBeforeDead;
     this.heartbeatWaiter = new Waiter(heartbeatInterval, clock);
-    HeartbeatConfig heartbeatConfig = new HeartbeatConfig(
-      heartbeatInterval, numberOfMissedHeartbeatsBeforeDead, getMaxAgeBeforeConsideredDead());
+    HeartbeatConfig heartbeatConfig =
+        new HeartbeatConfig(
+            heartbeatInterval, numberOfMissedHeartbeatsBeforeDead, getMaxAgeBeforeConsideredDead());
     this.schedulerListeners = new SchedulerListeners(schedulerListeners);
     this.dueExecutor = dueExecutor;
     this.housekeeperExecutor = housekeeperExecutor;
     delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
 
-    if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
+    if (pollingStrategyConfig.type() == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
       schedulerTaskRepository.verifySupportsLockAndFetch();
       executeDueStrategy =
           new LockAndFetchCandidates(
@@ -129,8 +130,8 @@ public class Scheduler implements SchedulerClient {
               clock,
               pollingStrategyConfig,
               this::triggerCheckForDueExecutions,
-            heartbeatConfig);
-    } else if (pollingStrategyConfig.type == PollingStrategyConfig.Type.FETCH) {
+              heartbeatConfig);
+    } else if (pollingStrategyConfig.type() == PollingStrategyConfig.Type.FETCH) {
       executeDueStrategy =
           new FetchCandidates(
               executors,
@@ -145,10 +146,10 @@ public class Scheduler implements SchedulerClient {
               clock,
               pollingStrategyConfig,
               this::triggerCheckForDueExecutions,
-            heartbeatConfig);
+              heartbeatConfig);
     } else {
       throw new IllegalArgumentException(
-          "Unknown polling-strategy type: " + pollingStrategyConfig.type);
+          "Unknown polling-strategy type: " + pollingStrategyConfig.type());
     }
     LOG.info("Using polling-strategy: {}", pollingStrategyConfig.describe());
   }
