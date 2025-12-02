@@ -19,7 +19,7 @@ import org.testcontainers.oracle.OracleContainer;
 
 @Tag("compatibility")
 @Testcontainers
-public class Oracle11gCompatibilityTest extends CompatibilityTest {
+public class OracleCompatibilityTest extends CompatibilityTest {
   @Container
   private static final OracleContainer ORACLE =
       new OracleContainer("gvenzl/oracle-free:slim-faststart");
@@ -33,7 +33,7 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
   //          new ChangeLogLevelsExtension.LogLevelOverride(
   //              "com.github.kagkarlsson.scheduler", Level.DEBUG));
 
-  public Oracle11gCompatibilityTest() {
+  public OracleCompatibilityTest() {
     super(false, true); // FIXLATER: fix syntax and enable
   }
 
