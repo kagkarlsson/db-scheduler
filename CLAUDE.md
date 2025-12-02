@@ -196,7 +196,6 @@ db-scheduler.immediate-execution-enabled=false
 ## IDE Setup Recommendations
 
 - **IntelliJ IDEA**: Import as Maven project
-- **Eclipse**: Use M2E plugin
 - **EditorConfig**: Ensure plugin is installed
 - **Google Java Format**: Configure IDE plugin
 
