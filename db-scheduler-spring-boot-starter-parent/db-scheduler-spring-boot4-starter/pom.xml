@@ -119,12 +119,6 @@
             <artifactId>hsqldb</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.github.kagkarlsson</groupId>
-            <artifactId>db-scheduler-spring-boot-test-support</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>

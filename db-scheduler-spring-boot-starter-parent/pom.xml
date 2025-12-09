@@ -22,7 +22,6 @@
 
     <modules>
         <module>db-scheduler-spring-common</module>
-        <module>db-scheduler-spring-boot-test-support</module>
         <module>db-scheduler-spring-boot3-starter</module>
         <module>db-scheduler-spring-boot4-starter</module>
     </modules>
