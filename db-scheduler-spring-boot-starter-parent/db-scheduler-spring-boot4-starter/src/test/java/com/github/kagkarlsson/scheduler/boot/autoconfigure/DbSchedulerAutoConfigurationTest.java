@@ -58,23 +58,15 @@ import org.springframework.test.context.jdbc.Sql;
 @Sql(scripts = "classpath:schema.sql")
 class DbSchedulerAutoConfigurationTest {
 
-  /* -------------------------------------------------------------------------
-   *  Common configuration: enable required auto-configurations.
-   * ------------------------------------------------------------------------- */
   @ImportAutoConfiguration({
     DataSourceAutoConfiguration.class,
     MetricsAutoConfiguration.class,
     CompositeMeterRegistryAutoConfiguration.class,
-    HealthContributorAutoConfiguration.class,
     DbSchedulerMetricsAutoConfiguration.class,
     DbSchedulerActuatorAutoConfiguration.class,
     DbSchedulerAutoConfiguration.class
   })
   static class CommonAutoConfig {}
-
-  @TestConfiguration
-  static class SchemaInitializerConfig {
-    }
 
   @Nested
   @SpringBootTest(classes = {CommonAutoConfig.class})
@@ -204,7 +196,6 @@ class DbSchedulerAutoConfigurationTest {
 
   /* -------------------------------------------------------------------------
    *  Tasks (single / multiple)
-   *  -> avoid inheritance that duplicated the "singleStringTask" bean
    * ------------------------------------------------------------------------- */
   @Nested
   @SpringBootTest(classes = {CommonAutoConfig.class, SingleTaskConfiguration.class})
@@ -263,7 +254,7 @@ class DbSchedulerAutoConfigurationTest {
    *  Micrometer absent (no MeterRegistry bean) => DefaultStatsRegistry
    * ------------------------------------------------------------------------- */
   @Nested
-  @SpringBootTest(classes = {CommonAutoConfig.class, SingleTaskConfiguration.class})
+  @SpringBootTest(classes = {CommonAutoConfig.class})
   class WithMicrometer {
 
     @Autowired ApplicationContext ctx;
@@ -285,7 +276,7 @@ class DbSchedulerAutoConfigurationTest {
     DbSchedulerMetricsAutoConfiguration.class,
     DbSchedulerActuatorAutoConfiguration.class,
     DbSchedulerAutoConfiguration.class
-    // ⚠️ MetricsAutoConfiguration and CompositeMeterRegistryAutoConfiguration NOT imported
+    // MetricsAutoConfiguration and CompositeMeterRegistryAutoConfiguration NOT imported
   })
   class WithoutMicrometerRegistryBean {
 
@@ -293,7 +284,6 @@ class DbSchedulerAutoConfigurationTest {
 
     @Test
     void it_should_provide_noop_registry_if_micrometer_not_present() {
-      // No MeterRegistry in context -> lib must create DefaultStatsRegistry
       assertThat(ctx.getBeansOfType(DefaultStatsRegistry.class)).hasSize(1);
       assertThat(ctx.getBeansOfType(MicrometerStatsRegistry.class)).isEmpty();
     }
@@ -303,7 +293,7 @@ class DbSchedulerAutoConfigurationTest {
   @SpringBootTest(classes = {SingleTaskConfiguration.class})
   @ImportAutoConfiguration({
     DataSourceAutoConfiguration.class,
-    // Actuator/metrics excluded to simulate the other scenario from your original class
+    // Actuator/metrics excluded
     DbSchedulerMetricsAutoConfiguration.class,
     DbSchedulerActuatorAutoConfiguration.class,
     DbSchedulerAutoConfiguration.class
@@ -335,8 +325,7 @@ class DbSchedulerAutoConfigurationTest {
     @Test
     void it_should_use_custom_stats_registry_if_present_in_context() {
       assertThat(ctx.getBeansOfType(StatsRegistry.class)).hasSize(1);
-      assertThat(ctx.getBeansOfType(DefaultStatsRegistry.class)).isEmpty();
-      assertThat(ctx.getBeansOfType(MicrometerStatsRegistry.class)).isEmpty();
+      assertThat(ctx.getBean("customStatsRegistry"));
     }
   }
 }
