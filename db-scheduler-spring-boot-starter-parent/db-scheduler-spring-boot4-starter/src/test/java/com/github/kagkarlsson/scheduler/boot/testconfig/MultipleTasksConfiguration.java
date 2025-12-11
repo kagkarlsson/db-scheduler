@@ -1,4 +1,4 @@
-package com.github.kagkarlsson.scheduler.startertestsupport;
+package com.github.kagkarlsson.scheduler.boot.testconfig;
 
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
