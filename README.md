@@ -436,11 +436,11 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
     ```xml
     <dependency>
         <groupId>com.github.kagkarlsson</groupId>
-        <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>16.0.0</version>
+        <artifactId>db-scheduler-spring-boot-4-starter</artifactId>
+        <version>16.7.0</version>
     </dependency>
     ```
-   **NOTE**: This includes the db-scheduler dependency itself.
+   **NB:** For Spring Boot 3.x, use `db-scheduler-spring-boot-starter`
 2. In your configuration, expose your `Task`'s as Spring beans. If they are recurring, they will automatically be picked up and started.
 3. If you want to expose `Scheduler` state into actuator health information you need to enable `db-scheduler` health indicator. [Spring Health Information.](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health)
 4. Run the app.
