@@ -45,8 +45,12 @@ import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
  * application-integration-test.properties.
  */
 @ActiveProfiles("integration-test")
-@Sql(scripts = "classpath:schema/init_schema.sql", executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
-@Sql(scripts = "classpath:schema/truncate_schema.sql", executionPhase = ExecutionPhase.BEFORE_TEST_METHOD)
+@Sql(
+    scripts = "classpath:schema/init_schema.sql",
+    executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
+@Sql(
+    scripts = "classpath:schema/truncate_schema.sql",
+    executionPhase = ExecutionPhase.BEFORE_TEST_METHOD)
 class DbSchedulerAutoConfigurationTest {
 
   @ImportAutoConfiguration({
@@ -258,9 +262,7 @@ class DbSchedulerAutoConfigurationTest {
 
   @Nested
   @SpringBootTest(
-      classes = {
-        SingleTaskConfiguration.class
-      }) // do NOT load CommonAutoConfig to remove metrics
+      classes = {SingleTaskConfiguration.class}) // do NOT load CommonAutoConfig to remove metrics
   @ImportAutoConfiguration({
     DataSourceAutoConfiguration.class,
     HealthContributorAutoConfiguration.class,

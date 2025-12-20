@@ -20,9 +20,9 @@ import tools.jackson.databind.ValueDeserializer;
 public class InstantDeserializer extends ValueDeserializer<Instant> {
 
   @Override
-  public Instant deserialize(tools.jackson.core.JsonParser p,
-    tools.jackson.databind.DeserializationContext ctxt) throws JacksonException {
+  public Instant deserialize(
+      tools.jackson.core.JsonParser p, tools.jackson.databind.DeserializationContext ctxt)
+      throws JacksonException {
     return InstantSerializer.FORMATTER.parse(p.getString(), Instant::from);
   }
-
 }

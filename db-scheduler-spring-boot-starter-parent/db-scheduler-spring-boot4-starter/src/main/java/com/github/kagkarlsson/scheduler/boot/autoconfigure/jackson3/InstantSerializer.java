@@ -23,9 +23,9 @@ public class InstantSerializer extends ValueSerializer<Instant> {
   static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_INSTANT;
 
   @Override
-  public void serialize(Instant value, tools.jackson.core.JsonGenerator gen,
-    SerializationContext ctxt) throws JacksonException {
+  public void serialize(
+      Instant value, tools.jackson.core.JsonGenerator gen, SerializationContext ctxt)
+      throws JacksonException {
     gen.writeString(FORMATTER.format(value));
   }
-
 }
