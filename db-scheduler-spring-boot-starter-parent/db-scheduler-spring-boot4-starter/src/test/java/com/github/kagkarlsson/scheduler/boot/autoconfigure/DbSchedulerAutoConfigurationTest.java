@@ -38,13 +38,15 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
 
 /**
  * SpringBootTest version with isolated scenarios using @Nested classes. SQL schema is loaded via
  * application-integration-test.properties.
  */
 @ActiveProfiles("integration-test")
-@Sql(scripts = "classpath:schema.sql")
+@Sql(scripts = "classpath:schema/init_schema.sql", executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
+@Sql(scripts = "classpath:schema/truncate_schema.sql", executionPhase = ExecutionPhase.BEFORE_TEST_METHOD)
 class DbSchedulerAutoConfigurationTest {
 
   @ImportAutoConfiguration({

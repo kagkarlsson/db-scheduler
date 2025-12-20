@@ -14,17 +14,13 @@
     <description>A starter for Spring Boot 4.x that will configure db-scheduler</description>
     <url>https://github.com/kagkarlsson/db-scheduler</url>
 
-    <properties>
-        <spring-boot.version>${spring-boot-4.version}</spring-boot.version>
-    </properties>
-
     <dependencyManagement>
         <dependencies>
             <dependency>
                 <!-- Import dependency management from Spring Boot 4.x -->
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
+                <version>${spring-boot-4.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
