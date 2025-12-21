@@ -13,6 +13,8 @@
  */
 package com.github.kagkarlsson.examples.boot;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.kagkarlsson.examples.boot.config.*;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import java.time.Instant;
@@ -108,7 +110,8 @@ public class AdminController {
       this("");
     }
 
-    public StartRequest(String taskName) {
+    @JsonCreator
+    public StartRequest(@JsonProperty("taskName") String taskName) {
       this.taskName = taskName;
     }
   }

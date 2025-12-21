@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.github.kagkarlsson</groupId>
+        <artifactId>db-scheduler-parent</artifactId>
+        <version>master-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>db-scheduler-spring-boot-starter-parent</artifactId>
+    <packaging>pom</packaging>
+
+    <name>db-scheduler: Spring Boot Starter Parent</name>
+    <description>Parent module for Spring Boot 3.x and 4.x starters</description>
+
+    <properties>
+        <spring-boot-3.version>${spring-boot.version}</spring-boot-3.version>
+    </properties>
+
+    <modules>
+        <module>db-scheduler-spring-common</module>
+        <module>db-scheduler-spring-boot3-starter</module>
+        <module>db-scheduler-spring-boot4-starter</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.github.kagkarlsson</groupId>
+                <artifactId>db-scheduler</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.kagkarlsson</groupId>
+                <artifactId>db-scheduler-spring-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

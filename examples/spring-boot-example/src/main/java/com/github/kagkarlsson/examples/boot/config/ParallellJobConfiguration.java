@@ -47,8 +47,8 @@ public class ParallellJobConfiguration {
             + PARALLEL_JOB_SPAWNER.getTaskName()
             + ". Initial execution-time will be now (deviating from defined schedule).");
 
-    ctx.schedulerClient.reschedule(
-        PARALLEL_JOB_SPAWNER.instanceId(RecurringTask.INSTANCE), Instant.now());
+    ctx.schedulerClient.scheduleIfNotExists(
+        PARALLEL_JOB_SPAWNER.instance(RecurringTask.INSTANCE).build(), Instant.now());
   }
 
   /** Bean definition */
