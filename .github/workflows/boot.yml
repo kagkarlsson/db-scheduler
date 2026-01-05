@@ -18,7 +18,7 @@ jobs:
           cache: 'maven'
 
       - name: Run Spring Boot 3 tests
-        run: mvn -B -Dspring-boot.version=${{ matrix.spring-boot }} -PspringBootDevelopment clean test -pl db-scheduler-spring-boot-starter-parent/db-scheduler-spring-boot3-starter
+        run: mvn -B -Dspring-boot.version=${{ matrix.spring-boot }} -PspringBootDevelopment clean test -am -pl db-scheduler-spring-boot-starter-parent/db-scheduler-spring-boot3-starter
         env:
           TZ: UTC
 
@@ -39,6 +39,6 @@ jobs:
           cache: 'maven'
 
       - name: Run Spring Boot 4 tests
-        run: mvn -B -Dspring-boot-4.version=${{ matrix.spring-boot }} -PspringBootDevelopment clean test -pl db-scheduler-spring-boot-starter-parent/db-scheduler-spring-boot4-starter
+        run: mvn -B -Dspring-boot-4.version=${{ matrix.spring-boot }} -PspringBootDevelopment clean test -am -pl db-scheduler-spring-boot-starter-parent/db-scheduler-spring-boot4-starter
         env:
           TZ: UTC
