@@ -14,11 +14,11 @@
 package com.github.kagkarlsson.examples.boot.config;
 
 import com.github.kagkarlsson.scheduler.SchedulerName;
+import com.github.kagkarlsson.scheduler.boot.autoconfigure.Jackson3Serializer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.event.AbstractSchedulerListener;
 import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
-import com.github.kagkarlsson.scheduler.serializer.JacksonSerializer;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import java.util.Optional;
@@ -46,7 +46,7 @@ public class SchedulerConfiguration {
 
       @Override
       public Optional<Serializer> serializer() {
-        return Optional.of(new JacksonSerializer());
+        return Optional.of(new Jackson3Serializer());
       }
     };
   }

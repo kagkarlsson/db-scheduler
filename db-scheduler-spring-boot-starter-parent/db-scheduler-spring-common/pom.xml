@@ -5,7 +5,7 @@
 
     <parent>
         <groupId>com.github.kagkarlsson</groupId>
-        <artifactId>db-scheduler-parent</artifactId>
+        <artifactId>db-scheduler-spring-boot-starter-parent</artifactId>
         <version>master-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
@@ -16,7 +16,7 @@
     <url>https://github.com/kagkarlsson/db-scheduler</url>
 
     <properties>
-        <license.dir>${project.parent.basedir}/.license</license.dir>
+        <license.dir>${project.parent.parent.basedir}/.license</license.dir>
     </properties>
 
     <dependencyManagement>
@@ -45,6 +45,14 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
         </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-beans</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-core</artifactId>
+      </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
