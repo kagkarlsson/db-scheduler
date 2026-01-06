@@ -12,9 +12,9 @@
 
     <artifactId>db-scheduler-spring-boot-starter-parent</artifactId>
     <packaging>pom</packaging>
-
     <name>db-scheduler: Spring Boot Starter Parent</name>
     <description>Parent module for Spring Boot 3.x and 4.x starters</description>
+    <url>https://github.com/kagkarlsson/db-scheduler</url>
 
     <properties>
         <spring-boot-3.version>${spring-boot.version}</spring-boot-3.version>
