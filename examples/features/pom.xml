@@ -70,7 +70,7 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>26.0.2</version>
+            <version>26.0.2-1</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
