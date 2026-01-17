@@ -2,7 +2,6 @@
 
 This Maven module provides a working example of the [db-scheduler](https://github.com/kagkarlsson/db-scheduler) running in a Spring Boot application using the provided Spring Boot starter.
 
-
 **Task-names for the examples**
 
 * sample-one-time-task
@@ -12,7 +11,6 @@ This Maven module provides a working example of the [db-scheduler](https://githu
 * parallel-job-spawner
 * state-tracking-recurring-task
 * transactionally-staged-task
-
 
 ## Running examples
 
