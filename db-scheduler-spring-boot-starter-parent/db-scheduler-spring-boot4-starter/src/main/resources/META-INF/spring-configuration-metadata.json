@@ -1,0 +1,163 @@
+{
+  "groups": [
+    {
+      "name": "db-scheduler",
+      "type": "com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties",
+      "sourceType": "com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties",
+      "description": "Configuration properties for db-scheduler."
+    }
+  ],
+  "properties": [
+    {
+      "name": "db-scheduler.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable auto configuration of the db-scheduler.",
+      "defaultValue": true
+    },
+    {
+      "name": "db-scheduler.threads",
+      "type": "java.lang.Integer",
+      "description": "Number of threads.",
+      "defaultValue": 10
+    },
+    {
+      "name": "db-scheduler.heartbeat-interval",
+      "type": "java.time.Duration",
+      "description": "How often to update the heartbeat timestamp for running executions.",
+      "defaultValue": "5m"
+    },
+    {
+      "name": "db-scheduler.missed-heartbeats-limit",
+      "type": "java.lang.Integer",
+      "description": "How many heartbeats can be missed before an execution is considered dead. Must be greater than or equal to 4.",
+      "defaultValue": 6
+    },
+    {
+      "name": "db-scheduler.scheduler-name",
+      "type": "java.lang.String",
+      "description": "Name of this scheduler-instance. The name is stored in the database when an execution is picked by a scheduler. If not configured, the hostname of the running machine will be used."
+    },
+    {
+      "name": "db-scheduler.table-name",
+      "type": "java.lang.String",
+      "description": "Name of the table used to track task-executions. Must match the database. Change name in the table definitions accordingly when creating or modifying the table.",
+      "defaultValue": "scheduled_tasks"
+    },
+    {
+      "name": "db-scheduler.immediate-execution-enabled",
+      "type": "java.lang.Boolean",
+      "description": "If enabled, the scheduler will attempt to directly execute tasks that are scheduled to now(), or a time in the past. For this to work, the call to schedule(..) must not occur from within a transaction.",
+      "defaultValue": false
+    },
+    {
+      "name": "db-scheduler.polling-interval",
+      "type": "java.time.Duration",
+      "description": "How often the scheduler checks the database for due executions.",
+      "defaultValue": "10s"
+    },
+    {
+      "name": "db-scheduler.polling-strategy",
+      "type": "com.github.kagkarlsson.scheduler.PollingStrategyConfig$Type",
+      "description": "What polling-strategy to use. Valid values are: FETCH, LOCK_AND_FETCH.",
+      "defaultValue": "FETCH"
+    },
+    {
+      "name": "db-scheduler.polling-strategy-lower-limit-fraction-of-threads",
+      "type": "java.lang.Double",
+      "description": "The limit at which more executions are fetched from the database after fetching a full batch.",
+      "defaultValue": 0.5
+    },
+    {
+      "name": "db-scheduler.polling-strategy-upper-limit-fraction-of-threads",
+      "type": "java.lang.Double",
+      "description": "For Type=FETCH, the number of due executions fetched from the database in each batch. For Type=LOCK_AND_FETCH, the maximum number of executions to pick and queue for execution.",
+      "defaultValue": 3.0
+    },
+    {
+      "name": "db-scheduler.delay-startup-until-context-ready",
+      "type": "java.lang.Boolean",
+      "description": "Whether to start the scheduler when the application context has been loaded or as soon as possible.",
+      "defaultValue": false
+    },
+    {
+      "name": "db-scheduler.delete-unresolved-after",
+      "type": "java.time.Duration",
+      "description": "The time after which executions with unknown tasks are automatically deleted.",
+      "defaultValue": "14d"
+    },
+    {
+      "name": "db-scheduler.shutdown-max-wait",
+      "type": "java.time.Duration",
+      "description": "How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this, consider if it is possible to instead regularly check executionContext.getSchedulerState().isShuttingDown() in the ExecutionHandler and abort long-running task.",
+      "defaultValue": "30m"
+    },
+    {
+      "name": "db-scheduler.always-persist-timestamp-in-utc",
+      "type": "java.lang.Boolean",
+      "description": "Store timestamps in UTC timezone even though the schema supports storing timezone information.",
+      "defaultValue": false
+    },
+    {
+      "name": "db-scheduler.failure-logger-level",
+      "type": "com.github.kagkarlsson.scheduler.logging.LogLevel",
+      "description": "Which log level to use when logging task failures. Valid values are: OFF, TRACE, DEBUG, INFO, WARN, ERROR.",
+      "defaultValue": "WARN"
+    },
+    {
+      "name": "db-scheduler.failure-logger-log-stack-trace",
+      "type": "java.lang.Boolean",
+      "description": "Whether or not to log the Throwable that caused a task to fail.",
+      "defaultValue": true
+    },
+    {
+      "name": "db-scheduler.priority-enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether executions are ordered by priority.",
+      "defaultValue": false
+    }
+  ],
+  "hints": [
+    {
+      "name": "db-scheduler.polling-strategy",
+      "values": [
+        {
+          "value": "FETCH",
+          "description": "Fetch due executions from the database and execute them."
+        },
+        {
+          "value": "LOCK_AND_FETCH",
+          "description": "Lock and fetch due executions from the database atomically."
+        }
+      ]
+    },
+    {
+      "name": "db-scheduler.failure-logger-level",
+      "values": [
+        {
+          "value": "OFF",
+          "description": "Disable logging of task failures."
+        },
+        {
+          "value": "TRACE",
+          "description": "Log task failures at TRACE level."
+        },
+        {
+          "value": "DEBUG",
+          "description": "Log task failures at DEBUG level."
+        },
+        {
+          "value": "INFO",
+          "description": "Log task failures at INFO level."
+        },
+        {
+          "value": "WARN",
+          "description": "Log task failures at WARN level."
+        },
+        {
+          "value": "ERROR",
+          "description": "Log task failures at ERROR level."
+        }
+      ]
+    }
+  ]
+}
