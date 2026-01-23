@@ -93,7 +93,7 @@ public interface FailureHandler<T> {
             "Execution has failed {} times for task instance {}. Cancelling execution.",
             totalNumberOfFailures,
             executionComplete.getExecution().taskInstance);
-        executionOperations.stop();
+        executionOperations.remove();
         maxRetriesExceededHandler.accept(executionComplete, executionOperations);
       } else {
         this.failureHandler.onFailure(executionComplete, executionOperations);

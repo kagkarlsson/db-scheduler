@@ -13,6 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.jdbc.DescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
@@ -65,6 +66,8 @@ public interface TaskRepository {
   List<Execution> lockAndGetDue(Instant now, int limit);
 
   void remove(Execution execution);
+
+  void deschedule(Execution execution, DescheduleUpdate descheduleUpdate);
 
   boolean reschedule(
       Execution execution,

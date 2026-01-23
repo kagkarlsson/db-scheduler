@@ -6,6 +6,7 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -18,6 +19,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.LoggerFactory;
 
 public class TestTasks {
+
+  public static final Task<Void> TASK_ONETIME =
+      TestTasks.oneTime("task-onetime", Void.class, TestTasks.DO_NOTHING);
 
   public static final CompletionHandler<Void> REMOVE_ON_COMPLETE =
       new CompletionHandler.OnCompleteRemove<>();
@@ -80,7 +84,7 @@ public class TestTasks {
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
       this.result = executionComplete.getResult();
       this.cause = executionComplete.getCause();
-      executionOperations.stop();
+      executionOperations.remove();
       waitForNotify.countDown();
     }
   }
@@ -95,7 +99,7 @@ public class TestTasks {
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
       this.result = executionComplete.getResult();
       this.cause = executionComplete.getCause();
-      executionOperations.stop();
+      executionOperations.remove();
       waitForNotify.countDown();
     }
   }

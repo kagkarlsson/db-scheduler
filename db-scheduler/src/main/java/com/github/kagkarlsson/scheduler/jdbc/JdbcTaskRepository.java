@@ -58,7 +58,6 @@ import org.slf4j.LoggerFactory;
 public class JdbcTaskRepository implements TaskRepository {
 
   public static final String DEFAULT_TABLE_NAME = "scheduled_tasks";
-
   private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
   private final TaskResolver taskResolver;
   private final SchedulerName schedulerSchedulerName;
@@ -66,8 +65,10 @@ public class JdbcTaskRepository implements TaskRepository {
   private final Serializer serializer;
   private final String tableName;
   private final JdbcCustomization jdbcCustomization;
+  private final JdbcConfig jdbcConfig;
   private final boolean orderByPriority;
   private final Clock clock;
+  private final String insertQuery;
 
   public JdbcTaskRepository(
       DataSource dataSource,
@@ -149,9 +150,29 @@ public class JdbcTaskRepository implements TaskRepository {
     this.orderByPriority = orderByPriority;
     this.clock = clock;
     this.insertQuery = getInsertQuery(tableName);
+    this.jdbcConfig = new JdbcConfig(tableName, jdbcRunner, jdbcCustomization);
   }
 
-  private final String insertQuery;
+  private static <T> Supplier<T> memoize(Supplier<T> original) {
+    return new Supplier<>() {
+      boolean initialized;
+
+      public T get() {
+        return delegate.get();
+      }
+
+      private synchronized T firstTime() {
+        if (!initialized) {
+          T value = original.get();
+          delegate = () -> value;
+          initialized = true;
+        }
+        return delegate.get();
+      }
+
+      Supplier<T> delegate = this::firstTime;
+    };
+  }
 
   @Override
   @SuppressWarnings("unchecked")
@@ -475,6 +496,30 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public void deschedule(Execution execution, DescheduleUpdate descheduleUpdate) {
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution).executionTime(null);
+
+    update.picked(false);
+    update.pickedBy(null);
+    update.consecutiveFailures(0);
+    update.lastHeartbeat(null);
+
+    if (descheduleUpdate.lastSuccess() != null) {
+      update.lastSuccess(descheduleUpdate.lastSuccess().value());
+    }
+
+    if (descheduleUpdate.lastFailed() != null) {
+      update.lastFailure(descheduleUpdate.lastFailed().value());
+    }
+
+    if (descheduleUpdate.state() != null) {
+      update.state(descheduleUpdate.state().value());
+    }
+
+    update.updateSingle(jdbcConfig);
+  }
+
+  @Override
   public boolean reschedule(
       Execution execution,
       Instant nextExecutionTime,
@@ -754,6 +799,129 @@ public class JdbcTaskRepository implements TaskRepository {
     return q;
   }
 
+  private enum ScrollingType {
+    NONE,
+    FORWARD,
+    BACKWARD,
+    RANGE;
+
+    public static ScrollingType determine(ScheduledExecutionsFilter filter) {
+      boolean hasAfter = filter.getAfterExecution().isPresent();
+      boolean hasBefore = filter.getBeforeExecution().isPresent();
+
+      if (hasAfter && hasBefore) {
+        return RANGE;
+      } else if (hasAfter) {
+        return FORWARD;
+      } else if (hasBefore) {
+        return BACKWARD;
+      } else {
+        return NONE;
+      }
+    }
+  }
+
+  private enum OrderingStrategy {
+    TIME_FORWARD("execution_time asc, task_instance asc"),
+    TIME_BACKWARD("execution_time desc, task_instance desc");
+
+    private final String clause;
+
+    OrderingStrategy(String clause) {
+      this.clause = clause;
+    }
+
+    public static OrderingStrategy from(ScrollingType scrollingType) {
+      boolean useBackwardOrdering = (scrollingType == ScrollingType.BACKWARD);
+      return useBackwardOrdering ? TIME_BACKWARD : TIME_FORWARD;
+    }
+
+    public String getClause() {
+      return clause;
+    }
+  }
+
+  private static class NewData {
+
+    private final Object data;
+
+    NewData(Object data) {
+      this.data = data;
+    }
+  }
+
+  static class UnresolvedFilter implements AndCondition {
+
+    private final List<UnresolvedTask> unresolved;
+
+    public UnresolvedFilter(List<UnresolvedTask> unresolved) {
+      this.unresolved = unresolved;
+    }
+
+    public boolean isActive() {
+      return !unresolved.isEmpty();
+    }
+
+    public String andCondition() {
+      return unresolved.isEmpty() ? "" : "and " + getQueryPart();
+    }
+
+    public String getQueryPart() {
+      return "task_name not in ("
+          + unresolved.stream().map(ignored -> "?").collect(joining(","))
+          + ")";
+    }
+
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      final List<String> unresolvedTasknames =
+          unresolved.stream().map(UnresolvedTask::getTaskName).collect(toList());
+      for (String taskName : unresolvedTasknames) {
+        p.setString(index++, taskName);
+      }
+      return index;
+    }
+  }
+
+  private static class PickedCondition implements AndCondition {
+
+    private final boolean value;
+
+    public PickedCondition(boolean value) {
+      this.value = value;
+    }
+
+    @Override
+    public String getQueryPart() {
+      return "picked = ?";
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      p.setBoolean(index++, value);
+      return index;
+    }
+  }
+
+  private static class TaskCondition implements AndCondition {
+
+    private final String value;
+
+    public TaskCondition(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String getQueryPart() {
+      return "task_name = ?";
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      p.setString(index++, value);
+      return index;
+    }
+  }
+
   private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
 
     private final ArrayList<Execution> executions;
@@ -858,108 +1026,6 @@ public class JdbcTaskRepository implements TaskRepository {
     }
   }
 
-  private static <T> Supplier<T> memoize(Supplier<T> original) {
-    return new Supplier<>() {
-      boolean initialized;
-
-      public T get() {
-        return delegate.get();
-      }
-
-      private synchronized T firstTime() {
-        if (!initialized) {
-          T value = original.get();
-          delegate = () -> value;
-          initialized = true;
-        }
-        return delegate.get();
-      }
-
-      Supplier<T> delegate = this::firstTime;
-    };
-  }
-
-  private static class NewData {
-
-    private final Object data;
-
-    NewData(Object data) {
-      this.data = data;
-    }
-  }
-
-  static class UnresolvedFilter implements AndCondition {
-
-    private final List<UnresolvedTask> unresolved;
-
-    public UnresolvedFilter(List<UnresolvedTask> unresolved) {
-      this.unresolved = unresolved;
-    }
-
-    public boolean isActive() {
-      return !unresolved.isEmpty();
-    }
-
-    public String andCondition() {
-      return unresolved.isEmpty() ? "" : "and " + getQueryPart();
-    }
-
-    public String getQueryPart() {
-      return "task_name not in ("
-          + unresolved.stream().map(ignored -> "?").collect(joining(","))
-          + ")";
-    }
-
-    public int setParameters(PreparedStatement p, int index) throws SQLException {
-      final List<String> unresolvedTasknames =
-          unresolved.stream().map(UnresolvedTask::getTaskName).collect(toList());
-      for (String taskName : unresolvedTasknames) {
-        p.setString(index++, taskName);
-      }
-      return index;
-    }
-  }
-
-  private static class PickedCondition implements AndCondition {
-
-    private final boolean value;
-
-    public PickedCondition(boolean value) {
-      this.value = value;
-    }
-
-    @Override
-    public String getQueryPart() {
-      return "picked = ?";
-    }
-
-    @Override
-    public int setParameters(PreparedStatement p, int index) throws SQLException {
-      p.setBoolean(index++, value);
-      return index;
-    }
-  }
-
-  private static class TaskCondition implements AndCondition {
-
-    private final String value;
-
-    public TaskCondition(String value) {
-      this.value = value;
-    }
-
-    @Override
-    public String getQueryPart() {
-      return "task_name = ?";
-    }
-
-    @Override
-    public int setParameters(PreparedStatement p, int index) throws SQLException {
-      p.setString(index++, value);
-      return index;
-    }
-  }
-
   private class ExecutionTimeAfterCondition implements AndCondition {
 
     private final ExecutionTimeAndId execution;
@@ -1001,48 +1067,6 @@ public class JdbcTaskRepository implements TaskRepository {
       jdbcCustomization.setInstant(p, index++, execution.executionTime());
       p.setString(index++, execution.taskInstanceId());
       return index;
-    }
-  }
-
-  private enum ScrollingType {
-    NONE,
-    FORWARD,
-    BACKWARD,
-    RANGE;
-
-    public static ScrollingType determine(ScheduledExecutionsFilter filter) {
-      boolean hasAfter = filter.getAfterExecution().isPresent();
-      boolean hasBefore = filter.getBeforeExecution().isPresent();
-
-      if (hasAfter && hasBefore) {
-        return RANGE;
-      } else if (hasAfter) {
-        return FORWARD;
-      } else if (hasBefore) {
-        return BACKWARD;
-      } else {
-        return NONE;
-      }
-    }
-  }
-
-  private enum OrderingStrategy {
-    TIME_FORWARD("execution_time asc, task_instance asc"),
-    TIME_BACKWARD("execution_time desc, task_instance desc");
-
-    private final String clause;
-
-    OrderingStrategy(String clause) {
-      this.clause = clause;
-    }
-
-    public String getClause() {
-      return clause;
-    }
-
-    public static OrderingStrategy from(ScrollingType scrollingType) {
-      boolean useBackwardOrdering = (scrollingType == ScrollingType.BACKWARD);
-      return useBackwardOrdering ? TIME_BACKWARD : TIME_FORWARD;
     }
   }
 }

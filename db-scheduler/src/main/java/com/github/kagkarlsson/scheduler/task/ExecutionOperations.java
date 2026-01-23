@@ -15,6 +15,7 @@ package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
+import com.github.kagkarlsson.scheduler.jdbc.DescheduleUpdate;
 import java.time.Instant;
 
 public class ExecutionOperations<T> {
@@ -32,6 +33,10 @@ public class ExecutionOperations<T> {
 
   public void stop() {
     remove();
+  }
+
+  public void deschedule(DescheduleUpdate descheduleUpdate) {
+    taskRepository.deschedule(execution, descheduleUpdate);
   }
 
   public void remove() {

@@ -262,6 +262,7 @@ public class Tasks {
     private final Class<T> dataClass;
     private FailureHandler<T> onFailure;
     private DeadExecutionHandler<T> onDeadExecution;
+    private CompletionHandler<T> completionHandler;
     private int defaultPriority = OneTimeTask.DEFAULT_PRIORITY;
 
     public OneTimeTaskBuilder(String name, Class<T> dataClass) {
@@ -269,6 +270,7 @@ public class Tasks {
       this.dataClass = dataClass;
       this.onDeadExecution = new DeadExecutionHandler.ReviveDeadExecution<>();
       this.onFailure = new FailureHandler.OnFailureRetryLater<>(DEFAULT_RETRY_INTERVAL);
+      this.completionHandler = new CompletionHandler.OnCompleteRemove<>();
     }
 
     public OneTimeTaskBuilder<T> onFailureRetryLater() {
@@ -296,8 +298,14 @@ public class Tasks {
       return this;
     }
 
+    public OneTimeTaskBuilder<T> onCompleteKeep(State state) {
+      this.completionHandler = new CompletionHandler.OnCompleteKeep<>(state);
+      return this;
+    }
+
     public OneTimeTask<T> execute(VoidExecutionHandler<T> executionHandler) {
-      return new OneTimeTask<>(name, dataClass, onFailure, onDeadExecution, defaultPriority) {
+      return new OneTimeTask<>(
+          name, dataClass, onFailure, onDeadExecution, defaultPriority, completionHandler) {
         @Override
         public void executeOnce(TaskInstance<T> taskInstance, ExecutionContext executionContext) {
           executionHandler.execute(taskInstance, executionContext);

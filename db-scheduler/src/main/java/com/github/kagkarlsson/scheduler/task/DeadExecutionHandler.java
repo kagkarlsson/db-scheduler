@@ -40,7 +40,7 @@ public interface DeadExecutionHandler<T> {
     public void deadExecution(
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
       LOG.warn("Cancelling dead execution: " + executionComplete.getExecution());
-      executionOperations.stop();
+      executionOperations.remove();
     }
   }
 }

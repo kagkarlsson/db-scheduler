@@ -2,7 +2,7 @@ create table scheduled_tasks (
   task_name text not null,
   task_instance text not null,
   task_data bytea,
-  execution_time timestamp with time zone not null,
+  execution_time timestamp with time zone,
   picked BOOLEAN not null,
   picked_by text,
   last_success timestamp with time zone,
@@ -11,6 +11,7 @@ create table scheduled_tasks (
   last_heartbeat timestamp with time zone,
   version BIGINT not null,
   priority SMALLINT,
+  state text,
   PRIMARY KEY (task_name, task_instance)
 );
 

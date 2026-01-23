@@ -56,7 +56,7 @@ class FailureHandlerTest {
 
       assertThat(failureHandlerCalled.get(), is(false));
       assertThat(maxRetriesExceededHandlerCalled.get(), is(true));
-      verify(executionOperations).stop();
+      verify(executionOperations).remove();
     }
 
     @Test
@@ -71,7 +71,7 @@ class FailureHandlerTest {
 
       assertThat(failureHandlerCalled.get(), is(true));
       assertThat(maxRetriesExceededHandlerCalled.get(), is(false));
-      verify(executionOperations, never()).stop();
+      verify(executionOperations, never()).remove();
     }
 
     private Execution getExecutionWithFails(int consecutiveFailures) {

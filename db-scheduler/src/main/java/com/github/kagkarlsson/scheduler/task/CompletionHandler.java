@@ -13,6 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.jdbc.DescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import java.time.Instant;
 import java.util.function.Function;
@@ -28,7 +29,38 @@ public interface CompletionHandler<T> {
     @Override
     public void complete(
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-      executionOperations.stop();
+      executionOperations.remove();
+    }
+  }
+
+  class OnCompleteDeschedule<T> implements CompletionHandler<T> {
+
+    @Override
+    public void complete(
+        ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
+
+      executionOperations.deschedule(DescheduleUpdate.builder().build());
+    }
+  }
+
+  class OnCompleteKeep<T> implements CompletionHandler<T> {
+
+    private final State state;
+
+    public OnCompleteKeep(State state) {
+      this.state = state;
+    }
+
+    @Override
+    public void complete(
+        ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
+
+      executionOperations.deschedule(
+          DescheduleUpdate.builder()
+              .lastSuccess(executionComplete.getTimeDone())
+              .lastFailed(null)
+              .state(state)
+              .build());
     }
   }
 
