@@ -2,7 +2,7 @@ create table scheduled_tasks (
   task_name text not null,
   task_instance text not null,
   task_data bytea,
-  execution_time timestamp with time zone,
+  execution_time timestamp with time zone not null,
   picked BOOLEAN not null,
   picked_by text,
   last_success timestamp with time zone,
@@ -11,7 +11,6 @@ create table scheduled_tasks (
   last_heartbeat timestamp with time zone,
   version BIGINT not null,
   priority SMALLINT,
-  state text,
   PRIMARY KEY (task_name, task_instance)
 );
 
@@ -22,3 +21,7 @@ CREATE INDEX priority_execution_time_idx on scheduled_tasks (priority desc, exec
 -- an optimization for users of priority might be to add priority to the execution_time_idx
 -- this _might_ save reads as the priority-value is already in the index
 -- CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time asc, priority desc);
+
+-- Migrations
+ALTER TABLE scheduled_tasks ALTER COLUMN execution_time DROP NOT NULL;
+ALTER TABLE scheduled_tasks ADD COLUMN state text;
