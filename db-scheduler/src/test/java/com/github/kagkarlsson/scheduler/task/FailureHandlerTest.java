@@ -76,7 +76,7 @@ class FailureHandlerTest {
 
     private Execution getExecutionWithFails(int consecutiveFailures) {
       return new Execution(
-          now(), task.instance("1"), false, null, null, null, consecutiveFailures, null, 1L);
+          now(), task.instance("1"), false, null, null, null, consecutiveFailures, null, 1L, null);
     }
   }
 }

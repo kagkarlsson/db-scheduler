@@ -28,9 +28,10 @@ public final class Execution implements TaskInstanceId, Resolvable {
   public final long version;
   public final Instant lastFailure;
   public final Instant lastSuccess;
+  public final State state;
 
   public Execution(Instant executionTime, TaskInstance taskInstance) {
-    this(executionTime, taskInstance, false, null, null, null, 0, null, 1L);
+    this(executionTime, taskInstance, false, null, null, null, 0, null, 1L, null);
   }
 
   public Execution(
@@ -42,7 +43,8 @@ public final class Execution implements TaskInstanceId, Resolvable {
       Instant lastFailure,
       int consecutiveFailures,
       Instant lastHeartbeat,
-      long version) {
+      long version,
+      State state) {
     this.executionTime = executionTime;
     this.taskInstance = taskInstance;
     this.picked = picked;
@@ -52,6 +54,7 @@ public final class Execution implements TaskInstanceId, Resolvable {
     this.consecutiveFailures = consecutiveFailures;
     this.lastHeartbeat = lastHeartbeat;
     this.version = version;
+    this.state = state;
   }
 
   @Override
@@ -73,8 +76,8 @@ public final class Execution implements TaskInstanceId, Resolvable {
         lastFailure,
         consecutiveFailures,
         newLastHeartbeat,
-        version + 1 // since this was incremented in the database when picked
-        );
+        version + 1, // since this was incremented in the database when picked
+        state);
   }
 
   @Override

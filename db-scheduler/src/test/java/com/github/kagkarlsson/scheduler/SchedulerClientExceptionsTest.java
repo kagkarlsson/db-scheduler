@@ -127,6 +127,7 @@ public class SchedulerClientExceptionsTest {
         null,
         0,
         null,
-        1);
+        1,
+        null);
   }
 }

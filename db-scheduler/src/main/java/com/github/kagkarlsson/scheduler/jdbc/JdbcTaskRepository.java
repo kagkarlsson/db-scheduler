@@ -37,6 +37,7 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -996,6 +997,8 @@ public class JdbcTaskRepository implements TaskRepository {
         // default
         Instant lastHeartbeat = jdbcCustomization.getInstant(rs, "last_heartbeat");
         long version = rs.getLong("version");
+        State state =
+            safeGetString(rs, "state").map(State::valueOf).orElse(null);
 
         int priority = orderByPriority ? rs.getInt("priority") : 0;
 
@@ -1019,7 +1022,8 @@ public class JdbcTaskRepository implements TaskRepository {
                 lastFailure,
                 consecutiveFailures,
                 lastHeartbeat,
-                version));
+                version,
+                state));
       }
 
       return null;
@@ -1067,6 +1071,14 @@ public class JdbcTaskRepository implements TaskRepository {
       jdbcCustomization.setInstant(p, index++, execution.executionTime());
       p.setString(index++, execution.taskInstanceId());
       return index;
+    }
+  }
+
+  private static Optional<String> safeGetString(ResultSet rs, String columnName) {
+    try {
+      return Optional.ofNullable(rs.getString(columnName));
+    } catch (SQLException e) {
+      return Optional.empty();
     }
   }
 }

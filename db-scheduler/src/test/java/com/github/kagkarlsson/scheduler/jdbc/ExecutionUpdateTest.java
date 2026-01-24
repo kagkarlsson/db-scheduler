@@ -10,6 +10,7 @@ import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Instant;
 import java.util.List;
@@ -110,6 +111,14 @@ class ExecutionUpdateTest {
     ExecutionUpdate.forExecution(execution).lastHeartbeat(ANOTHER_INSTANT).updateSingle(jdbcConfig);
 
     assertThat(getExecution(execution).lastHeartbeat).isEqualTo(ANOTHER_INSTANT);
+  }
+
+  @Test
+  void should_update_state() {
+    Execution execution = insert(AN_INSTANT);
+    ExecutionUpdate.forExecution(execution).state(State.COMPLETE).updateSingle(jdbcConfig);
+
+    assertThat(getExecution(execution).state).isEqualTo(State.COMPLETE);
   }
 
   private Execution insert(Instant executionTime) {
