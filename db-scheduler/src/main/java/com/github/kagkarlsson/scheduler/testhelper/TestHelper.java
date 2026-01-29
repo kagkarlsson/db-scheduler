@@ -82,6 +82,16 @@ public class TestHelper {
       return this;
     }
 
+    public ManualSchedulerBuilder tableName(String tableName) {
+      super.tableName = tableName;
+      return this;
+    }
+
+    public ManualSchedulerBuilder alwaysPersistTimestampInUTC() {
+      super.alwaysPersistTimestampInUTC = true;
+      return this;
+    }
+
     public ManualScheduler build() {
       final TaskResolver taskResolver =
           new TaskResolver(new SchedulerListeners(schedulerListeners), clock, knownTasks);
