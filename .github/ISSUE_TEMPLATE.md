@@ -17,19 +17,24 @@ Please answer the following questions for yourself before submitting an issue. *
 <!-- What is the current behavior? -->
 
 --------
+
 # For bug reports
+
 **YOU MAY DELETE THE `For bug reports` SECTION IF A NEW FEATURE REQUEST.**
 
 ## Steps to Reproduce the bug
+
 1.
 1.
 1.
 
 ## Context
+
 - DB-Scheduler Version :
 - Java Version :
 - Spring Boot (check for Yes) : [ ]
 - Database and Version :
 
 ## Logs
+
 <!-- If you have any logs to share throw them here in a code block or provide a link to them -->

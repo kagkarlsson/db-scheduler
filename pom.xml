@@ -338,6 +338,12 @@
             </includes>
             <sortPom/>
           </pom>
+          <markdown>
+            <includes>
+              <include>**/*.md</include>
+            </includes>
+            <flexmark/>
+          </markdown>
         </configuration>
       </plugin>
     </plugins>
