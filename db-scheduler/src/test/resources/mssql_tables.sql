@@ -23,5 +23,4 @@ create table scheduled_tasks
 -- index priority_execution_time_idx (execution_time asc, priority desc)
 
 -- Migrations
-ALTER TABLE scheduled_tasks ALTER COLUMN execution_time datetimeoffset null;
 ALTER TABLE scheduled_tasks ADD state varchar(20);

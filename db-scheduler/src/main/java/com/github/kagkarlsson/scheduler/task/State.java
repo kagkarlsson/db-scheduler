@@ -31,14 +31,15 @@ public enum State {
   PAUSED,
 
   /**
-   * Execution completed and is kept indefinitely as a historic record of what has been
-   * run. Similar to liquibase migration records - can ensure something runs
-   * only once, guaranteed.
+   * Execution completed and is kept indefinitely as a historic record of what has been run. Similar
+   * to liquibase migration records - can ensure something runs only once, guaranteed.
    */
   RECORD,
 
-  /** Execution is marked as permanantly failed by its FailureHandlers. Must be manually triggered
-   * to retry. */
+  /**
+   * Execution is marked as permanantly failed by its FailureHandlers. Must be manually triggered to
+   * retry.
+   */
   FAILED,
 
   /** Execution is waiting for activation to run. */

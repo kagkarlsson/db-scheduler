@@ -36,8 +36,8 @@ import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
-import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.State;
+import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -509,7 +509,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
   @Override
   public void deactivate(Execution execution, DeactivationUpdate deactivationUpdate) {
-    ExecutionUpdate update = ExecutionUpdate.forExecution(execution).executionTime(null);
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
 
     update.picked(false);
     update.pickedBy(null);
@@ -583,7 +583,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 + "where task_name = ? "
                 + "and task_instance = ? "
                 + "and version = ? "
-              + "and (state is null OR state = 'ACTIVE')",
+                + "and (state is null OR state = 'ACTIVE')",
             ps -> {
               int index = 1;
               ps.setBoolean(index++, false);
@@ -935,7 +935,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     public String getQueryPart() {
-      return "execution_time is null AND state is not null AND state <> 'ACTIVE'";
+      return "state is not null AND state <> 'ACTIVE'";
     }
 
     @Override

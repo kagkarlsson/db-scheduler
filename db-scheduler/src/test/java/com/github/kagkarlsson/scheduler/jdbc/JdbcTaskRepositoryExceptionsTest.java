@@ -167,7 +167,8 @@ public class JdbcTaskRepositoryExceptionsTest {
                     + "version = version + 1 "
                     + "where task_name = ? "
                     + "and task_instance = ? "
-                    + "and version = ?"),
+                    + "and version = ? "
+                    + "and (state is null OR state = 'ACTIVE')"),
             any(PreparedStatementSetter.class)))
         .thenReturn(updateCount);
 
@@ -213,7 +214,8 @@ public class JdbcTaskRepositoryExceptionsTest {
                     + "version = version + 1 "
                     + "where task_name = ? "
                     + "and task_instance = ? "
-                    + "and version = ?"),
+                    + "and version = ? "
+                    + "and (state is null OR state = 'ACTIVE')"),
             any(PreparedStatementSetter.class)))
         .thenReturn(updateCount);
 

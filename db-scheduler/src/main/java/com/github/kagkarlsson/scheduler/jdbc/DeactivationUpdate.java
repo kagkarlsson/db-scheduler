@@ -23,14 +23,18 @@ public record DeactivationUpdate(
     @Nullable NewValue<Instant> lastFailed,
     @Nullable NewValue<State> state) {
 
-  public static Builder builder() {
-    return new Builder();
+  public static Builder toState(State state) {
+    return new Builder(state);
   }
 
   public static class Builder {
     @Nullable private NewValue<Instant> lastSuccess;
     @Nullable private NewValue<Instant> lastFailed;
     @Nullable private NewValue<State> state;
+
+    public Builder(State state) {
+      this.state = NewValue.of(state);
+    }
 
     public Builder lastSuccess(Instant lastSuccess) {
       this.lastSuccess = NewValue.of(lastSuccess);

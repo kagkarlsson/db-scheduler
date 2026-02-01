@@ -15,5 +15,4 @@ create table scheduled_tasks (
 )
 
 -- Migrations
-ALTER TABLE scheduled_tasks ALTER COLUMN execution_time SET NULL;
 ALTER TABLE scheduled_tasks ADD COLUMN state varchar(20);

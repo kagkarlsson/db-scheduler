@@ -5,6 +5,7 @@ import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.onlyRes
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMinutes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -23,6 +24,7 @@ import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
+import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -54,6 +56,7 @@ public class JdbcTaskRepositoryTest {
   private OneTimeTask<Integer> oneTimeTaskWithData;
   private TaskResolver taskResolver;
   private TestableListener testableListener;
+  private Instant truncatedNow;
 
   @BeforeEach
   public void setUp() {
@@ -70,6 +73,8 @@ public class JdbcTaskRepositoryTest {
     taskResolver =
         new TaskResolver(new SchedulerListeners(testableListener), new SystemClock(), knownTasks);
     taskRepository = createRepository(taskResolver, false);
+
+    truncatedNow = TimeHelper.truncatedInstantNow();
   }
 
   @Test
@@ -536,6 +541,34 @@ public class JdbcTaskRepositoryTest {
     // should not be able to pick the same execution twice
     assertThat(taskRepository.lockAndFetchGeneric(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
+  }
+
+  @Test
+  public void deactivated_executions_should_not_be_due() {
+    createExecution(oneTimeTask.instance("active"), truncatedNow);
+    var toDeactivate = createExecution(oneTimeTask.instance("toDeactivate"), truncatedNow);
+
+    taskRepository.deactivate(toDeactivate, DeactivationUpdate.toState(State.PAUSED).build());
+
+    assertThat(toIds(taskRepository.getDue(truncatedNow, POLLING_LIMIT))).containsExactly("active");
+
+    assertThat(taskRepository.getDeactivatedExecutions())
+        .satisfiesExactly(
+            e -> {
+              assertThat(e.taskInstance.getId()).isEqualTo("toDeactivate");
+              assertThat(e.state).isEqualTo(State.PAUSED);
+            });
+  }
+
+  private <T> Execution createExecution(TaskInstance<T> instance, Instant executionTime) {
+    taskRepository.createIfNotExists(SchedulableInstance.of(instance, executionTime));
+    return taskRepository
+        .getExecution(instance)
+        .orElseThrow(() -> new IllegalStateException("Execution should exist"));
+  }
+
+  private List<String> toIds(List<Execution> due) {
+    return due.stream().map(Execution::getId).toList();
   }
 
   private List<Execution> getScheduledExecutions(

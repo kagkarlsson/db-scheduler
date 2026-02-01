@@ -58,14 +58,6 @@ class ExecutionUpdateTest {
   }
 
   @Test
-  void should_update_execution_time_to_null() {
-    Execution execution = insert(AN_INSTANT);
-    ExecutionUpdate.forExecution(execution).executionTime(null).updateSingle(jdbcConfig);
-
-    assertThat(getExecution(execution).executionTime).isNull();
-  }
-
-  @Test
   void should_update_last_success() {
     Execution execution = insert(AN_INSTANT);
     ExecutionUpdate.forExecution(execution).lastSuccess(ANOTHER_INSTANT).updateSingle(jdbcConfig);

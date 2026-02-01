@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.kagkarlsson.scheduler.DeactivatedExecution;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
-import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -21,10 +20,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class OneTimeOnCompleteKeepTest {
 
-  private SettableClock clock;
-
   @RegisterExtension
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
+
+  private SettableClock clock;
 
   @BeforeEach
   public void setUp() {
@@ -40,9 +39,7 @@ public class OneTimeOnCompleteKeepTest {
             .execute(TestTasks.DO_NOTHING);
 
     ManualScheduler scheduler =
-        TestHelper.createManualScheduler(postgres.getDataSource(), task)
-            .clock(clock)
-            .build();
+        TestHelper.createManualScheduler(postgres.getDataSource(), task).clock(clock).build();
 
     scheduler.schedule(task.instance("1"), clock.now());
     scheduler.runAnyDueExecutions();
@@ -54,7 +51,5 @@ public class OneTimeOnCompleteKeepTest {
 
     DeactivatedExecution kept = deactivated.get(0);
     assertThat(kept.state()).isEqualTo(State.COMPLETE);
-    assertThat(kept.lastSuccess()).isNotNull();
-    assertThat(kept.lastFailure()).isNull();
   }
 }

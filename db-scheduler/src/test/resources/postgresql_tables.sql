@@ -23,5 +23,4 @@ CREATE INDEX priority_execution_time_idx on scheduled_tasks (priority desc, exec
 -- CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time asc, priority desc);
 
 -- Migrations
-ALTER TABLE scheduled_tasks ALTER COLUMN execution_time DROP NOT NULL;
 ALTER TABLE scheduled_tasks ADD COLUMN state text;

@@ -22,5 +22,4 @@ create table test.scheduled_tasks (
 -- CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time asc, priority desc);
 
 -- Migrations
-ALTER TABLE scheduled_tasks MODIFY COLUMN execution_time timestamp(6) null;
 ALTER TABLE scheduled_tasks ADD COLUMN state varchar(20);
