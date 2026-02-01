@@ -9,3 +9,4 @@ dependency-reduced-pom.xml
 terraform.tfstate*
 out/
 .claude/*
+.serena
