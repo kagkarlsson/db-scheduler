@@ -305,6 +305,23 @@ public interface SchedulerClient {
    */
   Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
 
+  /**
+   * Gets all descheduled executions (executions with execution_time = null) and supplies them to
+   * the provided Consumer.
+   *
+   * @param consumer Consumer for the executions
+   */
+  void fetchDescheduledExecutions(Consumer<DescheduledExecution> consumer);
+
+  /**
+   * @see #fetchDescheduledExecutions(Consumer)
+   */
+  default List<DescheduledExecution> getDescheduledExecutions() {
+    List<DescheduledExecution> executions = new ArrayList<>();
+    fetchDescheduledExecutions(executions::add);
+    return executions;
+  }
+
   class ScheduleOptions {
 
     public static final ScheduleOptions WHEN_EXISTS_DO_NOTHING =
@@ -622,6 +639,12 @@ public interface SchedulerClient {
       Optional<Execution> e =
           taskRepository.getExecution(taskInstanceId.getTaskName(), taskInstanceId.getId());
       return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
+    }
+
+    @Override
+    public void fetchDescheduledExecutions(Consumer<DescheduledExecution> consumer) {
+      taskRepository.getDescheduledExecutions(
+          execution -> consumer.accept(DescheduledExecution.from(execution)));
     }
   }
 

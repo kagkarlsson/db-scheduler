@@ -61,6 +61,14 @@ public interface TaskRepository {
     return results;
   }
 
+  void getDescheduledExecutions(Consumer<Execution> consumer);
+
+  default List<Execution> getDescheduledExecutions() {
+    var results = new ArrayList<Execution>();
+    getDescheduledExecutions(results::add);
+    return results;
+  }
+
   List<Execution> lockAndFetchGeneric(Instant now, int limit);
 
   List<Execution> lockAndGetDue(Instant now, int limit);

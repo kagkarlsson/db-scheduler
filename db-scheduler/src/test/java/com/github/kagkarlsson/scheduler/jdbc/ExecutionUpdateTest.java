@@ -1,6 +1,6 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import static com.github.kagkarlsson.scheduler.TestTasks.TASK_ONETIME;
+import static com.github.kagkarlsson.scheduler.TestTasks.ONETIME_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
@@ -43,7 +43,7 @@ class ExecutionUpdateTest {
             postgres.getDataSource(),
             false,
             TABLE,
-            new TaskResolver(new SchedulerListeners(), new SystemClock(), List.of(TASK_ONETIME)),
+            new TaskResolver(new SchedulerListeners(), new SystemClock(), List.of(ONETIME_TASK)),
             new Fixed("test"),
             false,
             new SystemClock());
@@ -122,7 +122,7 @@ class ExecutionUpdateTest {
   }
 
   private Execution insert(Instant executionTime) {
-    var instance = TASK_ONETIME.instanceBuilder(TASK_ID).scheduledTo(executionTime);
+    var instance = ONETIME_TASK.instanceBuilder(TASK_ID).scheduledTo(executionTime);
     repository.createIfNotExists(instance);
     return getExecution(instance);
   }

@@ -7,6 +7,7 @@ import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -20,7 +21,8 @@ import org.slf4j.LoggerFactory;
 
 public class TestTasks {
 
-  public static final Task<Void> TASK_ONETIME =
+  public static final TaskDescriptor<Void> ONETIME = TaskDescriptor.of("task-onetime", Void.class);
+  public static final Task<Void> ONETIME_TASK =
       TestTasks.oneTime("task-onetime", Void.class, TestTasks.DO_NOTHING);
 
   public static final CompletionHandler<Void> REMOVE_ON_COMPLETE =

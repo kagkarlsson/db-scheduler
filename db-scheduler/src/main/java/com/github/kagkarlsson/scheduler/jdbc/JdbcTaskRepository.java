@@ -352,6 +352,17 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public void getDescheduledExecutions(Consumer<Execution> consumer) {
+    QueryBuilder q = QueryBuilder.selectFromTable(tableName);
+    q.andCondition(new DescheduledCondition());
+
+    jdbcRunner.query(
+        q.getQuery(jdbcCustomization),
+        q.getPreparedStatementSetter(jdbcCustomization),
+        new ExecutionResultSetConsumer(consumer, true, false));
+  }
+
+  @Override
   public List<Execution> getDue(Instant now, int limit) {
     LOG.trace("Using generic fetch-then-lock query");
     final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
@@ -787,6 +798,8 @@ public class JdbcTaskRepository implements TaskRepository {
 
     filter.getPickedValue().ifPresent(value -> q.andCondition(new PickedCondition(value)));
 
+    q.andCondition(new ScheduledCondition());
+
     filter.getAfterExecution().ifPresent(e -> q.andCondition(new ExecutionTimeAfterCondition(e)));
 
     filter.getBeforeExecution().ifPresent(e -> q.andCondition(new ExecutionTimeBeforeCondition(e)));
@@ -899,6 +912,32 @@ public class JdbcTaskRepository implements TaskRepository {
     @Override
     public int setParameters(PreparedStatement p, int index) throws SQLException {
       p.setBoolean(index++, value);
+      return index;
+    }
+  }
+
+  private static class ScheduledCondition implements AndCondition {
+
+    @Override
+    public String getQueryPart() {
+      return "execution_time is not null";
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      return index;
+    }
+  }
+
+  private static class DescheduledCondition implements AndCondition {
+
+    @Override
+    public String getQueryPart() {
+      return "execution_time is null";
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
       return index;
     }
   }
