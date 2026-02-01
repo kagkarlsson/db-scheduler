@@ -18,9 +18,26 @@ package com.github.kagkarlsson.scheduler.task;
  * indicates an active task.
  */
 public enum State {
-  /** Task completed successfully and is kept for history (OneTimeTask only). */
+  /**
+   * Execution completed successfully and is kept for deduplication. Can be deleted by
+   * automatic process after configured time.
+   */
   COMPLETE,
 
-  /** Task is paused by user. Will not execute until resumed. Requires monitoring. */
+  /** Execution has been paused, typically via manual action. Will not execute until resumed. */
   PAUSED,
+
+  /**
+   * Execution completed and is kept indefinitely as a historic record of what has been
+   * run. Similar to liquibase migration records - can ensure something runs
+   * only once, guaranteed.
+   */
+  RECORD,
+
+  /** Execution is marked as permanantly failed by its FailureHandlers. Must be manually triggered
+   * to retry. */
+  FAILED,
+
+  /** Execution is waiting for activation to run. */
+  WAITING,
 }

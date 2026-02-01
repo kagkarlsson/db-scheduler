@@ -20,19 +20,18 @@ Migration (ALTER TABLE):
 
 ### Execution states
 
-| State           | Description                                                                                                            |
-|-----------------|------------------------------------------------------------------------------------------------------------------------|
-| (null) / ACTIVE | Active, scheduled for execution (default, backward compatible)                                                         |
-| RECORD          | Never deleted by automatic processes. Like liquibase migration records - ensures something runs only once, guaranteed. |
-| COMPLETE        | Kept for duplication-elimination. Can be deleted by automatic process after configured time.                           |
-| FAILED          | Failed its attempts, must be manually retried.                                                                         |
-| PAUSED          | Recurring or one-time task temporarily disabled. Will not execute until resumed.                                       |
-| WAITING         | Waiting for activation. Not attempted to run yet.                                                                      |
+| State           | Description                                                                                                                                      |
+|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| (null) / ACTIVE | Active, scheduled for execution (default, backward compatible)                                                                                   |
+| COMPLETE        | Execution completed successfully and is kept for deduplication. Can be deleted by automatic process after configured time.                      |
+| PAUSED          | Execution has been paused, typically via manual action. Will not execute until resumed.                                                          |
+| RECORD          | Execution completed and is kept indefinitely as a historic record. Similar to liquibase migration records - ensures something runs only once.   |
+| FAILED          | Execution is marked as permanently failed by its FailureHandlers. Must be manually triggered to retry.                                          |
+| WAITING         | Execution is waiting for activation to run.                                                                                                      |
 
 ### Query changes
 
 - All existing queries fetching due executions is updated with `(state=ACTIVE or state is null)` condition
-  - considering
 
 ### SchedulerClient
 
