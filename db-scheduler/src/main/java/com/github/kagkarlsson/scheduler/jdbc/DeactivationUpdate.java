@@ -18,7 +18,7 @@ import com.github.kagkarlsson.scheduler.task.State;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
-public record DescheduleUpdate(
+public record DeactivationUpdate(
     @Nullable NewValue<Instant> lastSuccess,
     @Nullable NewValue<Instant> lastFailed,
     @Nullable NewValue<State> state) {
@@ -47,8 +47,8 @@ public record DescheduleUpdate(
       return this;
     }
 
-    public DescheduleUpdate build() {
-      return new DescheduleUpdate(lastSuccess, lastFailed, state);
+    public DeactivationUpdate build() {
+      return new DeactivationUpdate(lastSuccess, lastFailed, state);
     }
   }
 }

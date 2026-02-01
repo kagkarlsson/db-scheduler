@@ -352,9 +352,9 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public void getDescheduledExecutions(Consumer<Execution> consumer) {
+  public void getDeactivatedExecutions(Consumer<Execution> consumer) {
     QueryBuilder q = QueryBuilder.selectFromTable(tableName);
-    q.andCondition(new DescheduledCondition());
+    q.andCondition(new DeactivatedCondition());
 
     jdbcRunner.query(
         q.getQuery(jdbcCustomization),
@@ -508,7 +508,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public void deschedule(Execution execution, DescheduleUpdate descheduleUpdate) {
+  public void deactivate(Execution execution, DeactivationUpdate deactivationUpdate) {
     ExecutionUpdate update = ExecutionUpdate.forExecution(execution).executionTime(null);
 
     update.picked(false);
@@ -516,16 +516,16 @@ public class JdbcTaskRepository implements TaskRepository {
     update.consecutiveFailures(0);
     update.lastHeartbeat(null);
 
-    if (descheduleUpdate.lastSuccess() != null) {
-      update.lastSuccess(descheduleUpdate.lastSuccess().value());
+    if (deactivationUpdate.lastSuccess() != null) {
+      update.lastSuccess(deactivationUpdate.lastSuccess().value());
     }
 
-    if (descheduleUpdate.lastFailed() != null) {
-      update.lastFailure(descheduleUpdate.lastFailed().value());
+    if (deactivationUpdate.lastFailed() != null) {
+      update.lastFailure(deactivationUpdate.lastFailed().value());
     }
 
-    if (descheduleUpdate.state() != null) {
-      update.state(descheduleUpdate.state().value());
+    if (deactivationUpdate.state() != null) {
+      update.state(deactivationUpdate.state().value());
     }
 
     update.updateSingle(jdbcConfig);
@@ -929,7 +929,7 @@ public class JdbcTaskRepository implements TaskRepository {
     }
   }
 
-  private static class DescheduledCondition implements AndCondition {
+  private static class DeactivatedCondition implements AndCondition {
 
     @Override
     public String getQueryPart() {

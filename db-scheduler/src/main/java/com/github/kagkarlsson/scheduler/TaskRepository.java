@@ -13,7 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.jdbc.DescheduleUpdate;
+import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
@@ -61,11 +61,11 @@ public interface TaskRepository {
     return results;
   }
 
-  void getDescheduledExecutions(Consumer<Execution> consumer);
+  void getDeactivatedExecutions(Consumer<Execution> consumer);
 
-  default List<Execution> getDescheduledExecutions() {
+  default List<Execution> getDeactivatedExecutions() {
     var results = new ArrayList<Execution>();
-    getDescheduledExecutions(results::add);
+    getDeactivatedExecutions(results::add);
     return results;
   }
 
@@ -75,7 +75,7 @@ public interface TaskRepository {
 
   void remove(Execution execution);
 
-  void deschedule(Execution execution, DescheduleUpdate descheduleUpdate);
+  void deactivate(Execution execution, DeactivationUpdate deactivationUpdate);
 
   boolean reschedule(
       Execution execution,

@@ -18,15 +18,15 @@ import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Instant;
 
-public record DescheduledExecution(
+public record DeactivatedExecution(
     TaskInstanceId taskInstance,
     State state,
     Instant lastSuccess,
     Instant lastFailure,
     int consecutiveFailures) {
 
-  public static DescheduledExecution from(Execution execution) {
-    return new DescheduledExecution(
+  public static DeactivatedExecution from(Execution execution) {
+    return new DeactivatedExecution(
         execution.taskInstance,
         execution.state,
         execution.lastSuccess,

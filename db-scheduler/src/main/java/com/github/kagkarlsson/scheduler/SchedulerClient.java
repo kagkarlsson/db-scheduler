@@ -306,19 +306,19 @@ public interface SchedulerClient {
   Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
 
   /**
-   * Gets all descheduled executions (executions with execution_time = null) and supplies them to
+   * Gets all deactivated executions (executions with execution_time = null) and supplies them to
    * the provided Consumer.
    *
    * @param consumer Consumer for the executions
    */
-  void fetchDescheduledExecutions(Consumer<DescheduledExecution> consumer);
+  void fetchDeactivatedExecutions(Consumer<DeactivatedExecution> consumer);
 
   /**
-   * @see #fetchDescheduledExecutions(Consumer)
+   * @see #fetchDeactivatedExecutions(Consumer)
    */
-  default List<DescheduledExecution> getDescheduledExecutions() {
-    List<DescheduledExecution> executions = new ArrayList<>();
-    fetchDescheduledExecutions(executions::add);
+  default List<DeactivatedExecution> getDeactivatedExecutions() {
+    List<DeactivatedExecution> executions = new ArrayList<>();
+    fetchDeactivatedExecutions(executions::add);
     return executions;
   }
 
@@ -642,9 +642,9 @@ public interface SchedulerClient {
     }
 
     @Override
-    public void fetchDescheduledExecutions(Consumer<DescheduledExecution> consumer) {
-      taskRepository.getDescheduledExecutions(
-          execution -> consumer.accept(DescheduledExecution.from(execution)));
+    public void fetchDeactivatedExecutions(Consumer<DeactivatedExecution> consumer) {
+      taskRepository.getDeactivatedExecutions(
+          execution -> consumer.accept(DeactivatedExecution.from(execution)));
     }
   }
 

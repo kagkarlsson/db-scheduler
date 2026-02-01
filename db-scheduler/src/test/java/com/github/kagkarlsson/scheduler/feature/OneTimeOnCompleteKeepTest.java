@@ -2,7 +2,7 @@ package com.github.kagkarlsson.scheduler.feature;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.github.kagkarlsson.scheduler.DescheduledExecution;
+import com.github.kagkarlsson.scheduler.DeactivatedExecution;
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.TestTasks;
@@ -49,10 +49,10 @@ public class OneTimeOnCompleteKeepTest {
 
     assertThat(scheduler.getScheduledExecutions()).isEmpty();
 
-    List<DescheduledExecution> descheduled = scheduler.getDescheduledExecutions();
-    assertThat(descheduled).hasSize(1);
+    List<DeactivatedExecution> deactivated = scheduler.getDeactivatedExecutions();
+    assertThat(deactivated).hasSize(1);
 
-    DescheduledExecution kept = descheduled.get(0);
+    DeactivatedExecution kept = deactivated.get(0);
     assertThat(kept.state()).isEqualTo(State.COMPLETE);
     assertThat(kept.lastSuccess()).isNotNull();
     assertThat(kept.lastFailure()).isNull();

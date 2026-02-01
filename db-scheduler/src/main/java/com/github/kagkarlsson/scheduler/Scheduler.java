@@ -342,8 +342,8 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
-  public void fetchDescheduledExecutions(Consumer<DescheduledExecution> consumer) {
-    this.delegate.fetchDescheduledExecutions(consumer);
+  public void fetchDeactivatedExecutions(Consumer<DeactivatedExecution> consumer) {
+    this.delegate.fetchDeactivatedExecutions(consumer);
   }
 
   public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {
