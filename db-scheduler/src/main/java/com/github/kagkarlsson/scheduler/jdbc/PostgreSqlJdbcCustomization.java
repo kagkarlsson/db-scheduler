@@ -77,7 +77,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
             + "(SELECT st2.task_name, st2.task_instance FROM "
             + ctx.tableName
             + " st2 "
-            + " WHERE picked = ? and execution_time <= ? "
+            + " WHERE picked = ? and execution_time <= ? and (state is null or state = 'ACTIVE') "
             + unresolvedFilter.andCondition()
             + Queries.ansiSqlOrderPart(orderByPriority)
             + " FOR UPDATE SKIP LOCKED "

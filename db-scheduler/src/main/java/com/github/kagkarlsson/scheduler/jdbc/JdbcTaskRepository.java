@@ -240,9 +240,9 @@ public class JdbcTaskRepository implements TaskRepository {
     //           with execute(query-and-pss) and have builder return that..
     return "insert into "
         + tableName
-        + "(task_name, task_instance, task_data, execution_time, picked, version"
+        + "(task_name, task_instance, task_data, execution_time, state, picked, version"
         + (orderByPriority ? ", priority" : "")
-        + ") values(?, ?, ?, ?, ?, ? "
+        + ") values(?, ?, ?, ?, 'ACTIVE', ?, ? "
         + (orderByPriority ? ", ?" : "")
         + ")";
   }
@@ -582,7 +582,8 @@ public class JdbcTaskRepository implements TaskRepository {
                 + "version = version + 1 "
                 + "where task_name = ? "
                 + "and task_instance = ? "
-                + "and version = ?",
+                + "and version = ? "
+              + "and (state is null OR state = 'ACTIVE')",
             ps -> {
               int index = 1;
               ps.setBoolean(index++, false);
@@ -620,7 +621,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 + "where picked = ? "
                 + "and task_name = ? "
                 + "and task_instance = ? "
-                + "and version = ?",
+                + "and version = ? ",
             ps -> {
               ps.setBoolean(1, true);
               ps.setString(2, truncate(schedulerSchedulerName.getName(), 50));
@@ -657,7 +658,7 @@ public class JdbcTaskRepository implements TaskRepository {
     return jdbcRunner.query(
         "select * from "
             + tableName
-            + " where picked = ? and last_heartbeat <= ? "
+            + " where picked = ? and last_heartbeat <= ? and (state is null or state = 'ACTIVE') "
             + unresolvedFilter.andCondition()
             + " order by last_heartbeat asc",
         (PreparedStatement p) -> {
@@ -799,6 +800,7 @@ public class JdbcTaskRepository implements TaskRepository {
     filter.getPickedValue().ifPresent(value -> q.andCondition(new PickedCondition(value)));
 
     q.andCondition(new ScheduledCondition());
+    // TODO: opt-in condition for including deactivated
 
     filter.getAfterExecution().ifPresent(e -> q.andCondition(new ExecutionTimeAfterCondition(e)));
 
@@ -920,7 +922,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     public String getQueryPart() {
-      return "execution_time is not null";
+      return "execution_time is not null AND (state is null OR state = 'ACTIVE')";
     }
 
     @Override
@@ -933,7 +935,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     public String getQueryPart() {
-      return "execution_time is null";
+      return "execution_time is null AND state is not null AND state <> 'ACTIVE'";
     }
 
     @Override
@@ -1036,8 +1038,8 @@ public class JdbcTaskRepository implements TaskRepository {
         // default
         Instant lastHeartbeat = jdbcCustomization.getInstant(rs, "last_heartbeat");
         long version = rs.getLong("version");
-        State state =
-            safeGetString(rs, "state").map(State::valueOf).orElse(null);
+        String stateStr = rs.getString("state");
+        State state = stateStr != null ? State.valueOf(stateStr) : null;
 
         int priority = orderByPriority ? rs.getInt("priority") : 0;
 
@@ -1110,14 +1112,6 @@ public class JdbcTaskRepository implements TaskRepository {
       jdbcCustomization.setInstant(p, index++, execution.executionTime());
       p.setString(index++, execution.taskInstanceId());
       return index;
-    }
-  }
-
-  private static Optional<String> safeGetString(ResultSet rs, String columnName) {
-    try {
-      return Optional.ofNullable(rs.getString(columnName));
-    } catch (SQLException e) {
-      return Optional.empty();
     }
   }
 }

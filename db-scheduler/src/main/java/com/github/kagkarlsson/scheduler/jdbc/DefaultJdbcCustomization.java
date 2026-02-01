@@ -112,7 +112,7 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     final String explicitLimit = supportsExplicitQueryLimitPart() ? getQueryLimitPart(limit) : "";
     return "select * from "
         + tableName
-        + " where picked = ? and execution_time <= ? "
+        + " where picked = ? and execution_time <= ? and (state is null or state = 'ACTIVE') "
         + andCondition
         + Queries.ansiSqlOrderPart(orderByPriority)
         + explicitLimit;

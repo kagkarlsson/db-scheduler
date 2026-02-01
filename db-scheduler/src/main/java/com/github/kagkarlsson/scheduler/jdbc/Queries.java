@@ -28,7 +28,7 @@ public class Queries {
     return "SELECT * FROM "
         + tableName
         + Optional.ofNullable(sqlServerStyleForUpdate).orElse("")
-        + " WHERE picked = ? AND execution_time <= ? "
+        + " WHERE picked = ? AND execution_time <= ? AND (state is null OR state = 'ACTIVE') "
         + requiredAndCondition
         + orderPart
         + Optional.ofNullable(postgresOracleStyleForUpdate).orElse("")

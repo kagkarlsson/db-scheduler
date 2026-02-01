@@ -18,9 +18,12 @@ package com.github.kagkarlsson.scheduler.task;
  * indicates an active task.
  */
 public enum State {
+  /** Execution is active and scheduled for execution. */
+  ACTIVE,
+
   /**
-   * Execution completed successfully and is kept for deduplication. Can be deleted by
-   * automatic process after configured time.
+   * Execution completed successfully and is kept for deduplication. Can be deleted by automatic
+   * process after configured time.
    */
   COMPLETE,
 
