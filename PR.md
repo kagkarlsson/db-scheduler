@@ -16,7 +16,7 @@ Add ability to pause or disable tasks (recurring).
 Migration (ALTER TABLE):
 
 - Add nullable `state` column (text/varchar). (null considered 'active')
-- Suggests appropriate indices in schema-files
+- Suggest appropriate indices in schema-files
 
 ### Execution states
 
@@ -54,10 +54,15 @@ Migration (ALTER TABLE):
   - olderThan: Instant
   - limit: Int
 
+### Jobs
+
+* Introduce housekeeping-job that regularly deletes deactivated executions. Default 14d for all
+except `State.RECORD` which is kept indefinately.
+
 ### CompletionHandlers (changes)
 
-* `.onCompleteDeactivate(State.COMPLETE)`
-* `.onCompleteKeepRecord()`
+* `.onCompleteDeactivate(State)` - deactivate with given state
+* `.onCompleteKeepRecord()` - convenience for `.onCompleteDeactivate(State.RECORD)`
 
 ### FailureHandlers (changes)
 
@@ -69,7 +74,6 @@ Migration (ALTER TABLE):
 
 - Only active executions should be considered by dead execution detection
 - `state = null` means active/scheduled (existing rows should work without migration)
-- `safeGetString()` utility for reading state column (handles missing column in old schemas)
-- consider detecting whether `state` column exists or not, and avoid using in queries if not exists
-- consider adding future column `state_details (TEXT)` / `failure_details (TEXT)` to hold exceptions
+- `state` column is required (migration needed for existing schemas)
+- Consider adding future column `state_details (TEXT)` / `failure_details (TEXT)` to hold exceptions
   from failure
