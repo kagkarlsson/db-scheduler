@@ -16,10 +16,15 @@ package com.github.kagkarlsson.scheduler.testhelper;
 import com.github.kagkarlsson.scheduler.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 public class SettableClock implements Clock {
+  public Instant now;
 
-  public Instant now = Instant.now();
+  public SettableClock() {
+    this.now = ZonedDateTime.of(2024, 1, 1, 12, 0, 0, 0, ZoneId.systemDefault()).toInstant();
+  }
 
   @Override
   public Instant now() {
