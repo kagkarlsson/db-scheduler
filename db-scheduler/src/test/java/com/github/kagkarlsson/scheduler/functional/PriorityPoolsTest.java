@@ -1,5 +1,7 @@
 package com.github.kagkarlsson.scheduler.functional;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.time.Duration.ofMillis;
 import static java.time.Instant.now;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,7 +48,8 @@ public class PriorityPoolsTest {
       highPoolExecutions.set(0);
     }
 
-    public void trackExecution(String threadName) {
+    public void trackThread() {
+      var threadName = Thread.currentThread().getName();
       if (threadName.contains("-p90-")) {
         highPoolExecutions.incrementAndGet();
       } else if (threadName.contains("-p50-")) {
@@ -81,8 +84,7 @@ public class PriorityPoolsTest {
           "tracking-task",
           Void.class,
           (instance, ctx) -> {
-            String threadName = Thread.currentThread().getName();
-            tracker.trackExecution(threadName);
+            tracker.trackThread();
           });
 
   @BeforeEach
@@ -309,8 +311,7 @@ public class PriorityPoolsTest {
             Void.class,
             (instance, ctx) -> {
               // Track which pool this task executed on
-              Thread currentThread = Thread.currentThread();
-              String threadName = currentThread.getName();
+              String threadName = Thread.currentThread().getName();
 
               // This task should execute on medium pool (-p50-) since high pool is blocked
               if (threadName.contains("-p50-")) {
@@ -382,6 +383,84 @@ public class PriorityPoolsTest {
   }
 
   @Test
+  public void should_not_fill_beyond_upper_limit_with_LOCK_AND_FETCH_strategy() {
+    var defaultPoolSize = 10;
+    var highPoolSize = 5;
+    var lowPriTasksToSchedule = 20;
+    var highPriTasksToSchedule = 1;
+    var lowerLimit = 0.5;
+    var upperLimit = 1.0;
+    var initialTasksCount = min(defaultPoolSize, lowPriTasksToSchedule) + min(highPoolSize, highPriTasksToSchedule);
+    var allTasksStarted = new CountDownLatch(initialTasksCount);
+    var allowTasksToComplete = new CountDownLatch(1);
+
+    OneTimeTask<Void> workTask =
+      TestTasks.oneTime(
+        "work-task",
+        Void.class,
+        (instance, ctx) -> {
+          try {
+            tracker.trackThread();
+            allTasksStarted.countDown();
+            // Hold the thread until we allow completion
+            allowTasksToComplete.await(10, TimeUnit.SECONDS);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        });
+
+    var condition = TestableListener.Conditions.completed(lowPriTasksToSchedule + highPriTasksToSchedule);
+    var listener = TestableListener.create().waitConditions(condition).build();
+
+    var scheduler =
+      Scheduler.create(postgres.getDataSource(), workTask)
+        .threads(defaultPoolSize)
+        .pollingInterval(ofMillis(50))
+        .schedulerName(new Fixed("test"))
+        .addSchedulerListener(listener)
+        .enablePriority()
+        .addWorkerPool(highPoolSize, Priority.HIGH)
+        .pollUsingLockAndFetch(lowerLimit, upperLimit)
+        .build();
+
+    stopScheduler.register(scheduler);
+
+    assertTimeoutPreemptively(
+      Duration.ofSeconds(10),
+      () -> {
+        // Schedule low-priority tasks
+        for (int i = 0; i < lowPriTasksToSchedule; i++) {
+          scheduler.schedule(
+            workTask.instanceBuilder("low-" + i).priority(Priority.LOW).build(), now());
+        }
+
+        // Schedule high-priority tasks
+        for (int i = 0; i < highPriTasksToSchedule; i++) {
+          scheduler.schedule(
+            workTask.instanceBuilder("high-" + i).priority(Priority.HIGH).build(), now());
+        }
+        scheduler.start();
+
+        // Wait for all tasks to be processed
+        boolean allStarted = allTasksStarted.await(5, TimeUnit.SECONDS);
+
+        assertThat("All tasks should be executing", allStarted, equalTo(true));
+
+        Thread.sleep(2000);
+
+        assertThat("No more than " + initialTasksCount + " tasks should be locked", scheduler.getQueuedExecutions(), equalTo(initialTasksCount));
+
+        // Allow tasks to complete
+        allowTasksToComplete.countDown();
+
+        // Wait for all tasks to finish
+        condition.waitFor();
+
+        listener.assertNoFailures();
+      });
+  }
+
+  @Test
   public void should_utilize_all_pools_with_LOCK_AND_FETCH_strategy() {
     // This test verifies that with the fix, all thread pools are properly utilized
     // when there are sufficient high-priority tasks available
@@ -395,8 +474,7 @@ public class PriorityPoolsTest {
             Void.class,
             (instance, ctx) -> {
               try {
-                String threadName = Thread.currentThread().getName();
-                tracker.trackExecution(threadName);
+                tracker.trackThread();
                 allTasksStarted.countDown();
                 // Hold the thread until we allow completion
                 allowTasksToComplete.await(10, TimeUnit.SECONDS);

@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -228,6 +229,12 @@ public class Scheduler implements SchedulerClient {
         housekeeperExecutor, utilExecutorsWaitBeforeInterrupt, utilExecutorsWaitAfterInterrupt)) {
       LOG.warn("Failed to shutdown housekeeper-executor properly.");
     }
+  }
+
+  public int getQueuedExecutions() {
+    return executors.stream()
+      .map(Executor::getNumberInQueueOrProcessing)
+      .mapToInt(Integer::intValue).sum();
   }
 
   public void pause() {
