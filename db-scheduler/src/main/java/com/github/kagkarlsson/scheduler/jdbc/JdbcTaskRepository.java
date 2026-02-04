@@ -47,6 +47,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -772,6 +773,33 @@ public class JdbcTaskRepository implements TaskRepository {
     return jdbcRunner.execute(
         "delete from " + tableName + " where task_name = ?",
         (PreparedStatement p) -> p.setString(1, taskName));
+  }
+
+  @Override
+  public int removeOldDeactivatedExecutions(Set<State> states, Instant olderThan, int limit) {
+    if (states.isEmpty()) {
+      return 0;
+    }
+    String statesInClause =
+        states.stream().map(s -> "'" + s.name() + "'").collect(Collectors.joining(", "));
+
+    String sql =
+        "DELETE FROM "
+            + tableName
+            + " WHERE (task_name, task_instance) IN ("
+            + "SELECT task_name, task_instance FROM "
+            + tableName
+            + " WHERE state IN ("
+            + statesInClause
+            + ")"
+            + " AND execution_time < ?"
+            + jdbcCustomization.getQueryLimitPart(limit)
+            + ")";
+    return jdbcRunner.execute(
+        sql,
+        ps -> {
+          jdbcCustomization.setInstant(ps, 1, olderThan);
+        });
   }
 
   @Override

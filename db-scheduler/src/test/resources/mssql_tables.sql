@@ -24,3 +24,4 @@ create table scheduled_tasks
 
 -- Migrations
 ALTER TABLE scheduled_tasks ADD state varchar(20);
+CREATE INDEX state_execution_time_idx ON scheduled_tasks (state, execution_time);

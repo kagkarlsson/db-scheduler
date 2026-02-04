@@ -10,6 +10,7 @@ import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -36,6 +37,15 @@ public class OnCompleteKeepTest {
     assertThat(scheduler.getDeactivatedExecutions())
         .singleElement()
         .satisfies(it -> assertThat(it.state()).isEqualTo(State.COMPLETE));
+
+    // No cleanup directly after run
+    scheduler.runDeleteOldDeactivatedExecutions();
+    assertThat(scheduler.getDeactivatedExecutions()).hasSize(1);
+
+    // Cleanup after 14d
+    clock.tick(Duration.ofDays(15));
+    scheduler.runDeleteOldDeactivatedExecutions();
+    assertThat(scheduler.getDeactivatedExecutions()).hasSize(0);
   }
 
   private ManualScheduler createManualScheduler(OneTimeTask<Void> task) {

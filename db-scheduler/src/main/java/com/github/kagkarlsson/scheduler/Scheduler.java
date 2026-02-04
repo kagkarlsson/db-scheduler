@@ -28,12 +28,14 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -48,27 +50,28 @@ public class Scheduler implements SchedulerClient {
   public static final double TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO = 0.5;
   public static final String THREAD_PREFIX = "db-scheduler";
   private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
-  private final SchedulerClient delegate;
+  protected final PollStrategy executeDueStrategy;
+  protected final Executor executor;
+  protected final List<OnStartup> onStartup;
   final Clock clock;
   final TaskRepository schedulerTaskRepository;
   final TaskResolver taskResolver;
-  protected final PollStrategy executeDueStrategy;
-  protected final Executor executor;
+  final SchedulerListeners schedulerListeners;
+  final SettableSchedulerState schedulerState = new SettableSchedulerState();
+  final ConfigurableLogger failureLogger;
+  private final SchedulerClient delegate;
   private final ScheduledExecutorService housekeeperExecutor;
   private final HeartbeatConfig heartbeatConfig;
   private final int numberOfMissedHeartbeatsBeforeDead;
-  int threadpoolSize;
   private final Waiter executeDueWaiter;
   private final Duration deleteUnresolvedAfter;
+  private final Duration deleteDeactivatedAfter;
   private final Duration shutdownMaxWait;
-  protected final List<OnStartup> onStartup;
   private final Waiter detectDeadWaiter;
   private final Duration heartbeatInterval;
-  final SchedulerListeners schedulerListeners;
   private final ExecutorService dueExecutor;
   private final Waiter heartbeatWaiter;
-  final SettableSchedulerState schedulerState = new SettableSchedulerState();
-  final ConfigurableLogger failureLogger;
+  int threadpoolSize;
 
   protected Scheduler(
       Clock clock,
@@ -85,6 +88,7 @@ public class Scheduler implements SchedulerClient {
       List<ExecutionInterceptor> executionInterceptors,
       PollingStrategyConfig pollingStrategyConfig,
       Duration deleteUnresolvedAfter,
+      Duration deleteDeactivatedAfter,
       Duration shutdownMaxWait,
       LogLevel logLevel,
       boolean logStackTrace,
@@ -98,6 +102,7 @@ public class Scheduler implements SchedulerClient {
     this.executor = new Executor(executorService, clock);
     this.executeDueWaiter = executeDueWaiter;
     this.deleteUnresolvedAfter = deleteUnresolvedAfter;
+    this.deleteDeactivatedAfter = deleteDeactivatedAfter;
     this.shutdownMaxWait = shutdownMaxWait;
     this.onStartup = onStartup;
     this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
@@ -153,6 +158,14 @@ public class Scheduler implements SchedulerClient {
     LOG.info("Using polling-strategy: " + pollingStrategyConfig.describe());
   }
 
+  public static SchedulerBuilder create(DataSource dataSource, Task<?>... knownTasks) {
+    return create(dataSource, Arrays.asList(knownTasks));
+  }
+
+  public static SchedulerBuilder create(DataSource dataSource, List<Task<?>> knownTasks) {
+    return new SchedulerBuilder(dataSource, knownTasks);
+  }
+
   public void registerSchedulerListener(SchedulerListener listener) {
     schedulerListeners.add(listener);
   }
@@ -175,6 +188,11 @@ public class Scheduler implements SchedulerClient {
         new RunAndLogErrors(this::updateHeartbeats, schedulerListeners),
         0,
         heartbeatWaiter.getWaitDuration().toMillis(),
+        MILLISECONDS);
+    housekeeperExecutor.scheduleWithFixedDelay(
+        new RunAndLogErrors(this::deleteOldDeactivatedExecutions, schedulerListeners),
+        0,
+        Duration.ofHours(24).toMillis(),
         MILLISECONDS);
 
     schedulerState.setStarted();
@@ -421,6 +439,35 @@ public class Scheduler implements SchedulerClient {
     schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_DETECT_DEAD);
   }
 
+  protected void deleteOldDeactivatedExecutions() {
+    if (deleteDeactivatedAfter.isZero()) {
+      LOG.trace("Deletion of old deactivated executions is disabled.");
+      return;
+    }
+
+    LOG.debug("Deleting old deactivated executions.");
+    Instant olderThan = clock.now().minus(deleteDeactivatedAfter);
+
+    // Delete all deactivated states except RECORD (kept indefinitely)
+    EnumSet<State> deleteInStates =
+        EnumSet.of(State.COMPLETE, State.PAUSED, State.FAILED, State.WAITING);
+    int limit = 10000;
+
+    int totalRemoved = 0;
+    int removed;
+    do {
+      removed =
+          schedulerTaskRepository.removeOldDeactivatedExecutions(deleteInStates, olderThan, limit);
+      totalRemoved += removed;
+    } while (removed == limit && !schedulerState.isShuttingDown());
+
+    if (totalRemoved > 0) {
+      LOG.info("Removed {} old deactivated executions", removed);
+    } else {
+      LOG.trace("No old deactivated executions found.");
+    }
+  }
+
   void updateHeartbeats() {
     final List<CurrentlyExecuting> currentlyProcessing = executor.getCurrentlyExecuting();
     if (currentlyProcessing.isEmpty()) {
@@ -470,13 +517,5 @@ public class Scheduler implements SchedulerClient {
 
   Duration getMaxAgeBeforeConsideredDead() {
     return heartbeatInterval.multipliedBy(numberOfMissedHeartbeatsBeforeDead);
-  }
-
-  public static SchedulerBuilder create(DataSource dataSource, Task<?>... knownTasks) {
-    return create(dataSource, Arrays.asList(knownTasks));
-  }
-
-  public static SchedulerBuilder create(DataSource dataSource, List<Task<?>> knownTasks) {
-    return new SchedulerBuilder(dataSource, knownTasks);
   }
 }

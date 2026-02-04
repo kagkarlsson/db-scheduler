@@ -128,6 +128,7 @@ public class TestHelper {
           List.of(new StatsRegistryAdapter(statsRegistry)),
           Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
           deleteUnresolvedAfter,
+          deleteDeactivatedAfter,
           LogLevel.DEBUG,
           true,
           startTasks,

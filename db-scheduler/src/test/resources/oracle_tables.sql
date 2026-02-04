@@ -25,3 +25,4 @@ CREATE INDEX scheduled_tasks_priority_execution_time_idx on scheduled_tasks(prio
 
 -- Migrations
 ALTER TABLE scheduled_tasks ADD state varchar(20);
+CREATE INDEX scheduled_tasks_state_execution_time_idx ON scheduled_tasks (state, execution_time);

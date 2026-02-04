@@ -34,9 +34,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -606,5 +608,70 @@ public class JdbcTaskRepositoryTest {
     List<Execution> executions = new ArrayList<>();
     taskRepository.getScheduledExecutions(onlyResolved().withPicked(false), executions::add);
     return executions.get(0);
+  }
+
+  @Test
+  public void removeOldDeactivatedExecutions_deletes_correct_states_and_respects_time_and_limit() {
+    Instant oldTime = truncatedNow.minus(ofDays(30));
+    Instant recentTime = truncatedNow.minus(ofDays(7));
+    Instant ageLimit = truncatedNow.minus(ofDays(14));
+    Set<State> statesToDelete =
+        EnumSet.of(State.COMPLETE, State.PAUSED, State.FAILED, State.WAITING);
+
+    // Should be deleted
+    createDeactivatedExecution("oldComplete", oldTime, State.COMPLETE);
+    createDeactivatedExecution("oldPaused", oldTime, State.PAUSED);
+    createDeactivatedExecution("oldFailed", oldTime, State.FAILED);
+    createDeactivatedExecution("oldWaiting", oldTime, State.WAITING);
+
+    // Should NOT be deleted
+    createExecution(oneTimeTask.instance("activeNull"), oldTime);
+    createDeactivatedExecution("oldRecord", oldTime, State.RECORD);
+    createDeactivatedExecution("recentComplete", recentTime, State.COMPLETE);
+
+    // Execute deletion
+    int removed = taskRepository.removeOldDeactivatedExecutions(statesToDelete, ageLimit, 1000);
+
+    assertEquals(4, removed);
+    assertDeleted("oldComplete");
+    assertDeleted("oldPaused");
+    assertDeleted("oldFailed");
+    assertDeleted("oldWaiting");
+
+    assertNotDeleted("activeNull");
+    assertNotDeleted("oldRecord");
+    assertNotDeleted("recentComplete");
+  }
+
+  @Test
+  public void removeOldDeactivatedExecutions_respects_limit() {
+    Instant oldTime = truncatedNow.minus(ofDays(30));
+    for (int i = 0; i < 5; i++) {
+      createDeactivatedExecution("limited" + i, oldTime, State.COMPLETE);
+    }
+
+    int removed =
+        taskRepository.removeOldDeactivatedExecutions(
+            EnumSet.of(State.COMPLETE), truncatedNow.minus(ofDays(14)), 2);
+
+    assertEquals(2, removed);
+    assertEquals(3, taskRepository.getDeactivatedExecutions().size());
+  }
+
+  private void createDeactivatedExecution(String id, Instant executionTime, State state) {
+    var execution = createExecution(oneTimeTask.instance(id), executionTime);
+    taskRepository.deactivate(execution, DeactivationUpdate.toState(state).build());
+  }
+
+  private void assertDeleted(String id) {
+    assertThat(taskRepository.getExecution(oneTimeTask.instance(id)))
+        .as("Execution '%s' should be deleted", id)
+        .isEmpty();
+  }
+
+  private void assertNotDeleted(String id) {
+    assertThat(taskRepository.getExecution(oneTimeTask.instance(id)))
+        .as("Execution '%s' should NOT be deleted", id)
+        .isPresent();
   }
 }
