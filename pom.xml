@@ -57,7 +57,7 @@
     <maven.compiler.target>${jdk.version}</maven.compiler.target>
     <maven.compiler.release>${jdk.version}</maven.compiler.release>
     <compilerArgument/>
-    <license.dir>${project.basedir}/.license</license.dir>
+    <license.dir>${maven.multiModuleProjectDirectory}/.license</license.dir>
 
     <!-- Build-time flags -->
     <skipChecks>false</skipChecks>

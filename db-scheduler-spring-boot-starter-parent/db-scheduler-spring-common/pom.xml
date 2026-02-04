@@ -14,10 +14,6 @@
   <description>Shared Spring support classes for db-scheduler starters</description>
   <url>https://github.com/kagkarlsson/db-scheduler</url>
 
-  <properties>
-    <license.dir>${project.parent.parent.basedir}/.license</license.dir>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>

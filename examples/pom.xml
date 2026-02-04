@@ -19,8 +19,4 @@
     <module>spring-boot-example</module>
   </modules>
 
-  <properties>
-    <license.dir>${project.parent.basedir}/.license</license.dir>
-  </properties>
-
 </project>

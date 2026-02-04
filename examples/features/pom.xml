@@ -13,7 +13,6 @@
   <url>https://github.com/kagkarlsson/db-scheduler</url>
 
   <properties>
-    <license.dir>${project.parent.parent.basedir}/.license</license.dir>
     <kotlin.version>2.2.20</kotlin.version>
     <serialization.version>1.9.0</serialization.version>
   </properties>
