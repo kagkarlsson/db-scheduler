@@ -15,8 +15,8 @@ Add ability to pause or disable tasks (recurring).
 
 Migration (ALTER TABLE):
 
-- Add nullable `state` column (text/varchar). (null considered 'active')
-- Suggest appropriate indices in schema-files
+- [ ] Add nullable `state` column (text/varchar). (null considered 'active')
+- [ ] Suggest appropriate indices in schema-files
 
 ### Execution states
 
@@ -35,40 +35,40 @@ Migration (ALTER TABLE):
 
 ### SchedulerClient
 
-- Let `client.getScheduledExecutions(...)` also return inactive executions (I know, unfortunate
+- [ ] Let `client.getScheduledExecutions(...)` also return inactive executions (I know, unfortunate
   naming...).
   Not by default, but opt-in via filter
-- New methods on `ScheduledExecution`:
+- [ ] New methods on `ScheduledExecution`:
   - `.getState()`
-- New/modified filter methods
+- [ ] New/modified filter methods
     - `.withIncludeInactive()`
     - `ScheduledExecutionsFilter.active()`
     - `ScheduledExecutionsFilter.inactive()`
     - Deprecate `ScheduledExecutionsFilter.all()` (`active` new default)
-- Use `client.reactivate(TaskInstanceId, Instant)` to reschedule deactivated executions. Will reset
+- [ ] Use `client.reactivate(TaskInstanceId, Instant)` to reschedule deactivated executions. Will reset
   lastSuccess, lastFailure and consecutiveFailures
   - RecurringTasks will not have option to reschedule according to Schedule
-- Use `client.deactivate(TaskInstanceId, State)` to manually deactivate a scheduled execution. Will
+- [ ] Use `client.deactivate(TaskInstanceId, State)` to manually deactivate a scheduled execution. Will
   keep lastSuccess, lastFailure and consecutiveFailures
-- Use `client.deleteDeactivated(DeleteOptions)`. Options:
+- [ ] Use `client.deleteDeactivated(DeleteOptions)`. Options:
   - olderThan: Instant
   - limit: Int
 
 ### Jobs
 
-* Introduce housekeeping-job that regularly deletes deactivated executions. Default 14d for all
+- [x] Introduce housekeeping-job that regularly deletes deactivated executions. Default 14d for all
 except `State.RECORD` which is kept indefinately.
 
 ### CompletionHandlers (changes)
 
-* `.onCompleteDeactivate(State)` - deactivate with given state
-* `.onCompleteKeepRecord()` - convenience for `.onCompleteDeactivate(State.RECORD)`
+- [x] `.onCompleteDeactivate(State)` - deactivate with given state
+- [x] `.onCompleteKeepRecord()` - convenience for `.onCompleteDeactivate(State.RECORD)`
 
 ### FailureHandlers (changes)
 
-* MaxRetriesThenRemove(Int, FailureHandler, callback)
-* MaxRetriesThenDeactivate(Int, FailureHandler, State, callback)
-* deprecate MaxRetriesFailureHandler since ambigious
+- [ ] MaxRetriesThenRemove(Int, FailureHandler, callback)
+- [ ] MaxRetriesThenDeactivate(Int, FailureHandler, State, callback)
+- [ ] deprecate MaxRetriesFailureHandler since ambigious
 
 ## Backward compatibility / other things
 

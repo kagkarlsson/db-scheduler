@@ -950,7 +950,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     public String getQueryPart() {
-      return "execution_time is not null AND (state is null OR state = 'ACTIVE')";
+      return "(state is null OR state = 'ACTIVE')";
     }
 
     @Override

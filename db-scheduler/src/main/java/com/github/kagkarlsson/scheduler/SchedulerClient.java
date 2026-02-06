@@ -306,8 +306,8 @@ public interface SchedulerClient {
   Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
 
   /**
-   * Gets all deactivated executions (executions with execution_time = null) and supplies them to
-   * the provided Consumer.
+   * Gets all deactivated executions (executions with a non-active state) and supplies them to the
+   * provided Consumer.
    *
    * @param consumer Consumer for the executions
    */
