@@ -1,6 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.active;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.deactivated;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.onlyResolved;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.time.Duration.ofDays;
@@ -560,6 +562,23 @@ public class JdbcTaskRepositoryTest {
               assertThat(e.taskInstance.getId()).isEqualTo("toDeactivate");
               assertThat(e.state).isEqualTo(State.PAUSED);
             });
+  }
+
+  @Test
+  public void getScheduledExecutions_filter_includes_deactivated_based_on_filter() {
+    createExecution(oneTimeTask.instance("active1"), truncatedNow);
+    createExecution(oneTimeTask.instance("active2"), truncatedNow);
+    var toDeactivate = createExecution(oneTimeTask.instance("deactivated1"), truncatedNow);
+    taskRepository.deactivate(toDeactivate, DeactivationUpdate.toState(State.PAUSED).build());
+
+    // active
+    assertThat(toIds(getScheduledExecutions(active())))
+        .containsExactlyInAnyOrder("active1", "active2");
+    // deactivated
+    assertThat(toIds(getScheduledExecutions(deactivated()))).containsExactly("deactivated1");
+    // all
+    assertThat(toIds(getScheduledExecutions(active().withIncludeDeactivated(true))))
+        .containsExactlyInAnyOrder("active1", "active2", "deactivated1");
   }
 
   private <T> Execution createExecution(TaskInstance<T> instance, Instant executionTime) {

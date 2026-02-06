@@ -827,8 +827,11 @@ public class JdbcTaskRepository implements TaskRepository {
 
     filter.getPickedValue().ifPresent(value -> q.andCondition(new PickedCondition(value)));
 
-    q.andCondition(new ScheduledCondition());
-    // TODO: opt-in condition for including deactivated
+    if (filter.getOnlyDeactivated()) {
+      q.andCondition(new DeactivatedCondition());
+    } else if (!filter.getIncludeDeactivated()) {
+      q.andCondition(new ScheduledCondition());
+    }
 
     filter.getAfterExecution().ifPresent(e -> q.andCondition(new ExecutionTimeAfterCondition(e)));
 

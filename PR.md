@@ -5,7 +5,7 @@ Add ability to pause or disable tasks (recurring).
 ## High-level
 
 - `state` column for the state of the execution. Only active executions are run.
-- non-active executions are called inactive
+- non-active executions are called deactivated
 - CompletionHandlers and FailureHandlers now get the option to deactivate the execution and set a
   non-active state (in addition to the previous options: remove and reschedule)
 
@@ -35,22 +35,21 @@ Migration (ALTER TABLE):
 
 ### SchedulerClient
 
-- [ ] Let `client.getScheduledExecutions(...)` also return inactive executions (I know, unfortunate
-  naming...).
+- [x] Let `client.getScheduledExecutions(...)` also return deactivated executions.
   Not by default, but opt-in via filter
-- [ ] New methods on `ScheduledExecution`:
+- [x] New methods on `ScheduledExecution`:
   - `.getState()`
-- [ ] New/modified filter methods
-    - `.withIncludeInactive()`
+- [x] New/modified filter methods
+    - `.withIncludeDeactivated()`
     - `ScheduledExecutionsFilter.active()`
-    - `ScheduledExecutionsFilter.inactive()`
+    - `ScheduledExecutionsFilter.deactivated()`
     - Deprecate `ScheduledExecutionsFilter.all()` (`active` new default)
 - [ ] Use `client.reactivate(TaskInstanceId, Instant)` to reschedule deactivated executions. Will reset
   lastSuccess, lastFailure and consecutiveFailures
   - RecurringTasks will not have option to reschedule according to Schedule
-- [ ] Use `client.deactivate(TaskInstanceId, State)` to manually deactivate a scheduled execution. Will
+- [x] Use `client.deactivate(TaskInstanceId, State)` to manually deactivate a scheduled execution. Will
   keep lastSuccess, lastFailure and consecutiveFailures
-- [ ] Use `client.deleteDeactivated(DeleteOptions)`. Options:
+- [x] Use `client.deleteDeactivated(DeleteOptions)`. Options:
   - olderThan: Instant
   - limit: Int
 
