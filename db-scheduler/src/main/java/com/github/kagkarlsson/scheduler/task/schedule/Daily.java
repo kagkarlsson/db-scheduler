@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler.task.schedule;
 
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 
 public class Daily implements Schedule, Serializable {
 
-  private static final long serialVersionUID = 1L;
+  @Serial private static final long serialVersionUID = 1L;
 
   private final List<LocalTime> times;
   private final ZoneId zone;
@@ -51,7 +52,7 @@ public class Daily implements Schedule, Serializable {
 
   public Daily(ZoneId zone, List<LocalTime> times) {
     this.zone = Objects.requireNonNull(zone, "zone cannot be null");
-    if (times.size() < 1) {
+    if (times.isEmpty()) {
       throw new IllegalArgumentException("times cannot be empty");
     }
     this.times = times.stream().sorted().collect(Collectors.toList());
@@ -69,7 +70,7 @@ public class Daily implements Schedule, Serializable {
       }
     }
 
-    return ZonedDateTime.of(doneDate, times.get(0), zone).plusDays(1).toInstant();
+    return ZonedDateTime.of(doneDate.plusDays(1), times.get(0), zone).toInstant();
   }
 
   @Override

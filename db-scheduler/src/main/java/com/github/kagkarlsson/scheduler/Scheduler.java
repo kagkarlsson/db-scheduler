@@ -236,12 +236,10 @@ public class Scheduler implements SchedulerClient {
   }
 
   public void pause() {
-    LOG.info("Pausing scheduler.");
     this.schedulerState.setPaused(true);
   }
 
   public void resume() {
-    LOG.info("Resuming scheduler.");
     this.schedulerState.setPaused(false);
   }
 
@@ -388,7 +386,7 @@ public class Scheduler implements SchedulerClient {
             LOG.info("Found dead execution. Delegating handling to task. Execution: " + execution);
             try {
 
-              Optional<Task> task = taskResolver.resolve(execution.taskInstance.getTaskName());
+              Optional<Task> task = taskResolver.resolve(execution);
               if (task.isPresent()) {
                 schedulerListeners.onSchedulerEvent(SchedulerEventType.DEAD_EXECUTION);
                 schedulerListeners.onExecutionDead(execution);
@@ -458,7 +456,7 @@ public class Scheduler implements SchedulerClient {
       }
 
     } catch (Throwable ex) { // just-in-case to avoid any "poison-pills"
-      LOG.error("Unexpteced failure while while updating heartbeat for execution {}.", e, ex);
+      LOG.error("Unexpected failure while while updating heartbeat for execution {}.", e, ex);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILED_HEARTBEAT);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
       schedulerListeners.onExecutionFailedHeartbeat(currentlyExecuting);

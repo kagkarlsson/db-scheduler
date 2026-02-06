@@ -24,7 +24,6 @@ import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
@@ -173,6 +172,8 @@ public interface SchedulerClient {
    * @param taskInstanceId Task-instance to reschedule, expected to exist
    * @param newExecutionTime the new execution-time
    * @return true if rescheduled successfully
+   * @throws TaskInstanceNotFoundException if the given instance does not exist
+   * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
    * @see java.time.Instant
    * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
    */
@@ -186,6 +187,8 @@ public interface SchedulerClient {
    * @param newExecutionTime the new execution-time
    * @param newData the new task-data
    * @return true if rescheduled successfully
+   * @throws TaskInstanceNotFoundException if the given instance does not exist
+   * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
    * @see java.time.Instant
    * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
    */
@@ -197,6 +200,8 @@ public interface SchedulerClient {
    *
    * @param schedulableInstance the updated instance
    * @return true if rescheduled successfully
+   * @throws TaskInstanceNotFoundException if the given instance does not exist
+   * @throws TaskInstanceCurrentlyExecutingException if the execution is currently running
    */
   <T> boolean reschedule(SchedulableInstance<T> schedulableInstance);
 
@@ -204,6 +209,9 @@ public interface SchedulerClient {
    * Removes/Cancels an execution.
    *
    * @param taskInstanceId
+   * @throws TaskInstanceNotFoundException if the given instance does not exist
+   * @throws TaskInstanceCurrentlyExecutingException if the given instance is currently being
+   *     executed
    * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
    */
   void cancel(TaskInstanceId taskInstanceId);
@@ -375,8 +383,8 @@ public interface SchedulerClient {
     }
 
     public SchedulerClient build() {
-      TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, knownTasks);
       final SystemClock clock = new SystemClock();
+      TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, knownTasks);
 
       final JdbcCustomization jdbcCustomization =
           ofNullable(this.jdbcCustomization)

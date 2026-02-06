@@ -1,11 +1,13 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
 import static com.github.kagkarlsson.scheduler.SchedulerBuilder.UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH;
 import static com.github.kagkarlsson.scheduler.helper.TimeHelper.truncatedInstantNow;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -16,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
+import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
+import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -24,12 +28,13 @@ import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.helper.ExecutionCompletedCondition;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TestableListener;
+import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
@@ -38,6 +43,9 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
+import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
+import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import com.google.common.collect.Lists;
 import java.time.Duration;
 import java.time.Instant;
@@ -54,6 +62,7 @@ import org.hamcrest.Matchers;
 import org.hamcrest.collection.IsCollectionWithSize;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
@@ -64,19 +73,18 @@ public abstract class CompatibilityTest {
 
   private static final int POLLING_LIMIT = 10_000;
   private static final TaskDescriptor<String> ONETIME = TaskDescriptor.of("oneTime", String.class);
+  private static final Instant anInstant = truncatedInstantNow();
   private Logger LOG = LoggerFactory.getLogger(getClass());
   private final boolean supportsSelectForUpdate;
   private final boolean shouldHavePersistentTimezone;
-
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
-
   private TestTasks.CountingHandler<String> delayingHandlerOneTime;
   private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
   private OneTimeTask<String> oneTime;
   private RecurringTask<Void> recurring;
   private RecurringTask<Integer> recurringWithData;
 
-  private TestableRegistry testableRegistry;
+  private TestableListener testableListener;
   private ExecutionCompletedCondition completed12Condition;
 
   public CompatibilityTest(boolean supportsSelectForUpdate, boolean shouldHavePersistentTimezone) {
@@ -114,7 +122,7 @@ public abstract class CompatibilityTest {
             new DoNothingHandler<>());
 
     completed12Condition = new ExecutionCompletedCondition(12);
-    testableRegistry = new TestableRegistry(false, singletonList(completed12Condition));
+    testableListener = new TestableListener(false, singletonList(completed12Condition));
   }
 
   @AfterEach
@@ -130,7 +138,7 @@ public abstract class CompatibilityTest {
             .pollUsingFetchAndLockOnExecute(0, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH)
             .heartbeatInterval(Duration.ofMillis(100))
             .schedulerName(new SchedulerName.Fixed("test"))
-            .statsRegistry(testableRegistry)
+            .addSchedulerListener(testableListener)
             .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
             .build();
     stopScheduler.register(scheduler);
@@ -150,7 +158,7 @@ public abstract class CompatibilityTest {
             .pollUsingLockAndFetch(0.5, 1.0)
             .heartbeatInterval(Duration.ofMillis(500))
             .schedulerName(new SchedulerName.Fixed("test"))
-            .statsRegistry(testableRegistry)
+            .addSchedulerListener(testableListener)
             .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled());
 
     getJdbcCustomization().ifPresent(builder::jdbcCustomization);
@@ -175,7 +183,7 @@ public abstract class CompatibilityTest {
           scheduler.start();
           completed12Condition.waitFor();
           scheduler.stop();
-          testableRegistry.assertNoFailures();
+          testableListener.assertNoFailures();
 
           assertThat(delayingHandlerRecurring.timesExecuted.get(), greaterThan(10));
           assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
@@ -189,6 +197,44 @@ public abstract class CompatibilityTest {
         () -> {
           doJDBCRepositoryCompatibilityTestUsingData(null);
         });
+  }
+
+  @Test
+  public void test_jdbc_limit_before_after_compatibility() {
+    var repo = createJdbcTaskRepository(false);
+    schedule(repo, ONETIME, "1", anInstant.plusSeconds(10));
+    schedule(repo, ONETIME, "2", anInstant.plusSeconds(20));
+    schedule(repo, ONETIME, "3", anInstant.plusSeconds(30));
+    schedule(repo, ONETIME, "4", anInstant.plusSeconds(40));
+    schedule(repo, ONETIME, "5", anInstant.plusSeconds(50));
+
+    List<Execution> firstPage = repo.getScheduledExecutions(all().limit(3));
+    assertThat(idsFrom(firstPage), contains("1", "2", "3"));
+
+    var theSecond = firstPage.get(1); // id=2
+    var theThird = firstPage.get(2); // id=3
+
+    var beforePage =
+        repo.getScheduledExecutions(
+            all().before(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
+
+    assertThat(idsFrom(beforePage), contains("2", "1"));
+
+    var afterPage =
+        repo.getScheduledExecutions(
+            all().after(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
+    assertThat(idsFrom(afterPage), contains("4", "5"));
+
+    var theFourth = afterPage.get(0); // id=4
+
+    var rangePage =
+        repo.getScheduledExecutions(
+            all()
+                .after(ExecutionTimeAndId.from(toScheduled(theSecond)))
+                .before(ExecutionTimeAndId.from(toScheduled(theFourth)))
+                .limit(10));
+
+    assertThat(idsFrom(rangePage), contains("3"));
   }
 
   @Test
@@ -247,6 +293,22 @@ public abstract class CompatibilityTest {
     assertCorrectOrder(false, (r) -> r.lockAndGetDue(truncatedInstantNow(), POLLING_LIMIT));
   }
 
+  private ScheduledExecution<?> toScheduled(Execution execution) {
+    return new ScheduledExecution<>(String.class, execution);
+  }
+
+  private static List<String> idsFrom(List<Execution> firstPage) {
+    return firstPage.stream().map(Execution::getId).toList();
+  }
+
+  private void schedule(
+      JdbcTaskRepository repo,
+      TaskDescriptor<String> descriptor,
+      String id,
+      Instant executionTime) {
+    repo.createIfNotExists(descriptor.instance(id).scheduledTo(executionTime.plusSeconds(10)));
+  }
+
   private void assertCorrectOrder(
       boolean orderByPriority, Function<JdbcTaskRepository, List<Execution>> methodUnderTest) {
     final JdbcTaskRepository jdbcTaskRepository = createJdbcTaskRepository(orderByPriority);
@@ -270,7 +332,8 @@ public abstract class CompatibilityTest {
   }
 
   private JdbcTaskRepository createJdbcTaskRepository(boolean orderByPriority) {
-    TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    SystemClock clock = new SystemClock();
+    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, new ArrayList<>());
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
@@ -285,7 +348,7 @@ public abstract class CompatibilityTest {
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
             orderByPriority,
-            new SystemClock());
+            clock);
     return jdbcTaskRepository;
   }
 
@@ -295,7 +358,8 @@ public abstract class CompatibilityTest {
       return;
     }
 
-    TaskResolver defaultTaskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    TaskResolver defaultTaskResolver =
+        new TaskResolver(SchedulerListeners.NOOP, new SystemClock(), List.of());
     defaultTaskResolver.addTask(oneTime);
 
     JdbcTaskRepository winterTaskRepo = createRepositoryForForZone(defaultTaskResolver, "CET");
@@ -312,7 +376,8 @@ public abstract class CompatibilityTest {
   }
 
   private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
-    TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    SystemClock clock = new SystemClock();
+    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, List.of());
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
@@ -324,7 +389,7 @@ public abstract class CompatibilityTest {
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
             false,
-            new SystemClock());
+            clock);
 
     final JdbcTaskRepository jdbcTaskRepositoryWithPriority =
         new JdbcTaskRepository(
@@ -334,7 +399,7 @@ public abstract class CompatibilityTest {
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
             true,
-            new SystemClock());
+            clock);
 
     final Instant now = truncatedInstantNow();
 
@@ -376,7 +441,8 @@ public abstract class CompatibilityTest {
 
   @Test
   public void test_jdbc_repository_compatibility_set_data() {
-    TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    SystemClock clock = new SystemClock();
+    TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, List.of());
     taskResolver.addTask(recurringWithData);
 
     DataSource dataSource = getDataSource();
@@ -388,7 +454,7 @@ public abstract class CompatibilityTest {
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
             false,
-            new SystemClock());
+            clock);
 
     final Instant now = truncatedInstantNow();
 
@@ -429,7 +495,8 @@ public abstract class CompatibilityTest {
         "Running  test_jdbc_customization_supports_timestamps_in_utc for: "
             + jdbcCustomization.get().getName());
 
-    TaskResolver defaultTaskResolver = new TaskResolver(StatsRegistry.NOOP, new ArrayList<>());
+    TaskResolver defaultTaskResolver =
+        new TaskResolver(SchedulerListeners.NOOP, new SystemClock(), List.of());
     defaultTaskResolver.addTask(oneTime);
 
     JdbcTaskRepository taskRepo =
@@ -442,6 +509,23 @@ public abstract class CompatibilityTest {
     taskRepo.createIfNotExists(SchedulableInstance.of(instance1, zonedDateTime.toInstant()));
 
     assertThat(taskRepo.getExecution(instance1).get().executionTime, is(zonedDateTime.toInstant()));
+  }
+
+  @RepeatedTest(5)
+  void test_compatibility_manual_scheduler() {
+    final SettableClock clock = new SettableClock();
+    final ManualScheduler scheduler =
+        (ManualScheduler)
+            new TestHelper.ManualSchedulerBuilder(getDataSource(), List.of(oneTime))
+                .clock(clock)
+                .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
+                .build();
+
+    scheduler.schedule(oneTime.instance("1"), TimeHelper.truncated(clock.now()));
+
+    scheduler.runAnyDueExecutions();
+
+    assertThat(delayingHandlerOneTime.timesExecuted.get(), is(1));
   }
 
   private JdbcTaskRepository createRepositoryForForZone(

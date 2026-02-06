@@ -13,7 +13,7 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.TestTasks.PausingHandler;
-import com.github.kagkarlsson.scheduler.helper.TestableRegistry;
+import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.task.DeadExecutionHandler.CancelDeadExecution;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -43,12 +43,12 @@ public class DetectStaleHeartbeatTest {
             .onDeadExecution(new CancelDeadExecution<>())
             .execute(handler);
 
-    TestableRegistry.Condition ranUpdateHeartbeats =
-        TestableRegistry.Conditions.ranUpdateHeartbeats(3);
-    TestableRegistry.Condition ranExecuteDue = TestableRegistry.Conditions.ranExecuteDue(1);
+    TestableListener.Condition ranUpdateHeartbeats =
+        TestableListener.Conditions.ranUpdateHeartbeats(3);
+    TestableListener.Condition ranExecuteDue = TestableListener.Conditions.ranExecuteDue(1);
 
-    TestableRegistry registry =
-        TestableRegistry.create().waitConditions(ranUpdateHeartbeats, ranExecuteDue).build();
+    TestableListener listener =
+        TestableListener.create().waitConditions(ranUpdateHeartbeats, ranExecuteDue).build();
 
     Scheduler scheduler =
         Scheduler.create(postgres.getDataSource(), customTask)
@@ -56,7 +56,7 @@ public class DetectStaleHeartbeatTest {
             .heartbeatInterval(Duration.ofMillis(30))
             .missedHeartbeatsLimit(10)
             .schedulerName(new SchedulerName.Fixed("test"))
-            .statsRegistry(registry)
+            .addSchedulerListener(listener)
             .build();
     stopScheduler.register(scheduler);
 

@@ -18,11 +18,17 @@ release:
     owner: kagkarlsson
     overwrite: false
     skipRelease: false
-    draft: true
+    draft: false
     skipTag: false
     releaseName: '{{tagName}}'
-    releaseNotes:
-      enabled: true
+    changelog:
+      formatted: ALWAYS
+      preset: conventional-commits
+      contributors:
+        format: '- {{contributorName}}{{#contributorUsernameAsLink}} ({{.}}){{/contributorUsernameAsLink}}'
+      hide:
+        contributors:
+          - 'GitHub'
     issues:
       enabled: true
 
@@ -32,11 +38,13 @@ signing:
 
 deploy:
   maven:
-    nexus2:
-      maven-central:
+    mavenCentral:
+      sonatype:
+        applyMavenCentralRules: true
         active: ALWAYS
-        url: https://oss.sonatype.org/service/local
-        closeRepository: true
-        releaseRepository: true
+        url: https://central.sonatype.com/api/v1/publisher
+        authorization: BASIC
         stagingRepositories:
           - target/staging-deploy
+        retryDelay: 20
+        maxRetries: 150

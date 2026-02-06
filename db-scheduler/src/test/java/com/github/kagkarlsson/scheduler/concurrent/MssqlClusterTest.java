@@ -22,9 +22,11 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 @Tag("compatibility-cluster")
+@SuppressWarnings("rawtypes")
 public class MssqlClusterTest {
   public static final int NUMBER_OF_THREADS = 10;
   private static final Logger DEBUG_LOG = LoggerFactory.getLogger(MssqlClusterTest.class);
@@ -39,7 +41,11 @@ public class MssqlClusterTest {
   //        new LogLevelOverride("com.github.kagkarlsson.scheduler.FetchCandidates", Level.DEBUG)
   //    );
 
-  @Container private static final MSSQLServerContainer MSSQL = new MSSQLServerContainer();
+  @Container
+  private static final MSSQLServerContainer MSSQL =
+      new MSSQLServerContainer<>(
+          DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"));
+
   private static DataSource pooledDatasource;
 
   @BeforeAll

@@ -13,6 +13,10 @@ public final class TimeHelper {
    * @see <a href="https://bugs.openjdk.java.net/browse/JDK-8068730">JDK-8068730</a>
    */
   public static Instant truncatedInstantNow() {
-    return Instant.now().truncatedTo(MILLIS);
+    return truncated(Instant.now());
+  }
+
+  public static Instant truncated(Instant instant) {
+    return instant.truncatedTo(MILLIS);
   }
 }

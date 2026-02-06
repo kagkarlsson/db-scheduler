@@ -7,8 +7,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.*;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
@@ -47,7 +47,9 @@ public class DeadExecutionsTest {
         new NonCompletingTask<>(
             "NonCompleting", Void.class, nonCompletingExecutionHandler, deadExecutionHandler);
 
-    TaskResolver taskResolver = new TaskResolver(StatsRegistry.NOOP, oneTimeTask, nonCompleting);
+    TaskResolver taskResolver =
+        new TaskResolver(
+            SchedulerListeners.NOOP, settableClock, List.of(oneTimeTask, nonCompleting));
 
     jdbcTaskRepository =
         new JdbcTaskRepository(

@@ -15,12 +15,12 @@ package com.github.kagkarlsson.scheduler;
 
 import static java.util.function.Function.identity;
 
-import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.task.Task;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,35 +31,31 @@ import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("rawtypes")
 public class TaskResolver {
+
   private static final Logger LOG = LoggerFactory.getLogger(TaskResolver.class);
-  private final StatsRegistry statsRegistry;
+  private final SchedulerListeners schedulerListeners;
   private final Clock clock;
   private final Map<String, Task> taskMap;
   private final Map<String, UnresolvedTask> unresolvedTasks = new ConcurrentHashMap<>();
 
-  public TaskResolver(StatsRegistry statsRegistry, Task<?>... knownTasks) {
-    this(statsRegistry, Arrays.asList(knownTasks));
-  }
-
-  public TaskResolver(StatsRegistry statsRegistry, List<Task<?>> knownTasks) {
-    this(statsRegistry, new SystemClock(), knownTasks);
-  }
-
-  public TaskResolver(StatsRegistry statsRegistry, Clock clock, List<Task<?>> knownTasks) {
-    this.statsRegistry = statsRegistry;
+  public TaskResolver(
+      SchedulerListeners schedulerListeners, Clock clock, List<Task<?>> knownTasks) {
+    this.schedulerListeners = schedulerListeners;
     this.clock = clock;
     this.taskMap = knownTasks.stream().collect(Collectors.toMap(Task::getName, identity()));
   }
 
-  public Optional<Task> resolve(String taskName) {
-    return resolve(taskName, true);
+  public Optional<Task> resolve(Resolvable resolvable) {
+    return resolve(resolvable, true);
   }
 
-  public Optional<Task> resolve(String taskName, boolean addUnresolvedToExclusionFilter) {
+  public Optional<Task> resolve(Resolvable resolvable, boolean addUnresolvedToExclusionFilter) {
+    String taskName = resolvable.getTaskName();
+
     Task task = taskMap.get(taskName);
     if (task == null && addUnresolvedToExclusionFilter) {
-      addUnresolved(taskName);
-      statsRegistry.register(StatsRegistry.SchedulerStatsEvent.UNRESOLVED_TASK);
+      addUnresolved(taskName, resolvable.getExecutionTime());
+      schedulerListeners.onSchedulerEvent(SchedulerEventType.UNRESOLVED_TASK);
       LOG.info(
           "Found execution with unknown task-name '{}'. Adding it to the list of known unresolved task-names.",
           taskName);
@@ -67,8 +63,8 @@ public class TaskResolver {
     return Optional.ofNullable(task);
   }
 
-  private void addUnresolved(String taskName) {
-    unresolvedTasks.putIfAbsent(taskName, new UnresolvedTask(taskName));
+  private void addUnresolved(String taskName, Instant executionTime) {
+    unresolvedTasks.putIfAbsent(taskName, new UnresolvedTask(taskName, executionTime));
   }
 
   public void addTask(Task task) {
@@ -94,12 +90,13 @@ public class TaskResolver {
   }
 
   public class UnresolvedTask {
+
     private final String taskName;
     private final Instant firstUnresolved;
 
-    public UnresolvedTask(String taskName) {
+    public UnresolvedTask(String taskName, Instant executionTime) {
       this.taskName = taskName;
-      firstUnresolved = clock.now();
+      firstUnresolved = executionTime;
     }
 
     public String getTaskName() {

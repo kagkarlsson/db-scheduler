@@ -40,11 +40,12 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 ## Getting started
 
 1. Add maven dependency
+
 ```xml
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>15.1.1</version>
+    <version>16.7.0</version>
 </dependency>
 ```
 
@@ -74,21 +75,22 @@ For more examples, continue reading. For details on the inner workings, see [How
 
 List of organizations known to be running db-scheduler in production:
 
-| Company                                   | Description                                                  |
-|-------------------------------------------|--------------------------------------------------------------|
-| [Digipost](https://digipost.no)           | Provider of digital mailboxes in Norway                      |
-| [Vy Group](https://www.vy.no/en)          | One of the largest transport groups in the Nordic countries. |
-| [Wise](https://wise.com/)                 | A cheap, fast way to send money abroad.                      |
-| Becker Professional Education             |                                                              |
-| [Monitoria](https://monitoria.ca)         | Website monitoring service.                                  |
-| [Loadster](https://loadster.app)          | Load testing for web applications.                           |
-| [Statens vegvesen](https://www.vegvesen.no/)| The Norwegian Public Roads Administration                  |
-| [Lightyear](https://lightyear.com/)       |  A simple and approachable way to invest your money globally.|
-| [NAV](https://www.nav.no/)                |  The Norwegian Labour and Welfare Administration             |
-| [ModernLoop](https://modernloop.io/)      |  Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination.             |
-| [Diffia](https://www.diffia.com/)         |  Norwegian eHealth company                                   |
-| [Swan](https://www.swan.io/)              | Swan helps developers to embed banking services easily into their product. |
-| [TOMRA](https://www.tomra.com/)           | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling. |
+|                   Company                    |                                                                 Description                                                                 |
+|----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| [Digipost](https://digipost.no)              | Provider of digital mailboxes in Norway                                                                                                     |
+| [Vy Group](https://www.vy.no/en)             | One of the largest transport groups in the Nordic countries.                                                                                |
+| [Wise](https://wise.com/)                    | A cheap, fast way to send money abroad.                                                                                                     |
+| Becker Professional Education                |                                                                                                                                             |
+| [Monitoria](https://monitoria.ca)            | Website monitoring service.                                                                                                                 |
+| [Loadster](https://loadster.app)             | Load testing for web applications.                                                                                                          |
+| [Statens vegvesen](https://www.vegvesen.no/) | The Norwegian Public Roads Administration                                                                                                   |
+| [Lightyear](https://lightyear.com/)          | A simple and approachable way to invest your money globally.                                                                                |
+| [NAV](https://www.nav.no/)                   | The Norwegian Labour and Welfare Administration                                                                                             |
+| [ModernLoop](https://modernloop.io/)         | Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination. |
+| [Diffia](https://www.diffia.com/)            | Norwegian eHealth company                                                                                                                   |
+| [Swan](https://www.swan.io/)                 | Swan helps developers to embed banking services easily into their product.                                                                  |
+| [TOMRA](https://www.tomra.com/)              | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling.                            |
+| [Kartverket](https://kartverket.no/)         | The Norwegian Mapping Authority.                                                                                                            |
 
 Feel free to open a PR to add your organization to the list.
 
@@ -118,7 +120,7 @@ scheduler.start();
 
 For recurring tasks with multiple instances and schedules, see example [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java).
 
-###  One-time task
+### One-time task
 
 An instance of a _one-time_ task has a single execution-time some time in the future (i.e. non-recurring). The instance-id must be unique within this task, and may be used to encode some metadata (e.g. an id). For more complex state, custom serializable java objects are supported (as used in the example).
 
@@ -168,7 +170,7 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 
 #### Plain Java
 
-| Example                                                                                                                                                                        | Description                                                                                                                                                                                                             |
+|                                                                                    Example                                                                                     |                                                                                                       Description                                                                                                       |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [EnableImmediateExecutionMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/EnableImmediateExecutionMain.java)                                       | When scheduling executions to run `now()` or earlier, the local `Scheduler` will be hinted about this, and "wake up" to go check for new executions earlier than it normally would (as configured by `pollingInterval`. |
 | [MaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/MaxRetriesMain.java)                                                                   | How to set a limit on the number of retries an execution can have.                                                                                                                                                      |
@@ -176,7 +178,7 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 | [ExponentialBackoffWithMaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/ExponentialBackoffWithMaxRetriesMain.java)                       | How to use exponential backoff as retry strategy **and** a hard limit on the maximum number of retries.                                                                                                                 |
 | [TrackingProgressRecurringTaskMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/TrackingProgressRecurringTaskMain.java)                             | Recurring jobs may store `task_data` as a way of persisting state across executions. This example shows how.                                                                                                            |
 | [SpawningOtherTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SpawningOtherTasksMain.java)                                                   | Demonstrates on task scheduling instances of another by using the `executionContext.getSchedulerClient()`.                                                                                                              |
-| [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)                                                         | Demonstrates some of the `SchedulerClient`'s capabilities. Scheduling, fetching scheduled executions etc.                                                                                                                |
+| [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)                                                         | Demonstrates some of the `SchedulerClient`'s capabilities. Scheduling, fetching scheduled executions etc.                                                                                                               |
 | [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java)                 | Multi-instance recurring jobs where the `Schedule` is stored as part of the `task_data`. For example suitable for multi-tenant applications where each tenent should have a recurring task.                             |
 | [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java) |                                                                                                                                                                                                                         |
 | [JsonSerializerMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JsonSerializerMain.java)                                                           | Overrides serialization of `task_data` from Java-serialization (default) to JSON.                                                                                                                                       |
@@ -184,23 +186,17 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 | [JobChainingUsingSeparateTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingSeparateTasksMain.java)                             | Job chaining, as above.                                                                                                                                                                                                 |
 | [InterceptorMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/InterceptorMain.java)                                                                 | Using `ExecutionInterceptor` to inject logic before and after execution for all `ExecutionHandler`.                                                                                                                     |
 
-
-
 #### Spring Boot
 
-
-
-| Example                                                                                                                                                         | Description                                                                                                                                                                                                                                |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [BasicExamples](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/BasicExamplesConfiguration.java)                       | A basic one-time task and recurring task                                                                                                                                                                                                   |
-| [TransactionallyStagedJob](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/TransactionallyStagedJobConfiguration.java) | Example of [transactionally staging a job](https://brandur.org/job-drain), i.e. making sure the background job runs **iff** the transaction commits (along with other db-modifications).                                                   |
+|                                                                             Example                                                                             |                                                                                                                 Description                                                                                                                 |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [BasicExamples](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/BasicExamplesConfiguration.java)                       | A basic one-time task and recurring task                                                                                                                                                                                                    |
+| [TransactionallyStagedJob](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/TransactionallyStagedJobConfiguration.java) | Example of [transactionally staging a job](https://brandur.org/job-drain), i.e. making sure the background job runs **iff** the transaction commits (along with other db-modifications).                                                    |
 | [LongRunningJob](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/LongRunningJobConfiguration.java)                     | Long-running jobs need to **survive application restarts** and avoid restarting from the beginning. This example demonstrates how to **persisting progress** on shutdown and additionally  a technique for limiting the job to run nightly. |
-| [RecurringStateTracking](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/RecurringStateTrackingConfiguration.java)     | A recurring task with state that can be modified after each run.                                                                                                                                                                           |
-| [ParallelJobSpawner](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/ParallellJobConfiguration.java)                  | Demonstrates how to use a recurring job to spawn one-time jobs, e.g. for parallelization.                                                                                                                                                  |
-| [JobChaining](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/JobChainingConfiguration.java)                           | A one-time job with **multiple steps**. The next step is scheduled after the previous one completes.                                                                                                                                       |
-| [MultiInstanceRecurring](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/MultiInstanceRecurringConfiguration.java)     | Demonstrates how to achieve **multiple recurring jobs** of the same type, but potentially differing schedules and data.                                                                                                                    |
-
-
+| [RecurringStateTracking](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/RecurringStateTrackingConfiguration.java)     | A recurring task with state that can be modified after each run.                                                                                                                                                                            |
+| [ParallelJobSpawner](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/ParallellJobConfiguration.java)                   | Demonstrates how to use a recurring job to spawn one-time jobs, e.g. for parallelization.                                                                                                                                                   |
+| [JobChaining](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/JobChainingConfiguration.java)                           | A one-time job with **multiple steps**. The next step is scheduled after the previous one completes.                                                                                                                                        |
+| [MultiInstanceRecurring](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/MultiInstanceRecurringConfiguration.java)     | Demonstrates how to achieve **multiple recurring jobs** of the same type, but potentially differing schedules and data.                                                                                                                     |
 
 ## Configuration
 
@@ -218,8 +214,8 @@ How often the scheduler checks the database for due executions. Default `10s`.<b
 
 :gear: `.alwaysPersistTimestampInUTC()`<br/>
 The Scheduler assumes that columns for persisting timestamps persist `Instant`s, not `LocalDateTime`s,
- i.e. somehow tie the timestamp to a zone. However, some databases have limited support for such types
- (which has no zone information) or other quirks, making "always store in UTC" a better alternative.
+i.e. somehow tie the timestamp to a zone. However, some databases have limited support for such types
+(which has no zone information) or other quirks, making "always store in UTC" a better alternative.
 For such cases, use this setting to always store Instants in UTC.
 PostgreSQL and Oracle-schemas is tested to preserve zone-information. **MySQL** and **MariaDB**-schemas
 _does not_ and should use this setting.
@@ -254,11 +250,11 @@ enable priority via this config setting.
 Set the priority per instance using the `TaskInstance.Builder`:
 
 ```java
-    scheduler.schedule(
-        MY_TASK
-            .instance("1")
-            .priority(100)
-            .scheduledTo(Instant.now()));
+scheduler.schedule(
+    MY_TASK
+        .instance("1")
+        .priority(100)
+        .scheduledTo(Instant.now()));
 ```
 
 You can also set the default priority for all tasks of a given type:
@@ -280,7 +276,7 @@ as they do not support descending indexes.
 #### Polling strategy
 
 If you are running >1000 executions/s you might want to use the `lock-and-fetch` polling-strategy for lower overhead
- and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` will be fine.
+and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` will be fine.
 
 :gear: `.pollUsingFetchAndLockOnExecute(double, double)`<br/>
 Use default polling strategy `fetch-and-lock-on-execute`.<br/>
@@ -290,7 +286,6 @@ Fetched executions are not locked/picked, so the scheduler will compete with oth
 when it is executed. Supported by all databases.
 <br/>Defaults: `0,5, 3.0`
 
-
 :gear: `.pollUsingLockAndFetch(double, double)`<br/>
 Use polling strategy `lock-and-fetch` which uses `select for update .. skip locked` for less overhead.<br/>
 If the last fetch from the database was a full batch, a new fetch will be triggered
@@ -299,11 +294,10 @@ The number of executions fetched each time is equal to `(upperLimitFractionOfThr
 Fetched executions are already locked/picked for this scheduler-instance thus saving one `UPDATE` statement.
 <br/>For normal usage, set to for example `0.5, 1.0`.
 <br/>For high throughput
-(i.e. keep threads busy), set to for example `1.0, 4.0`. Currently hearbeats are not updated for picked executions
+(i.e. keep threads busy), set to for example `1.0, 4.0`. Currently heartbeats are not updated for picked executions
 in queue (applicable if `upperLimitFractionOfThreads > 1.0`). If they stay there for more than
 `4 * heartbeat-interval` (default `20m`), not starting execution, they will be detected as _dead_ and likely be
 unlocked again (determined by `DeadExecutionHandler`).  Currently supported by PostgreSQL, SQL Server, MySQL v8+.
-
 
 #### Less commonly tuned
 
@@ -333,7 +327,7 @@ but db-scheduler also bundles a `GsonSerializer` and `JacksonSerializer`. See ex
 See also additional documentation under [Serializers](#Serializers).
 
 :gear: `.executorService(ExecutorService)`<br/>
-If specified, use this externally managed executor service to run executions. Ideally the number of threads it
+If specified, use this externally managed executor service to run executions. Ideally, the number of threads it
 will use should still be supplied (for scheduler polling optimizations). Default `null`.
 
 :gear: `.deleteUnresolvedAfter(Duration)`<br/>
@@ -352,38 +346,37 @@ behavior and have the Scheduler always issue commits. Default `false`.
 
 :gear: `.failureLogging(Level, boolean)`<br/>
 Configures how to log task failures, i.e. `Throwable`s thrown from a task execution handler. Use log level `OFF` to disable
- this kind of logging completely. Default `WARN, true`.
+this kind of logging completely. Default `WARN, true`.
 
 ### Task configuration
 
 Tasks are created using one of the builder-classes in `Tasks`. The builders have sensible defaults, but the following options can be overridden.
 
-| Option  | Default | Description |
-| ------------- | ---- | ------------- |
-| `.onFailure(FailureHandler)`  | see desc.  | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule` _one-time tasks_ are retried again in 5m. |
-| `.onDeadExecution(DeadExecutionHandler)`  | `ReviveDeadExecution`  | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`. |
-| `.initialData(T initialData)`  | `null`  | The data to use the first time a _recurring task_ is scheduled. |
-
+|                  Option                  |        Default        |                                                                                   Description                                                                                   |
+|------------------------------------------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `.onFailure(FailureHandler)`             | see desc.             | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule` _one-time tasks_ are retried again in 5m. |
+| `.onDeadExecution(DeadExecutionHandler)` | `ReviveDeadExecution` | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`.                     |
+| `.initialData(T initialData)`            | `null`                | The data to use the first time a _recurring task_ is scheduled.                                                                                                                 |
 
 ### Schedules
 
 The library contains a number of Schedule-implementations for recurring tasks. See class `Schedules`.
 
-| Schedule  | Description                                                                                                                                                                   |
-| ------------- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `.daily(LocalTime ...)`  | Runs every day at specified times. Optionally a time zone can be specified.                                                                                                   |
-| `.fixedDelay(Duration)`  | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)` |
-| `.cron(String)`  | Spring-style cron-expression (v5.3+). The pattern `-` is interpreted as a [disabled schedule](#disabled-schedules).                                                           |
+|        Schedule         |                                                                                  Description                                                                                  |
+|-------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `.daily(LocalTime ...)` | Runs every day at specified times. Optionally a time zone can be specified.                                                                                                   |
+| `.fixedDelay(Duration)` | Next execution-time is `Duration` after last completed execution. **Note:** This `Schedule` schedules the initial execution to `Instant.now()` when used in `startTasks(...)` |
+| `.cron(String)`         | Spring-style cron-expression (v5.3+). The pattern `-` is interpreted as a [disabled schedule](#disabled-schedules).                                                           |
 
 Another option to configure schedules is reading string patterns with `Schedules.parse(String)`.
 
 The currently available patterns are:
 
-| Pattern  | Description |
-| ------------- | ------------- |
-| `FIXED_DELAY\|Ns`  | Same as `.fixedDelay(Duration)` with duration set to N seconds. |
-| `DAILY\|12:30,15:30...(\|time_zone)`  | Same as `.daily(LocalTime)` with optional time zone (e.g. Europe/Rome, UTC)|
-| `-`  | [Disabled schedule](#disabled-schedules) |
+|               Pattern                |                                 Description                                 |
+|--------------------------------------|-----------------------------------------------------------------------------|
+| `FIXED_DELAY\|Ns`                    | Same as `.fixedDelay(Duration)` with duration set to N seconds.             |
+| `DAILY\|12:30,15:30...(\|time_zone)` | Same as `.daily(LocalTime)` with optional time zone (e.g. Europe/Rome, UTC) |
+| `-`                                  | [Disabled schedule](#disabled-schedules)                                    |
 
 More details on the time zone formats can be found [here](https://docs.oracle.com/javase/8/docs/api/java/time/ZoneId.html#of-java.lang.String-).
 
@@ -395,7 +388,7 @@ and it will remove any existing executions for that task.
 ### Serializers
 
 A task-instance may have some associated data in the field `task_data`. The scheduler uses a `Serializer` to read and write this
-data to the database. By default, standard Java serialization is used, but a number of options is provided:
+data to the database. By default, standard Java serialization is used, but a number of options are provided:
 
 * `GsonSerializer`
 * `JacksonSerializer`
@@ -410,7 +403,6 @@ If you need to migrate from Java serialization to a `GsonSerializer`, configure 
 ```java
 .serializer(new SerializerWithFallbackDeserializers(new GsonSerializer(), new JavaSerializer()))
 ```
-
 
 ## Third-party extensions
 
@@ -432,16 +424,21 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
 ### Getting started
 
 1. Add the following Maven dependency
-    ```xml
-    <dependency>
-        <groupId>com.github.kagkarlsson</groupId>
-        <artifactId>db-scheduler-spring-boot-starter</artifactId>
-        <version>15.1.1</version>
-    </dependency>
-    ```
-   **NOTE**: This includes the db-scheduler dependency itself.
+
+   ```xml
+   <dependency>
+       <groupId>com.github.kagkarlsson</groupId>
+       <artifactId>db-scheduler-spring-boot-4-starter</artifactId>
+       <version>16.7.0</version>
+   </dependency>
+   ```
+
+   **NB:** For Spring Boot 3.x, use `db-scheduler-spring-boot-starter`
+
 2. In your configuration, expose your `Task`'s as Spring beans. If they are recurring, they will automatically be picked up and started.
+
 3. If you want to expose `Scheduler` state into actuator health information you need to enable `db-scheduler` health indicator. [Spring Health Information.](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health)
+
 4. Run the app.
 
 ### Configuration options
@@ -453,6 +450,7 @@ Configuration is mainly done via `application.properties`. Configuration of sche
 
 db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
+db-scheduler.missed-heartbeats-limit=6
 db-scheduler.polling-interval=10s
 db-scheduler.polling-strategy=fetch
 db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
@@ -490,13 +488,11 @@ It will allow for operations such as:
 * Remove an old executions that have been retrying for too long
 * ...
 
-
 ## How it works
 
 A single database table is used to track future task-executions. When a task-execution is due, db-scheduler picks it and executes it. When the execution is done, the `Task` is consulted to see what should be done. For example, a `RecurringTask` is typically rescheduled in the future based on its `Schedule`.
 
 The scheduler uses optimistic locking or select-for-update (depending on polling strategy) to guarantee that one and only one scheduler-instance gets to pick and run a task-execution.
-
 
 ### Recurring tasks
 
@@ -548,12 +544,11 @@ Use-cases might be:
 * Tasks that should be either rescheduled or removed based on output from the actual execution
 * ..
 
-
 ### Dead executions
 
 During execution, the scheduler regularly updates a heartbeat-time for the task-execution.
 If an execution is marked as executing, but is not receiving updates to the heartbeat-time,
-it will be considered a _dead execution_ after time X. That may for example happen if the
+it will be considered a _dead execution_ after time X. That may, for example, happen if the
 JVM running the scheduler suddenly exits.
 
 When a dead execution is found, the `Task`is consulted to see what should be done. A dead
@@ -580,10 +575,9 @@ In v10, a new polling strategy (`lock-and-fetch`) was added. It utilizes the fac
 Using such a strategy, it is possible to fetch executions pre-locked, and thus getting one statement less:
 
 1. `select for update .. skip locked` a batch of due executions. These will already be picked by the scheduler-instance.
-3. When execution is done, `update` or `delete` the record according to handlers.
+2. When execution is done, `update` or `delete` the record according to handlers.
 
-In sum per batch: 1 select-and-update, 1 * batch-size updates   (no misses)
-
+In sum per batch: 1 select-and-update, 1 * batch-size updates (no misses)
 
 ### Benchmark test
 
@@ -592,14 +586,14 @@ Tests were run with a few different configurations, but each using 4 competing s
 TPS is the approx. transactions per second as shown in GCP.
 
 |                                        | Throughput fetch (ex/s) | TPS fetch (estimates) | Throughput lock-and-fetch (ex/s) | TPS lock-and-fetch (estimates) |
-|----------------------------------------|------------------|--------------------------|---------------------------|-----------------------------------|
-| Postgres 4core 25gb ram, 4xVMs(2-core) |                  |                          |                           |                                   |
-| 20 threads, lower 4.0, upper 20.0      | 2000             | 9000                     | 10600                     | 11500                             |
-| 100 threads, lower 2.0, upper 6.0      | 2560             | 11000                    | 11200                     | 11200                             |
-|                                        |                  |                          |                           |                                   |
-| Postgres 8core 50gb ram, 4xVMs(4-core) |                  |                          |                           |                                   |
-| 50 threads, lower: 0.5, upper: 4.0     | 4000             | 22000                    | 11840                     | 10300                             |
-|                                        |                  |                          |                           |                                   |
+|----------------------------------------|-------------------------|-----------------------|----------------------------------|--------------------------------|
+| Postgres 4core 25gb ram, 4xVMs(2-core) |                         |                       |                                  |                                |
+| 20 threads, lower 4.0, upper 20.0      | 2000                    | 9000                  | 10600                            | 11500                          |
+| 100 threads, lower 2.0, upper 6.0      | 2560                    | 11000                 | 11200                            | 11200                          |
+|                                        |                         |                       |                                  |                                |
+| Postgres 8core 50gb ram, 4xVMs(4-core) |                         |                       |                                  |                                |
+| 50 threads, lower: 0.5, upper: 4.0     | 4000                    | 22000                 | 11840                            | 10300                          |
+|                                        |                         |                       |                                  |                                |
 
 Observations for these tests:
 
@@ -628,18 +622,20 @@ There are a number of users that are using db-scheduler for high throughput use-
 
 * Currently, the precision of db-scheduler is depending on the `pollingInterval` (default 10s) which specifies how often to look in the table for due executions. If you know what you are doing, the scheduler may be instructed at runtime to "look early" via `scheduler.triggerCheckForDueExecutions()`. (See also `enableImmediateExecution()` on the `Builder`)
 
-
 ## Versions / upgrading
 
 See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
 
+**Upgrading to 16.x**
+* Java 17+ is required now, since we migrated our codebase to Java 17
+
 **Upgrading to 15.x**
 * Priority is a new opt-in feature. To be able to use it, column `priority` and index `priority_execution_time_idx`
-  must be added to the database schema. See table definitions for
-  [postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql),
-  [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or
-  [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
-  At some point, this column will be made mandatory. This will be made clear in future release/upgrade-notes.
+must be added to the database schema. See table definitions for
+[postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql),
+[oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or
+[mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
+At some point, this column will be made mandatory. This will be made clear in future release/upgrade-notes.
 
 **Upgrading to 8.x**
 * Custom Schedules must implement a method `boolean isDeterministic()` to indicate whether they will always produce the same instants or not.
@@ -658,18 +654,19 @@ See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release
 
 **Prerequisites**
 
-* Java 8+
+* Java 17+
 * Maven
 
 Follow these steps:
 
 1. Clone the repository.
+
    ```
    git clone https://github.com/kagkarlsson/db-scheduler
    cd db-scheduler
    ```
-
 2. Build using Maven (skip tests by adding `-DskipTests=true`)
+
    ```
    mvn package
    ```
@@ -686,7 +683,7 @@ Some users have experienced intermittent test failures when running on a single-
 #### Why `db-scheduler` when there is `Quartz`?
 
 The goal of `db-scheduler` is to be non-invasive and simple to use, but still solve the persistence problem, and the cluster-coordination problem.
- It was originally targeted at applications with modest database schemas, to which adding 11 tables would feel a bit overkill..
+It was originally targeted at applications with modest database schemas, to which adding 11 tables would feel a bit overkill..
 
 #### Why use a RDBMS for persistence and coordination?
 

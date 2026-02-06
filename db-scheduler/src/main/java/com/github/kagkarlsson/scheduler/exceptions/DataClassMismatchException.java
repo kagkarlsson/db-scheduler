@@ -13,8 +13,10 @@
  */
 package com.github.kagkarlsson.scheduler.exceptions;
 
+import java.io.Serial;
+
 public class DataClassMismatchException extends DbSchedulerException {
-  private static final long serialVersionUID = 6333316294241471977L;
+  @Serial private static final long serialVersionUID = 6333316294241471977L;
 
   public DataClassMismatchException(Class expectedClass, Class actualClass) {
     super(

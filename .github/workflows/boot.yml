@@ -1,12 +1,12 @@
 name: spring-boot-compatibility
 on: [push]
 jobs:
-  build:
-    runs-on: ubuntu-20.04
+  build-boot3:
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
-        spring-boot: [ '2.5.15', '2.6.15', '2.7.18', '3.0.13', '3.1.10', '3.2.4' ]
-    name: Spring Boot ${{ matrix.spring-boot }}
+        spring-boot: [ '2.7.18', '3.3.13', '3.4.5', '3.5.8' ]
+    name: Spring Boot 3 - ${{ matrix.spring-boot }}
     steps:
       - uses: actions/checkout@v3
 
@@ -17,7 +17,28 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run Spring Boot tests
-        run: mvn -B -Dspring-boot.version=${{ matrix.spring-boot }} -PspringBootDevelopment clean test --file pom.xml
+      - name: Run Spring Boot 3 tests
+        run: mvn -B -Dspring-boot.version=${{ matrix.spring-boot }} -PspringBootDevelopment clean test -am -pl db-scheduler-spring-boot-starter-parent/db-scheduler-spring-boot3-starter
+        env:
+          TZ: UTC
+
+  build-boot4:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        spring-boot: [ '4.0.1' ]
+    name: Spring Boot 4 - ${{ matrix.spring-boot }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Spring Boot 4 tests
+        run: mvn -B -Dspring-boot-4.version=${{ matrix.spring-boot }} -PspringBootDevelopment clean test -am -pl db-scheduler-spring-boot-starter-parent/db-scheduler-spring-boot4-starter
         env:
           TZ: UTC

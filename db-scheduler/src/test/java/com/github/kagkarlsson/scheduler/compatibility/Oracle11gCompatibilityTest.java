@@ -21,8 +21,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 public class Oracle11gCompatibilityTest extends CompatibilityTest {
   @Container private static final OracleContainer ORACLE = new OracleContainer("gvenzl/oracle-xe");
-
   private static HikariDataSource pooledDatasource;
+
+  //        Enable if test gets flaky!
+  //  @RegisterExtension
+  //  public ChangeLogLevelsExtension changeLogLevels =
+  //      new ChangeLogLevelsExtension(
+  //          new ChangeLogLevelsExtension.LogLevelOverride(
+  //              "com.github.kagkarlsson.scheduler", Level.DEBUG));
 
   public Oracle11gCompatibilityTest() {
     super(false, true); // FIXLATER: fix syntax and enable

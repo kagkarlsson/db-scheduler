@@ -47,8 +47,8 @@ public class ParallellJobConfiguration {
             + PARALLEL_JOB_SPAWNER.getTaskName()
             + ". Initial execution-time will be now (deviating from defined schedule).");
 
-    ctx.schedulerClient.reschedule(
-        PARALLEL_JOB_SPAWNER.instanceId(RecurringTask.INSTANCE), Instant.now());
+    ctx.schedulerClient.scheduleIfNotExists(
+        PARALLEL_JOB_SPAWNER.instance(RecurringTask.INSTANCE).build(), Instant.now());
   }
 
   /** Bean definition */
@@ -92,9 +92,11 @@ public class ParallellJobConfiguration {
               String threadName = Thread.currentThread().getName();
               EventLogger.logTask(
                   PARALLEL_JOB,
-                  String.format(
-                      "Ran. Generated report for quarter Q%s  (in thread '%s', duration %sms)",
-                      taskInstance.getData(), threadName, System.currentTimeMillis() - startTime));
+                  "Ran. Generated report for quarter Q%s  (in thread '%s', duration %sms)"
+                      .formatted(
+                          taskInstance.getData(),
+                          threadName,
+                          System.currentTimeMillis() - startTime));
             });
   }
 }
