@@ -329,6 +329,11 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  public void reactivate(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+    this.delegate.reactivate(taskInstanceId, newExecutionTime);
+  }
+
+  @Override
   public void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
     this.delegate.fetchScheduledExecutions(consumer);
   }

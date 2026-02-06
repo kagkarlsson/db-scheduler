@@ -66,6 +66,10 @@ public final class Execution implements TaskInstanceId, Resolvable {
     return picked;
   }
 
+  public boolean isActive() {
+    return state == null || state == State.ACTIVE;
+  }
+
   public Execution updateToPicked(String newPickedBy, Instant newLastHeartbeat) {
     return new Execution(
         executionTime,

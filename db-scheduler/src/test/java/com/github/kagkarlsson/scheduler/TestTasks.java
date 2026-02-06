@@ -1,11 +1,13 @@
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -29,6 +31,13 @@ public class TestTasks {
       new CompletionHandler.OnCompleteRemove<>();
   public static final VoidExecutionHandler<Void> DO_NOTHING =
       (taskInstance, executionContext) -> {};
+  public static final VoidExecutionHandler<Void> ON_EXECUTE_THROW =
+      (taskInstance, executionContext) -> {
+        throw new RuntimeException("Simulated failure");
+      };
+  public static final FailureHandler<Void> ON_FAILURE_DEACTIVATE =
+      (executionComplete, executionOperations) ->
+          executionOperations.deactivate(DeactivationUpdate.toState(State.FAILED).build());
 
   public static <T> OneTimeTask<T> oneTime(
       String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {

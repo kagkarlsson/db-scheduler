@@ -16,14 +16,14 @@ package com.github.kagkarlsson.scheduler.exceptions;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.io.Serial;
 
-public class TaskInstanceNotFoundException extends TaskInstanceException {
-  @Serial private static final long serialVersionUID = -3604591431614052358L;
+public class TaskInstanceNotDeactivatedException extends TaskInstanceException {
+  @Serial private static final long serialVersionUID = 3847291650283948172L;
 
-  public TaskInstanceNotFoundException(TaskInstanceId taskInstanceId) {
+  public TaskInstanceNotDeactivatedException(TaskInstanceId taskInstanceId) {
     this(taskInstanceId.getTaskName(), taskInstanceId.getId());
   }
 
-  public TaskInstanceNotFoundException(String taskName, String instanceId) {
-    super("Failed to perform action on task because it was not found.", taskName, instanceId);
+  public TaskInstanceNotDeactivatedException(String taskName, String instanceId) {
+    super("Cannot reactivate task because it is not in a deactivated state.", taskName, instanceId);
   }
 }

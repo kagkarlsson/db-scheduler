@@ -533,6 +533,20 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public void reactivate(Execution execution, Instant newExecutionTime) {
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
+    update.executionTime(newExecutionTime);
+    update.picked(false);
+    update.pickedBy(null);
+    update.lastSuccess(null);
+    update.lastFailure(null);
+    update.consecutiveFailures(0);
+    update.lastHeartbeat(null);
+    update.state(State.ACTIVE);
+    update.updateSingle(jdbcConfig);
+  }
+
+  @Override
   public boolean reschedule(
       Execution execution,
       Instant nextExecutionTime,

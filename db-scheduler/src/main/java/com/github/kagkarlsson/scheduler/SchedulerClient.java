@@ -19,6 +19,7 @@ import static java.util.stream.Collectors.toList;
 import com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.WhenExists;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotDeactivatedException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
@@ -215,6 +216,19 @@ public interface SchedulerClient {
    * @see com.github.kagkarlsson.scheduler.task.TaskInstanceId
    */
   void cancel(TaskInstanceId taskInstanceId);
+
+  /**
+   * Reactivates a deactivated execution, resetting its execution history and setting its state back
+   * to ACTIVE.
+   *
+   * @param taskInstanceId the task instance to reactivate
+   * @param newExecutionTime the new scheduled execution time
+   * @throws TaskInstanceNotFoundException if the given instance does not exist
+   * @throws TaskInstanceCurrentlyExecutingException if the given instance is currently being
+   *     executed
+   * @throws TaskInstanceNotDeactivatedException if the execution is not in a deactivated state
+   */
+  void reactivate(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
   /**
    * Gets all scheduled executions and supplies them to the provided Consumer. A Consumer is used to
@@ -600,6 +614,25 @@ public interface SchedulerClient {
       } else {
         throw new TaskInstanceNotFoundException(taskName, instanceId);
       }
+    }
+
+    @Override
+    public void reactivate(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+      Execution execution =
+          taskRepository
+              .getExecution(taskInstanceId)
+              .orElseThrow(() -> new TaskInstanceNotFoundException(taskInstanceId));
+
+      if (execution.isPicked()) {
+        throw new TaskInstanceCurrentlyExecutingException(taskInstanceId);
+      }
+
+      if (execution.isActive()) {
+        throw new TaskInstanceNotDeactivatedException(taskInstanceId);
+      }
+
+      taskRepository.reactivate(execution, newExecutionTime);
+      schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
     }
 
     @Override

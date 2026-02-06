@@ -79,6 +79,8 @@ public interface TaskRepository {
 
   void deactivate(Execution execution, DeactivationUpdate deactivationUpdate);
 
+  void reactivate(Execution execution, Instant newExecutionTime);
+
   boolean reschedule(
       Execution execution,
       Instant nextExecutionTime,

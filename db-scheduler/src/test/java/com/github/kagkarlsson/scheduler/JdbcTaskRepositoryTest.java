@@ -581,6 +581,39 @@ public class JdbcTaskRepositoryTest {
         .containsExactlyInAnyOrder("active1", "active2", "deactivated1");
   }
 
+  @Test
+  public void reactivate_should_reset_execution_to_active_state() {
+    Instant originalTime = truncatedNow.minus(Duration.ofHours(1));
+    Instant successTime = truncatedNow.minus(Duration.ofMinutes(30));
+    Instant failureTime = truncatedNow.minus(Duration.ofMinutes(20));
+    Instant newExecutionTime = truncatedNow.plus(Duration.ofMinutes(10));
+    var instance = oneTimeTask.instance("toReactivate");
+
+    // Create and deactivate with execution history
+    var created = createExecution(instance, originalTime);
+    taskRepository.reschedule(created, originalTime, successTime, failureTime, 3);
+    var withHistory = taskRepository.getExecution(instance).orElseThrow();
+    taskRepository.deactivate(
+        withHistory,
+        DeactivationUpdate.toState(State.FAILED)
+            .lastSuccess(successTime)
+            .lastFailed(failureTime)
+            .build());
+
+    var deactivated = taskRepository.getExecution(instance).orElseThrow();
+    assertDeactivated(deactivated, State.FAILED, successTime, failureTime);
+    assertThat(taskRepository.getDue(truncatedNow, POLLING_LIMIT)).isEmpty();
+
+    // Reactivate
+    taskRepository.reactivate(deactivated, newExecutionTime);
+
+    var reactivated = taskRepository.getExecution(instance).orElseThrow();
+    assertReactivated(reactivated, newExecutionTime);
+    assertThat(taskRepository.getDue(newExecutionTime, POLLING_LIMIT))
+        .singleElement()
+        .satisfies(e -> assertThat(e.getId()).isEqualTo("toReactivate"));
+  }
+
   private <T> Execution createExecution(TaskInstance<T> instance, Instant executionTime) {
     taskRepository.createIfNotExists(SchedulableInstance.of(instance, executionTime));
     return taskRepository
@@ -692,5 +725,23 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.getExecution(oneTimeTask.instance(id)))
         .as("Execution '%s' should NOT be deleted", id)
         .isPresent();
+  }
+
+  private void assertDeactivated(
+      Execution execution, State expectedState, Instant lastSuccess, Instant lastFailure) {
+    assertThat(execution.state).isEqualTo(expectedState);
+    assertThat(execution.lastSuccess).isEqualTo(lastSuccess);
+    assertThat(execution.lastFailure).isEqualTo(lastFailure);
+  }
+
+  private void assertReactivated(Execution execution, Instant expectedExecutionTime) {
+    assertThat(execution.state).isEqualTo(State.ACTIVE);
+    assertThat(execution.executionTime).isEqualTo(expectedExecutionTime);
+    assertThat(execution.isPicked()).isFalse();
+    assertThat(execution.pickedBy).isNull();
+    assertThat(execution.lastSuccess).isNull();
+    assertThat(execution.lastFailure).isNull();
+    assertThat(execution.consecutiveFailures).isZero();
+    assertThat(execution.lastHeartbeat).isNull();
   }
 }
