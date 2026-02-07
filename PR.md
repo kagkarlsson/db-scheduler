@@ -77,3 +77,7 @@ except `State.RECORD` which is kept indefinately.
 - `state` column is required (migration needed for existing schemas)
 - Consider adding future column `state_details (TEXT)` / `failure_details (TEXT)` to hold exceptions
   from failure
+
+### Possible minor breaking changes
+
+- reschedule throw `TaskInstanceException` instead of `ExecutionException`

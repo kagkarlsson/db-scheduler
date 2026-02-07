@@ -14,6 +14,7 @@ import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
+import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -34,6 +35,8 @@ public class JdbcTaskRepositoryExceptionsTest {
   JdbcTaskRepository jdbcTaskRepository;
 
   @Mock JdbcRunner mockJdbcRunner;
+  @Mock JdbcCustomization mockJdbcCustomization;
+  @Mock Serializer mockSerializer;
 
   private String expectedTableName;
 
@@ -42,7 +45,14 @@ public class JdbcTaskRepositoryExceptionsTest {
     expectedTableName = randomAlphanumeric(5);
     jdbcTaskRepository =
         new JdbcTaskRepository(
-            null, expectedTableName, null, null, null, mockJdbcRunner, false, new SystemClock());
+            mockJdbcCustomization,
+            expectedTableName,
+            null,
+            null,
+            mockSerializer,
+            mockJdbcRunner,
+            false,
+            new SystemClock());
   }
 
   @Test
@@ -153,16 +163,16 @@ public class JdbcTaskRepositoryExceptionsTest {
   @ValueSource(ints = {0, 2})
   public void rescheduleUpdatesUnexpectedNumberOfRowsWithoutNewData(int updateCount) {
     when(mockJdbcRunner.execute(
-            ArgumentMatchers.startsWith("update " + expectedTableName + " set "),
+            ArgumentMatchers.startsWith("UPDATE " + expectedTableName + " SET "),
             any(PreparedStatementSetter.class)))
         .thenReturn(updateCount);
 
     TaskInstance<Void> taskInstance =
         new TaskInstance<>(randomAlphanumeric(10), randomAlphanumeric(10));
     Execution execution = new Execution(Instant.now(), taskInstance);
-    ExecutionException actualException =
+    TaskInstanceException actualException =
         assertThrows(
-            ExecutionException.class,
+            TaskInstanceException.class,
             () -> {
               jdbcTaskRepository.reschedule(execution, Instant.now(), null, null, 0);
             });
@@ -175,7 +185,6 @@ public class JdbcTaskRepositoryExceptionsTest {
             + taskInstance.getId()
             + ")",
         actualException.getMessage());
-    assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());
   }
@@ -183,19 +192,20 @@ public class JdbcTaskRepositoryExceptionsTest {
   @ParameterizedTest(name = "Reschedule with new data ends up modifying {0} records")
   @ValueSource(ints = {0, 2})
   public void rescheduleUpdatesUnexpectedNumberOfRowsWithNewData(int updateCount) {
+    when(mockSerializer.serialize(any())).thenReturn(new byte[0]);
     when(mockJdbcRunner.execute(
-            ArgumentMatchers.startsWith("update " + expectedTableName + " set "),
+            ArgumentMatchers.startsWith("UPDATE " + expectedTableName + " SET "),
             any(PreparedStatementSetter.class)))
         .thenReturn(updateCount);
 
     TaskInstance<Void> taskInstance =
         new TaskInstance<>(randomAlphanumeric(10), randomAlphanumeric(10));
     Execution execution = new Execution(Instant.now(), taskInstance);
-    ExecutionException actualException =
+    TaskInstanceException actualException =
         assertThrows(
-            ExecutionException.class,
+            TaskInstanceException.class,
             () -> {
-              jdbcTaskRepository.reschedule(execution, Instant.now(), "", null, null, 0);
+              jdbcTaskRepository.reschedule(execution, Instant.now(), "newData", null, null, 0);
             });
     assertEquals(
         "Expected one execution to be updated, but updated "
@@ -206,7 +216,6 @@ public class JdbcTaskRepositoryExceptionsTest {
             + taskInstance.getId()
             + ")",
         actualException.getMessage());
-    assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());
   }

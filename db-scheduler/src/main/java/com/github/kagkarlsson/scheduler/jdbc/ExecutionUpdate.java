@@ -175,7 +175,7 @@ public class ExecutionUpdate {
             + jdbcConfig.tableName()
             + " SET "
             + setColumns.stream().map(name -> name + " = ?").collect(joining(", "))
-            + " WHERE task_name = ? AND task_instance = ? and version = ?";
+            + " WHERE task_name = ? AND task_instance = ? AND version = ?";
     setValues.add((ps, index) -> ps.setString(index, taskInstance.getTaskName()));
     setValues.add((ps, index) -> ps.setString(index, taskInstance.getId()));
     setValues.add((ps, index) -> ps.setLong(index, versionToUpdate));

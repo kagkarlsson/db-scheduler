@@ -553,8 +553,13 @@ public class JdbcTaskRepository implements TaskRepository {
       Instant lastSuccess,
       Instant lastFailure,
       int consecutiveFailures) {
-    return rescheduleInternal(
-        execution, nextExecutionTime, null, lastSuccess, lastFailure, consecutiveFailures);
+    return reschedule(
+        execution,
+        RescheduleUpdate.to(nextExecutionTime)
+            .lastSuccess(lastSuccess)
+            .lastFailure(lastFailure)
+            .consecutiveFailures(consecutiveFailures)
+            .build());
   }
 
   @Override
@@ -565,63 +570,14 @@ public class JdbcTaskRepository implements TaskRepository {
       Instant lastSuccess,
       Instant lastFailure,
       int consecutiveFailures) {
-    return rescheduleInternal(
+    return reschedule(
         execution,
-        nextExecutionTime,
-        new NewData(newData),
-        lastSuccess,
-        lastFailure,
-        consecutiveFailures);
-  }
-
-  private boolean rescheduleInternal(
-      Execution execution,
-      Instant nextExecutionTime,
-      NewData newData,
-      Instant lastSuccess,
-      Instant lastFailure,
-      int consecutiveFailures) {
-    final int updated =
-        jdbcRunner.execute(
-            "update "
-                + tableName
-                + " set "
-                + "picked = ?, "
-                + "picked_by = ?, "
-                + "last_heartbeat = ?, "
-                + "last_success = ?, "
-                + "last_failure = ?, "
-                + "consecutive_failures = ?, "
-                + "execution_time = ?, "
-                + (newData != null ? "task_data = ?, " : "")
-                + "version = version + 1 "
-                + "where task_name = ? "
-                + "and task_instance = ? "
-                + "and version = ? "
-                + "and (state is null OR state = 'ACTIVE')",
-            ps -> {
-              int index = 1;
-              ps.setBoolean(index++, false);
-              ps.setString(index++, null);
-              jdbcCustomization.setInstant(ps, index++, null);
-              jdbcCustomization.setInstant(ps, index++, lastSuccess);
-              jdbcCustomization.setInstant(ps, index++, lastFailure);
-              ps.setInt(index++, consecutiveFailures);
-              jdbcCustomization.setInstant(ps, index++, nextExecutionTime);
-              if (newData != null) {
-                jdbcCustomization.setTaskData(ps, index++, serializer.serialize(newData.data));
-              }
-              ps.setString(index++, execution.taskInstance.getTaskName());
-              ps.setString(index++, execution.taskInstance.getId());
-              ps.setLong(index, execution.version);
-            });
-
-    if (updated != 1) {
-      throw new ExecutionException(
-          "Expected one execution to be updated, but updated " + updated + ". Indicates a bug.",
-          execution);
-    }
-    return true;
+        RescheduleUpdate.to(nextExecutionTime)
+            .data(newData)
+            .lastSuccess(lastSuccess)
+            .lastFailure(lastFailure)
+            .consecutiveFailures(consecutiveFailures)
+            .build());
   }
 
   @Override
@@ -923,15 +879,6 @@ public class JdbcTaskRepository implements TaskRepository {
 
     public String getClause() {
       return clause;
-    }
-  }
-
-  private static class NewData {
-
-    private final Object data;
-
-    NewData(Object data) {
-      this.data = data;
     }
   }
 
