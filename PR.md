@@ -44,7 +44,7 @@ Migration (ALTER TABLE):
     - `ScheduledExecutionsFilter.active()`
     - `ScheduledExecutionsFilter.deactivated()`
     - Deprecate `ScheduledExecutionsFilter.all()` (`active` new default)
-- [ ] Use `client.reactivate(TaskInstanceId, Instant)` to reschedule deactivated executions. Will reset
+- [x] Use `client.reactivate(TaskInstanceId, Instant)` to reschedule deactivated executions. Will reset
   lastSuccess, lastFailure and consecutiveFailures
   - RecurringTasks will not have option to reschedule according to Schedule
 - [x] Use `client.deactivate(TaskInstanceId, State)` to manually deactivate a scheduled execution. Will
@@ -65,9 +65,10 @@ except `State.RECORD` which is kept indefinately.
 
 ### FailureHandlers (changes)
 
-- [ ] MaxRetriesThenRemove(Int, FailureHandler, callback)
-- [ ] MaxRetriesThenDeactivate(Int, FailureHandler, State, callback)
-- [ ] deprecate MaxRetriesFailureHandler since ambigious
+- [x] `FailureHandler.maxRetries(n).retryEvery(duration).thenRemove(callback)` - builder API
+- [x] `FailureHandler.maxRetries(n).withBackoff(duration).thenDeactivate(state, callback)` - builder API
+- [x] `FailureHandler.maxRetries(n).retryEvery(duration).then((complete, ops) -> ...)` - full control callback
+- [x] deprecate MaxRetriesFailureHandler since ambiguous
 
 ## Backward compatibility / other things
 

@@ -24,6 +24,8 @@ import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.jdbc.RescheduleUpdate;
+import com.github.kagkarlsson.scheduler.jdbc.RescheduleUpdate.Builder;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
@@ -343,12 +345,6 @@ public interface SchedulerClient {
 
     public static final ScheduleOptions WHEN_EXISTS_RESCHEDULE =
         defaultOptions().whenExistsReschedule();
-
-    public enum WhenExists {
-      RESCHEDULE,
-      DO_NOTHING;
-    }
-
     private WhenExists whenExists;
 
     public static ScheduleOptions defaultOptions() {
@@ -367,6 +363,11 @@ public interface SchedulerClient {
 
     public WhenExists getWhenExists() {
       return whenExists;
+    }
+
+    public enum WhenExists {
+      RESCHEDULE,
+      DO_NOTHING;
     }
   }
 
@@ -585,12 +586,17 @@ public interface SchedulerClient {
         throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
       }
 
-      boolean success;
-      if (newData == null) {
-        success = taskRepository.reschedule(execution, newExecutionTime, null, null, 0);
-      } else {
-        success = taskRepository.reschedule(execution, newExecutionTime, newData, null, null, 0);
+      RescheduleUpdate.Builder rescheduleUpdate =
+          RescheduleUpdate.to(newExecutionTime)
+              .lastSuccess(null)
+              .lastFailure(null)
+              .consecutiveFailures(0);
+
+      if (newData != null) {
+        rescheduleUpdate.data(newData);
       }
+
+      boolean success = taskRepository.reschedule(execution, rescheduleUpdate.build());
 
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);

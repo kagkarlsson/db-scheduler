@@ -48,12 +48,12 @@ public class ReactivateExecutionTest {
     var instanceId = ONETIME.instanceId("1");
     scheduler.reactivate(instanceId, anFutureInstant);
 
-    // Verify it's now active again
     assertThat(scheduler.getScheduledExecution(instanceId))
-        .hasValueSatisfying(it -> {
-          assertThat(it.getExecutionTime()).isEqualTo(anFutureInstant);
-          assertThat(it.getState()).isEqualTo(State.ACTIVE);
-        });
+        .hasValueSatisfying(
+            it -> {
+              assertThat(it.getExecutionTime()).isEqualTo(anFutureInstant);
+              assertThat(it.getState()).isEqualTo(State.ACTIVE);
+            });
   }
 
   @Test

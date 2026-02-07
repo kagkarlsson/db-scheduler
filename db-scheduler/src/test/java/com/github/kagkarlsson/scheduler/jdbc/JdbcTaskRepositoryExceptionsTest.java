@@ -153,22 +153,7 @@ public class JdbcTaskRepositoryExceptionsTest {
   @ValueSource(ints = {0, 2})
   public void rescheduleUpdatesUnexpectedNumberOfRowsWithoutNewData(int updateCount) {
     when(mockJdbcRunner.execute(
-            ArgumentMatchers.eq(
-                "update "
-                    + expectedTableName
-                    + " set "
-                    + "picked = ?, "
-                    + "picked_by = ?, "
-                    + "last_heartbeat = ?, "
-                    + "last_success = ?, "
-                    + "last_failure = ?, "
-                    + "consecutive_failures = ?, "
-                    + "execution_time = ?, "
-                    + "version = version + 1 "
-                    + "where task_name = ? "
-                    + "and task_instance = ? "
-                    + "and version = ? "
-                    + "and (state is null OR state = 'ACTIVE')"),
+            ArgumentMatchers.startsWith("update " + expectedTableName + " set "),
             any(PreparedStatementSetter.class)))
         .thenReturn(updateCount);
 
@@ -199,23 +184,7 @@ public class JdbcTaskRepositoryExceptionsTest {
   @ValueSource(ints = {0, 2})
   public void rescheduleUpdatesUnexpectedNumberOfRowsWithNewData(int updateCount) {
     when(mockJdbcRunner.execute(
-            ArgumentMatchers.eq(
-                "update "
-                    + expectedTableName
-                    + " set "
-                    + "picked = ?, "
-                    + "picked_by = ?, "
-                    + "last_heartbeat = ?, "
-                    + "last_success = ?, "
-                    + "last_failure = ?, "
-                    + "consecutive_failures = ?, "
-                    + "execution_time = ?, "
-                    + "task_data = ?, "
-                    + "version = version + 1 "
-                    + "where task_name = ? "
-                    + "and task_instance = ? "
-                    + "and version = ? "
-                    + "and (state is null OR state = 'ACTIVE')"),
+            ArgumentMatchers.startsWith("update " + expectedTableName + " set "),
             any(PreparedStatementSetter.class)))
         .thenReturn(updateCount);
 

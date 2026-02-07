@@ -9,9 +9,14 @@ import com.github.kagkarlsson.scheduler.SchedulerName.Fixed;
 import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
+import com.github.kagkarlsson.scheduler.serializer.JavaSerializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.State;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
+import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +29,10 @@ class ExecutionUpdateTest {
   private static final String TASK_ID = "id-1";
   private static final Instant AN_INSTANT = Instant.parse("2020-01-01T12:00:00.00Z");
   private static final Instant ANOTHER_INSTANT = Instant.parse("2022-01-01T12:00:00.00Z");
+
+  private static final OneTimeTask<String> STRING_TASK =
+      Tasks.oneTime("string-tas", String.class)
+          .execute((TaskInstance<String> taskInstance, ExecutionContext ctx) -> {});
 
   @RegisterExtension
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
@@ -43,7 +52,8 @@ class ExecutionUpdateTest {
             postgres.getDataSource(),
             false,
             TABLE,
-            new TaskResolver(new SchedulerListeners(), new SystemClock(), List.of(ONETIME_TASK)),
+            new TaskResolver(
+                new SchedulerListeners(), new SystemClock(), List.of(ONETIME_TASK, STRING_TASK)),
             new Fixed("test"),
             false,
             new SystemClock());
@@ -111,6 +121,19 @@ class ExecutionUpdateTest {
     ExecutionUpdate.forExecution(execution).state(State.COMPLETE).updateSingle(jdbcConfig);
 
     assertThat(getExecution(execution).state).isEqualTo(State.COMPLETE);
+  }
+
+  @Test
+  void should_update_task_data() {
+    var instance =
+        STRING_TASK.instanceBuilder(TASK_ID).data("initial-data").scheduledTo(AN_INSTANT);
+    repository.createIfNotExists(instance);
+    Execution execution = repository.getExecution(instance).orElseThrow();
+
+    byte[] serializedData = new JavaSerializer().serialize("new-data");
+    ExecutionUpdate.forExecution(execution).taskData(serializedData).updateSingle(jdbcConfig);
+
+    assertThat(getExecution(execution).taskInstance.getData()).isEqualTo("new-data");
   }
 
   private Execution insert(Instant executionTime) {

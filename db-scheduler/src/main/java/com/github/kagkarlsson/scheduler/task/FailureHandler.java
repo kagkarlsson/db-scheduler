@@ -16,6 +16,7 @@ package com.github.kagkarlsson.scheduler.task;
 import static java.lang.Math.pow;
 import static java.lang.Math.round;
 
+import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import java.time.Duration;
@@ -27,6 +28,15 @@ import org.slf4j.LoggerFactory;
 public interface FailureHandler<T> {
 
   void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);
+
+  /**
+   * Callback invoked when max retries have been exceeded and the execution has been
+   * removed/deactivated.
+   */
+  @FunctionalInterface
+  interface MaxRetriesExceededCallback {
+    void maxRetriesExceeded(ExecutionComplete executionComplete);
+  }
 
   class ExponentialBackoffFailureHandler<T> implements FailureHandler<T> {
     private static final Logger LOG =
@@ -63,6 +73,10 @@ public interface FailureHandler<T> {
     }
   }
 
+  /**
+   * @deprecated Use {@link #maxRetries(int)} builder instead.
+   */
+  @Deprecated
   class MaxRetriesFailureHandler<T> implements FailureHandler<T> {
     private static final Logger LOG = LoggerFactory.getLogger(MaxRetriesFailureHandler.class);
     private final int maxRetries;
@@ -99,6 +113,101 @@ public interface FailureHandler<T> {
         this.failureHandler.onFailure(executionComplete, executionOperations);
       }
     }
+  }
+
+  /** Builder for creating max-retries failure handlers with a fluent API. */
+  class MaxRetriesBuilder<T> {
+    private static final Logger LOG = LoggerFactory.getLogger(MaxRetriesBuilder.class);
+    private final int maxRetries;
+    private FailureHandler<T> retryHandler;
+
+    private MaxRetriesBuilder(int maxRetries) {
+      this.maxRetries = maxRetries;
+    }
+
+    /** Retry with exponential backoff. */
+    public MaxRetriesBuilder<T> withBackoff(Duration initialDelay, double multiplier) {
+      this.retryHandler = new ExponentialBackoffFailureHandler<>(initialDelay, multiplier);
+      return this;
+    }
+
+    /** Retry with exponential backoff using the default multiplier (1.5). */
+    public MaxRetriesBuilder<T> withBackoff(Duration initialDelay) {
+      this.retryHandler = new ExponentialBackoffFailureHandler<>(initialDelay);
+      return this;
+    }
+
+    /** Retry with a fixed delay between attempts. */
+    public MaxRetriesBuilder<T> retryEvery(Duration delay) {
+      this.retryHandler = new OnFailureRetryLater<>(delay);
+      return this;
+    }
+
+    /** After max retries, remove the execution. */
+    public FailureHandler<T> thenRemove() {
+      return thenRemove(complete -> {});
+    }
+
+    /** After max retries, remove the execution and call the callback. */
+    public FailureHandler<T> thenRemove(MaxRetriesExceededCallback callback) {
+      return then(
+          (complete, ops) -> {
+            LOG.error(
+                "Execution has failed max retries for task instance {}. Removing.",
+                complete.getExecution().taskInstance);
+            ops.remove();
+            callback.maxRetriesExceeded(complete);
+          });
+    }
+
+    /** After max retries, deactivate with the specified state. */
+    public FailureHandler<T> thenDeactivate(State state) {
+      return thenDeactivate(state, complete -> {});
+    }
+
+    /** After max retries, deactivate with the specified state and call the callback. */
+    public FailureHandler<T> thenDeactivate(State state, MaxRetriesExceededCallback callback) {
+      return then(
+          (complete, ops) -> {
+            LOG.error(
+                "Execution has failed max retries for task instance {}. Deactivating with state {}.",
+                complete.getExecution().taskInstance,
+                state);
+            ops.deactivate(
+                DeactivationUpdate.toState(state).lastFailed(complete.getTimeDone()).build());
+            callback.maxRetriesExceeded(complete);
+          });
+    }
+
+    /**
+     * After max retries, call the callback with full control (no automatic remove/deactivate). The
+     * callback should call one of the ExecutionOperations methods (remove, deactivate, or
+     * reschedule).
+     */
+    public FailureHandler<T> then(BiConsumer<ExecutionComplete, ExecutionOperations<T>> callback) {
+      FailureHandler<T> retryHandler = getRetryHandler();
+      return (executionComplete, executionOperations) -> {
+        int totalFailures = executionComplete.getExecution().consecutiveFailures + 1;
+        if (totalFailures > maxRetries) {
+          callback.accept(executionComplete, executionOperations);
+        } else {
+          retryHandler.onFailure(executionComplete, executionOperations);
+        }
+      };
+    }
+
+    private FailureHandler<T> getRetryHandler() {
+      if (retryHandler == null) {
+        throw new IllegalStateException(
+            "Must specify retry behavior (withBackoff or retryEvery) before terminal operation");
+      }
+      return retryHandler;
+    }
+  }
+
+  /** Start building a max-retries failure handler. */
+  static <T> MaxRetriesBuilder<T> maxRetries(int maxRetries) {
+    return new MaxRetriesBuilder<>(maxRetries);
   }
 
   class OnFailureRetryLater<T> implements FailureHandler<T> {

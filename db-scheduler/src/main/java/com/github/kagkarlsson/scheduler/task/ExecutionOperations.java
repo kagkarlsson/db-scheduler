@@ -16,6 +16,7 @@ package com.github.kagkarlsson.scheduler.task;
 import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
+import com.github.kagkarlsson.scheduler.jdbc.RescheduleUpdate;
 import java.time.Instant;
 
 public class ExecutionOperations<T> {
@@ -77,6 +78,11 @@ public class ExecutionOperations<T> {
           execution.consecutiveFailures + 1);
     }
     hintExecutionScheduled(completed.getExecution().taskInstance, nextExecutionTime);
+  }
+
+  public void reschedule(RescheduleUpdate update) {
+    taskRepository.reschedule(execution, update);
+    hintExecutionScheduled(execution.taskInstance, update.executionTime());
   }
 
   private void hintExecutionScheduled(TaskInstanceId taskInstanceId, Instant nextExecutionTime) {

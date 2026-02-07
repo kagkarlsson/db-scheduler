@@ -34,8 +34,9 @@ import org.slf4j.LoggerFactory;
 public class ExecutionUpdate {
   private static final Logger LOG = LoggerFactory.getLogger(ExecutionUpdate.class);
 
-  private final Long version;
+  private final Long versionToUpdate;
   private final TaskInstanceId taskInstance;
+  @Nullable private NewValue<byte[]> taskData;
   @Nullable private NewValue<Instant> executionTime;
   @Nullable private NewValue<Boolean> picked;
   @Nullable private NewValue<String> pickedBy;
@@ -44,10 +45,12 @@ public class ExecutionUpdate {
   @Nullable private NewValue<Integer> consecutiveFailures;
   @Nullable private NewValue<Instant> lastHeartbeat;
   @Nullable private NewValue<State> state;
+  @Nullable private NewValue<Long> version;
 
-  ExecutionUpdate(TaskInstanceId taskInstance, Long version) {
+  ExecutionUpdate(TaskInstanceId taskInstance, Long versionToUpdate) {
     this.taskInstance = taskInstance;
-    this.version = version;
+    this.versionToUpdate = versionToUpdate;
+    this.version = new NewValue<>(versionToUpdate + 1);
   }
 
   public static ExecutionUpdate forExecution(Execution execution) {
@@ -56,6 +59,11 @@ public class ExecutionUpdate {
 
   public ExecutionUpdate executionTime(@Nullable Instant executionTime) {
     this.executionTime = new NewValue<>(executionTime);
+    return this;
+  }
+
+  public ExecutionUpdate taskData(@Nullable byte[] taskData) {
+    this.taskData = new NewValue<>(taskData);
     return this;
   }
 
@@ -79,7 +87,7 @@ public class ExecutionUpdate {
     return this;
   }
 
-  public ExecutionUpdate consecutiveFailures(int consecutiveFailures) {
+  public ExecutionUpdate consecutiveFailures(@Nullable Integer consecutiveFailures) {
     this.consecutiveFailures = new NewValue<>(consecutiveFailures);
     return this;
   }
@@ -104,6 +112,12 @@ public class ExecutionUpdate {
           (ps, index) -> {
             jdbcConfig.customization().setInstant(ps, index, executionTime.value);
           });
+    }
+
+    if (taskData != null) {
+      setColumns.add("task_data");
+      setValues.add(
+          (ps, index) -> jdbcConfig.customization().setTaskData(ps, index, taskData.value));
     }
 
     if (picked != null) {
@@ -132,7 +146,7 @@ public class ExecutionUpdate {
 
     if (consecutiveFailures != null) {
       setColumns.add("consecutive_failures");
-      setValues.add((ps, index) -> ps.setInt(index, consecutiveFailures.value));
+      setValues.add((ps, index) -> ps.setInt(index, zeroIfNull(consecutiveFailures.value)));
     }
 
     if (lastHeartbeat != null) {
@@ -147,6 +161,11 @@ public class ExecutionUpdate {
           (ps, index) -> ps.setString(index, state.value != null ? state.value.name() : null));
     }
 
+    if (version != null) {
+      setColumns.add("version");
+      setValues.add((ps, index) -> ps.setLong(index, throwIfNull(version.value)));
+    }
+
     if (setColumns.isEmpty()) {
       return 0;
     }
@@ -159,7 +178,7 @@ public class ExecutionUpdate {
             + " WHERE task_name = ? AND task_instance = ? and version = ?";
     setValues.add((ps, index) -> ps.setString(index, taskInstance.getTaskName()));
     setValues.add((ps, index) -> ps.setString(index, taskInstance.getId()));
-    setValues.add((ps, index) -> ps.setLong(index, version));
+    setValues.add((ps, index) -> ps.setLong(index, versionToUpdate));
 
     LOG.debug("ExecutionUpdate query: {}", query);
     int updatedRows = jdbcConfig.runner().execute(query, toPreparedStatementSetter(setValues));
@@ -170,6 +189,18 @@ public class ExecutionUpdate {
           taskInstance.getId());
     }
     return updatedRows;
+  }
+
+  private long throwIfNull(@Nullable Long value) {
+    if (value != null) {
+      return value;
+    } else {
+      throw new IllegalArgumentException("value cannot be null");
+    }
+  }
+
+  private int zeroIfNull(@Nullable Integer value) {
+    return value != null ? value : 0;
   }
 
   private PreparedStatementSetter toPreparedStatementSetter(
