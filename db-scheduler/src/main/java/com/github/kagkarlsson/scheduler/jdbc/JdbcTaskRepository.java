@@ -626,57 +626,27 @@ public class JdbcTaskRepository implements TaskRepository {
 
   @Override
   public boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
-    boolean hasData = rescheduleUpdate.data() != null;
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
 
-    final int updated =
-        jdbcRunner.execute(
-            "update "
-                + tableName
-                + " set "
-                + "picked = ?, "
-                + "picked_by = ?, "
-                + "last_heartbeat = ?, "
-                + (rescheduleUpdate.lastSuccess() != null ? "last_success = ?, " : "")
-                + (rescheduleUpdate.lastFailure() != null ? "last_failure = ?, " : "")
-                + (rescheduleUpdate.consecutiveFailures() != null
-                    ? "consecutive_failures = ?, "
-                    : "")
-                + "execution_time = ?, "
-                + (hasData ? "task_data = ?, " : "")
-                + "version = version + 1 "
-                + "where task_name = ? "
-                + "and task_instance = ? "
-                + "and version = ? "
-                + "and (state is null OR state = 'ACTIVE')",
-            ps -> {
-              int index = 1;
-              ps.setBoolean(index++, false);
-              ps.setString(index++, null);
-              jdbcCustomization.setInstant(ps, index++, null);
-              if (rescheduleUpdate.lastSuccess() != null) {
-                jdbcCustomization.setInstant(ps, index++, rescheduleUpdate.lastSuccess().value());
-              }
-              if (rescheduleUpdate.lastFailure() != null) {
-                jdbcCustomization.setInstant(ps, index++, rescheduleUpdate.lastFailure().value());
-              }
-              if (rescheduleUpdate.consecutiveFailures() != null) {
-                ps.setInt(index++, rescheduleUpdate.consecutiveFailures().value());
-              }
-              jdbcCustomization.setInstant(ps, index++, rescheduleUpdate.executionTime());
-              if (hasData) {
-                jdbcCustomization.setTaskData(
-                    ps, index++, serializer.serialize(rescheduleUpdate.data().value()));
-              }
-              ps.setString(index++, execution.taskInstance.getTaskName());
-              ps.setString(index++, execution.taskInstance.getId());
-              ps.setLong(index, execution.version);
-            });
+    update.picked(false);
+    update.pickedBy(null);
+    update.lastHeartbeat(null);
+    update.executionTime(rescheduleUpdate.executionTime());
 
-    if (updated != 1) {
-      throw new ExecutionException(
-          "Expected one execution to be updated, but updated " + updated + ". Indicates a bug.",
-          execution);
+    if (rescheduleUpdate.lastSuccess() != null) {
+      update.lastSuccess(rescheduleUpdate.lastSuccess().value());
     }
+    if (rescheduleUpdate.lastFailure() != null) {
+      update.lastFailure(rescheduleUpdate.lastFailure().value());
+    }
+    if (rescheduleUpdate.consecutiveFailures() != null) {
+      update.consecutiveFailures(rescheduleUpdate.consecutiveFailures().value());
+    }
+    if (rescheduleUpdate.data() != null) {
+      update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
+    }
+
+    update.updateSingle(jdbcConfig);
     return true;
   }
 
