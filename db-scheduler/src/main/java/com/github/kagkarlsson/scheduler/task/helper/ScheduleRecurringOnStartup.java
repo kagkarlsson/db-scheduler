@@ -17,6 +17,7 @@ import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
@@ -26,7 +27,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
+public class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
   private static final Logger LOG = LoggerFactory.getLogger(ScheduleRecurringOnStartup.class);
   private final Schedule schedule;
   private final String instance;
@@ -60,8 +61,22 @@ class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
     }
 
     if (preexistingExecution.isPresent()) {
+      ScheduledExecution<Object> execution = preexistingExecution.get();
+      var state = preexistingExecution.get().getState();
+
+      // WARN if execution is deactivated (for now)
+      if (state != State.ACTIVE) {
+        LOG.warn(
+            "Recurring task-instance '{}' has been deactivated to state '{}' and will not be "
+                + "reactivated on startup. Use SchedulerClient.reactivate() to resume it "
+                + "(or manually delete the row to have the Scheduler initialize a new one).",
+            instanceWithoutData,
+            state);
+        return;
+      }
+
       Optional<Instant> newNextExecutionTime =
-          checkForNewExecutionTime(clock, instanceWithoutData, preexistingExecution.get());
+          checkForNewExecutionTime(clock, instanceWithoutData, execution);
 
       newNextExecutionTime.ifPresent(
           instant -> {
@@ -76,7 +91,7 @@ class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
           "Creating initial execution for task-instance '{}'. Next execution-time: {}",
           instanceWithoutData,
           initialExecutionTime);
-      scheduler.schedule(getSchedulableInstance(task), initialExecutionTime);
+      scheduler.scheduleIfNotExists(getSchedulableInstance(task), initialExecutionTime);
     }
   }
 

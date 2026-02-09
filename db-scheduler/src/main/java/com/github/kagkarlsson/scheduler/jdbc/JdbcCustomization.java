@@ -50,8 +50,8 @@ public interface JdbcCustomization {
       String tableName, int limit, String andCondition, boolean orderByPriority);
 
   /**
-   * Whether this database supports LIMIT in subquery for DELETE. If limit is not supported,
-   * a full delete with be executed.
+   * Whether this database supports LIMIT in subquery for DELETE. If limit is not supported, a full
+   * delete with be executed.
    */
   default boolean supportsDeleteWithLimit() {
     return true;

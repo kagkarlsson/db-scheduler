@@ -7,7 +7,6 @@
     </appender>
 
     <logger level="INFO" name="com.github.kagkarlsson.scheduler"/>
-    <logger level="DEBUG" name="com.github.kagkarlsson.jdbc.JdbcRunner"/>
     <logger level="DEBUG" name="net.ttddyy.dsproxy"/>
     <root level="WARN">
         <appender-ref ref="STDOUT"/>

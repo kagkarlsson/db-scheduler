@@ -8,6 +8,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
+import com.github.kagkarlsson.scheduler.ScheduledExecution;
+import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotDeactivatedException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.task.State;
@@ -17,6 +19,8 @@ import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -40,9 +44,9 @@ public class ReactivateExecutionTest {
 
     // Verify it's deactivated as FAILED
     assertThat(scheduler.getScheduledExecutions()).isEmpty();
-    assertThat(scheduler.getDeactivatedExecutions())
+    assertThat(getDeactivatedExecutions(scheduler))
         .singleElement()
-        .satisfies(it -> assertThat(it.state()).isEqualTo(State.FAILED));
+        .satisfies(it -> assertThat(it.getState()).isEqualTo(State.FAILED));
 
     // Reactivate
     var instanceId = ONETIME.instanceId("1");
@@ -79,5 +83,11 @@ public class ReactivateExecutionTest {
 
   private ManualScheduler createManualScheduler(OneTimeTask<Void> task) {
     return TestHelper.createManualScheduler(postgres.getDataSource(), task).clock(clock).build();
+  }
+
+  private List<ScheduledExecution<Object>> getDeactivatedExecutions(ManualScheduler scheduler) {
+    List<ScheduledExecution<Object>> executions = new ArrayList<>();
+    scheduler.fetchScheduledExecutions(ScheduledExecutionsFilter.deactivated(), executions::add);
+    return executions;
   }
 }

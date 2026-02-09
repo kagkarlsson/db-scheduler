@@ -100,6 +100,10 @@ public class ManualScheduler extends Scheduler {
     super.deleteOldDeactivatedExecutions();
   }
 
+  public void runOnStartup() {
+    super.executeOnStartup();
+  }
+
   public void start() {
     LOG.info("Starting manual scheduler. Executing on-startup tasks.");
     executeOnStartup();

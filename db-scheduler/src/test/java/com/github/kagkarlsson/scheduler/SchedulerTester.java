@@ -6,6 +6,8 @@ import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SchedulerTester {
   private final ManualScheduler scheduler;
@@ -34,21 +36,34 @@ public class SchedulerTester {
 
     public ExecutionAssertion isRemoved() {
       assertThat(scheduler.getScheduledExecution(instance)).isEmpty();
-      assertThat(scheduler.getDeactivatedExecutions())
+      assertThat(getDeactivatedExecutions())
           .as("Execution %s/%s is removed", instance.getTaskName(), instance.getId())
-          .noneMatch(e -> matches(e.taskInstance()));
+          .noneMatch(e -> matches(e.getTaskInstance()));
       return this;
     }
 
     public ExecutionAssertion hasState(State expected) {
-      var deactivated =
-          scheduler.getDeactivatedExecutions().stream()
-              .filter(e -> matches(e.taskInstance()))
-              .findFirst();
-      assertThat(deactivated)
-          .as("Execution %s/%s has state %s", instance.getTaskName(), instance.getId(), expected)
-          .hasValueSatisfying(e -> assertThat(e.state()).isEqualTo(expected));
+      if (expected == State.ACTIVE) {
+        var scheduled = scheduler.getScheduledExecution(instance);
+        assertThat(scheduled)
+            .as("Execution %s/%s has state %s", instance.getTaskName(), instance.getId(), expected)
+            .hasValueSatisfying(e -> assertThat(e.getState()).isEqualTo(expected));
+      } else {
+        var deactivated =
+            getDeactivatedExecutions().stream()
+                .filter(e -> matches(e.getTaskInstance()))
+                .findFirst();
+        assertThat(deactivated)
+            .as("Execution %s/%s has state %s", instance.getTaskName(), instance.getId(), expected)
+            .hasValueSatisfying(e -> assertThat(e.getState()).isEqualTo(expected));
+      }
       return this;
+    }
+
+    private List<ScheduledExecution<Object>> getDeactivatedExecutions() {
+      List<ScheduledExecution<Object>> executions = new ArrayList<>();
+      scheduler.fetchScheduledExecutions(ScheduledExecutionsFilter.deactivated(), executions::add);
+      return executions;
     }
 
     public ExecutionAssertion hasConsecutiveFailures(int expected) {
