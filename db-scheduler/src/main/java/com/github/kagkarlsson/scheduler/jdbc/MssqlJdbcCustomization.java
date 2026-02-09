@@ -71,4 +71,10 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
         " WITH (READPAST,ROWLOCK) ",
         null);
   }
+
+  @Override
+  public boolean supportsDeleteWithLimit() {
+    // SQL Server doesn't support row value constructors efficiently
+    return false;
+  }
 }

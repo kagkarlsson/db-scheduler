@@ -777,16 +777,35 @@ public class JdbcTaskRepository implements TaskRepository {
     String statesInClause =
         states.stream().map(s -> "'" + s.name() + "'").collect(Collectors.joining(", "));
 
-    String sql =
-        "DELETE FROM " + tableName
-            + " WHERE (task_name, task_instance) IN ("
-            + "  SELECT task_name, task_instance FROM ("
-            + "    SELECT task_name, task_instance FROM " + tableName
-            + "    WHERE state IN (" + statesInClause + ")"
-            + "      AND execution_time < ?"
-            + jdbcCustomization.getQueryLimitPart(limit)
-            + "  ) AS limited_results"
-            + ")";
+    String sql;
+    if (jdbcCustomization.supportsDeleteWithLimit()) {
+      // Works with most dbs, but not SQL Server
+      sql =
+          "DELETE FROM "
+              + tableName
+              + " WHERE (task_name, task_instance) IN ("
+              + "  SELECT task_name, task_instance FROM ("
+              + "    SELECT task_name, task_instance FROM "
+              + tableName
+              + "    WHERE state IN ("
+              + statesInClause
+              + ")"
+              + "      AND execution_time < ?"
+              + "    ORDER BY execution_time"
+              + jdbcCustomization.getQueryLimitPart(limit)
+              + "  ) limited_results"
+              + ")";
+    } else {
+      // Fallback, delete without limit.
+      sql =
+          "DELETE FROM "
+              + tableName
+              + " WHERE state IN ("
+              + statesInClause
+              + ")"
+              + " AND execution_time < ?";
+    }
+
     return jdbcRunner.execute(
         sql,
         ps -> {
