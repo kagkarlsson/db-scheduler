@@ -4,10 +4,10 @@ import static com.github.kagkarlsson.scheduler.TestTasks.DO_NOTHING;
 import static com.github.kagkarlsson.scheduler.TestTasks.ONETIME;
 import static com.github.kagkarlsson.scheduler.TestTasks.ON_EXECUTE_THROW;
 import static com.github.kagkarlsson.scheduler.TestTasks.ON_FAILURE_DEACTIVATE;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
+import com.github.kagkarlsson.scheduler.SchedulerTester;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotDeactivatedException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.task.State;
@@ -33,27 +33,18 @@ public class ReactivateExecutionTest {
     var failingTask =
         Tasks.oneTime(ONETIME).onFailure(ON_FAILURE_DEACTIVATE).execute(ON_EXECUTE_THROW);
     var scheduler = createManualScheduler(failingTask);
+    var tester = new SchedulerTester(scheduler);
 
-    var instance = ONETIME.instance("1");
-    scheduler.schedule(instance.scheduledTo(clock.now()));
+    var scheduled = ONETIME.instance("1").scheduledTo(clock.now());
+    scheduler.schedule(scheduled);
     scheduler.runAnyDueExecutions();
 
-    // Verify it's deactivated as FAILED
-    assertThat(scheduler.getScheduledExecutions()).isEmpty();
-    assertThat(scheduler.getDeactivatedExecutions())
-        .singleElement()
-        .satisfies(it -> assertThat(it.state()).isEqualTo(State.FAILED));
+    tester.assertThatExecution(scheduled).hasState(State.FAILED);
 
     // Reactivate
-    var instanceId = ONETIME.instanceId("1");
-    scheduler.reactivate(instanceId, anFutureInstant);
+    scheduler.reactivate(scheduled, anFutureInstant);
 
-    assertThat(scheduler.getScheduledExecution(instanceId))
-        .hasValueSatisfying(
-            it -> {
-              assertThat(it.getExecutionTime()).isEqualTo(anFutureInstant);
-              assertThat(it.getState()).isEqualTo(State.ACTIVE);
-            });
+    tester.assertThatExecution(scheduled).hasState(State.ACTIVE).hasExecutionTime(anFutureInstant);
   }
 
   @Test

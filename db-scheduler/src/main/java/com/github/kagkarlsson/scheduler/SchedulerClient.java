@@ -19,9 +19,11 @@ import static java.util.stream.Collectors.toList;
 import com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.WhenExists;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotActiveException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotDeactivatedException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.jdbc.RescheduleUpdate;
@@ -30,6 +32,7 @@ import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
@@ -219,6 +222,8 @@ public interface SchedulerClient {
    */
   void cancel(TaskInstanceId taskInstanceId);
 
+  void deactivate(TaskInstanceId taskInstanceId, State state);
+
   /**
    * Reactivates a deactivated execution, resetting its execution history and setting its state back
    * to ACTIVE.
@@ -320,23 +325,6 @@ public interface SchedulerClient {
    * @see com.github.kagkarlsson.scheduler.ScheduledExecution
    */
   Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
-
-  /**
-   * Gets all deactivated executions (executions with a non-active state) and supplies them to the
-   * provided Consumer.
-   *
-   * @param consumer Consumer for the executions
-   */
-  void fetchDeactivatedExecutions(Consumer<DeactivatedExecution> consumer);
-
-  /**
-   * @see #fetchDeactivatedExecutions(Consumer)
-   */
-  default List<DeactivatedExecution> getDeactivatedExecutions() {
-    List<DeactivatedExecution> executions = new ArrayList<>();
-    fetchDeactivatedExecutions(executions::add);
-    return executions;
-  }
 
   class ScheduleOptions {
 
@@ -623,6 +611,24 @@ public interface SchedulerClient {
     }
 
     @Override
+    public void deactivate(TaskInstanceId taskInstanceId, State state) {
+      Execution execution =
+          taskRepository
+              .getExecution(taskInstanceId)
+              .orElseThrow(() -> new TaskInstanceNotFoundException(taskInstanceId));
+
+      if (execution.isPicked()) {
+        throw new TaskInstanceCurrentlyExecutingException(taskInstanceId);
+      }
+
+      if (!execution.isActive()) {
+        throw new TaskInstanceNotActiveException(taskInstanceId);
+      }
+
+      taskRepository.deactivate(execution, DeactivationUpdate.toState(state).build());
+    }
+
+    @Override
     public void reactivate(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
       Execution execution =
           taskRepository
@@ -678,12 +684,6 @@ public interface SchedulerClient {
       Optional<Execution> e =
           taskRepository.getExecution(taskInstanceId.getTaskName(), taskInstanceId.getId());
       return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
-    }
-
-    @Override
-    public void fetchDeactivatedExecutions(Consumer<DeactivatedExecution> consumer) {
-      taskRepository.getDeactivatedExecutions(
-          execution -> consumer.accept(DeactivatedExecution.from(execution)));
     }
   }
 

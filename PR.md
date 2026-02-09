@@ -1,6 +1,6 @@
 # Deactivation Support - GitHub Issue #27
 
-Add ability to pause or disable tasks (recurring).
+Add ability to pause or deactivate any type of execution.
 
 ## High-level
 
@@ -69,6 +69,11 @@ except `State.RECORD` which is kept indefinately.
 - [x] `FailureHandler.maxRetries(n).withBackoff(duration).thenDeactivate(state, callback)` - builder API
 - [x] `FailureHandler.maxRetries(n).retryEvery(duration).then((complete, ops) -> ...)` - full control callback
 - [x] deprecate MaxRetriesFailureHandler since ambiguous
+
+### OnStartup
+
+- [ ] Recurring tasks that have been deactivated should not be reactivated when scheduler restarts.
+  Logs a WARN for now if Recurring is paused.
 
 ## Backward compatibility / other things
 

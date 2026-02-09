@@ -1,6 +1,8 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
+import ch.qos.logback.classic.Level;
 import com.github.kagkarlsson.scheduler.DbUtils;
+import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
@@ -8,6 +10,7 @@ import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -27,6 +30,12 @@ import org.testcontainers.utility.DockerImageName;
 @Tag("compatibility")
 @Testcontainers
 public class MssqlCompatibilityTest extends CompatibilityTest {
+
+  //        Enable if test gets flaky!
+  @RegisterExtension
+  public ChangeLogLevelsExtension changeLogLevels =
+      new ChangeLogLevelsExtension(
+          new ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson", Level.DEBUG));
 
   @Container
   private static final MSSQLServerContainer MSSQL =

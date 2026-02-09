@@ -334,6 +334,11 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  public void deactivate(TaskInstanceId taskInstanceId, State state) {
+    this.delegate.deactivate(taskInstanceId, state);
+  }
+
+  @Override
   public void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
     this.delegate.fetchScheduledExecutions(consumer);
   }
@@ -362,11 +367,6 @@ public class Scheduler implements SchedulerClient {
   @Override
   public Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId) {
     return this.delegate.getScheduledExecution(taskInstanceId);
-  }
-
-  @Override
-  public void fetchDeactivatedExecutions(Consumer<DeactivatedExecution> consumer) {
-    this.delegate.fetchDeactivatedExecutions(consumer);
   }
 
   public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {

@@ -16,6 +16,7 @@ package com.github.kagkarlsson.scheduler.task;
 import com.github.kagkarlsson.scheduler.Resolvable;
 import java.time.Instant;
 import java.util.Objects;
+import org.jspecify.annotations.NonNull;
 
 @SuppressWarnings("rawtypes")
 public final class Execution implements TaskInstanceId, Resolvable {
@@ -31,7 +32,7 @@ public final class Execution implements TaskInstanceId, Resolvable {
   public final State state;
 
   public Execution(Instant executionTime, TaskInstance taskInstance) {
-    this(executionTime, taskInstance, false, null, null, null, 0, null, 1L, null);
+    this(executionTime, taskInstance, false, null, null, null, 0, null, 1L, State.ACTIVE);
   }
 
   public Execution(
@@ -67,7 +68,11 @@ public final class Execution implements TaskInstanceId, Resolvable {
   }
 
   public boolean isActive() {
-    return state == null || state == State.ACTIVE;
+    return getState() == State.ACTIVE;
+  }
+
+  public @NonNull State getState() {
+    return state == null ? State.ACTIVE : state;
   }
 
   public Execution updateToPicked(String newPickedBy, Instant newLastHeartbeat) {

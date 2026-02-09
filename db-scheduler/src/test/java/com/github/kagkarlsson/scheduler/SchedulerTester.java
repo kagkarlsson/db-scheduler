@@ -6,8 +6,10 @@ import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import java.time.Instant;
+import java.util.List;
 
 public class SchedulerTester {
+
   private final ManualScheduler scheduler;
 
   public SchedulerTester(ManualScheduler scheduler) {
@@ -18,7 +20,18 @@ public class SchedulerTester {
     return new ExecutionAssertion(instance);
   }
 
+  public void assertNoExecution(TaskInstanceId instance) {
+    assertThat(scheduler.getScheduledExecution(instance))
+        .as("no execution exists for task-instance %s", instance)
+        .isEmpty();
+  }
+
+  public List<ScheduledExecution<Object>> getDeactivatedExecutions() {
+    return scheduler.getScheduledExecutions(ScheduledExecutionsFilter.deactivated());
+  }
+
   public class ExecutionAssertion {
+
     private final TaskInstanceId instance;
 
     ExecutionAssertion(TaskInstanceId instance) {
@@ -26,28 +39,14 @@ public class SchedulerTester {
     }
 
     public ExecutionAssertion isScheduled() {
-      assertThat(scheduler.getScheduledExecution(instance))
-          .as("Execution %s/%s is scheduled", instance.getTaskName(), instance.getId())
-          .isPresent();
-      return this;
-    }
-
-    public ExecutionAssertion isRemoved() {
-      assertThat(scheduler.getScheduledExecution(instance)).isEmpty();
-      assertThat(scheduler.getDeactivatedExecutions())
-          .as("Execution %s/%s is removed", instance.getTaskName(), instance.getId())
-          .noneMatch(e -> matches(e.taskInstance()));
-      return this;
+      return hasState(State.ACTIVE);
     }
 
     public ExecutionAssertion hasState(State expected) {
-      var deactivated =
-          scheduler.getDeactivatedExecutions().stream()
-              .filter(e -> matches(e.taskInstance()))
-              .findFirst();
-      assertThat(deactivated)
+      var scheduled = scheduler.getScheduledExecution(instance);
+      assertThat(scheduled)
           .as("Execution %s/%s has state %s", instance.getTaskName(), instance.getId(), expected)
-          .hasValueSatisfying(e -> assertThat(e.state()).isEqualTo(expected));
+          .hasValueSatisfying(e -> assertThat(e.getState()).isEqualTo(expected));
       return this;
     }
 
@@ -74,11 +73,6 @@ public class SchedulerTester {
               instance.getTaskName(), instance.getId(), expected)
           .hasValueSatisfying(e -> assertThat(e.getExecutionTime()).isEqualTo(expected));
       return this;
-    }
-
-    private boolean matches(TaskInstanceId other) {
-      return instance.getTaskName().equals(other.getTaskName())
-          && instance.getId().equals(other.getId());
     }
   }
 }

@@ -52,7 +52,7 @@ public class MaxRetriesFailureHandlerTest {
     tester.assertThatExecution(instance).isScheduled();
 
     runTimes(1);
-    tester.assertThatExecution(instance).isRemoved();
+    tester.assertNoExecution(instance);
     assertThat(callbackTracker.invoked).isTrue();
   }
 
@@ -120,7 +120,7 @@ public class MaxRetriesFailureHandlerTest {
 
     runTimes(3);
 
-    tester.assertThatExecution(instance).isRemoved();
+    tester.assertNoExecution(instance);
     assertThat(callbackTracker.invoked).isTrue();
   }
 
