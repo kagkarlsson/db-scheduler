@@ -16,11 +16,12 @@ create table test.scheduled_tasks (
   INDEX execution_time_idx (execution_time),
   INDEX last_heartbeat_idx (last_heartbeat),
   INDEX priority_execution_time_idx (priority desc, execution_time asc)
-)
+);
 
 -- an optimization for users of priority might be to add priority to the execution_time_idx
 -- this _might_ save reads as the priority-value is already in the index
 -- INDEX priority_execution_time_idx (execution_time asc, priority desc)
 
 -- Migrations
-ALTER TABLE scheduled_tasks ADD COLUMN state varchar(20);
+ALTER TABLE test.scheduled_tasks ADD COLUMN state varchar(20);
+CREATE INDEX state_execution_time_idx ON test.scheduled_tasks (state, execution_time);

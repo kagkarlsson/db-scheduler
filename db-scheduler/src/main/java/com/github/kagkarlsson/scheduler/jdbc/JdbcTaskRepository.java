@@ -778,16 +778,14 @@ public class JdbcTaskRepository implements TaskRepository {
         states.stream().map(s -> "'" + s.name() + "'").collect(Collectors.joining(", "));
 
     String sql =
-        "DELETE FROM "
-            + tableName
+        "DELETE FROM " + tableName
             + " WHERE (task_name, task_instance) IN ("
-            + "SELECT task_name, task_instance FROM "
-            + tableName
-            + " WHERE state IN ("
-            + statesInClause
-            + ")"
-            + " AND execution_time < ?"
+            + "  SELECT task_name, task_instance FROM ("
+            + "    SELECT task_name, task_instance FROM " + tableName
+            + "    WHERE state IN (" + statesInClause + ")"
+            + "      AND execution_time < ?"
             + jdbcCustomization.getQueryLimitPart(limit)
+            + "  ) AS limited_results"
             + ")";
     return jdbcRunner.execute(
         sql,

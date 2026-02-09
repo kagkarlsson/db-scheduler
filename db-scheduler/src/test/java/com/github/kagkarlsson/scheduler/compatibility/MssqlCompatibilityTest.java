@@ -69,7 +69,7 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
 
     // init schema
     DbUtils.dropTables(pooledDatasource);
-    DbUtils.runSqlResource("/mssql_tables.sql").accept(pooledDatasource);
+    DbUtils.runSqlResource("/mssql_tables.sql", true).accept(pooledDatasource);
   }
 
   @Override

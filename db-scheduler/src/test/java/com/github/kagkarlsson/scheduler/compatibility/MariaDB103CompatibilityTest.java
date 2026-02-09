@@ -42,7 +42,7 @@ public class MariaDB103CompatibilityTest extends CompatibilityTest {
     pooledDatasource = new HikariDataSource(hikariConfig);
 
     // init schema
-    DbUtils.runSqlResource("/mariadb_tables.sql").accept(pooledDatasource);
+    DbUtils.runSqlResource("/mariadb_tables.sql", true).accept(pooledDatasource);
   }
 
   @Override

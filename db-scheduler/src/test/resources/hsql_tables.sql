@@ -12,7 +12,7 @@ create table scheduled_tasks (
     version BIGINT,
     priority SMALLINT,
     PRIMARY KEY (task_name, task_instance)
-)
+);
 
 -- Migrations
 ALTER TABLE scheduled_tasks ADD COLUMN state varchar(20);
