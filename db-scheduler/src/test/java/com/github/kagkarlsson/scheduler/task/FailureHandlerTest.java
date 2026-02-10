@@ -16,15 +16,21 @@ package com.github.kagkarlsson.scheduler.task;
 import static java.time.Instant.now;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.task.FailureHandler.MaxRetriesFailureHandler;
+import com.github.kagkarlsson.scheduler.task.FailureHandler.SequenceFailureHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class FailureHandlerTest {
   @Nested
@@ -72,6 +78,138 @@ class FailureHandlerTest {
       assertThat(failureHandlerCalled.get(), is(true));
       assertThat(maxRetriesExceededHandlerCalled.get(), is(false));
       verify(executionOperations, never()).stop();
+    }
+
+    private Execution getExecutionWithFails(int consecutiveFailures) {
+      return new Execution(
+          now(), task.instance("1"), false, null, null, null, consecutiveFailures, null, 1L);
+    }
+  }
+
+  @Nested
+  class SequenceFailureHandlerTest {
+
+    private final OneTimeTask<Integer> task =
+        TestTasks.oneTime("some-task", Integer.class, (instance, executionContext) -> {});
+
+    private final AtomicInteger primaryFailureHandlerCallCount = new AtomicInteger(0);
+    private final FailureHandler<String> primaryFailureHandler =
+        (executionComplete, executionOperations) ->
+            primaryFailureHandlerCallCount.incrementAndGet();
+
+    private final AtomicBoolean secondaryFailureHandlerCalled = new AtomicBoolean(false);
+    private final FailureHandler<String> secondaryFailureHandler =
+        (executionComplete, executionOperations) -> secondaryFailureHandlerCalled.set(true);
+
+    private final ExecutionComplete executionComplete = mock(ExecutionComplete.class);
+    private final ExecutionOperations<String> executionOperations = mock(ExecutionOperations.class);
+
+    @Test
+    void should_run_secondary_handler_when_primary_handler_fails() {
+      SequenceFailureHandler<String> sequenceFailureHandler =
+          new SequenceFailureHandler<>(primaryFailureHandler, secondaryFailureHandler);
+
+      // First failure
+      Execution execution = getExecutionWithFails(0);
+      when(executionComplete.getExecution()).thenReturn(execution);
+
+      sequenceFailureHandler.onFailure(executionComplete, executionOperations);
+
+      assertThat(primaryFailureHandlerCallCount.get(), is(1));
+      assertThat(secondaryFailureHandlerCalled.get(), is(false));
+
+      // Second failure
+      execution = getExecutionWithFails(1);
+      when(executionComplete.getExecution()).thenReturn(execution);
+
+      sequenceFailureHandler.onFailure(executionComplete, executionOperations);
+
+      assertThat(primaryFailureHandlerCallCount.get(), is(1));
+      assertThat(secondaryFailureHandlerCalled.get(), is(true));
+    }
+
+    @Test
+    void should_retry_primary_handler_according_to_the_primaryHandlerRetryCount() {
+      int primaryHandlerRetryCount = 3;
+      SequenceFailureHandler<String> sequenceFailureHandler =
+          new SequenceFailureHandler<>(
+              primaryFailureHandler, secondaryFailureHandler, primaryHandlerRetryCount);
+
+      // First failure
+      Execution execution = getExecutionWithFails(0);
+      when(executionComplete.getExecution()).thenReturn(execution);
+
+      sequenceFailureHandler.onFailure(executionComplete, executionOperations);
+
+      assertThat(primaryFailureHandlerCallCount.get(), is(1));
+      assertThat(secondaryFailureHandlerCalled.get(), is(false));
+
+      // Second failure
+      execution = getExecutionWithFails(1);
+      when(executionComplete.getExecution()).thenReturn(execution);
+
+      sequenceFailureHandler.onFailure(executionComplete, executionOperations);
+
+      assertThat(primaryFailureHandlerCallCount.get(), is(2));
+      assertThat(secondaryFailureHandlerCalled.get(), is(false));
+
+      // Third failure
+      execution = getExecutionWithFails(2);
+      when(executionComplete.getExecution()).thenReturn(execution);
+
+      sequenceFailureHandler.onFailure(executionComplete, executionOperations);
+
+      assertThat(primaryFailureHandlerCallCount.get(), is(3));
+      assertThat(secondaryFailureHandlerCalled.get(), is(false));
+
+      // Fourth failure
+      execution = getExecutionWithFails(3);
+      when(executionComplete.getExecution()).thenReturn(execution);
+
+      sequenceFailureHandler.onFailure(executionComplete, executionOperations);
+
+      assertThat(primaryFailureHandlerCallCount.get(), is(3));
+      assertThat(secondaryFailureHandlerCalled.get(), is(true));
+    }
+
+    @Test
+    void should_throw_exception_when_primaryFailureHandler_is_MaxRetriesFailureHandler() {
+      FailureHandler<String> primaryFailureHandlerForThisTest =
+          new MaxRetriesFailureHandler<>(3, null, null);
+      IllegalArgumentException thrown =
+          assertThrows(
+              IllegalArgumentException.class,
+              () ->
+                  new SequenceFailureHandler<>(
+                      primaryFailureHandlerForThisTest, secondaryFailureHandler));
+      assertThat(
+          thrown.getMessage(),
+          is(
+              "Primary failure handler cannot be a MaxRetriesFailureHandler as it stops the execution. Use the primaryHandlerRetryCount parameter instead if retries are needed."));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, -1})
+    void should_throw_exception_when_primaryHandlerRetryCount_is_smaller_than_1(
+        int primaryHandlerRetryCount) {
+      IllegalArgumentException thrown =
+          assertThrows(
+              IllegalArgumentException.class,
+              () ->
+                  new SequenceFailureHandler<>(
+                      primaryFailureHandler, secondaryFailureHandler, primaryHandlerRetryCount));
+
+      assertThat(thrown.getMessage(), is("Primary handler retry count must be at least 1."));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3})
+    void should_be_successful_when_primaryHandlerRetryCount_is_1_or_greater(
+        int primaryHandlerRetryCount) {
+      assertDoesNotThrow(
+          () ->
+              new SequenceFailureHandler<>(
+                  primaryFailureHandler, secondaryFailureHandler, primaryHandlerRetryCount));
     }
 
     private Execution getExecutionWithFails(int consecutiveFailures) {
