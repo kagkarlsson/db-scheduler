@@ -15,16 +15,21 @@ package com.github.kagkarlsson.scheduler;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Waiter {
+
   private static final Logger LOG = LoggerFactory.getLogger(Waiter.class);
 
-  private final Object lock;
+  private final ReentrantLock lock;
+  private final Condition condition;
   private boolean woken = false;
   private final Duration duration;
-  private Clock clock;
+  private final Clock clock;
   private boolean isWaiting = false;
   private boolean skipNextWait = false;
 
@@ -33,66 +38,81 @@ public class Waiter {
   }
 
   public Waiter(Duration duration, Clock clock) {
-    this(duration, clock, new Object());
+    this.duration = duration;
+    this.clock = clock;
+    this.lock = new ReentrantLock();
+    this.condition = this.lock.newCondition();
   }
 
-  Waiter(Duration duration, Clock clock, Object lock) {
+  Waiter(Duration duration, Clock clock, ReentrantLock lock, Condition condition) {
     this.duration = duration;
     this.clock = clock;
     this.lock = lock;
+    this.condition = condition;
   }
 
   public void doWait() throws InterruptedException {
     long millis = duration.toMillis();
 
-    if (millis > 0) {
-      Instant waitUntil = clock.now().plusMillis(millis);
+    if (millis <= 0) {
+      return;
+    }
 
-      while (clock.now().isBefore(waitUntil)) {
-        synchronized (lock) {
-          if (skipNextWait) {
-            LOG.debug("Waiter has been notified to skip next wait-period. Skipping wait.");
-            skipNextWait = false;
-            return;
-          }
+    Instant waitUntil = clock.now().plusMillis(millis);
 
-          woken = false;
-          LOG.debug("Waiter start wait.");
-          this.isWaiting = true;
-          lock.wait(millis);
-          this.isWaiting = false;
-          if (woken) {
-            LOG.debug(
-                "Waiter woken, it had {}ms left to wait.",
-                (waitUntil.toEpochMilli() - clock.now().toEpochMilli()));
-            return;
-          }
+    while (clock.now().isBefore(waitUntil)) {
+      lock.lock();
+      try {
+        if (skipNextWait) {
+          LOG.debug("Waiter has been notified to skip next wait-period. Skipping wait.");
+          skipNextWait = false;
+          return;
         }
+
+        woken = false;
+        LOG.debug("Waiter start wait.");
+        this.isWaiting = true;
+        condition.awaitNanos(millis * 1_000_000);
+        this.isWaiting = false;
+        if (woken) {
+          LOG.debug(
+              "Waiter woken, it had {}ms left to wait.",
+              (waitUntil.toEpochMilli() - clock.now().toEpochMilli()));
+          return;
+        }
+
+      } finally {
+        lock.unlock();
       }
     }
   }
 
-  public boolean wake() {
-    synchronized (lock) {
-      if (!isWaiting) {
-        return false;
-      } else {
-        woken = true;
-        lock.notify();
-        return true;
-      }
-    }
+  boolean wake() {
+    return withLock(
+        lock,
+        () -> {
+          if (!isWaiting) {
+            return false;
+          } else {
+            woken = true;
+            condition.signal();
+            return true;
+          }
+        });
   }
 
   public void wakeOrSkipNextWait() {
     // Take early lock to avoid race-conditions. Lock is also taken in wake() (lock is re-entrant)
-    synchronized (lock) {
-      final boolean awoken = wake();
-      if (!awoken) {
-        LOG.debug("Waiter not waiting, instructing to skip next wait.");
-        this.skipNextWait = true;
-      }
-    }
+    withLock(
+        lock,
+        () -> {
+          final boolean awoken = wake();
+          if (!awoken) {
+            LOG.debug("Waiter not waiting, instructing to skip next wait.");
+            this.skipNextWait = true;
+          }
+          return null;
+        });
   }
 
   public Duration getWaitDuration() {
@@ -101,5 +121,23 @@ public class Waiter {
 
   public boolean isWaiting() {
     return isWaiting;
+  }
+
+  public static <T> T withLock(ReentrantLock lock, Supplier<T> action) {
+    lock.lock();
+    try {
+      return action.get();
+    } finally {
+      lock.unlock();
+    }
+  }
+
+  public static <T> T withLock(ReentrantLock lock, Runnable action) {
+    return withLock(
+        lock,
+        () -> {
+          action.run();
+          return null;
+        });
   }
 }

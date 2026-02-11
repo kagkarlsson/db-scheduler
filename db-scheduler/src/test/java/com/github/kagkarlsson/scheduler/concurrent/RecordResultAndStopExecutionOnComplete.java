@@ -3,9 +3,7 @@ package com.github.kagkarlsson.scheduler.concurrent;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,8 +12,8 @@ class RecordResultAndStopExecutionOnComplete<T> implements CompletionHandler<T> 
   private static final Logger LOG =
       LoggerFactory.getLogger(RecordResultAndStopExecutionOnComplete.class);
 
-  final List<String> ok = Collections.synchronizedList(new ArrayList<>());
-  final List<String> failed = Collections.synchronizedList(new ArrayList<>());
+  final ConcurrentLinkedQueue<String> ok = new ConcurrentLinkedQueue<>();
+  final ConcurrentLinkedQueue<String> failed = new ConcurrentLinkedQueue<>();
   final Consumer<String> onComplete;
 
   RecordResultAndStopExecutionOnComplete(Consumer<String> onComplete) {

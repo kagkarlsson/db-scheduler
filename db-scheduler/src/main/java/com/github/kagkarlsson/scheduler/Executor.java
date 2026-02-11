@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -31,8 +32,7 @@ import org.slf4j.LoggerFactory;
 public class Executor {
   private static final Logger LOG = LoggerFactory.getLogger(Executor.class);
 
-  final Map<UUID, CurrentlyExecuting> currentlyProcessing =
-      Collections.synchronizedMap(new HashMap<>());
+  final Map<UUID, CurrentlyExecuting> currentlyProcessing = new ConcurrentHashMap();
   private AtomicInteger currentlyInQueueOrProcessing = new AtomicInteger(0);
   private final ExecutorService executorService;
   private final Clock clock;
