@@ -4,6 +4,7 @@ import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
+import com.github.kagkarlsson.scheduler.task.schedule.CronStyle;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -42,7 +43,10 @@ public final class RecurringTaskRegistrySupport {
 
     return Tasks.recurring(
             recurringTaskResolved.name(),
-            Schedules.cron(recurringTaskResolved.cron, recurringTaskResolved.zoneId))
+            Schedules.cron(
+                recurringTaskResolved.cron,
+                recurringTaskResolved.zoneId,
+                recurringTaskResolved.cronStyle))
         .execute(
             (instance, ctx) -> {
               Object[] inputs =
@@ -70,5 +74,6 @@ public final class RecurringTaskRegistrySupport {
             });
   }
 
-  public record RecurringTaskResolved(String name, String cron, ZoneId zoneId) {}
+  public record RecurringTaskResolved(
+      String name, String cron, ZoneId zoneId, CronStyle cronStyle) {}
 }

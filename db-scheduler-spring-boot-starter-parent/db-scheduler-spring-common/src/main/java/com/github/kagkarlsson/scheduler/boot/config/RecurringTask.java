@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler.boot.config;
 
+import com.github.kagkarlsson.scheduler.task.schedule.CronStyle;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -30,4 +31,6 @@ public @interface RecurringTask {
   The default empty string value means default system timezone.
    */
   String zoneId() default "";
+
+  CronStyle cronStyle() default CronStyle.SPRING53;
 }

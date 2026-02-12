@@ -25,6 +25,7 @@ import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
+import com.github.kagkarlsson.scheduler.task.schedule.CronStyle;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -326,6 +327,16 @@ public class DbSchedulerAutoConfigurationTest {
             });
   }
 
+  @Test
+  void it_should_resolve_cron_style_from_properties() {
+    ctxRunner
+        .withUserConfiguration(TaskFromAnnotationWithCronStyle.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertTaskScheduled("taskFromAnnotationWithCronStyle", ctx);
+            });
+  }
+
   private void assertTaskScheduled(String taskName, AssertableApplicationContext ctx) {
     assertThat(ctx).hasSingleBean(Scheduler.class);
 
@@ -465,6 +476,17 @@ public class DbSchedulerAutoConfigurationTest {
         zoneId = "Australia/Tasmania")
     public void taskFromAnnotationWithZoneId() {
       log.info("I'm a task from annotation with zone id");
+    }
+  }
+
+  @Configuration
+  static class TaskFromAnnotationWithCronStyle {
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyle",
+        cron = "0 0 7 19 * ?",
+        cronStyle = CronStyle.QUARTZ)
+    public void taskFromAnnotationWithCronStyle() {
+      log.info("I'm a task from annotation with cron style QUARTZ");
     }
   }
 

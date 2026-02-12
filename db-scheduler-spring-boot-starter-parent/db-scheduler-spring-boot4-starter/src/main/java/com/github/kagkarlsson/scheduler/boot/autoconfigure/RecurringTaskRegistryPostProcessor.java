@@ -88,7 +88,7 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
   private RecurringTaskResolved resolveAnnotation(RecurringTask task) {
     String resolveCron = resolveCron(task.cron());
     ZoneId resolvedZoneId = resolveZoneId(task.zoneId());
-    return new RecurringTaskResolved(task.name(), resolveCron, resolvedZoneId);
+    return new RecurringTaskResolved(task.name(), resolveCron, resolvedZoneId, task.cronStyle());
   }
 
   private String resolveCron(String rawCron) {

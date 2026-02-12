@@ -22,6 +22,8 @@ import com.github.kagkarlsson.scheduler.boot.testconfig.MultipleTasksConfigurati
 import com.github.kagkarlsson.scheduler.boot.testconfig.SingleTaskConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithCronConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithCronPropertyConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithCronStyleConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithZoneIdConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.TasksFromAnnotationWithDifferentInputsConfiguration;
 import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
@@ -405,6 +407,32 @@ class DbSchedulerAutoConfigurationTest {
     @Test
     void it_should_resolve_cron_from_properties() {
       assertTaskScheduled("taskFromAnnotationWithCronProperty", ctx);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = {CommonAutoConfig.class, TaskFromAnnotationWithZoneIdConfiguration.class})
+  class WithZoneIdConfiguration {
+
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void it_should_create_valid_zone_id_from_annotation() {
+      assertTaskScheduled("taskFromAnnotationWithZoneId", ctx);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = {CommonAutoConfig.class, TaskFromAnnotationWithCronStyleConfiguration.class})
+  class WithCronStyleConfiguration {
+
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void it_should_create_valid_cron_style_from_annotation() {
+      assertTaskScheduled("taskFromAnnotationWithCronStyle", ctx);
     }
   }
 
