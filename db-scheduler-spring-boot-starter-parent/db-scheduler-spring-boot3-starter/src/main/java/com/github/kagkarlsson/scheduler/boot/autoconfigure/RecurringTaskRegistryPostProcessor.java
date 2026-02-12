@@ -9,7 +9,6 @@ import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.lang.reflect.Method;
-import java.time.ZoneId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -19,7 +18,6 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.util.ReflectionUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * A {@link BeanDefinitionRegistryPostProcessor} that scans for methods annotated with {@link
@@ -57,9 +55,10 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
               RecurringTask recurringTask = method.getAnnotation(RecurringTask.class);
               if (recurringTask != null) {
                 validateMethod(method);
+                RecurringTaskResolved recurringTaskResolved = resolveAnnotation(recurringTask);
                 RootBeanDefinition taskDef =
-                    buildTaskBeanDefinition(recurringTask, method, beanName);
-                registry.registerBeanDefinition(recurringTask.name(), taskDef);
+                    buildTaskBeanDefinition(recurringTaskResolved, method, beanName);
+                registry.registerBeanDefinition(recurringTaskResolved.name(), taskDef);
               }
             },
             method -> method.isAnnotationPresent(RecurringTask.class));
@@ -69,38 +68,32 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
   }
 
   private RootBeanDefinition buildTaskBeanDefinition(
-      RecurringTask recurringTask, Method method, String beanName) {
+      RecurringTaskResolved recurringTaskResolved, Method method, String beanName) {
     RootBeanDefinition taskDef = new RootBeanDefinition();
     taskDef.setBeanClass(Task.class);
     taskDef.setInstanceSupplier(
         () -> {
-          RecurringTaskResolved recurringTaskResolved = resolveAnnotation(recurringTask);
           log.info(
-              "Creating a task from @RecurringTask with name={}, cron={}, timezone={} ",
-              recurringTask.name(),
-              recurringTaskResolved.cron(),
-              recurringTaskResolved.zoneId());
+              "Creating a task from @RecurringTask with parameters: {}", recurringTaskResolved);
           return createTaskFromMethod(recurringTaskResolved, method, context.getBean(beanName));
         });
     return taskDef;
   }
 
   private RecurringTaskResolved resolveAnnotation(RecurringTask task) {
-    String resolveCron = resolveCron(task.cron());
-    ZoneId resolvedZoneId = resolveZoneId(task.zoneId());
-    return new RecurringTaskResolved(task.name(), resolveCron, resolvedZoneId, task.cronStyle());
+    return RecurringTaskResolved.from(
+        getValueFromPropertyIfPossible(task.name()),
+        getValueFromPropertyIfPossible(task.cron()),
+        getValueFromPropertyIfPossible(task.zoneId()),
+        getValueFromPropertyIfPossible(task.cronStyle()));
   }
 
-  private String resolveCron(String rawCron) {
-    if (rawCron.startsWith("$")) {
-      return context.getEnvironment().resolveRequiredPlaceholders(rawCron);
+  private String getValueFromPropertyIfPossible(String value) {
+    if (value.startsWith("$")) {
+      return context.getEnvironment().resolveRequiredPlaceholders(value);
     } else {
-      return rawCron;
+      return value;
     }
-  }
-
-  private ZoneId resolveZoneId(String rawZoneId) {
-    return StringUtils.hasLength(rawZoneId) ? ZoneId.of(rawZoneId) : ZoneId.systemDefault();
   }
 
   @Override

@@ -1,6 +1,5 @@
 package com.github.kagkarlsson.scheduler.boot.config;
 
-import com.github.kagkarlsson.scheduler.task.schedule.CronStyle;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,8 +28,15 @@ public @interface RecurringTask {
   /*
   Should be java.time.ZoneId in string representation.
   The default empty string value means default system timezone.
+
+  It also can be a path to a property.
    */
   String zoneId() default "";
 
-  CronStyle cronStyle() default CronStyle.SPRING53;
+  /*
+  {@see com.github.kagkarlsson.scheduler.task.schedule.CronStyle}
+
+  It can be either a value from enum or a path to a property.
+   */
+  String cronStyle() default "SPRING53";
 }

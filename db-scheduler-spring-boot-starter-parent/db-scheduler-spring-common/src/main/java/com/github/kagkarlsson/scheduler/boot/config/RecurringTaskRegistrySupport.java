@@ -12,6 +12,7 @@ import java.lang.reflect.Modifier;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Set;
+import org.springframework.util.StringUtils;
 
 public final class RecurringTaskRegistrySupport {
   private static final Set<Class<?>> INPUT_ARGUMENTS_AVAILABLE_CLASSES =
@@ -75,5 +76,14 @@ public final class RecurringTaskRegistrySupport {
   }
 
   public record RecurringTaskResolved(
-      String name, String cron, ZoneId zoneId, CronStyle cronStyle) {}
+      String name, String cron, ZoneId zoneId, CronStyle cronStyle) {
+    public static RecurringTaskResolved from(
+        String name, String cron, String zoneId, String cronStyle) {
+      return new RecurringTaskResolved(
+          name,
+          cron,
+          StringUtils.hasLength(zoneId) ? ZoneId.of(zoneId) : ZoneId.systemDefault(),
+          CronStyle.valueOf(cronStyle));
+    }
+  }
 }

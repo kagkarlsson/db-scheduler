@@ -21,9 +21,9 @@ import com.github.kagkarlsson.scheduler.boot.testconfig.MixingAnnotationAndBeanT
 import com.github.kagkarlsson.scheduler.boot.testconfig.MultipleTasksConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.SingleTaskConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithCronConfiguration;
-import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithCronPropertyConfiguration;
-import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithCronStyleConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithPropertyPathConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithZoneIdConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.TasksFromAnnotationWithCronStylesConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.TasksFromAnnotationWithDifferentInputsConfiguration;
 import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
@@ -398,15 +398,20 @@ class DbSchedulerAutoConfigurationTest {
 
   @Nested
   @SpringBootTest(
-      classes = {CommonAutoConfig.class, TaskFromAnnotationWithCronPropertyConfiguration.class},
-      properties = {"my-custom-property.cron=0 0 7 19 * *"})
+      classes = {CommonAutoConfig.class, TaskFromAnnotationWithPropertyPathConfiguration.class},
+      properties = {
+        "my-custom-task.name=taskFromAnnotationWithPropertyPath",
+        "my-custom-task.cron=0 0 7 19 * *",
+        "my-custom-task.zone-id=Australia/Tasmania",
+        "my-custom-task.cron-style=SPRING"
+      })
   class WithCronPropertyConfiguration {
 
     @Autowired ApplicationContext ctx;
 
     @Test
     void it_should_resolve_cron_from_properties() {
-      assertTaskScheduled("taskFromAnnotationWithCronProperty", ctx);
+      assertTaskScheduled("taskFromAnnotationWithPropertyPath", ctx);
     }
   }
 
@@ -425,14 +430,18 @@ class DbSchedulerAutoConfigurationTest {
 
   @Nested
   @SpringBootTest(
-      classes = {CommonAutoConfig.class, TaskFromAnnotationWithCronStyleConfiguration.class})
+      classes = {CommonAutoConfig.class, TasksFromAnnotationWithCronStylesConfiguration.class})
   class WithCronStyleConfiguration {
 
     @Autowired ApplicationContext ctx;
 
     @Test
     void it_should_create_valid_cron_style_from_annotation() {
-      assertTaskScheduled("taskFromAnnotationWithCronStyle", ctx);
+      assertTaskScheduled("taskFromAnnotationWithCronStyleQuartz", ctx);
+      assertTaskScheduled("taskFromAnnotationWithCronStyleCron4j", ctx);
+      assertTaskScheduled("taskFromAnnotationWithCronStyleUnix", ctx);
+      assertTaskScheduled("taskFromAnnotationWithCronStyleSpring", ctx);
+      assertTaskScheduled("taskFromAnnotationWithCronStyleSpring53", ctx);
     }
   }
 

@@ -25,7 +25,6 @@ import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-import com.github.kagkarlsson.scheduler.task.schedule.CronStyle;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -309,11 +308,14 @@ public class DbSchedulerAutoConfigurationTest {
   @Test
   void it_should_resolve_cron_from_properties() {
     ctxRunner
-        .withPropertyValues("my-custom-property.cron=0 0 7 19 * *")
-        .withUserConfiguration(TaskFromAnnotationWithCronProperty.class)
+        .withPropertyValues("my-custom-task.name=taskFromAnnotationWithPropertyPath")
+        .withPropertyValues("my-custom-task.cron=0 0 7 19 * *")
+        .withPropertyValues("my-custom-task.zone-id=Australia/Tasmania")
+        .withPropertyValues("my-custom-task.cron-style=SPRING")
+        .withUserConfiguration(TaskFromAnnotationWithPropertyPath.class)
         .run(
             (AssertableApplicationContext ctx) -> {
-              assertTaskScheduled("taskFromAnnotationWithCronProperty", ctx);
+              assertTaskScheduled("taskFromAnnotationWithPropertyPath", ctx);
             });
   }
 
@@ -330,10 +332,18 @@ public class DbSchedulerAutoConfigurationTest {
   @Test
   void it_should_resolve_cron_style_from_properties() {
     ctxRunner
-        .withUserConfiguration(TaskFromAnnotationWithCronStyle.class)
+        .withUserConfiguration(TasksFromAnnotationWithCronStyles.class)
         .run(
             (AssertableApplicationContext ctx) -> {
-              assertTaskScheduled("taskFromAnnotationWithCronStyle", ctx);
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+
+              ImmutableList.of(
+                      "taskFromAnnotationWithCronStyleQuartz",
+                      "taskFromAnnotationWithCronStyleCron4j",
+                      "taskFromAnnotationWithCronStyleUnix",
+                      "taskFromAnnotationWithCronStyleSpring",
+                      "taskFromAnnotationWithCronStyleSpring53")
+                  .forEach(taskName -> assertTaskScheduled(taskName, ctx));
             });
   }
 
@@ -444,7 +454,7 @@ public class DbSchedulerAutoConfigurationTest {
   }
 
   @Configuration
-  static class MixingAnnotationAndBeanTaskConfiguration extends MultipleTasksConfiguration {
+  public static class MixingAnnotationAndBeanTaskConfiguration extends MultipleTasksConfiguration {
 
     @RecurringTask(name = "taskFromAnnotation", cron = "0 0 7 19 * *")
     public void taskFromAnnotation() {
@@ -453,7 +463,7 @@ public class DbSchedulerAutoConfigurationTest {
   }
 
   @Configuration
-  static class TaskFromAnnotationWithCron {
+  public static class TaskFromAnnotationWithCron {
     @RecurringTask(name = "taskFromAnnotationWithCron", cron = "0 0 7 19 * *")
     public void taskFromAnnotationWithCron() {
       log.info("I'm a task from annotation");
@@ -461,15 +471,19 @@ public class DbSchedulerAutoConfigurationTest {
   }
 
   @Configuration
-  static class TaskFromAnnotationWithCronProperty {
-    @RecurringTask(name = "taskFromAnnotationWithCronProperty", cron = "${my-custom-property.cron}")
-    public void taskFromAnnotationWithCronProperty() {
-      log.info("I'm a task from annotation with property");
+  public static class TaskFromAnnotationWithPropertyPath {
+    @RecurringTask(
+        name = "${my-custom-task.name}",
+        cron = "${my-custom-task.cron}",
+        zoneId = "${my-custom-task.zone-id}",
+        cronStyle = "${my-custom-task.cron-style}")
+    public void taskFromAnnotationWithPropertyPath() {
+      log.info("I'm a task from annotation with properties path");
     }
   }
 
   @Configuration
-  static class TaskFromAnnotationWithZoneId {
+  public static class TaskFromAnnotationWithZoneId {
     @RecurringTask(
         name = "taskFromAnnotationWithZoneId",
         cron = "0 0 7 19 * *",
@@ -480,18 +494,40 @@ public class DbSchedulerAutoConfigurationTest {
   }
 
   @Configuration
-  static class TaskFromAnnotationWithCronStyle {
+  public static class TasksFromAnnotationWithCronStyles {
     @RecurringTask(
-        name = "taskFromAnnotationWithCronStyle",
+        name = "taskFromAnnotationWithCronStyleQuartz",
         cron = "0 0 7 19 * ?",
-        cronStyle = CronStyle.QUARTZ)
-    public void taskFromAnnotationWithCronStyle() {
-      log.info("I'm a task from annotation with cron style QUARTZ");
-    }
+        cronStyle = "QUARTZ")
+    public void taskFromAnnotationWithCronStyle() {}
+
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyleCron4j",
+        cron = "0 7 19 * *",
+        cronStyle = "CRON4J")
+    public void taskFromAnnotationWithCronStyleCron4j() {}
+
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyleUnix",
+        cron = "0 7 19 * *",
+        cronStyle = "UNIX")
+    public void taskFromAnnotationWithCronStyleUnix() {}
+
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyleSpring",
+        cron = "0 0 7 19 * *",
+        cronStyle = "SPRING")
+    public void taskFromAnnotationWithCronStyleSpring() {}
+
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyleSpring53",
+        cron = "0 0 7 19 * ?",
+        cronStyle = "SPRING53")
+    public void taskFromAnnotationWithCronStyleSpring53() {}
   }
 
   @Configuration
-  static class TasksFromAnnotationWithDifferentInputs {
+  public static class TasksFromAnnotationWithDifferentInputs {
 
     @RecurringTask(name = "taskNoInputs", cron = "0 0 7 19 * *")
     public void taskNoInputs() {
