@@ -1,5 +1,6 @@
 package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 
+import com.github.kagkarlsson.scheduler.boot.config.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -8,6 +9,7 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -19,6 +21,7 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
 import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.util.ReflectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * A {@link BeanDefinitionRegistryPostProcessor} that scans for methods annotated with {@link
@@ -119,7 +122,10 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
   private Task<?> createTaskFromMethod(
       RecurringTask recurringTask, Method method, Object existingObject, String resolvedCron) {
 
-    return Tasks.recurring(recurringTask.name(), Schedules.cron(resolvedCron))
+    ZoneId zoneId = StringUtils.hasLength(recurringTask.zoneId())
+      ? ZoneId.of(recurringTask.zoneId())
+      : ZoneId.systemDefault();
+    return Tasks.recurring(recurringTask.name(), Schedules.cron(resolvedCron, zoneId))
         .execute(
             (instance, ctx) -> {
               Object[] inputs =

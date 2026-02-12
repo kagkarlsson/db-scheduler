@@ -13,6 +13,7 @@ import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
+import com.github.kagkarlsson.scheduler.boot.config.RecurringTask;
 import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
@@ -315,6 +316,16 @@ public class DbSchedulerAutoConfigurationTest {
             });
   }
 
+  @Test
+  void it_should_resolve_zone_id_from_properties() {
+    ctxRunner
+      .withUserConfiguration(TaskFromAnnotationWithZoneId.class)
+      .run(
+        (AssertableApplicationContext ctx) -> {
+          assertTaskScheduled("taskFromAnnotationWithZoneId", ctx);
+        });
+  }
+
   private void assertTaskScheduled(String taskName, AssertableApplicationContext ctx) {
     assertThat(ctx).hasSingleBean(Scheduler.class);
 
@@ -325,6 +336,7 @@ public class DbSchedulerAutoConfigurationTest {
     List<ScheduledExecution<Object>> scheduledExecutions =
         scheduler.getScheduledExecutionsForTask(taskName);
     assertThat(scheduledExecutions).hasSize(1);
+    assertThat(scheduledExecutions.get(0).getTaskInstance().getTaskName()).isEqualTo(taskName);
   }
 
   @Test
@@ -442,6 +454,14 @@ public class DbSchedulerAutoConfigurationTest {
     @RecurringTask(name = "taskFromAnnotationWithCronProperty", cron = "${my-custom-property.cron}")
     public void taskFromAnnotationWithCronProperty() {
       log.info("I'm a task from annotation with property");
+    }
+  }
+
+  @Configuration
+  static class TaskFromAnnotationWithZoneId {
+    @RecurringTask(name = "taskFromAnnotationWithZoneId", cron = "0 0 7 19 * *", zoneId = "Australia/Tasmania")
+    public void taskFromAnnotationWithZoneId() {
+      log.info("I'm a task from annotation with zone id");
     }
   }
 

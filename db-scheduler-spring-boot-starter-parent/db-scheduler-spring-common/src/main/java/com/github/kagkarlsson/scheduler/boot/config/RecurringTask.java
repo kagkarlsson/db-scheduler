@@ -1,4 +1,4 @@
-package com.github.kagkarlsson.scheduler.boot.autoconfigure;
+package com.github.kagkarlsson.scheduler.boot.config;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -24,4 +24,10 @@ public @interface RecurringTask {
     - 0 * * * * *
    */
   String cron();
+
+  /*
+  Should be java.time.ZoneId in string representation.
+  The default empty string value means default system timezone.
+   */
+  String zoneId() default "";
 }

@@ -1,6 +1,6 @@
 package com.github.kagkarlsson.scheduler.boot.testconfig;
 
-import com.github.kagkarlsson.scheduler.boot.autoconfigure.RecurringTask;
+import com.github.kagkarlsson.scheduler.boot.config.RecurringTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;

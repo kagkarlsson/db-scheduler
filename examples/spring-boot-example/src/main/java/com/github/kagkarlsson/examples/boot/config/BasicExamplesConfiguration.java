@@ -17,7 +17,7 @@ import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDela
 
 import com.github.kagkarlsson.examples.boot.CounterService;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
-import com.github.kagkarlsson.scheduler.boot.autoconfigure.RecurringTask;
+import com.github.kagkarlsson.scheduler.boot.config.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
