@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.GenericApplicationContext;
@@ -20,7 +20,7 @@ import org.springframework.context.support.GenericApplicationContext;
 public class RecurringTaskAnnotationAutoConfiguration {
 
   @Bean
-  public RecurringTaskRegistryPostProcessor recurringTaskRegistryPostProcessor(
+  public static RecurringTaskRegistryPostProcessor recurringTaskRegistryPostProcessor(
       GenericApplicationContext context) {
     return new RecurringTaskRegistryPostProcessor(context);
   }
