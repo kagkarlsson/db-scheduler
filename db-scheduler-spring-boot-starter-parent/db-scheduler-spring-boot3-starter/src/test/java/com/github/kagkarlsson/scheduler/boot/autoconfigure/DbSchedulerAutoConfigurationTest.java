@@ -319,11 +319,11 @@ public class DbSchedulerAutoConfigurationTest {
   @Test
   void it_should_resolve_zone_id_from_properties() {
     ctxRunner
-      .withUserConfiguration(TaskFromAnnotationWithZoneId.class)
-      .run(
-        (AssertableApplicationContext ctx) -> {
-          assertTaskScheduled("taskFromAnnotationWithZoneId", ctx);
-        });
+        .withUserConfiguration(TaskFromAnnotationWithZoneId.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertTaskScheduled("taskFromAnnotationWithZoneId", ctx);
+            });
   }
 
   private void assertTaskScheduled(String taskName, AssertableApplicationContext ctx) {
@@ -459,7 +459,10 @@ public class DbSchedulerAutoConfigurationTest {
 
   @Configuration
   static class TaskFromAnnotationWithZoneId {
-    @RecurringTask(name = "taskFromAnnotationWithZoneId", cron = "0 0 7 19 * *", zoneId = "Australia/Tasmania")
+    @RecurringTask(
+        name = "taskFromAnnotationWithZoneId",
+        cron = "0 0 7 19 * *",
+        zoneId = "Australia/Tasmania")
     public void taskFromAnnotationWithZoneId() {
       log.info("I'm a task from annotation with zone id");
     }

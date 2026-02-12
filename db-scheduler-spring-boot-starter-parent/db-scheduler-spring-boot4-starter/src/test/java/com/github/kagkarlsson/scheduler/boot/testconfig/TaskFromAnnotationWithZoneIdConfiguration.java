@@ -10,7 +10,10 @@ public class TaskFromAnnotationWithZoneIdConfiguration {
   private static final Logger log =
       LoggerFactory.getLogger(TaskFromAnnotationWithZoneIdConfiguration.class);
 
-  @RecurringTask(name = "taskFromAnnotationWithZoneId", cron = "0 0 7 19 * *", zoneId = "Australia/Tasmania")
+  @RecurringTask(
+      name = "taskFromAnnotationWithZoneId",
+      cron = "0 0 7 19 * *",
+      zoneId = "Australia/Tasmania")
   public void taskFromAnnotationWithZoneId() {
     log.info("I'm a task from annotation with zone id");
   }

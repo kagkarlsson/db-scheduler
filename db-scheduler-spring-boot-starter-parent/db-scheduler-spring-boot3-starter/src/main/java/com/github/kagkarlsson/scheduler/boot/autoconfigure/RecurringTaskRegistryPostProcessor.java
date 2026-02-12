@@ -1,17 +1,15 @@
 package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 
+import static com.github.kagkarlsson.scheduler.boot.config.RecurringTaskRegistrySupport.createTaskFromMethod;
+import static com.github.kagkarlsson.scheduler.boot.config.RecurringTaskRegistrySupport.validateMethod;
+
 import com.github.kagkarlsson.scheduler.boot.config.RecurringTask;
+import com.github.kagkarlsson.scheduler.boot.config.RecurringTaskRegistrySupport.RecurringTaskResolved;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
-import com.github.kagkarlsson.scheduler.task.helper.Tasks;
-import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -34,9 +32,6 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
 
   private static final Logger log =
       LoggerFactory.getLogger(RecurringTaskRegistryPostProcessor.class);
-
-  private static final Set<Class<?>> INPUT_ARGUMENTS_AVAILABLE_CLASSES =
-      Set.of(TaskInstance.class, ExecutionContext.class);
 
   private final GenericApplicationContext context;
 
@@ -79,15 +74,21 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
     taskDef.setBeanClass(Task.class);
     taskDef.setInstanceSupplier(
         () -> {
-          String resolvedCron = resolveCron(recurringTask.cron());
+          RecurringTaskResolved recurringTaskResolved = resolveAnnotation(recurringTask);
           log.info(
-              "Creating a task from @RecurringTask with name={} and cron={}",
+              "Creating a task from @RecurringTask with name={}, cron={}, timezone={} ",
               recurringTask.name(),
-              resolvedCron);
-          return createTaskFromMethod(
-              recurringTask, method, context.getBean(beanName), resolvedCron);
+              recurringTaskResolved.cron(),
+              recurringTaskResolved.zoneId());
+          return createTaskFromMethod(recurringTaskResolved, method, context.getBean(beanName));
         });
     return taskDef;
+  }
+
+  private RecurringTaskResolved resolveAnnotation(RecurringTask task) {
+    String resolveCron = resolveCron(task.cron());
+    ZoneId resolvedZoneId = resolveZoneId(task.zoneId());
+    return new RecurringTaskResolved(task.name(), resolveCron, resolvedZoneId);
   }
 
   private String resolveCron(String rawCron) {
@@ -98,59 +99,8 @@ public class RecurringTaskRegistryPostProcessor implements BeanDefinitionRegistr
     }
   }
 
-  private void validateMethod(Method method) {
-    if (!Modifier.isPublic(method.getModifiers())) {
-      throw new IllegalArgumentException(
-          "RecurringTask annotated method must be public, see the annotation javadoc");
-    }
-    if (!method.getReturnType().equals(Void.TYPE)) {
-      throw new IllegalArgumentException(
-          "RecurringTask annotated method must have return type Void, see the annotation javadoc");
-    }
-
-    if (method.getParameterCount() != 0) {
-      for (Class<?> parameterType : method.getParameterTypes()) {
-        if (!INPUT_ARGUMENTS_AVAILABLE_CLASSES.contains(parameterType)) {
-          throw new IllegalArgumentException(
-              "RecurringTask annotated method is required to have specific inputs: "
-                  + INPUT_ARGUMENTS_AVAILABLE_CLASSES);
-        }
-      }
-    }
-  }
-
-  private Task<?> createTaskFromMethod(
-      RecurringTask recurringTask, Method method, Object existingObject, String resolvedCron) {
-
-    ZoneId zoneId = StringUtils.hasLength(recurringTask.zoneId())
-      ? ZoneId.of(recurringTask.zoneId())
-      : ZoneId.systemDefault();
-    return Tasks.recurring(recurringTask.name(), Schedules.cron(resolvedCron, zoneId))
-        .execute(
-            (instance, ctx) -> {
-              Object[] inputs =
-                  Arrays.stream(method.getParameterTypes())
-                      .map(
-                          paramType -> {
-                            if (paramType.equals(TaskInstance.class)) {
-                              return instance;
-                            } else if (paramType.equals(ExecutionContext.class)) {
-                              return ctx;
-                            }
-                            throw new IllegalArgumentException(
-                                "RecurringTask annotated method is required to have specific inputs: "
-                                    + INPUT_ARGUMENTS_AVAILABLE_CLASSES);
-                          })
-                      .toArray();
-              try {
-                method.invoke(existingObject, inputs);
-              } catch (IllegalAccessException | InvocationTargetException e) {
-                throw new RuntimeException(
-                    "An error happened while calling a task method through reflection, method name: "
-                        + method.getName(),
-                    e);
-              }
-            });
+  private ZoneId resolveZoneId(String rawZoneId) {
+    return StringUtils.hasLength(rawZoneId) ? ZoneId.of(rawZoneId) : ZoneId.systemDefault();
   }
 
   @Override
