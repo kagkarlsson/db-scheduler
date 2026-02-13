@@ -7,11 +7,13 @@ import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_POLLING_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
+import com.github.kagkarlsson.scheduler.boot.config.RecurringTask;
 import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
@@ -19,11 +21,14 @@ import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.DefaultStatsRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import javax.sql.DataSource;
@@ -62,6 +67,7 @@ public class DbSchedulerAutoConfigurationTest {
                     HealthContributorAutoConfiguration.class,
                     DbSchedulerMetricsAutoConfiguration.class,
                     DbSchedulerActuatorAutoConfiguration.class,
+                    RecurringTaskAnnotationAutoConfiguration.class,
                     DbSchedulerAutoConfiguration.class));
   }
 
@@ -276,6 +282,109 @@ public class DbSchedulerAutoConfigurationTest {
         });
   }
 
+  @Test
+  void it_should_mix_bean_tasks_and_annotation_tasks() {
+    ctxRunner
+        .withUserConfiguration(MixingAnnotationAndBeanTaskConfiguration.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+
+              ImmutableList.of("taskFromAnnotation", "firstTask", "secondTask", "thirdTask")
+                  .forEach(beanName -> assertThat(ctx).getBean(beanName, Task.class).isNotNull());
+            });
+  }
+
+  @Test
+  void it_should_create_valid_cron_from_annotation() {
+    ctxRunner
+        .withUserConfiguration(TaskFromAnnotationWithCron.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertTaskScheduled("taskFromAnnotationWithCron", ctx);
+            });
+  }
+
+  @Test
+  void it_should_resolve_cron_from_properties() {
+    ctxRunner
+        .withPropertyValues("my-custom-task.name=taskFromAnnotationWithPropertyPath")
+        .withPropertyValues("my-custom-task.cron=0 0 7 19 * *")
+        .withPropertyValues("my-custom-task.zone-id=Australia/Tasmania")
+        .withPropertyValues("my-custom-task.cron-style=SPRING")
+        .withUserConfiguration(TaskFromAnnotationWithPropertyPath.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertTaskScheduled("taskFromAnnotationWithPropertyPath", ctx);
+            });
+  }
+
+  @Test
+  void it_should_resolve_zone_id_from_properties() {
+    ctxRunner
+        .withUserConfiguration(TaskFromAnnotationWithZoneId.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertTaskScheduled("taskFromAnnotationWithZoneId", ctx);
+            });
+  }
+
+  @Test
+  void it_should_resolve_cron_style_from_properties() {
+    ctxRunner
+        .withUserConfiguration(TasksFromAnnotationWithCronStyles.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+
+              ImmutableList.of(
+                      "taskFromAnnotationWithCronStyleQuartz",
+                      "taskFromAnnotationWithCronStyleCron4j",
+                      "taskFromAnnotationWithCronStyleUnix",
+                      "taskFromAnnotationWithCronStyleSpring",
+                      "taskFromAnnotationWithCronStyleSpring53")
+                  .forEach(taskName -> assertTaskScheduled(taskName, ctx));
+            });
+  }
+
+  private void assertTaskScheduled(String taskName, AssertableApplicationContext ctx) {
+    assertThat(ctx).hasSingleBean(Scheduler.class);
+
+    Task<Void> task = (Task<Void>) ctx.getBean(taskName, Task.class);
+    assertThat(task).isNotNull();
+
+    Scheduler scheduler = ctx.getBean(Scheduler.class);
+    List<ScheduledExecution<Object>> scheduledExecutions =
+        scheduler.getScheduledExecutionsForTask(taskName);
+    assertThat(scheduledExecutions).hasSize(1);
+    assertThat(scheduledExecutions.get(0).getTaskInstance().getTaskName()).isEqualTo(taskName);
+  }
+
+  @Test
+  void it_should_parse_input_arguments_for_tasks_from_annotation() {
+    ctxRunner
+        .withUserConfiguration(TasksFromAnnotationWithDifferentInputs.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+
+              ImmutableList.of(
+                      "taskNoInputs",
+                      "taskWithExecutionContextInput",
+                      "taskWithTaskInstanceInput",
+                      "taskWithBothInputsExpectedOrder",
+                      "taskWithBothInputsReverseOrder")
+                  .forEach(
+                      beanName -> {
+                        Task<Void> task = (Task<Void>) ctx.getBean(beanName, Task.class);
+                        assertThat(task).isNotNull();
+
+                        // Runtime validation that input parameters are passed correctly
+                        task.execute(task.instance("1"), null);
+                      });
+            });
+  }
+
   @Configuration
   static class SingleTaskConfiguration {
     @Bean
@@ -341,6 +450,110 @@ public class DbSchedulerAutoConfigurationTest {
         @Override
         public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {}
       };
+    }
+  }
+
+  @Configuration
+  public static class MixingAnnotationAndBeanTaskConfiguration extends MultipleTasksConfiguration {
+
+    @RecurringTask(name = "taskFromAnnotation", cron = "0 0 7 19 * *")
+    public void taskFromAnnotation() {
+      log.info("I'm a task from annotation");
+    }
+  }
+
+  @Configuration
+  public static class TaskFromAnnotationWithCron {
+    @RecurringTask(name = "taskFromAnnotationWithCron", cron = "0 0 7 19 * *")
+    public void taskFromAnnotationWithCron() {
+      log.info("I'm a task from annotation");
+    }
+  }
+
+  @Configuration
+  public static class TaskFromAnnotationWithPropertyPath {
+    @RecurringTask(
+        name = "${my-custom-task.name}",
+        cron = "${my-custom-task.cron}",
+        zoneId = "${my-custom-task.zone-id}",
+        cronStyle = "${my-custom-task.cron-style}")
+    public void taskFromAnnotationWithPropertyPath() {
+      log.info("I'm a task from annotation with properties path");
+    }
+  }
+
+  @Configuration
+  public static class TaskFromAnnotationWithZoneId {
+    @RecurringTask(
+        name = "taskFromAnnotationWithZoneId",
+        cron = "0 0 7 19 * *",
+        zoneId = "Australia/Tasmania")
+    public void taskFromAnnotationWithZoneId() {
+      log.info("I'm a task from annotation with zone id");
+    }
+  }
+
+  @Configuration
+  public static class TasksFromAnnotationWithCronStyles {
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyleQuartz",
+        cron = "0 0 7 19 * ?",
+        cronStyle = "QUARTZ")
+    public void taskFromAnnotationWithCronStyle() {}
+
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyleCron4j",
+        cron = "0 7 19 * *",
+        cronStyle = "CRON4J")
+    public void taskFromAnnotationWithCronStyleCron4j() {}
+
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyleUnix",
+        cron = "0 7 19 * *",
+        cronStyle = "UNIX")
+    public void taskFromAnnotationWithCronStyleUnix() {}
+
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyleSpring",
+        cron = "0 0 7 19 * *",
+        cronStyle = "SPRING")
+    public void taskFromAnnotationWithCronStyleSpring() {}
+
+    @RecurringTask(
+        name = "taskFromAnnotationWithCronStyleSpring53",
+        cron = "0 0 7 19 * ?",
+        cronStyle = "SPRING53")
+    public void taskFromAnnotationWithCronStyleSpring53() {}
+  }
+
+  @Configuration
+  public static class TasksFromAnnotationWithDifferentInputs {
+
+    @RecurringTask(name = "taskNoInputs", cron = "0 0 7 19 * *")
+    public void taskNoInputs() {
+      log.info("I'm a task without inputs");
+    }
+
+    @RecurringTask(name = "taskWithExecutionContextInput", cron = "0 0 7 19 * *")
+    public void taskWithExecutionContextInput(ExecutionContext ctx) {
+      log.info("I'm a task with the execution context input");
+    }
+
+    @RecurringTask(name = "taskWithTaskInstanceInput", cron = "0 0 7 19 * *")
+    public void taskWithTaskInstanceInput(TaskInstance<Void> taskInstance) {
+      log.info("I'm a task with the task instance input");
+    }
+
+    @RecurringTask(name = "taskWithBothInputsExpectedOrder", cron = "0 0 7 19 * *")
+    public void taskWithBothInputsExpectedOrder(
+        TaskInstance<Void> taskInstance, ExecutionContext ctx) {
+      log.info("I'm a task with both inputs expected order");
+    }
+
+    @RecurringTask(name = "taskWithBothInputsReverseOrder", cron = "0 0 7 19 * *")
+    public void taskWithBothInputsReverseOrder(
+        ExecutionContext ctx, TaskInstance<Void> taskInstance) {
+      log.info("I'm a task with both inputs reverse order");
     }
   }
 
