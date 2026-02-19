@@ -1,22 +1,23 @@
 # Deactivation Support - GitHub Issue #27
 
-Add ability to pause or deactivate any type of execution.
+Add functionality to put executions in a deactivated state, stopping further executions,
+but keeping it as a historic record for deduplicatation or possibility to resume.
 
 ## High-level
 
-- `state` column for the state of the execution. Only active executions are run.
-- non-active executions are called deactivated
-- CompletionHandlers and FailureHandlers now get the option to deactivate the execution and set a
-  non-active state (in addition to the previous options: remove and reschedule)
+- `state` column for holding the state of the execution.
+- Only active executions are picked and run.
+- Non-active state = "deactivated"
+- CompletionHandlers and FailureHandlers now get the option to deactivate the execution and set to a
+  deactivated state (in addition to the previous options: remove and reschedule)
 
-## Components of the PR
+## Components
 
-### Schema changes
-
-Migration (ALTER TABLE):
+### Schema/query changes
 
 - [ ] Add nullable `state` column (text/varchar). (null considered 'active')
 - [ ] Suggest appropriate indices in schema-files
+- [ ] Existing queries for fetching due is updated with state-condition: `(state=ACTIVE or state is null)`
 
 ### Execution states
 
@@ -29,9 +30,6 @@ Migration (ALTER TABLE):
 | FAILED          | Execution is marked as permanently failed by its FailureHandlers. Must be manually triggered to retry.                                          |
 | WAITING         | Execution is waiting for activation to run.                                                                                                      |
 
-### Query changes
-
-- All existing queries fetching due executions is updated with `(state=ACTIVE or state is null)` condition
 
 ### SchedulerClient
 
@@ -72,14 +70,14 @@ except `State.RECORD` which is kept indefinately.
 
 ### OnStartup
 
-- [ ] Recurring tasks that have been deactivated should not be reactivated when scheduler restarts.
+- [x] Recurring tasks that have been deactivated should not be reactivated when scheduler restarts.
   Logs a WARN for now if Recurring is paused.
 
-## Backward compatibility / other things
+## Other things
 
 - Only active executions should be considered by dead execution detection
 - `state = null` means active/scheduled (existing rows should work without migration)
-- `state` column is required (migration needed for existing schemas)
+- `state` column will be required (migration needed for existing schemas)
 - Consider adding future column `state_details (TEXT)` / `failure_details (TEXT)` to hold exceptions
   from failure
 
