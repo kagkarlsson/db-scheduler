@@ -8,6 +8,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
 import java.util.Properties;
 import javax.sql.DataSource;
+import net.ttddyy.dsproxy.support.ProxyDataSourceBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -51,7 +52,7 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
   @BeforeAll
   static void initSchema() {
     //      For MANUAL testing, see javadoc comment
-    //        String jdbcUrl = "jdbc:sqlserver://localhost:1433";
+    //        String jdbcUrl = "jdbc:sqlserver://localhost:1433;trustServerCertificate=true";
     //        DataSource datasource =
     //            new DriverDataSource(
     //                jdbcUrl,
