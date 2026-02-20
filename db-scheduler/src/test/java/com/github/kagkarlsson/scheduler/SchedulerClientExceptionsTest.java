@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.time.Instant;
 import java.util.Optional;
@@ -128,6 +129,6 @@ public class SchedulerClientExceptionsTest {
         0,
         null,
         1,
-        null);
+        State.ACTIVE);
   }
 }

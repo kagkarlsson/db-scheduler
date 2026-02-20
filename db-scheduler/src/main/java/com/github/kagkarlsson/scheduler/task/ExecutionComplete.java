@@ -60,7 +60,7 @@ public class ExecutionComplete {
             0,
             null,
             1,
-            null);
+            State.ACTIVE);
     return new ExecutionComplete(
         nonExistingExecution, timeDone.minus(Duration.ofSeconds(1)), timeDone, Result.OK, null);
   }

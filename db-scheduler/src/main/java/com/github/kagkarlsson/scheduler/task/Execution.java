@@ -17,18 +17,21 @@ import com.github.kagkarlsson.scheduler.Resolvable;
 import java.time.Instant;
 import java.util.Objects;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("rawtypes")
+@NullMarked
 public final class Execution implements TaskInstanceId, Resolvable {
   public final TaskInstance taskInstance;
   public final Instant executionTime;
   public final boolean picked;
-  public final String pickedBy;
+  public final @Nullable String pickedBy;
   public int consecutiveFailures;
-  public final Instant lastHeartbeat;
+  public final @Nullable Instant lastHeartbeat;
   public final long version;
-  public final Instant lastFailure;
-  public final Instant lastSuccess;
+  public final @Nullable Instant lastFailure;
+  public final @Nullable Instant lastSuccess;
   public final State state;
 
   public Execution(Instant executionTime, TaskInstance taskInstance) {
@@ -86,7 +89,7 @@ public final class Execution implements TaskInstanceId, Resolvable {
         consecutiveFailures,
         newLastHeartbeat,
         version + 1, // since this was incremented in the database when picked
-        state);
+        getState());
   }
 
   @Override

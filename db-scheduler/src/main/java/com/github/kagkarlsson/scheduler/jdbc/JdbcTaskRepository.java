@@ -1072,7 +1072,7 @@ public class JdbcTaskRepository implements TaskRepository {
         Instant lastHeartbeat = jdbcCustomization.getInstant(rs, "last_heartbeat");
         long version = rs.getLong("version");
         String stateStr = rs.getString("state");
-        State state = stateStr != null ? State.valueOf(stateStr) : null;
+        State state = stateStr != null ? State.valueOf(stateStr) : State.ACTIVE;
 
         int priority = orderByPriority ? rs.getInt("priority") : 0;
 

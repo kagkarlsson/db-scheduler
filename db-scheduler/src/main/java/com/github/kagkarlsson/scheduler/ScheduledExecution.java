@@ -87,7 +87,7 @@ public class ScheduledExecution<DATA_TYPE> {
   }
 
   public State getState() {
-    return execution.state;
+    return execution.getState();
   }
 
   @Override
