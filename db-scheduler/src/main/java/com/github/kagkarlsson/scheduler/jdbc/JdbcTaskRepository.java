@@ -968,7 +968,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     public String getQueryPart() {
-      return "state is not null AND state <> 'ACTIVE'";
+      return "(state is not null AND state <> 'ACTIVE')";
     }
 
     @Override

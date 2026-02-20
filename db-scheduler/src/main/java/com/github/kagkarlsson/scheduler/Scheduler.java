@@ -467,7 +467,7 @@ public class Scheduler implements SchedulerClient {
     } while (removed == limit && !schedulerState.isShuttingDown());
 
     if (totalRemoved > 0) {
-      LOG.info("Removed {} old deactivated executions", removed);
+      LOG.info("Removed {} old deactivated executions", totalRemoved);
     } else {
       LOG.trace("No old deactivated executions found.");
     }

@@ -17,7 +17,7 @@ import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.io.Serial;
 
 public class TaskInstanceNotDeactivatedException extends TaskInstanceException {
-  @Serial private static final long serialVersionUID = 3847291650283948172L;
+  @Serial private static final long serialVersionUID = 1L;
 
   public TaskInstanceNotDeactivatedException(TaskInstanceId taskInstanceId) {
     this(taskInstanceId.getTaskName(), taskInstanceId.getId());
