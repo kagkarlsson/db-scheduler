@@ -13,9 +13,9 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
-import com.github.kagkarlsson.scheduler.jdbc.RescheduleUpdate;
+import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.State;

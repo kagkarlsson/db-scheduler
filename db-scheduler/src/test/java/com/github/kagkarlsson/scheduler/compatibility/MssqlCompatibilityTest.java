@@ -8,7 +8,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
 import java.util.Properties;
 import javax.sql.DataSource;
-import net.ttddyy.dsproxy.support.ProxyDataSourceBuilder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.extension.RegisterExtension;

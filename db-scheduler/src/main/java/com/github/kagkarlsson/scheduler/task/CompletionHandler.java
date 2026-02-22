@@ -13,7 +13,6 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import java.time.Instant;
 import java.util.function.Function;
@@ -34,7 +33,7 @@ public interface CompletionHandler<T> {
   }
 
   class OnCompleteDeactivate<T> implements CompletionHandler<T> {
-    private State state;
+    private final State state;
 
     public OnCompleteDeactivate(State state) {
       this.state = state;

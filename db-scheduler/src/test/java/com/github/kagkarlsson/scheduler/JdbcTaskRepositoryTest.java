@@ -26,9 +26,9 @@ import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
-import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import java.time.Duration;
 import java.time.Instant;
@@ -597,7 +597,7 @@ public class JdbcTaskRepositoryTest {
         withHistory,
         DeactivationUpdate.toState(State.FAILED)
             .lastSuccess(successTime)
-            .lastFailed(failureTime)
+            .lastFailure(failureTime)
             .build());
 
     var deactivated = taskRepository.getExecution(instance).orElseThrow();

@@ -11,16 +11,14 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.jdbc;
+package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.jdbc.ExecutionUpdate.NewValue;
-import com.github.kagkarlsson.scheduler.task.State;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 
 public record DeactivationUpdate(
     @Nullable NewValue<Instant> lastSuccess,
-    @Nullable NewValue<Instant> lastFailed,
+    @Nullable NewValue<Instant> lastFailure,
     @Nullable NewValue<State> state) {
 
   public static Builder toState(State state) {
@@ -29,7 +27,7 @@ public record DeactivationUpdate(
 
   public static class Builder {
     @Nullable private NewValue<Instant> lastSuccess;
-    @Nullable private NewValue<Instant> lastFailed;
+    @Nullable private NewValue<Instant> lastFailure;
     @Nullable private NewValue<State> state;
 
     public Builder(State state) {
@@ -41,8 +39,8 @@ public record DeactivationUpdate(
       return this;
     }
 
-    public Builder lastFailed(Instant lastFailed) {
-      this.lastFailed = NewValue.of(lastFailed);
+    public Builder lastFailure(Instant lastFailure) {
+      this.lastFailure = NewValue.of(lastFailure);
       return this;
     }
 
@@ -52,7 +50,7 @@ public record DeactivationUpdate(
     }
 
     public DeactivationUpdate build() {
-      return new DeactivationUpdate(lastSuccess, lastFailed, state);
+      return new DeactivationUpdate(lastSuccess, lastFailure, state);
     }
   }
 }

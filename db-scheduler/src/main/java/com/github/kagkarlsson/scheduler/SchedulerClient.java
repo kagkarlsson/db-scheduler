@@ -23,13 +23,12 @@ import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotActiveExceptio
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotDeactivatedException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
-import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.jdbc.RescheduleUpdate;
-import com.github.kagkarlsson.scheduler.jdbc.RescheduleUpdate.Builder;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
+import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.State;

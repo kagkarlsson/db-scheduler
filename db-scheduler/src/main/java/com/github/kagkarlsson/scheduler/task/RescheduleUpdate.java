@@ -11,9 +11,8 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.jdbc;
+package com.github.kagkarlsson.scheduler.task;
 
-import com.github.kagkarlsson.scheduler.jdbc.ExecutionUpdate.NewValue;
 import java.time.Instant;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;

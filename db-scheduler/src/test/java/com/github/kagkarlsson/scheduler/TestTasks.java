@@ -1,8 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
+import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;

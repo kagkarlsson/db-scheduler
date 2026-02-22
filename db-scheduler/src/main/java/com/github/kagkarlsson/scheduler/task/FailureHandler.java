@@ -16,7 +16,6 @@ package com.github.kagkarlsson.scheduler.task;
 import static java.lang.Math.pow;
 import static java.lang.Math.round;
 
-import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import java.time.Duration;
@@ -174,7 +173,7 @@ public interface FailureHandler<T> {
                 complete.getExecution().taskInstance,
                 state);
             ops.deactivate(
-                DeactivationUpdate.toState(state).lastFailed(complete.getTimeDone()).build());
+                DeactivationUpdate.toState(state).lastFailure(complete.getTimeDone()).build());
             callback.maxRetriesExceeded(complete);
           });
     }

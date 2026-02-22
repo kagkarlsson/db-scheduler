@@ -15,8 +15,6 @@ package com.github.kagkarlsson.scheduler.task;
 
 import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
-import com.github.kagkarlsson.scheduler.jdbc.DeactivationUpdate;
-import com.github.kagkarlsson.scheduler.jdbc.RescheduleUpdate;
 import java.time.Instant;
 
 public class ExecutionOperations<T> {

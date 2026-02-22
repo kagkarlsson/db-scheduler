@@ -6,10 +6,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.SchedulerTester;
-import com.github.kagkarlsson.scheduler.jdbc.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler.MaxRetriesExceededCallback;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;

@@ -33,7 +33,9 @@ import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
+import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.State;
@@ -521,8 +523,8 @@ public class JdbcTaskRepository implements TaskRepository {
       update.lastSuccess(deactivationUpdate.lastSuccess().value());
     }
 
-    if (deactivationUpdate.lastFailed() != null) {
-      update.lastFailure(deactivationUpdate.lastFailed().value());
+    if (deactivationUpdate.lastFailure() != null) {
+      update.lastFailure(deactivationUpdate.lastFailure().value());
     }
 
     if (deactivationUpdate.state() != null) {
