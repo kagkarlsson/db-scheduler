@@ -14,9 +14,11 @@
 package com.github.kagkarlsson.scheduler.task;
 
 import java.time.Instant;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
-public record DeactivationUpdate(
+@NullMarked
+public record DeactivateUpdate(
     @Nullable NewValue<Instant> lastSuccess,
     @Nullable NewValue<Instant> lastFailure,
     @Nullable NewValue<State> state) {
@@ -49,8 +51,8 @@ public record DeactivationUpdate(
       return this;
     }
 
-    public DeactivationUpdate build() {
-      return new DeactivationUpdate(lastSuccess, lastFailure, state);
+    public DeactivateUpdate build() {
+      return new DeactivateUpdate(lastSuccess, lastFailure, state);
     }
   }
 }

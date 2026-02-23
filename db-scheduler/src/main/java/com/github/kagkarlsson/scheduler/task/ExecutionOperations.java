@@ -34,8 +34,8 @@ public class ExecutionOperations<T> {
     remove();
   }
 
-  public void deactivate(DeactivationUpdate deactivationUpdate) {
-    taskRepository.deactivate(execution, deactivationUpdate);
+  public void deactivate(DeactivateUpdate deactivateUpdate) {
+    taskRepository.deactivate(execution, deactivateUpdate);
   }
 
   public void remove() {

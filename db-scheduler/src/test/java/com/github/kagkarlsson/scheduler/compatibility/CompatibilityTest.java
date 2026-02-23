@@ -36,7 +36,7 @@ import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
@@ -308,7 +308,7 @@ public abstract class CompatibilityTest {
     var toDeactivate =
         createExecution(repo, ONETIME.instance("toDeactivate").scheduledTo(aDueInstant));
 
-    repo.deactivate(toDeactivate, DeactivationUpdate.toState(State.PAUSED).build());
+    repo.deactivate(toDeactivate, DeactivateUpdate.toState(State.PAUSED).build());
 
     assertThat(toIds(repo.getDue(aDueInstant, POLLING_LIMIT))).containsExactly("active");
     assertThat(toIds(repo.getDeactivatedExecutions())).containsExactly("toDeactivate");

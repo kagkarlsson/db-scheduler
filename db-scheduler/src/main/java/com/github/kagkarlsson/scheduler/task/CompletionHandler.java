@@ -42,7 +42,7 @@ public interface CompletionHandler<T> {
     @Override
     public void complete(
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-      executionOperations.deactivate(DeactivationUpdate.toState(state).build());
+      executionOperations.deactivate(DeactivateUpdate.toState(state).build());
     }
   }
 

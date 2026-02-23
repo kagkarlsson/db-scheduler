@@ -28,7 +28,7 @@ import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.task.*;
-import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import java.time.Duration;
 import java.time.Instant;
@@ -552,7 +552,7 @@ public class JdbcTaskRepositoryTest {
     createExecution(oneTimeTask.instance("active"), truncatedNow);
     var toDeactivate = createExecution(oneTimeTask.instance("toDeactivate"), truncatedNow);
 
-    taskRepository.deactivate(toDeactivate, DeactivationUpdate.toState(State.PAUSED).build());
+    taskRepository.deactivate(toDeactivate, DeactivateUpdate.toState(State.PAUSED).build());
 
     assertThat(toIds(taskRepository.getDue(truncatedNow, POLLING_LIMIT))).containsExactly("active");
 
@@ -569,7 +569,7 @@ public class JdbcTaskRepositoryTest {
     createExecution(oneTimeTask.instance("active1"), truncatedNow);
     createExecution(oneTimeTask.instance("active2"), truncatedNow);
     var toDeactivate = createExecution(oneTimeTask.instance("deactivated1"), truncatedNow);
-    taskRepository.deactivate(toDeactivate, DeactivationUpdate.toState(State.PAUSED).build());
+    taskRepository.deactivate(toDeactivate, DeactivateUpdate.toState(State.PAUSED).build());
 
     // active
     assertThat(toIds(getScheduledExecutions(active())))
@@ -595,7 +595,7 @@ public class JdbcTaskRepositoryTest {
     var withHistory = taskRepository.getExecution(instance).orElseThrow();
     taskRepository.deactivate(
         withHistory,
-        DeactivationUpdate.toState(State.FAILED)
+        DeactivateUpdate.toState(State.FAILED)
             .lastSuccess(successTime)
             .lastFailure(failureTime)
             .build());
@@ -712,7 +712,7 @@ public class JdbcTaskRepositoryTest {
 
   private void createDeactivatedExecution(String id, Instant executionTime, State state) {
     var execution = createExecution(oneTimeTask.instance(id), executionTime);
-    taskRepository.deactivate(execution, DeactivationUpdate.toState(state).build());
+    taskRepository.deactivate(execution, DeactivateUpdate.toState(state).build());
   }
 
   private void assertDeleted(String id) {

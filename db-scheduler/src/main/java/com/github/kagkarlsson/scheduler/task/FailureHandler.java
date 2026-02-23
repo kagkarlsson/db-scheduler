@@ -173,7 +173,7 @@ public interface FailureHandler<T> {
                 complete.getExecution().taskInstance,
                 state);
             ops.deactivate(
-                DeactivationUpdate.toState(state).lastFailure(complete.getTimeDone()).build());
+                DeactivateUpdate.toState(state).lastFailure(complete.getTimeDone()).build());
             callback.maxRetriesExceeded(complete);
           });
     }

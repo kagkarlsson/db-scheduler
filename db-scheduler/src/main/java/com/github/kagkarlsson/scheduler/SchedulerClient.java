@@ -26,7 +26,7 @@ import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
@@ -624,7 +624,7 @@ public interface SchedulerClient {
         throw new TaskInstanceNotActiveException(taskInstanceId);
       }
 
-      taskRepository.deactivate(execution, DeactivationUpdate.toState(state).build());
+      taskRepository.deactivate(execution, DeactivateUpdate.toState(state).build());
     }
 
     @Override

@@ -33,7 +33,7 @@ import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
-import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
@@ -511,7 +511,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public void deactivate(Execution execution, DeactivationUpdate deactivationUpdate) {
+  public void deactivate(Execution execution, DeactivateUpdate deactivateUpdate) {
     ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
 
     update.picked(false);
@@ -519,16 +519,16 @@ public class JdbcTaskRepository implements TaskRepository {
     update.consecutiveFailures(0);
     update.lastHeartbeat(null);
 
-    if (deactivationUpdate.lastSuccess() != null) {
-      update.lastSuccess(deactivationUpdate.lastSuccess().value());
+    if (deactivateUpdate.lastSuccess() != null) {
+      update.lastSuccess(deactivateUpdate.lastSuccess().value());
     }
 
-    if (deactivationUpdate.lastFailure() != null) {
-      update.lastFailure(deactivationUpdate.lastFailure().value());
+    if (deactivateUpdate.lastFailure() != null) {
+      update.lastFailure(deactivateUpdate.lastFailure().value());
     }
 
-    if (deactivationUpdate.state() != null) {
-      update.state(deactivationUpdate.state().value());
+    if (deactivateUpdate.state() != null) {
+      update.state(deactivateUpdate.state().value());
     }
 
     update.updateSingle(jdbcConfig);

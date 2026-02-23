@@ -2,7 +2,7 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
-import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
@@ -37,7 +37,7 @@ public class TestTasks {
       };
   public static final FailureHandler<Void> ON_FAILURE_DEACTIVATE =
       (executionComplete, executionOperations) ->
-          executionOperations.deactivate(DeactivationUpdate.toState(State.FAILED).build());
+          executionOperations.deactivate(DeactivateUpdate.toState(State.FAILED).build());
 
   public static <T> OneTimeTask<T> oneTime(
       String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {

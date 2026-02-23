@@ -13,7 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler;
 
-import com.github.kagkarlsson.scheduler.task.DeactivationUpdate;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
@@ -78,7 +78,7 @@ public interface TaskRepository {
 
   void remove(Execution execution);
 
-  void deactivate(Execution execution, DeactivationUpdate deactivationUpdate);
+  void deactivate(Execution execution, DeactivateUpdate deactivateUpdate);
 
   void reactivate(Execution execution, Instant newExecutionTime);
 
