@@ -779,34 +779,29 @@ public class JdbcTaskRepository implements TaskRepository {
     String statesInClause =
         states.stream().map(s -> "'" + s.name() + "'").collect(Collectors.joining(", "));
 
-    String sql;
-    if (jdbcCustomization.supportsDeleteWithLimit()) {
-      // Works with most dbs, but not SQL Server
-      sql =
-          "DELETE FROM "
-              + tableName
-              + " WHERE (task_name, task_instance) IN ("
-              + "  SELECT task_name, task_instance FROM ("
-              + "    SELECT task_name, task_instance FROM "
-              + tableName
-              + "    WHERE state IN ("
-              + statesInClause
-              + ")"
-              + "      AND execution_time < ?"
-              + "    ORDER BY execution_time"
-              + jdbcCustomization.getQueryLimitPart(limit)
-              + "  ) limited_results"
-              + ")";
-    } else {
-      // Fallback, delete without limit.
-      sql =
-          "DELETE FROM "
-              + tableName
-              + " WHERE state IN ("
-              + statesInClause
-              + ")"
-              + " AND execution_time < ?";
-    }
+    // Double-subquery is required for MySQL (can't select from table being deleted without wrapping
+    // in a derived table). EXISTS avoids row-value constructors which SQL Server does not support.
+    String sql =
+        "DELETE FROM "
+            + tableName
+            + " WHERE EXISTS ("
+            + "  SELECT 1 FROM ("
+            + "    SELECT task_name, task_instance FROM "
+            + tableName
+            + "    WHERE state IN ("
+            + statesInClause
+            + ")"
+            + "      AND execution_time < ?"
+            + "    ORDER BY execution_time"
+            + jdbcCustomization.getQueryLimitPart(limit)
+            + "  ) sub"
+            + "  WHERE sub.task_name = "
+            + tableName
+            + ".task_name"
+            + "  AND sub.task_instance = "
+            + tableName
+            + ".task_instance"
+            + ")";
 
     return jdbcRunner.execute(
         sql,
