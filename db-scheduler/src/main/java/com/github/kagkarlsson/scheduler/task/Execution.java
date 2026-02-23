@@ -16,7 +16,6 @@ package com.github.kagkarlsson.scheduler.task;
 import com.github.kagkarlsson.scheduler.Resolvable;
 import java.time.Instant;
 import java.util.Objects;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -27,12 +26,12 @@ public final class Execution implements TaskInstanceId, Resolvable {
   public final Instant executionTime;
   public final boolean picked;
   public final @Nullable String pickedBy;
-  public int consecutiveFailures;
   public final @Nullable Instant lastHeartbeat;
   public final long version;
   public final @Nullable Instant lastFailure;
   public final @Nullable Instant lastSuccess;
   public final State state;
+  public int consecutiveFailures;
 
   public Execution(Instant executionTime, TaskInstance taskInstance) {
     this(executionTime, taskInstance, false, null, null, null, 0, null, 1L, State.ACTIVE);
@@ -42,11 +41,11 @@ public final class Execution implements TaskInstanceId, Resolvable {
       Instant executionTime,
       TaskInstance taskInstance,
       boolean picked,
-      String pickedBy,
-      Instant lastSuccess,
-      Instant lastFailure,
+    @Nullable String pickedBy,
+    @Nullable Instant lastSuccess,
+    @Nullable Instant lastFailure,
       int consecutiveFailures,
-      Instant lastHeartbeat,
+    @Nullable Instant lastHeartbeat,
       long version,
       State state) {
     this.executionTime = executionTime;
@@ -74,7 +73,7 @@ public final class Execution implements TaskInstanceId, Resolvable {
     return getState() == State.ACTIVE;
   }
 
-  public @NonNull State getState() {
+  public State getState() {
     return state == null ? State.ACTIVE : state;
   }
 

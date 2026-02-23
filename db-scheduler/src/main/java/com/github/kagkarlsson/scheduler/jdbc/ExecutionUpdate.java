@@ -31,7 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @NullMarked
-public class ExecutionUpdate {
+class ExecutionUpdate {
   private static final Logger LOG = LoggerFactory.getLogger(ExecutionUpdate.class);
 
   private final Long versionToUpdate;
@@ -45,7 +45,7 @@ public class ExecutionUpdate {
   @Nullable private NewValue<Integer> consecutiveFailures;
   @Nullable private NewValue<Instant> lastHeartbeat;
   @Nullable private NewValue<State> state;
-  @Nullable private NewValue<Long> version;
+  @Nullable private final NewValue<Long> version;
 
   ExecutionUpdate(TaskInstanceId taskInstance, Long versionToUpdate) {
     this.taskInstance = taskInstance;
@@ -53,56 +53,56 @@ public class ExecutionUpdate {
     this.version = new NewValue<>(versionToUpdate + 1);
   }
 
-  public static ExecutionUpdate forExecution(Execution execution) {
+  static ExecutionUpdate forExecution(Execution execution) {
     return new ExecutionUpdate(execution.taskInstance, execution.version);
   }
 
-  public ExecutionUpdate executionTime(@Nullable Instant executionTime) {
+  ExecutionUpdate executionTime(@Nullable Instant executionTime) {
     this.executionTime = new NewValue<>(executionTime);
     return this;
   }
 
-  public ExecutionUpdate taskData(@Nullable byte[] taskData) {
+  ExecutionUpdate taskData(byte[] taskData) {
     this.taskData = new NewValue<>(taskData);
     return this;
   }
 
-  public ExecutionUpdate picked(boolean picked) {
+  ExecutionUpdate picked(boolean picked) {
     this.picked = new NewValue<>(picked);
     return this;
   }
 
-  public ExecutionUpdate pickedBy(@Nullable String pickedBy) {
+  ExecutionUpdate pickedBy(@Nullable String pickedBy) {
     this.pickedBy = new NewValue<>(pickedBy);
     return this;
   }
 
-  public ExecutionUpdate lastSuccess(@Nullable Instant lastSuccess) {
+  ExecutionUpdate lastSuccess(@Nullable Instant lastSuccess) {
     this.lastSuccess = new NewValue<>(lastSuccess);
     return this;
   }
 
-  public ExecutionUpdate lastFailure(@Nullable Instant lastFailure) {
+  ExecutionUpdate lastFailure(@Nullable Instant lastFailure) {
     this.lastFailure = new NewValue<>(lastFailure);
     return this;
   }
 
-  public ExecutionUpdate consecutiveFailures(@Nullable Integer consecutiveFailures) {
+  ExecutionUpdate consecutiveFailures(@Nullable Integer consecutiveFailures) {
     this.consecutiveFailures = new NewValue<>(consecutiveFailures);
     return this;
   }
 
-  public ExecutionUpdate lastHeartbeat(@Nullable Instant lastHeartbeat) {
+  ExecutionUpdate lastHeartbeat(@Nullable Instant lastHeartbeat) {
     this.lastHeartbeat = new NewValue<>(lastHeartbeat);
     return this;
   }
 
-  public ExecutionUpdate state(@Nullable State state) {
+  ExecutionUpdate state(@Nullable State state) {
     this.state = new NewValue<>(state);
     return this;
   }
 
-  public int updateSingle(JdbcConfig jdbcConfig) {
+  void updateSingle(JdbcConfig jdbcConfig) {
     var setColumns = new ArrayList<String>();
     var setValues = new ArrayList<PreparedStatementParameterSetter>();
 
@@ -122,7 +122,7 @@ public class ExecutionUpdate {
 
     if (picked != null) {
       setColumns.add("picked");
-      setValues.add((ps, index) -> ps.setBoolean(index, picked.value));
+      setValues.add((ps, index) -> ps.setBoolean(index, toPrimitive(picked.value)));
     }
 
     if (pickedBy != null) {
@@ -167,7 +167,7 @@ public class ExecutionUpdate {
     }
 
     if (setColumns.isEmpty()) {
-      return 0;
+      return;
     }
 
     String query =
@@ -188,7 +188,13 @@ public class ExecutionUpdate {
           taskInstance.getTaskName(),
           taskInstance.getId());
     }
-    return updatedRows;
+  }
+
+  private boolean toPrimitive(@Nullable Boolean value) {
+    if (value == null) {
+      throw new IllegalArgumentException("Value should never be null");
+    }
+    return value;
   }
 
   private long throwIfNull(@Nullable Long value) {

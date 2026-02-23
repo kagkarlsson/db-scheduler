@@ -84,3 +84,7 @@ except `State.RECORD` which is kept indefinately.
 ### Possible minor breaking changes
 
 - reschedule throw `TaskInstanceException` instead of `ExecutionException`
+
+### Future improvements
+
+- Maven plugin for verifying nullability (e.g. NullAway)
