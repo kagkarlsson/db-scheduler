@@ -41,11 +41,11 @@ public final class Execution implements TaskInstanceId, Resolvable {
       Instant executionTime,
       TaskInstance taskInstance,
       boolean picked,
-    @Nullable String pickedBy,
-    @Nullable Instant lastSuccess,
-    @Nullable Instant lastFailure,
+      @Nullable String pickedBy,
+      @Nullable Instant lastSuccess,
+      @Nullable Instant lastFailure,
       int consecutiveFailures,
-    @Nullable Instant lastHeartbeat,
+      @Nullable Instant lastHeartbeat,
       long version,
       State state) {
     this.executionTime = executionTime;
