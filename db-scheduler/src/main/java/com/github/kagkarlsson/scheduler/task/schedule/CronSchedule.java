@@ -164,6 +164,10 @@ public class CronSchedule implements Schedule, Serializable {
     return zoneId;
   }
 
+  public CronStyle getCronStyle() {
+    return cronStyle;
+  }
+
   private static class DisabledScheduleExecutionTime implements ExecutionTime {
     @Override
     public Optional<ZonedDateTime> nextExecution(ZonedDateTime date) {
