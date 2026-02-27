@@ -56,13 +56,13 @@ public record RescheduleUpdate(
     }
 
     public Builder consecutiveFailures(int count) {
-      this.consecutiveFailures = NewValue.of(count);
+      this.consecutiveFailures = new NewValue<>(count);
       return this;
     }
 
     /** Convenience method for resetting to not-failing */
     public Builder resetFailures() {
-      this.consecutiveFailures = NewValue.of(0);
+      this.consecutiveFailures = new NewValue<>(0);
       this.lastFailure = new NewValue<>(null);
       return this;
     }

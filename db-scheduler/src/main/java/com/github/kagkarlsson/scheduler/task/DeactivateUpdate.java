@@ -33,21 +33,21 @@ public record DeactivateUpdate(
     @Nullable private NewValue<State> state;
 
     public Builder(State state) {
-      this.state = NewValue.of(state);
+      this.state = new NewValue<>(state);
     }
 
     public Builder lastSuccess(Instant lastSuccess) {
-      this.lastSuccess = NewValue.of(lastSuccess);
+      this.lastSuccess = new NewValue<>(lastSuccess);
       return this;
     }
 
     public Builder lastFailure(Instant lastFailure) {
-      this.lastFailure = NewValue.of(lastFailure);
+      this.lastFailure = new NewValue<>(lastFailure);
       return this;
     }
 
     public Builder state(State state) {
-      this.state = NewValue.of(state);
+      this.state = new NewValue<>(state);
       return this;
     }
 

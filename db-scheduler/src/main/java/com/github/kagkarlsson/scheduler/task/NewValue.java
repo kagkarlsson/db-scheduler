@@ -15,9 +15,4 @@ package com.github.kagkarlsson.scheduler.task;
 
 import org.jspecify.annotations.Nullable;
 
-public record NewValue<T>(@Nullable T value) {
-
-  public static <T> NewValue<T> of(T value) {
-    return new NewValue<>(value);
-  }
-}
+public record NewValue<T>(@Nullable T value) {}
