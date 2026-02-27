@@ -26,10 +26,6 @@ public class SchedulerTester {
         .isEmpty();
   }
 
-  public List<ScheduledExecution<Object>> getDeactivatedExecutions() {
-    return scheduler.getScheduledExecutions(ScheduledExecutionsFilter.deactivated());
-  }
-
   public class ExecutionAssertion {
 
     private final TaskInstanceId instance;
