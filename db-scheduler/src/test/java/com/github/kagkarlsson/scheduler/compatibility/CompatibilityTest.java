@@ -1,6 +1,6 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
-import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.active;
 import static com.github.kagkarlsson.scheduler.SchedulerBuilder.UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH;
 import static com.github.kagkarlsson.scheduler.helper.TimeHelper.truncatedInstantNow;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
@@ -215,7 +215,7 @@ public abstract class CompatibilityTest {
     schedule(repo, ONETIME, "4", aDueInstant.plusSeconds(40));
     schedule(repo, ONETIME, "5", aDueInstant.plusSeconds(50));
 
-    List<Execution> firstPage = repo.getScheduledExecutions(all().limit(3));
+    List<Execution> firstPage = repo.getScheduledExecutions(active().limit(3));
     assertThat(idsFrom(firstPage), contains("1", "2", "3"));
 
     var theSecond = firstPage.get(1); // id=2
@@ -223,20 +223,20 @@ public abstract class CompatibilityTest {
 
     var beforePage =
         repo.getScheduledExecutions(
-            all().before(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
+            active().before(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
 
     assertThat(idsFrom(beforePage), contains("2", "1"));
 
     var afterPage =
         repo.getScheduledExecutions(
-            all().after(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
+            active().after(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
     assertThat(idsFrom(afterPage), contains("4", "5"));
 
     var theFourth = afterPage.get(0); // id=4
 
     var rangePage =
         repo.getScheduledExecutions(
-            all()
+            active()
                 .after(ExecutionTimeAndId.from(toScheduled(theSecond)))
                 .before(ExecutionTimeAndId.from(toScheduled(theFourth)))
                 .limit(10));

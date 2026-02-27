@@ -20,35 +20,36 @@ public class ScheduledExecutionsFilter {
 
   private Boolean pickedValue;
   private boolean includeUnresolved = false;
-  private boolean includeDeactivated = false;
-  private boolean onlyDeactivated = false;
   private ExecutionTimeAndId afterExecution;
   private ExecutionTimeAndId beforeExecution;
   private Integer limit;
+  private StateTypeFilter stateTypeFilter;
 
-  private ScheduledExecutionsFilter() {}
+  private ScheduledExecutionsFilter(StateTypeFilter stateTypeFilter) {
+    this.stateTypeFilter = stateTypeFilter;
+  }
 
   /** Returns a filter for only active (scheduled) executions. This is the recommended default. */
   public static ScheduledExecutionsFilter active() {
-    return new ScheduledExecutionsFilter().withIncludeUnresolved(true);
+    return new ScheduledExecutionsFilter(StateTypeFilter.ACTIVE).withIncludeUnresolved(true);
   }
 
   /** Returns a filter for only deactivated executions (non-active states). */
   public static ScheduledExecutionsFilter deactivated() {
-    return new ScheduledExecutionsFilter().withIncludeUnresolved(true).withOnlyDeactivated(true);
+    return new ScheduledExecutionsFilter(StateTypeFilter.DEACTIVATED).withIncludeUnresolved(true);
   }
 
   /**
-   * @deprecated Use {@link #active()} instead. The name "all" is misleading since it doesn't
+   * @deprecated Use {@link #active()} instead. The name "all" is now misleading since it doesn't
    *     include deactivated executions by default.
    */
   @Deprecated
   public static ScheduledExecutionsFilter all() {
-    return new ScheduledExecutionsFilter().withIncludeUnresolved(true);
+    return active();
   }
 
-  public static ScheduledExecutionsFilter onlyResolved() {
-    return new ScheduledExecutionsFilter().withIncludeUnresolved(false);
+  public static ScheduledExecutionsFilter allActiveAndDeactivated() {
+    return new ScheduledExecutionsFilter(StateTypeFilter.ALL).withIncludeUnresolved(true);
   }
 
   public ScheduledExecutionsFilter withPicked(boolean pickedValue) {
@@ -67,28 +68,6 @@ public class ScheduledExecutionsFilter {
 
   public boolean getIncludeUnresolved() {
     return includeUnresolved;
-  }
-
-  /**
-   * Include deactivated executions in the result. By default, only active executions are returned.
-   */
-  public ScheduledExecutionsFilter withIncludeDeactivated(boolean includeDeactivated) {
-    this.includeDeactivated = includeDeactivated;
-    return this;
-  }
-
-  public boolean getIncludeDeactivated() {
-    return includeDeactivated;
-  }
-
-  /** Only return deactivated executions (excludes active executions). */
-  public ScheduledExecutionsFilter withOnlyDeactivated(boolean onlyDeactivated) {
-    this.onlyDeactivated = onlyDeactivated;
-    return this;
-  }
-
-  public boolean getOnlyDeactivated() {
-    return onlyDeactivated;
   }
 
   public ScheduledExecutionsFilter limit(int limit) {
@@ -119,5 +98,9 @@ public class ScheduledExecutionsFilter {
 
   public Optional<Integer> getLimit() {
     return Optional.ofNullable(limit);
+  }
+
+  public StateTypeFilter getStateTypeFilter() {
+    return stateTypeFilter;
   }
 }

@@ -835,10 +835,10 @@ public class JdbcTaskRepository implements TaskRepository {
 
     filter.getPickedValue().ifPresent(value -> q.andCondition(new PickedCondition(value)));
 
-    if (filter.getOnlyDeactivated()) {
-      q.andCondition(new DeactivatedCondition());
-    } else if (!filter.getIncludeDeactivated()) {
-      q.andCondition(new ScheduledCondition());
+    switch (filter.getStateTypeFilter()) {
+      case DEACTIVATED -> q.andCondition(new DeactivatedCondition());
+      case ACTIVE -> q.andCondition(new ActiveCondition());
+      case ALL -> {}
     }
 
     filter.getAfterExecution().ifPresent(e -> q.andCondition(new ExecutionTimeAfterCondition(e)));
@@ -948,7 +948,7 @@ public class JdbcTaskRepository implements TaskRepository {
     }
   }
 
-  private static class ScheduledCondition implements AndCondition {
+  private static class ActiveCondition implements AndCondition {
 
     @Override
     public String getQueryPart() {

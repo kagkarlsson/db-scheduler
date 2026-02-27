@@ -1,9 +1,8 @@
 package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.active;
-import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.allActiveAndDeactivated;
 import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.deactivated;
-import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.onlyResolved;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMinutes;
@@ -417,13 +416,13 @@ public class JdbcTaskRepositoryTest {
                     new SchedulableTaskInstance<>(
                         oneTimeTask.instance("id" + i),
                         now.plus(new Random().nextInt(10), ChronoUnit.HOURS))));
-    final List<Execution> beforePick = getScheduledExecutions(all().withPicked(false));
+    final List<Execution> beforePick = getScheduledExecutions(active().withPicked(false));
     assertThat(beforePick, hasSize(100));
 
     taskRepository.pick(beforePick.get(0), Instant.now());
 
-    assertThat(getScheduledExecutions(all().withPicked(false)), hasSize(99));
-    assertThat(getScheduledExecutions(all()), hasSize(100));
+    assertThat(getScheduledExecutions(active().withPicked(false)), hasSize(99));
+    assertThat(getScheduledExecutions(active()), hasSize(100));
   }
 
   private List<Execution> getScheduledExecutions(ScheduledExecutionsFilter filter) {
@@ -449,14 +448,16 @@ public class JdbcTaskRepositoryTest {
 
     taskRepository.pick(
         taskRepository.getExecution(execution1.getTaskInstance()).get(), Instant.now());
-    assertThat(getScheduledExecutions(all().withPicked(true), oneTimeTask.getName()), hasSize(1));
-    assertThat(getScheduledExecutions(all().withPicked(false), oneTimeTask.getName()), hasSize(1));
-    assertThat(getScheduledExecutions(all(), oneTimeTask.getName()), hasSize(2));
+    assertThat(
+        getScheduledExecutions(active().withPicked(true), oneTimeTask.getName()), hasSize(1));
+    assertThat(
+        getScheduledExecutions(active().withPicked(false), oneTimeTask.getName()), hasSize(1));
+    assertThat(getScheduledExecutions(active(), oneTimeTask.getName()), hasSize(2));
 
     assertThat(
-        getScheduledExecutions(all().withPicked(false), alternativeOneTimeTask.getName()),
+        getScheduledExecutions(active().withPicked(false), alternativeOneTimeTask.getName()),
         hasSize(1));
-    assertThat(getScheduledExecutions(all().withPicked(false), "non-existing"), empty());
+    assertThat(getScheduledExecutions(active().withPicked(false), "non-existing"), empty());
   }
 
   @Test
@@ -494,11 +495,10 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
 
-    assertThat(getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved()), hasSize(0));
-    assertThat(
-        getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved(), taskName), hasSize(0));
-    assertThat(getScheduledExecutions(all()), hasSize(1));
-    assertThat(getScheduledExecutions(all(), taskName), hasSize(1));
+    assertThat(getScheduledExecutions(active().withIncludeUnresolved(false)), hasSize(0));
+    assertThat(getScheduledExecutions(active().withIncludeUnresolved(false), taskName), hasSize(0));
+    assertThat(getScheduledExecutions(active()), hasSize(1));
+    assertThat(getScheduledExecutions(active(), taskName), hasSize(1));
   }
 
   @Test
@@ -577,7 +577,7 @@ public class JdbcTaskRepositoryTest {
     // deactivated
     assertThat(toIds(getScheduledExecutions(deactivated()))).containsExactly("deactivated1");
     // all
-    assertThat(toIds(getScheduledExecutions(active().withIncludeDeactivated(true))))
+    assertThat(toIds(getScheduledExecutions(allActiveAndDeactivated())))
         .containsExactlyInAnyOrder("active1", "active2", "deactivated1");
   }
 
@@ -658,7 +658,8 @@ public class JdbcTaskRepositoryTest {
 
   private Execution getSingleExecution() {
     List<Execution> executions = new ArrayList<>();
-    taskRepository.getScheduledExecutions(onlyResolved().withPicked(false), executions::add);
+    taskRepository.getScheduledExecutions(
+        active().withIncludeUnresolved(false).withPicked(false), executions::add);
     return executions.get(0);
   }
 
