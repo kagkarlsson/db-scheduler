@@ -231,6 +231,7 @@ public class JdbcTaskRepository implements TaskRepository {
     ps.setString(index++, taskInstance.getId());
     jdbcCustomization.setTaskData(ps, index++, serializer.serialize(taskInstance.getData()));
     jdbcCustomization.setInstant(ps, index++, value.getExecutionTime());
+    ps.setString(index++, State.ACTIVE.name());
     ps.setBoolean(index++, false);
     ps.setLong(index++, 1L);
     if (orderByPriority) {
@@ -245,7 +246,7 @@ public class JdbcTaskRepository implements TaskRepository {
         + tableName
         + "(task_name, task_instance, task_data, execution_time, state, picked, version"
         + (orderByPriority ? ", priority" : "")
-        + ") values(?, ?, ?, ?, 'ACTIVE', ?, ? "
+        + ") values(?, ?, ?, ?, ?, ?, ? "
         + (orderByPriority ? ", ?" : "")
         + ")";
   }
@@ -655,7 +656,9 @@ public class JdbcTaskRepository implements TaskRepository {
     return jdbcRunner.query(
         "select * from "
             + tableName
-            + " where picked = ? and last_heartbeat <= ? and (state is null or state = 'ACTIVE') "
+            + " where picked = ? and last_heartbeat <= ? and "
+            + Queries.SQL_ACTIVE_CONDITION
+            + " "
             + unresolvedFilter.andCondition()
             + " order by last_heartbeat asc",
         (PreparedStatement p) -> {
@@ -952,7 +955,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     public String getQueryPart() {
-      return "(state is null OR state = 'ACTIVE')";
+      return Queries.SQL_ACTIVE_CONDITION;
     }
 
     @Override
@@ -965,7 +968,7 @@ public class JdbcTaskRepository implements TaskRepository {
 
     @Override
     public String getQueryPart() {
-      return "(state is not null AND state <> 'ACTIVE')";
+      return Queries.SQL_DEACTIVATED_CONDITION;
     }
 
     @Override
