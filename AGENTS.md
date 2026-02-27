@@ -22,3 +22,4 @@ mvn license:format          # Update license headers
 - Use jspecify for null-safety in new code (`@NullMarked` on package/class, `@Nullable` for nullable fields/params)
 - Tests: prefer AssertJ over Hamcrest
 - Tests: prefer compact tests — multiple assertions and steps per test is fine to reduce boilerplate
+

@@ -21,15 +21,14 @@ but keeping it as a historic record for deduplicatation or possibility to resume
 
 ### Execution states
 
-| State           | Description                                                                                                                                      |
-|-----------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| (null) / ACTIVE | Active, scheduled for execution (default, backward compatible)                                                                                   |
-| COMPLETE        | Execution completed successfully and is kept for deduplication. Can be deleted by automatic process after configured time.                      |
-| PAUSED          | Execution has been paused, typically via manual action. Will not execute until resumed.                                                          |
-| RECORD          | Execution completed and is kept indefinitely as a historic record. Similar to liquibase migration records - ensures something runs only once.   |
-| FAILED          | Execution is marked as permanently failed by its FailureHandlers. Must be manually triggered to retry.                                          |
-| WAITING         | Execution is waiting for activation to run.                                                                                                      |
-
+|      State      |                                                                  Description                                                                  |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| (null) / ACTIVE | Active, scheduled for execution (default, backward compatible)                                                                                |
+| COMPLETE        | Execution completed successfully and is kept for deduplication. Can be deleted by automatic process after configured time.                    |
+| PAUSED          | Execution has been paused, typically via manual action. Will not execute until resumed.                                                       |
+| RECORD          | Execution completed and is kept indefinitely as a historic record. Similar to liquibase migration records - ensures something runs only once. |
+| FAILED          | Execution is marked as permanently failed by its FailureHandlers. Must be manually triggered to retry.                                        |
+| WAITING         | Execution is waiting for activation to run.                                                                                                   |
 
 ### SchedulerClient
 
@@ -38,10 +37,10 @@ but keeping it as a historic record for deduplicatation or possibility to resume
 - [x] New methods on `ScheduledExecution`:
   - `.getState()`
 - [x] New/modified filter methods
-    - `.withIncludeDeactivated()`
-    - `ScheduledExecutionsFilter.active()`
-    - `ScheduledExecutionsFilter.deactivated()`
-    - Deprecate `ScheduledExecutionsFilter.all()` (`active` new default)
+  - `.withIncludeDeactivated()`
+  - `ScheduledExecutionsFilter.active()`
+  - `ScheduledExecutionsFilter.deactivated()`
+  - Deprecate `ScheduledExecutionsFilter.all()` (`active` new default)
 - [x] Use `client.reactivate(TaskInstanceId, Instant)` to reschedule deactivated executions. Will reset
   lastSuccess, lastFailure and consecutiveFailures
   - RecurringTasks will not have option to reschedule according to Schedule
@@ -54,7 +53,7 @@ but keeping it as a historic record for deduplicatation or possibility to resume
 ### Jobs
 
 - [x] Introduce housekeeping-job that regularly deletes deactivated executions. Default 14d for all
-except `State.RECORD` which is kept indefinately.
+  except `State.RECORD` which is kept indefinately.
 
 ### CompletionHandlers (changes)
 
@@ -88,3 +87,4 @@ except `State.RECORD` which is kept indefinately.
 ### Future improvements
 
 - Maven plugin for verifying nullability (e.g. NullAway)
+
