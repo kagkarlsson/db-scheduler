@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler.testhelper;
 
 import com.github.kagkarlsson.scheduler.*;
+import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
@@ -42,6 +43,7 @@ public class ManualScheduler extends Scheduler {
       Duration heartbeatInterval,
       boolean executeImmediately,
       List<SchedulerListener> schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors,
       PollingStrategyConfig pollingStrategyConfig,
       Duration deleteUnresolvedAfter,
       LogLevel logLevel,
@@ -62,7 +64,7 @@ public class ManualScheduler extends Scheduler {
         heartbeatInterval,
         SchedulerBuilder.DEFAULT_MISSED_HEARTBEATS_LIMIT,
         schedulerListeners,
-        new ArrayList<>(),
+        executionInterceptors,
         pollingStrategyConfig,
         deleteUnresolvedAfter,
         Duration.ZERO,
