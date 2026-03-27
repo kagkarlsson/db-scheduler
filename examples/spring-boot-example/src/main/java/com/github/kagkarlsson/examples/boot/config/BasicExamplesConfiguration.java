@@ -17,8 +17,11 @@ import static com.github.kagkarlsson.scheduler.task.schedule.Schedules.fixedDela
 
 import com.github.kagkarlsson.examples.boot.CounterService;
 import com.github.kagkarlsson.examples.boot.ExampleContext;
+import com.github.kagkarlsson.scheduler.boot.config.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import java.time.Duration;
 import java.time.Instant;
@@ -37,6 +40,12 @@ public class BasicExamplesConfiguration {
       TaskDescriptor.of("recurring-sample-task");
   private static final Logger log = LoggerFactory.getLogger(BasicExamplesConfiguration.class);
   private static int ID = 1;
+
+  private final CounterService counter;
+
+  public BasicExamplesConfiguration(CounterService counter) {
+    this.counter = counter;
+  }
 
   /** Start the example */
   public static void triggerOneTime(ExampleContext ctx) {
@@ -62,6 +71,23 @@ public class BasicExamplesConfiguration {
               EventLogger.logTask(
                   BASIC_RECURRING_TASK, "Ran. Run-counter current-value=" + counter.read());
             });
+  }
+
+  /** A recurring task with dependencies from the current class using annotation. */
+  @RecurringTask(name = "recurring-sample-task-annotation", cron = "*/30 * * * * *")
+  public void recurringSampleTaskAnnotation(TaskInstance<Void> instance, ExecutionContext ctx) {
+    log.info("Running recurring-sample-task-annotation. Instance: {}, ctx: {}", instance, ctx);
+    counter.increase();
+    EventLogger.logTask(
+        "recurring-sample-task-annotation", "Ran. Run-counter current-value=" + counter.read());
+  }
+
+  /** Define a recurring task with no dependencies and no inputs using annotation. */
+  @RecurringTask(
+      name = "recurring-sample-task-annotation-no-inputs",
+      cron = "${recurring-sample-task-annotation-no-inputs.cron}")
+  public void recurringSampleTaskAnnotationNoInputs() {
+    log.info("Running recurring-sample-task-annotation-no-inputs.");
   }
 
   /** Define a one-time task which have to be manually scheduled. */
