@@ -239,7 +239,7 @@ public class Tasks {
     public RecurringTaskWithPersistentSchedule<T> executeStateful(
         StateReturningExecutionHandler<T> executionHandler) {
       return new RecurringTaskWithPersistentSchedule<>(
-          name, dataClass, onFailure, defaultPriority) {
+          name, dataClass, onFailure, onDeadExecution, defaultPriority) {
 
         @Override
         public CompletionHandler<T> execute(
