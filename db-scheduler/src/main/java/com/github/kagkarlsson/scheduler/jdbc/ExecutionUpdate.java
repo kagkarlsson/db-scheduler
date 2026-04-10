@@ -97,24 +97,41 @@ class ExecutionUpdate {
   void updateSingle(JdbcConfig jdbcConfig) {
     var updates = new ArrayList<ColumnUpdate>();
 
-    addIfSet(executionTime, "execution_time", updates,
+    addIfSet(
+        executionTime,
+        "execution_time",
+        updates,
         (ps, index) -> jdbcConfig.customization().setInstant(ps, index, executionTime.value));
-    addIfSet(taskData, "task_data", updates,
+    addIfSet(
+        taskData,
+        "task_data",
+        updates,
         (ps, index) -> jdbcConfig.customization().setTaskData(ps, index, taskData.value));
-    addIfSet(picked, "picked", updates,
-        (ps, index) -> ps.setBoolean(index, toPrimitive(picked.value)));
-    addIfSet(pickedBy, "picked_by", updates,
-        (ps, index) -> ps.setString(index, pickedBy.value));
-    addIfSet(lastSuccess, "last_success", updates,
+    addIfSet(
+        picked, "picked", updates, (ps, index) -> ps.setBoolean(index, toPrimitive(picked.value)));
+    addIfSet(pickedBy, "picked_by", updates, (ps, index) -> ps.setString(index, pickedBy.value));
+    addIfSet(
+        lastSuccess,
+        "last_success",
+        updates,
         (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastSuccess.value));
-    addIfSet(lastFailure, "last_failure", updates,
+    addIfSet(
+        lastFailure,
+        "last_failure",
+        updates,
         (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastFailure.value));
-    addIfSet(consecutiveFailures, "consecutive_failures", updates,
+    addIfSet(
+        consecutiveFailures,
+        "consecutive_failures",
+        updates,
         (ps, index) -> ps.setInt(index, zeroIfNull(consecutiveFailures.value)));
-    addIfSet(lastHeartbeat, "last_heartbeat", updates,
+    addIfSet(
+        lastHeartbeat,
+        "last_heartbeat",
+        updates,
         (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastHeartbeat.value));
-    addIfSet(version, "version", updates,
-        (ps, index) -> ps.setLong(index, throwIfNull(version.value)));
+    addIfSet(
+        version, "version", updates, (ps, index) -> ps.setLong(index, throwIfNull(version.value)));
 
     if (updates.isEmpty()) {
       return;
@@ -129,15 +146,19 @@ class ExecutionUpdate {
 
     LOG.debug("ExecutionUpdate query: {}", query);
     int updatedRows =
-        jdbcConfig.runner().execute(query, ps -> {
-          int index = 1;
-          for (ColumnUpdate update : updates) {
-            update.setter.setParameter(ps, index++);
-          }
-          ps.setString(index++, taskInstance.getTaskName());
-          ps.setString(index++, taskInstance.getId());
-          ps.setLong(index, versionToUpdate);
-        });
+        jdbcConfig
+            .runner()
+            .execute(
+                query,
+                ps -> {
+                  int index = 1;
+                  for (ColumnUpdate update : updates) {
+                    update.setter.setParameter(ps, index++);
+                  }
+                  ps.setString(index++, taskInstance.getTaskName());
+                  ps.setString(index++, taskInstance.getId());
+                  ps.setLong(index, versionToUpdate);
+                });
     if (updatedRows != 1) {
       throw new ExecutionException(
           "Expected one execution to be updated, but updated " + updatedRows + ". Indicates a bug.",
