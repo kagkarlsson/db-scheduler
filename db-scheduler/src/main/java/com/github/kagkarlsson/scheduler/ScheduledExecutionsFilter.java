@@ -23,15 +23,33 @@ public class ScheduledExecutionsFilter {
   private ExecutionTimeAndId afterExecution;
   private ExecutionTimeAndId beforeExecution;
   private Integer limit;
+  private StateTypeFilter stateTypeFilter;
 
-  private ScheduledExecutionsFilter() {}
-
-  public static ScheduledExecutionsFilter all() {
-    return new ScheduledExecutionsFilter().withIncludeUnresolved(true);
+  private ScheduledExecutionsFilter(StateTypeFilter stateTypeFilter) {
+    this.stateTypeFilter = stateTypeFilter;
   }
 
-  public static ScheduledExecutionsFilter onlyResolved() {
-    return new ScheduledExecutionsFilter().withIncludeUnresolved(false);
+  /** Returns a filter for only active (scheduled) executions. This is the recommended default. */
+  public static ScheduledExecutionsFilter active() {
+    return new ScheduledExecutionsFilter(StateTypeFilter.ACTIVE).withIncludeUnresolved(true);
+  }
+
+  /** Returns a filter for only deactivated executions (non-active states). */
+  public static ScheduledExecutionsFilter deactivated() {
+    return new ScheduledExecutionsFilter(StateTypeFilter.DEACTIVATED).withIncludeUnresolved(true);
+  }
+
+  /**
+   * @deprecated Use {@link #active()} instead. The name "all" is now misleading since it doesn't
+   *     include deactivated executions by default.
+   */
+  @Deprecated
+  public static ScheduledExecutionsFilter all() {
+    return active();
+  }
+
+  public static ScheduledExecutionsFilter allActiveAndDeactivated() {
+    return new ScheduledExecutionsFilter(StateTypeFilter.ALL).withIncludeUnresolved(true);
   }
 
   public ScheduledExecutionsFilter withPicked(boolean pickedValue) {
@@ -80,5 +98,9 @@ public class ScheduledExecutionsFilter {
 
   public Optional<Integer> getLimit() {
     return Optional.ofNullable(limit);
+  }
+
+  public StateTypeFilter getStateTypeFilter() {
+    return stateTypeFilter;
   }
 }

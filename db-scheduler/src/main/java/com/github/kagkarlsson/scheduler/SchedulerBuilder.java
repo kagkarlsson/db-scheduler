@@ -46,6 +46,7 @@ public class SchedulerBuilder {
   public static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMinutes(5);
   public static final int DEFAULT_MISSED_HEARTBEATS_LIMIT = 6;
   public static final Duration DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION = Duration.ofDays(14);
+  public static final Duration DEFAULT_DELETE_DEACTIVATED_AFTER = Duration.ofDays(14);
   public static final Duration SHUTDOWN_MAX_WAIT = Duration.ofMinutes(30);
   public static final PollingStrategyConfig DEFAULT_POLLING_STRATEGY =
       new PollingStrategyConfig(
@@ -69,6 +70,7 @@ public class SchedulerBuilder {
   protected ExecutorService dueExecutor;
   protected ScheduledExecutorService housekeeperExecutor;
   protected Duration deleteUnresolvedAfter = DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
+  protected Duration deleteDeactivatedAfter = DEFAULT_DELETE_DEACTIVATED_AFTER;
   protected JdbcCustomization jdbcCustomization = null;
   protected Duration shutdownMaxWait = SHUTDOWN_MAX_WAIT;
   protected boolean commitWhenAutocommitDisabled = false;
@@ -175,6 +177,15 @@ public class SchedulerBuilder {
 
   public SchedulerBuilder deleteUnresolvedAfter(Duration deleteAfter) {
     this.deleteUnresolvedAfter = deleteAfter;
+    return this;
+  }
+
+  /**
+   * Duration after which old deactivated executions are deleted. Set to Duration.ZERO to disable.
+   * Default: 14 days
+   */
+  public SchedulerBuilder deleteDeactivatedAfter(Duration deleteAfter) {
+    this.deleteDeactivatedAfter = deleteAfter;
     return this;
   }
 
@@ -329,6 +340,7 @@ public class SchedulerBuilder {
             executionInterceptors,
             pollingStrategyConfig,
             deleteUnresolvedAfter,
+            deleteDeactivatedAfter,
             shutdownMaxWait,
             logLevel,
             logStackTrace,

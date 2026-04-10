@@ -2,10 +2,14 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.State;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -19,10 +23,21 @@ import org.slf4j.LoggerFactory;
 
 public class TestTasks {
 
+  public static final TaskDescriptor<Void> ONETIME = TaskDescriptor.of("task-onetime", Void.class);
+  public static final Task<Void> ONETIME_TASK =
+      TestTasks.oneTime("task-onetime", Void.class, TestTasks.DO_NOTHING);
+
   public static final CompletionHandler<Void> REMOVE_ON_COMPLETE =
       new CompletionHandler.OnCompleteRemove<>();
   public static final VoidExecutionHandler<Void> DO_NOTHING =
       (taskInstance, executionContext) -> {};
+  public static final VoidExecutionHandler<Void> ON_EXECUTE_THROW =
+      (taskInstance, executionContext) -> {
+        throw new RuntimeException("Simulated failure");
+      };
+  public static final FailureHandler<Void> ON_FAILURE_DEACTIVATE =
+      (executionComplete, executionOperations) ->
+          executionOperations.deactivate(DeactivateUpdate.toState(State.FAILED).build());
 
   public static <T> OneTimeTask<T> oneTime(
       String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {
@@ -80,7 +95,7 @@ public class TestTasks {
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
       this.result = executionComplete.getResult();
       this.cause = executionComplete.getCause();
-      executionOperations.stop();
+      executionOperations.remove();
       waitForNotify.countDown();
     }
   }
@@ -95,7 +110,7 @@ public class TestTasks {
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
       this.result = executionComplete.getResult();
       this.cause = executionComplete.getCause();
-      executionOperations.stop();
+      executionOperations.remove();
       waitForNotify.countDown();
     }
   }

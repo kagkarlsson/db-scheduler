@@ -13,7 +13,6 @@
   <url>https://github.com/kagkarlsson/db-scheduler</url>
 
   <properties>
-    <license.dir>${project.parent.basedir}/.license</license.dir>
     <!-- Dependencies -->
     <cron-utils.version>9.2.1</cron-utils.version>
     <hamcrest.version>3.0</hamcrest.version>
@@ -78,6 +77,11 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <version>1.0.0</version>
     </dependency>
     <!-- Shaded -->
     <dependency>
@@ -165,6 +169,12 @@
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-library</artifactId>
       <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.27.6</version>
       <scope>test</scope>
     </dependency>
     <dependency>

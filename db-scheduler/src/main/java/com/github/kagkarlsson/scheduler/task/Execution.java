@@ -16,33 +16,38 @@ package com.github.kagkarlsson.scheduler.task;
 import com.github.kagkarlsson.scheduler.Resolvable;
 import java.time.Instant;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("rawtypes")
+@NullMarked
 public final class Execution implements TaskInstanceId, Resolvable {
   public final TaskInstance taskInstance;
   public final Instant executionTime;
   public final boolean picked;
-  public final String pickedBy;
-  public int consecutiveFailures;
-  public final Instant lastHeartbeat;
+  public final @Nullable String pickedBy;
+  public final @Nullable Instant lastHeartbeat;
   public final long version;
-  public final Instant lastFailure;
-  public final Instant lastSuccess;
+  public final @Nullable Instant lastFailure;
+  public final @Nullable Instant lastSuccess;
+  public final State state;
+  public int consecutiveFailures;
 
   public Execution(Instant executionTime, TaskInstance taskInstance) {
-    this(executionTime, taskInstance, false, null, null, null, 0, null, 1L);
+    this(executionTime, taskInstance, false, null, null, null, 0, null, 1L, State.ACTIVE);
   }
 
   public Execution(
       Instant executionTime,
       TaskInstance taskInstance,
       boolean picked,
-      String pickedBy,
-      Instant lastSuccess,
-      Instant lastFailure,
+      @Nullable String pickedBy,
+      @Nullable Instant lastSuccess,
+      @Nullable Instant lastFailure,
       int consecutiveFailures,
-      Instant lastHeartbeat,
-      long version) {
+      @Nullable Instant lastHeartbeat,
+      long version,
+      State state) {
     this.executionTime = executionTime;
     this.taskInstance = taskInstance;
     this.picked = picked;
@@ -52,6 +57,7 @@ public final class Execution implements TaskInstanceId, Resolvable {
     this.consecutiveFailures = consecutiveFailures;
     this.lastHeartbeat = lastHeartbeat;
     this.version = version;
+    this.state = state;
   }
 
   @Override
@@ -61,6 +67,14 @@ public final class Execution implements TaskInstanceId, Resolvable {
 
   public boolean isPicked() {
     return picked;
+  }
+
+  public boolean isActive() {
+    return getState() == State.ACTIVE;
+  }
+
+  public State getState() {
+    return state == null ? State.ACTIVE : state;
   }
 
   public Execution updateToPicked(String newPickedBy, Instant newLastHeartbeat) {
@@ -73,8 +87,8 @@ public final class Execution implements TaskInstanceId, Resolvable {
         lastFailure,
         consecutiveFailures,
         newLastHeartbeat,
-        version + 1 // since this was incremented in the database when picked
-        );
+        version + 1, // since this was incremented in the database when picked
+        getState());
   }
 
   @Override

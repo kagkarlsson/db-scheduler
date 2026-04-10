@@ -16,11 +16,16 @@ package com.github.kagkarlsson.scheduler;
 import com.github.kagkarlsson.scheduler.exceptions.DataClassMismatchException;
 import com.github.kagkarlsson.scheduler.exceptions.MissingRawDataException;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Instant;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
+@NullMarked
 public class ScheduledExecution<DATA_TYPE> {
+
   private final Class<DATA_TYPE> dataClass;
   private final Execution execution;
 
@@ -38,7 +43,7 @@ public class ScheduledExecution<DATA_TYPE> {
   }
 
   @SuppressWarnings("unchecked")
-  public DATA_TYPE getData() {
+  public @Nullable DATA_TYPE getData() {
     Object data = this.execution.taskInstance.getData();
     if (data == null) {
       return null;
@@ -61,11 +66,11 @@ public class ScheduledExecution<DATA_TYPE> {
     return (byte[]) this.execution.taskInstance.getData();
   }
 
-  public Instant getLastSuccess() {
+  public @Nullable Instant getLastSuccess() {
     return execution.lastSuccess;
   }
 
-  public Instant getLastFailure() {
+  public @Nullable Instant getLastFailure() {
     return execution.lastFailure;
   }
 
@@ -77,14 +82,22 @@ public class ScheduledExecution<DATA_TYPE> {
     return execution.picked;
   }
 
-  public String getPickedBy() {
+  public @Nullable String getPickedBy() {
     return execution.pickedBy;
+  }
+
+  public State getState() {
+    return execution.getState();
   }
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     ScheduledExecution<?> that = (ScheduledExecution<?>) o;
     return Objects.equals(execution, that.execution);
   }

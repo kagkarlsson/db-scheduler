@@ -1,10 +1,12 @@
 package com.github.kagkarlsson.scheduler;
 
-import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
-import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.onlyResolved;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.active;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.allActiveAndDeactivated;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.deactivated;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMinutes;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -25,6 +27,7 @@ import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import java.time.Duration;
 import java.time.Instant;
@@ -32,9 +35,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -54,6 +59,7 @@ public class JdbcTaskRepositoryTest {
   private OneTimeTask<Integer> oneTimeTaskWithData;
   private TaskResolver taskResolver;
   private TestableListener testableListener;
+  private Instant truncatedNow;
 
   @BeforeEach
   public void setUp() {
@@ -70,6 +76,8 @@ public class JdbcTaskRepositoryTest {
     taskResolver =
         new TaskResolver(new SchedulerListeners(testableListener), new SystemClock(), knownTasks);
     taskRepository = createRepository(taskResolver, false);
+
+    truncatedNow = TimeHelper.truncatedInstantNow();
   }
 
   @Test
@@ -408,13 +416,13 @@ public class JdbcTaskRepositoryTest {
                     new SchedulableTaskInstance<>(
                         oneTimeTask.instance("id" + i),
                         now.plus(new Random().nextInt(10), ChronoUnit.HOURS))));
-    final List<Execution> beforePick = getScheduledExecutions(all().withPicked(false));
+    final List<Execution> beforePick = getScheduledExecutions(active().withPicked(false));
     assertThat(beforePick, hasSize(100));
 
     taskRepository.pick(beforePick.get(0), Instant.now());
 
-    assertThat(getScheduledExecutions(all().withPicked(false)), hasSize(99));
-    assertThat(getScheduledExecutions(all()), hasSize(100));
+    assertThat(getScheduledExecutions(active().withPicked(false)), hasSize(99));
+    assertThat(getScheduledExecutions(active()), hasSize(100));
   }
 
   private List<Execution> getScheduledExecutions(ScheduledExecutionsFilter filter) {
@@ -440,14 +448,16 @@ public class JdbcTaskRepositoryTest {
 
     taskRepository.pick(
         taskRepository.getExecution(execution1.getTaskInstance()).get(), Instant.now());
-    assertThat(getScheduledExecutions(all().withPicked(true), oneTimeTask.getName()), hasSize(1));
-    assertThat(getScheduledExecutions(all().withPicked(false), oneTimeTask.getName()), hasSize(1));
-    assertThat(getScheduledExecutions(all(), oneTimeTask.getName()), hasSize(2));
+    assertThat(
+        getScheduledExecutions(active().withPicked(true), oneTimeTask.getName()), hasSize(1));
+    assertThat(
+        getScheduledExecutions(active().withPicked(false), oneTimeTask.getName()), hasSize(1));
+    assertThat(getScheduledExecutions(active(), oneTimeTask.getName()), hasSize(2));
 
     assertThat(
-        getScheduledExecutions(all().withPicked(false), alternativeOneTimeTask.getName()),
+        getScheduledExecutions(active().withPicked(false), alternativeOneTimeTask.getName()),
         hasSize(1));
-    assertThat(getScheduledExecutions(all().withPicked(false), "non-existing"), empty());
+    assertThat(getScheduledExecutions(active().withPicked(false), "non-existing"), empty());
   }
 
   @Test
@@ -485,11 +495,10 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.getDue(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskResolver.getUnresolved(), hasSize(1));
 
-    assertThat(getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved()), hasSize(0));
-    assertThat(
-        getScheduledExecutions(ScheduledExecutionsFilter.onlyResolved(), taskName), hasSize(0));
-    assertThat(getScheduledExecutions(all()), hasSize(1));
-    assertThat(getScheduledExecutions(all(), taskName), hasSize(1));
+    assertThat(getScheduledExecutions(active().withIncludeUnresolved(false)), hasSize(0));
+    assertThat(getScheduledExecutions(active().withIncludeUnresolved(false), taskName), hasSize(0));
+    assertThat(getScheduledExecutions(active()), hasSize(1));
+    assertThat(getScheduledExecutions(active(), taskName), hasSize(1));
   }
 
   @Test
@@ -538,6 +547,84 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
   }
 
+  @Test
+  public void deactivated_executions_should_not_be_due() {
+    createExecution(oneTimeTask.instance("active"), truncatedNow);
+    var toDeactivate = createExecution(oneTimeTask.instance("toDeactivate"), truncatedNow);
+
+    taskRepository.deactivate(toDeactivate, DeactivateUpdate.toState(State.PAUSED).build());
+
+    assertThat(toIds(taskRepository.getDue(truncatedNow, POLLING_LIMIT))).containsExactly("active");
+
+    assertThat(taskRepository.getDeactivatedExecutions())
+        .satisfiesExactly(
+            e -> {
+              assertThat(e.taskInstance.getId()).isEqualTo("toDeactivate");
+              assertThat(e.state).isEqualTo(State.PAUSED);
+            });
+  }
+
+  @Test
+  public void getScheduledExecutions_filter_includes_deactivated_based_on_filter() {
+    createExecution(oneTimeTask.instance("active1"), truncatedNow);
+    createExecution(oneTimeTask.instance("active2"), truncatedNow);
+    var toDeactivate = createExecution(oneTimeTask.instance("deactivated1"), truncatedNow);
+    taskRepository.deactivate(toDeactivate, DeactivateUpdate.toState(State.PAUSED).build());
+
+    // active
+    assertThat(toIds(getScheduledExecutions(active())))
+        .containsExactlyInAnyOrder("active1", "active2");
+    // deactivated
+    assertThat(toIds(getScheduledExecutions(deactivated()))).containsExactly("deactivated1");
+    // all
+    assertThat(toIds(getScheduledExecutions(allActiveAndDeactivated())))
+        .containsExactlyInAnyOrder("active1", "active2", "deactivated1");
+  }
+
+  @Test
+  public void reactivate_should_reset_execution_to_active_state() {
+    Instant originalTime = truncatedNow.minus(Duration.ofHours(1));
+    Instant successTime = truncatedNow.minus(Duration.ofMinutes(30));
+    Instant failureTime = truncatedNow.minus(Duration.ofMinutes(20));
+    Instant newExecutionTime = truncatedNow.plus(Duration.ofMinutes(10));
+    var instance = oneTimeTask.instance("toReactivate");
+
+    // Create and deactivate with execution history
+    var created = createExecution(instance, originalTime);
+    taskRepository.reschedule(created, originalTime, successTime, failureTime, 3);
+    var withHistory = taskRepository.getExecution(instance).orElseThrow();
+    taskRepository.deactivate(
+        withHistory,
+        DeactivateUpdate.toState(State.FAILED)
+            .lastSuccess(successTime)
+            .lastFailure(failureTime)
+            .build());
+
+    var deactivated = taskRepository.getExecution(instance).orElseThrow();
+    assertDeactivated(deactivated, State.FAILED, successTime, failureTime);
+    assertThat(taskRepository.getDue(truncatedNow, POLLING_LIMIT)).isEmpty();
+
+    // Reactivate
+    taskRepository.reactivate(deactivated, newExecutionTime);
+
+    var reactivated = taskRepository.getExecution(instance).orElseThrow();
+    assertReactivated(reactivated, newExecutionTime);
+    assertThat(taskRepository.getDue(newExecutionTime, POLLING_LIMIT))
+        .singleElement()
+        .satisfies(e -> assertThat(e.getId()).isEqualTo("toReactivate"));
+  }
+
+  private <T> Execution createExecution(TaskInstance<T> instance, Instant executionTime) {
+    taskRepository.createIfNotExists(SchedulableInstance.of(instance, executionTime));
+    return taskRepository
+        .getExecution(instance)
+        .orElseThrow(() -> new IllegalStateException("Execution should exist"));
+  }
+
+  private List<String> toIds(List<Execution> due) {
+    return due.stream().map(Execution::getId).toList();
+  }
+
   private List<Execution> getScheduledExecutions(
       ScheduledExecutionsFilter filter, String taskName) {
     List<Execution> alternativeTasks = new ArrayList<>();
@@ -571,7 +658,91 @@ public class JdbcTaskRepositoryTest {
 
   private Execution getSingleExecution() {
     List<Execution> executions = new ArrayList<>();
-    taskRepository.getScheduledExecutions(onlyResolved().withPicked(false), executions::add);
+    taskRepository.getScheduledExecutions(
+        active().withIncludeUnresolved(false).withPicked(false), executions::add);
     return executions.get(0);
+  }
+
+  @Test
+  public void removeOldDeactivatedExecutions_deletes_correct_states_and_respects_time_and_limit() {
+    Instant oldTime = truncatedNow.minus(ofDays(30));
+    Instant recentTime = truncatedNow.minus(ofDays(7));
+    Instant ageLimit = truncatedNow.minus(ofDays(14));
+    Set<State> statesToDelete =
+        EnumSet.of(State.COMPLETE, State.PAUSED, State.FAILED, State.WAITING);
+
+    // Should be deleted
+    createDeactivatedExecution("oldComplete", oldTime, State.COMPLETE);
+    createDeactivatedExecution("oldPaused", oldTime, State.PAUSED);
+    createDeactivatedExecution("oldFailed", oldTime, State.FAILED);
+    createDeactivatedExecution("oldWaiting", oldTime, State.WAITING);
+
+    // Should NOT be deleted
+    createExecution(oneTimeTask.instance("activeNull"), oldTime);
+    createDeactivatedExecution("oldRecord", oldTime, State.RECORD);
+    createDeactivatedExecution("recentComplete", recentTime, State.COMPLETE);
+
+    // Execute deletion
+    int removed = taskRepository.removeOldDeactivatedExecutions(statesToDelete, ageLimit, 1000);
+
+    assertEquals(4, removed);
+    assertDeleted("oldComplete");
+    assertDeleted("oldPaused");
+    assertDeleted("oldFailed");
+    assertDeleted("oldWaiting");
+
+    assertNotDeleted("activeNull");
+    assertNotDeleted("oldRecord");
+    assertNotDeleted("recentComplete");
+  }
+
+  @Test
+  public void removeOldDeactivatedExecutions_respects_limit() {
+    Instant oldTime = truncatedNow.minus(ofDays(30));
+    for (int i = 0; i < 5; i++) {
+      createDeactivatedExecution("limited" + i, oldTime, State.COMPLETE);
+    }
+
+    int removed =
+        taskRepository.removeOldDeactivatedExecutions(
+            EnumSet.of(State.COMPLETE), truncatedNow.minus(ofDays(14)), 2);
+
+    assertEquals(2, removed);
+    assertEquals(3, taskRepository.getDeactivatedExecutions().size());
+  }
+
+  private void createDeactivatedExecution(String id, Instant executionTime, State state) {
+    var execution = createExecution(oneTimeTask.instance(id), executionTime);
+    taskRepository.deactivate(execution, DeactivateUpdate.toState(state).build());
+  }
+
+  private void assertDeleted(String id) {
+    assertThat(taskRepository.getExecution(oneTimeTask.instance(id)))
+        .as("Execution '%s' should be deleted", id)
+        .isEmpty();
+  }
+
+  private void assertNotDeleted(String id) {
+    assertThat(taskRepository.getExecution(oneTimeTask.instance(id)))
+        .as("Execution '%s' should NOT be deleted", id)
+        .isPresent();
+  }
+
+  private void assertDeactivated(
+      Execution execution, State expectedState, Instant lastSuccess, Instant lastFailure) {
+    assertThat(execution.state).isEqualTo(expectedState);
+    assertThat(execution.lastSuccess).isEqualTo(lastSuccess);
+    assertThat(execution.lastFailure).isEqualTo(lastFailure);
+  }
+
+  private void assertReactivated(Execution execution, Instant expectedExecutionTime) {
+    assertThat(execution.state).isEqualTo(State.ACTIVE);
+    assertThat(execution.executionTime).isEqualTo(expectedExecutionTime);
+    assertThat(execution.isPicked()).isFalse();
+    assertThat(execution.pickedBy).isNull();
+    assertThat(execution.lastSuccess).isNull();
+    assertThat(execution.lastFailure).isNull();
+    assertThat(execution.consecutiveFailures).isZero();
+    assertThat(execution.lastHeartbeat).isNull();
   }
 }

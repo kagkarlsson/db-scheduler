@@ -1,4 +1,4 @@
-package com.github.kagkarlsson.scheduler.functional;
+package com.github.kagkarlsson.scheduler.feature;
 
 import static java.time.Duration.ofMinutes;
 import static java.time.Instant.now;

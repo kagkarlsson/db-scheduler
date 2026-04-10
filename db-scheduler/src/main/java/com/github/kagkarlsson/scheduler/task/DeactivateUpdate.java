@@ -1,0 +1,58 @@
+/*
+ * Copyright (C) Gustav Karlsson
+ *
+ * <p>Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file
+ * except in compliance with the License. You may obtain a copy of the License at
+ *
+ * <p>http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * <p>Unless required by applicable law or agreed to in writing, software distributed under the
+ * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+ * express or implied. See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.github.kagkarlsson.scheduler.task;
+
+import java.time.Instant;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
+
+@NullMarked
+public record DeactivateUpdate(
+    @Nullable NewValue<Instant> lastSuccess,
+    @Nullable NewValue<Instant> lastFailure,
+    @Nullable NewValue<State> state) {
+
+  public static Builder toState(State state) {
+    return new Builder(state);
+  }
+
+  public static class Builder {
+    @Nullable private NewValue<Instant> lastSuccess;
+    @Nullable private NewValue<Instant> lastFailure;
+    @Nullable private NewValue<State> state;
+
+    public Builder(State state) {
+      this.state = new NewValue<>(state);
+    }
+
+    public Builder lastSuccess(Instant lastSuccess) {
+      this.lastSuccess = new NewValue<>(lastSuccess);
+      return this;
+    }
+
+    public Builder lastFailure(Instant lastFailure) {
+      this.lastFailure = new NewValue<>(lastFailure);
+      return this;
+    }
+
+    public Builder state(State state) {
+      this.state = new NewValue<>(state);
+      return this;
+    }
+
+    public DeactivateUpdate build() {
+      return new DeactivateUpdate(lastSuccess, lastFailure, state);
+    }
+  }
+}

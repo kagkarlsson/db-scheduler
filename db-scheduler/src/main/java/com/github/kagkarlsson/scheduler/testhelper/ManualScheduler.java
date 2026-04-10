@@ -45,6 +45,7 @@ public class ManualScheduler extends Scheduler {
       List<ExecutionInterceptor> executionInterceptors,
       PollingStrategyConfig pollingStrategyConfig,
       Duration deleteUnresolvedAfter,
+      Duration deleteDeactivatedAfter,
       LogLevel logLevel,
       boolean logStackTrace,
       List<OnStartup> onStartup,
@@ -66,6 +67,7 @@ public class ManualScheduler extends Scheduler {
         executionInterceptors,
         pollingStrategyConfig,
         deleteUnresolvedAfter,
+        deleteDeactivatedAfter,
         Duration.ZERO,
         logLevel,
         logStackTrace,
@@ -93,6 +95,14 @@ public class ManualScheduler extends Scheduler {
 
   public void runDeadExecutionDetection() {
     super.detectDeadExecutions();
+  }
+
+  public void runDeleteOldDeactivatedExecutions() {
+    super.deleteOldDeactivatedExecutions();
+  }
+
+  public void runOnStartup() {
+    super.executeOnStartup();
   }
 
   public void start() {

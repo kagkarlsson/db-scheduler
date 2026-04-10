@@ -120,6 +120,7 @@ public final class DbSchedulerConfigurationSupport {
     customizer.housekeeperExecutor().ifPresent(builder::housekeeperExecutor);
 
     builder.deleteUnresolvedAfter(config.getDeleteUnresolvedAfter());
+    builder.deleteDeactivatedAfter(config.getDeleteDeactivatedAfter());
     builder.startTasks(startupTasks(configuredTasks));
     builder.statsRegistry(registry);
     builder.failureLogging(config.getFailureLoggerLevel(), config.isFailureLoggerLogStackTrace());

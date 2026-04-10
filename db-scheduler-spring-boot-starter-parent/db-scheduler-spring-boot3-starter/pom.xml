@@ -13,10 +13,6 @@
   <description>A starter for Spring Boot that will configure db-scheduler</description>
   <url>https://github.com/kagkarlsson/db-scheduler</url>
 
-  <properties>
-    <license.dir>${project.parent.parent.basedir}/.license</license.dir>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>

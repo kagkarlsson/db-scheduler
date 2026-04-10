@@ -33,9 +33,12 @@ import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.sql.PreparedStatement;
@@ -46,6 +49,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -58,7 +62,6 @@ import org.slf4j.LoggerFactory;
 public class JdbcTaskRepository implements TaskRepository {
 
   public static final String DEFAULT_TABLE_NAME = "scheduled_tasks";
-
   private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
   private final TaskResolver taskResolver;
   private final SchedulerName schedulerSchedulerName;
@@ -66,8 +69,10 @@ public class JdbcTaskRepository implements TaskRepository {
   private final Serializer serializer;
   private final String tableName;
   private final JdbcCustomization jdbcCustomization;
+  private final JdbcConfig jdbcConfig;
   private final boolean orderByPriority;
   private final Clock clock;
+  private final String insertQuery;
 
   public JdbcTaskRepository(
       DataSource dataSource,
@@ -149,9 +154,29 @@ public class JdbcTaskRepository implements TaskRepository {
     this.orderByPriority = orderByPriority;
     this.clock = clock;
     this.insertQuery = getInsertQuery(tableName);
+    this.jdbcConfig = new JdbcConfig(tableName, jdbcRunner, jdbcCustomization);
   }
 
-  private final String insertQuery;
+  private static <T> Supplier<T> memoize(Supplier<T> original) {
+    return new Supplier<>() {
+      boolean initialized;
+
+      public T get() {
+        return delegate.get();
+      }
+
+      private synchronized T firstTime() {
+        if (!initialized) {
+          T value = original.get();
+          delegate = () -> value;
+          initialized = true;
+        }
+        return delegate.get();
+      }
+
+      Supplier<T> delegate = this::firstTime;
+    };
+  }
 
   @Override
   @SuppressWarnings("unchecked")
@@ -206,6 +231,7 @@ public class JdbcTaskRepository implements TaskRepository {
     ps.setString(index++, taskInstance.getId());
     jdbcCustomization.setTaskData(ps, index++, serializer.serialize(taskInstance.getData()));
     jdbcCustomization.setInstant(ps, index++, value.getExecutionTime());
+    ps.setString(index++, State.ACTIVE.name());
     ps.setBoolean(index++, false);
     ps.setLong(index++, 1L);
     if (orderByPriority) {
@@ -218,9 +244,9 @@ public class JdbcTaskRepository implements TaskRepository {
     //           with execute(query-and-pss) and have builder return that..
     return "insert into "
         + tableName
-        + "(task_name, task_instance, task_data, execution_time, picked, version"
+        + "(task_name, task_instance, task_data, execution_time, state, picked, version"
         + (orderByPriority ? ", priority" : "")
-        + ") values(?, ?, ?, ?, ?, ? "
+        + ") values(?, ?, ?, ?, ?, ?, ? "
         + (orderByPriority ? ", ?" : "")
         + ")";
   }
@@ -327,6 +353,17 @@ public class JdbcTaskRepository implements TaskRepository {
         q.getQuery(jdbcCustomization),
         q.getPreparedStatementSetter(jdbcCustomization),
         new ExecutionResultSetConsumer(consumer, filter.getIncludeUnresolved(), false));
+  }
+
+  @Override
+  public void getDeactivatedExecutions(Consumer<Execution> consumer) {
+    QueryBuilder q = QueryBuilder.selectFromTable(tableName);
+    q.andCondition(new DeactivatedCondition());
+
+    jdbcRunner.query(
+        q.getQuery(jdbcCustomization),
+        q.getPreparedStatementSetter(jdbcCustomization),
+        new ExecutionResultSetConsumer(consumer, true, false));
   }
 
   @Override
@@ -475,14 +512,57 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public void deactivate(Execution execution, DeactivateUpdate deactivateUpdate) {
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
+
+    update.picked(false);
+    update.pickedBy(null);
+    update.consecutiveFailures(0);
+    update.lastHeartbeat(null);
+
+    if (deactivateUpdate.lastSuccess() != null) {
+      update.lastSuccess(deactivateUpdate.lastSuccess().value());
+    }
+
+    if (deactivateUpdate.lastFailure() != null) {
+      update.lastFailure(deactivateUpdate.lastFailure().value());
+    }
+
+    if (deactivateUpdate.state() != null) {
+      update.state(deactivateUpdate.state().value());
+    }
+
+    update.updateSingle(jdbcConfig);
+  }
+
+  @Override
+  public void reactivate(Execution execution, Instant newExecutionTime) {
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
+    update.executionTime(newExecutionTime);
+    update.picked(false);
+    update.pickedBy(null);
+    update.lastSuccess(null);
+    update.lastFailure(null);
+    update.consecutiveFailures(0);
+    update.lastHeartbeat(null);
+    update.state(State.ACTIVE);
+    update.updateSingle(jdbcConfig);
+  }
+
+  @Override
   public boolean reschedule(
       Execution execution,
       Instant nextExecutionTime,
       Instant lastSuccess,
       Instant lastFailure,
       int consecutiveFailures) {
-    return rescheduleInternal(
-        execution, nextExecutionTime, null, lastSuccess, lastFailure, consecutiveFailures);
+    return reschedule(
+        execution,
+        RescheduleUpdate.to(nextExecutionTime)
+            .lastSuccess(lastSuccess)
+            .lastFailure(lastFailure)
+            .consecutiveFailures(consecutiveFailures)
+            .build());
   }
 
   @Override
@@ -493,63 +573,39 @@ public class JdbcTaskRepository implements TaskRepository {
       Instant lastSuccess,
       Instant lastFailure,
       int consecutiveFailures) {
-    return rescheduleInternal(
+    return reschedule(
         execution,
-        nextExecutionTime,
-        new NewData(newData),
-        lastSuccess,
-        lastFailure,
-        consecutiveFailures);
+        RescheduleUpdate.to(nextExecutionTime)
+            .data(newData)
+            .lastSuccess(lastSuccess)
+            .lastFailure(lastFailure)
+            .consecutiveFailures(consecutiveFailures)
+            .build());
   }
 
-  private boolean rescheduleInternal(
-      Execution execution,
-      Instant nextExecutionTime,
-      NewData newData,
-      Instant lastSuccess,
-      Instant lastFailure,
-      int consecutiveFailures) {
-    final int updated =
-        jdbcRunner.execute(
-            "update "
-                + tableName
-                + " set "
-                + "picked = ?, "
-                + "picked_by = ?, "
-                + "last_heartbeat = ?, "
-                + "last_success = ?, "
-                + "last_failure = ?, "
-                + "consecutive_failures = ?, "
-                + "execution_time = ?, "
-                + (newData != null ? "task_data = ?, " : "")
-                + "version = version + 1 "
-                + "where task_name = ? "
-                + "and task_instance = ? "
-                + "and version = ?",
-            ps -> {
-              int index = 1;
-              ps.setBoolean(index++, false);
-              ps.setString(index++, null);
-              jdbcCustomization.setInstant(ps, index++, null);
-              jdbcCustomization.setInstant(ps, index++, lastSuccess);
-              jdbcCustomization.setInstant(ps, index++, lastFailure);
-              ps.setInt(index++, consecutiveFailures);
-              jdbcCustomization.setInstant(ps, index++, nextExecutionTime);
-              if (newData != null) {
-                // may cause datbase-specific problems, might have to use setNull instead
-                // FIXLATER: optionally support bypassing serializer if byte[] already
-                jdbcCustomization.setTaskData(ps, index++, serializer.serialize(newData.data));
-              }
-              ps.setString(index++, execution.taskInstance.getTaskName());
-              ps.setString(index++, execution.taskInstance.getId());
-              ps.setLong(index, execution.version);
-            });
+  @Override
+  public boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
 
-    if (updated != 1) {
-      throw new ExecutionException(
-          "Expected one execution to be updated, but updated " + updated + ". Indicates a bug.",
-          execution);
+    update.picked(false);
+    update.pickedBy(null);
+    update.lastHeartbeat(null);
+    update.executionTime(rescheduleUpdate.executionTime());
+
+    if (rescheduleUpdate.lastSuccess() != null) {
+      update.lastSuccess(rescheduleUpdate.lastSuccess().value());
     }
+    if (rescheduleUpdate.lastFailure() != null) {
+      update.lastFailure(rescheduleUpdate.lastFailure().value());
+    }
+    if (rescheduleUpdate.consecutiveFailures() != null) {
+      update.consecutiveFailures(rescheduleUpdate.consecutiveFailures().value());
+    }
+    if (rescheduleUpdate.data() != null) {
+      update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
+    }
+
+    update.updateSingle(jdbcConfig);
     return true;
   }
 
@@ -563,7 +619,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 + "where picked = ? "
                 + "and task_name = ? "
                 + "and task_instance = ? "
-                + "and version = ?",
+                + "and version = ? ",
             ps -> {
               ps.setBoolean(1, true);
               ps.setString(2, truncate(schedulerSchedulerName.getName(), 50));
@@ -600,7 +656,9 @@ public class JdbcTaskRepository implements TaskRepository {
     return jdbcRunner.query(
         "select * from "
             + tableName
-            + " where picked = ? and last_heartbeat <= ? "
+            + " where picked = ? and last_heartbeat <= ? and "
+            + Queries.SQL_ACTIVE_CONDITION
+            + " "
             + unresolvedFilter.andCondition()
             + " order by last_heartbeat asc",
         (PreparedStatement p) -> {
@@ -717,6 +775,45 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public int removeOldDeactivatedExecutions(Set<State> states, Instant olderThan, int limit) {
+    if (states.isEmpty()) {
+      return 0;
+    }
+    String statesInClause =
+        states.stream().map(s -> "'" + s.name() + "'").collect(Collectors.joining(", "));
+
+    // Double-subquery is required for MySQL (can't select from table being deleted without wrapping
+    // in a derived table). EXISTS avoids row-value constructors which SQL Server does not support.
+    String sql =
+        "DELETE FROM "
+            + tableName
+            + " WHERE EXISTS ("
+            + "  SELECT 1 FROM ("
+            + "    SELECT task_name, task_instance FROM "
+            + tableName
+            + "    WHERE state IN ("
+            + statesInClause
+            + ")"
+            + "      AND execution_time < ?"
+            + "    ORDER BY execution_time"
+            + jdbcCustomization.getQueryLimitPart(limit)
+            + "  ) sub"
+            + "  WHERE sub.task_name = "
+            + tableName
+            + ".task_name"
+            + "  AND sub.task_instance = "
+            + tableName
+            + ".task_instance"
+            + ")";
+
+    return jdbcRunner.execute(
+        sql,
+        ps -> {
+          jdbcCustomization.setInstant(ps, 1, olderThan);
+        });
+  }
+
+  @Override
   public void verifySupportsLockAndFetch() {
     if (!(jdbcCustomization.supportsSingleStatementLockAndFetch()
         || jdbcCustomization.supportsGenericLockAndFetch())) {
@@ -741,6 +838,12 @@ public class JdbcTaskRepository implements TaskRepository {
 
     filter.getPickedValue().ifPresent(value -> q.andCondition(new PickedCondition(value)));
 
+    switch (filter.getStateTypeFilter()) {
+      case DEACTIVATED -> q.andCondition(new DeactivatedCondition());
+      case ACTIVE -> q.andCondition(new ActiveCondition());
+      case ALL -> {}
+    }
+
     filter.getAfterExecution().ifPresent(e -> q.andCondition(new ExecutionTimeAfterCondition(e)));
 
     filter.getBeforeExecution().ifPresent(e -> q.andCondition(new ExecutionTimeBeforeCondition(e)));
@@ -752,6 +855,146 @@ public class JdbcTaskRepository implements TaskRepository {
     filter.getLimit().ifPresent(q::limit);
 
     return q;
+  }
+
+  private enum ScrollingType {
+    NONE,
+    FORWARD,
+    BACKWARD,
+    RANGE;
+
+    public static ScrollingType determine(ScheduledExecutionsFilter filter) {
+      boolean hasAfter = filter.getAfterExecution().isPresent();
+      boolean hasBefore = filter.getBeforeExecution().isPresent();
+
+      if (hasAfter && hasBefore) {
+        return RANGE;
+      } else if (hasAfter) {
+        return FORWARD;
+      } else if (hasBefore) {
+        return BACKWARD;
+      } else {
+        return NONE;
+      }
+    }
+  }
+
+  private enum OrderingStrategy {
+    TIME_FORWARD("execution_time asc, task_instance asc"),
+    TIME_BACKWARD("execution_time desc, task_instance desc");
+
+    private final String clause;
+
+    OrderingStrategy(String clause) {
+      this.clause = clause;
+    }
+
+    public static OrderingStrategy from(ScrollingType scrollingType) {
+      boolean useBackwardOrdering = (scrollingType == ScrollingType.BACKWARD);
+      return useBackwardOrdering ? TIME_BACKWARD : TIME_FORWARD;
+    }
+
+    public String getClause() {
+      return clause;
+    }
+  }
+
+  static class UnresolvedFilter implements AndCondition {
+
+    private final List<UnresolvedTask> unresolved;
+
+    public UnresolvedFilter(List<UnresolvedTask> unresolved) {
+      this.unresolved = unresolved;
+    }
+
+    public boolean isActive() {
+      return !unresolved.isEmpty();
+    }
+
+    public String andCondition() {
+      return unresolved.isEmpty() ? "" : "and " + getQueryPart();
+    }
+
+    public String getQueryPart() {
+      return "task_name not in ("
+          + unresolved.stream().map(ignored -> "?").collect(joining(","))
+          + ")";
+    }
+
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      final List<String> unresolvedTasknames =
+          unresolved.stream().map(UnresolvedTask::getTaskName).collect(toList());
+      for (String taskName : unresolvedTasknames) {
+        p.setString(index++, taskName);
+      }
+      return index;
+    }
+  }
+
+  private static class PickedCondition implements AndCondition {
+
+    private final boolean value;
+
+    public PickedCondition(boolean value) {
+      this.value = value;
+    }
+
+    @Override
+    public String getQueryPart() {
+      return "picked = ?";
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      p.setBoolean(index++, value);
+      return index;
+    }
+  }
+
+  private static class ActiveCondition implements AndCondition {
+
+    @Override
+    public String getQueryPart() {
+      return Queries.SQL_ACTIVE_CONDITION;
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      return index;
+    }
+  }
+
+  private static class DeactivatedCondition implements AndCondition {
+
+    @Override
+    public String getQueryPart() {
+      return Queries.SQL_DEACTIVATED_CONDITION;
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      return index;
+    }
+  }
+
+  private static class TaskCondition implements AndCondition {
+
+    private final String value;
+
+    public TaskCondition(String value) {
+      this.value = value;
+    }
+
+    @Override
+    public String getQueryPart() {
+      return "task_name = ?";
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) throws SQLException {
+      p.setString(index++, value);
+      return index;
+    }
   }
 
   private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
@@ -828,6 +1071,8 @@ public class JdbcTaskRepository implements TaskRepository {
         // default
         Instant lastHeartbeat = jdbcCustomization.getInstant(rs, "last_heartbeat");
         long version = rs.getLong("version");
+        String stateStr = rs.getString("state");
+        State state = stateStr != null ? State.valueOf(stateStr) : State.ACTIVE;
 
         int priority = orderByPriority ? rs.getInt("priority") : 0;
 
@@ -851,112 +1096,11 @@ public class JdbcTaskRepository implements TaskRepository {
                 lastFailure,
                 consecutiveFailures,
                 lastHeartbeat,
-                version));
+                version,
+                state));
       }
 
       return null;
-    }
-  }
-
-  private static <T> Supplier<T> memoize(Supplier<T> original) {
-    return new Supplier<>() {
-      boolean initialized;
-
-      public T get() {
-        return delegate.get();
-      }
-
-      private synchronized T firstTime() {
-        if (!initialized) {
-          T value = original.get();
-          delegate = () -> value;
-          initialized = true;
-        }
-        return delegate.get();
-      }
-
-      Supplier<T> delegate = this::firstTime;
-    };
-  }
-
-  private static class NewData {
-
-    private final Object data;
-
-    NewData(Object data) {
-      this.data = data;
-    }
-  }
-
-  static class UnresolvedFilter implements AndCondition {
-
-    private final List<UnresolvedTask> unresolved;
-
-    public UnresolvedFilter(List<UnresolvedTask> unresolved) {
-      this.unresolved = unresolved;
-    }
-
-    public boolean isActive() {
-      return !unresolved.isEmpty();
-    }
-
-    public String andCondition() {
-      return unresolved.isEmpty() ? "" : "and " + getQueryPart();
-    }
-
-    public String getQueryPart() {
-      return "task_name not in ("
-          + unresolved.stream().map(ignored -> "?").collect(joining(","))
-          + ")";
-    }
-
-    public int setParameters(PreparedStatement p, int index) throws SQLException {
-      final List<String> unresolvedTasknames =
-          unresolved.stream().map(UnresolvedTask::getTaskName).collect(toList());
-      for (String taskName : unresolvedTasknames) {
-        p.setString(index++, taskName);
-      }
-      return index;
-    }
-  }
-
-  private static class PickedCondition implements AndCondition {
-
-    private final boolean value;
-
-    public PickedCondition(boolean value) {
-      this.value = value;
-    }
-
-    @Override
-    public String getQueryPart() {
-      return "picked = ?";
-    }
-
-    @Override
-    public int setParameters(PreparedStatement p, int index) throws SQLException {
-      p.setBoolean(index++, value);
-      return index;
-    }
-  }
-
-  private static class TaskCondition implements AndCondition {
-
-    private final String value;
-
-    public TaskCondition(String value) {
-      this.value = value;
-    }
-
-    @Override
-    public String getQueryPart() {
-      return "task_name = ?";
-    }
-
-    @Override
-    public int setParameters(PreparedStatement p, int index) throws SQLException {
-      p.setString(index++, value);
-      return index;
     }
   }
 
@@ -1001,48 +1145,6 @@ public class JdbcTaskRepository implements TaskRepository {
       jdbcCustomization.setInstant(p, index++, execution.executionTime());
       p.setString(index++, execution.taskInstanceId());
       return index;
-    }
-  }
-
-  private enum ScrollingType {
-    NONE,
-    FORWARD,
-    BACKWARD,
-    RANGE;
-
-    public static ScrollingType determine(ScheduledExecutionsFilter filter) {
-      boolean hasAfter = filter.getAfterExecution().isPresent();
-      boolean hasBefore = filter.getBeforeExecution().isPresent();
-
-      if (hasAfter && hasBefore) {
-        return RANGE;
-      } else if (hasAfter) {
-        return FORWARD;
-      } else if (hasBefore) {
-        return BACKWARD;
-      } else {
-        return NONE;
-      }
-    }
-  }
-
-  private enum OrderingStrategy {
-    TIME_FORWARD("execution_time asc, task_instance asc"),
-    TIME_BACKWARD("execution_time desc, task_instance desc");
-
-    private final String clause;
-
-    OrderingStrategy(String clause) {
-      this.clause = clause;
-    }
-
-    public String getClause() {
-      return clause;
-    }
-
-    public static OrderingStrategy from(ScrollingType scrollingType) {
-      boolean useBackwardOrdering = (scrollingType == ScrollingType.BACKWARD);
-      return useBackwardOrdering ? TIME_BACKWARD : TIME_FORWARD;
     }
   }
 }
