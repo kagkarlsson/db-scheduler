@@ -82,6 +82,16 @@ public class TestHelper {
       return this;
     }
 
+    public ManualSchedulerBuilder tableName(String tableName) {
+      super.tableName = tableName;
+      return this;
+    }
+
+    public ManualSchedulerBuilder alwaysPersistTimestampInUTC() {
+      super.alwaysPersistTimestampInUTC = true;
+      return this;
+    }
+
     public ManualScheduler build() {
       final TaskResolver taskResolver =
           new TaskResolver(new SchedulerListeners(schedulerListeners), clock, knownTasks);
@@ -126,6 +136,7 @@ public class TestHelper {
           heartbeatInterval,
           enableImmediateExecution,
           List.of(new StatsRegistryAdapter(statsRegistry)),
+          executionInterceptors,
           Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
           deleteUnresolvedAfter,
           deleteDeactivatedAfter,
