@@ -537,8 +537,6 @@ public class JdbcTaskRepository implements TaskRepository {
     return true;
   }
 
-
-
   @Override
   public Optional<Execution> pick(Execution e, Instant timePicked) {
     final int updated =
