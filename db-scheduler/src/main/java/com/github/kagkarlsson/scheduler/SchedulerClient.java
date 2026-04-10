@@ -25,6 +25,7 @@ import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -554,12 +555,17 @@ public interface SchedulerClient {
         throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
       }
 
-      boolean success;
-      if (newData == null) {
-        success = taskRepository.reschedule(execution, newExecutionTime, null, null, 0);
-      } else {
-        success = taskRepository.reschedule(execution, newExecutionTime, newData, null, null, 0);
+      RescheduleUpdate.Builder rescheduleUpdate =
+          RescheduleUpdate.toExecutionTime(newExecutionTime)
+              .lastSuccess(null)
+              .lastFailure(null)
+              .consecutiveFailures(0);
+
+      if (newData != null) {
+        rescheduleUpdate.data(newData);
       }
+
+      boolean success = taskRepository.reschedule(execution, rescheduleUpdate.build());
 
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);

@@ -34,6 +34,7 @@ import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchExceptio
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -477,22 +478,45 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
+
+    update.picked(false);
+    update.pickedBy(null);
+    update.lastHeartbeat(null);
+    update.executionTime(rescheduleUpdate.executionTime());
+
+    if (rescheduleUpdate.lastSuccess() != null) {
+      update.lastSuccess(rescheduleUpdate.lastSuccess().value());
+    }
+    if (rescheduleUpdate.lastFailure() != null) {
+      update.lastFailure(rescheduleUpdate.lastFailure().value());
+    }
+    if (rescheduleUpdate.consecutiveFailures() != null) {
+      update.consecutiveFailures(rescheduleUpdate.consecutiveFailures().value());
+    }
+    if (rescheduleUpdate.data() != null) {
+      update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
+    }
+
+    update.updateSingle(jdbcConfig);
+    return true;
+  }
+
+  @Override
   public boolean reschedule(
       Execution execution,
       Instant nextExecutionTime,
       Instant lastSuccess,
       Instant lastFailure,
       int consecutiveFailures) {
-    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
-    update.picked(false);
-    update.pickedBy(null);
-    update.lastHeartbeat(null);
-    update.executionTime(nextExecutionTime);
-    update.lastSuccess(lastSuccess);
-    update.lastFailure(lastFailure);
-    update.consecutiveFailures(consecutiveFailures);
-    update.updateSingle(jdbcConfig);
-    return true;
+    return reschedule(
+        execution,
+        RescheduleUpdate.toExecutionTime(nextExecutionTime)
+            .lastSuccess(lastSuccess)
+            .lastFailure(lastFailure)
+            .consecutiveFailures(consecutiveFailures)
+            .build());
   }
 
   @Override
@@ -503,17 +527,14 @@ public class JdbcTaskRepository implements TaskRepository {
       Instant lastSuccess,
       Instant lastFailure,
       int consecutiveFailures) {
-    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
-    update.picked(false);
-    update.pickedBy(null);
-    update.lastHeartbeat(null);
-    update.executionTime(nextExecutionTime);
-    update.lastSuccess(lastSuccess);
-    update.lastFailure(lastFailure);
-    update.consecutiveFailures(consecutiveFailures);
-    update.taskData(serializer.serialize(newData));
-    update.updateSingle(jdbcConfig);
-    return true;
+    return reschedule(
+        execution,
+        RescheduleUpdate.toExecutionTime(nextExecutionTime)
+            .data(newData)
+            .lastSuccess(lastSuccess)
+            .lastFailure(lastFailure)
+            .consecutiveFailures(consecutiveFailures)
+            .build());
   }
 
   @Override
