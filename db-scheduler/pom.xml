@@ -24,6 +24,7 @@
     <bytebuddy.version>1.17.8</bytebuddy.version>
     <zonky-pg-embedded.version>2.1.1</zonky-pg-embedded.version>
     <slf4j.version>1.7.36</slf4j.version>
+    <assertj.version>3.27.6</assertj.version>
     <test.excludedTags>compatibility,compatibility-cluster</test.excludedTags>
   </properties>
 
@@ -78,6 +79,10 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
     </dependency>
     <!-- Shaded -->
     <dependency>
@@ -165,6 +170,12 @@
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-library</artifactId>
       <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
