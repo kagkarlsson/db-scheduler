@@ -478,32 +478,6 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
-    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
-
-    update.picked(false);
-    update.pickedBy(null);
-    update.lastHeartbeat(null);
-    update.executionTime(rescheduleUpdate.executionTime());
-
-    if (rescheduleUpdate.lastSuccess() != null) {
-      update.lastSuccess(rescheduleUpdate.lastSuccess().value());
-    }
-    if (rescheduleUpdate.lastFailure() != null) {
-      update.lastFailure(rescheduleUpdate.lastFailure().value());
-    }
-    if (rescheduleUpdate.consecutiveFailures() != null) {
-      update.consecutiveFailures(rescheduleUpdate.consecutiveFailures().value());
-    }
-    if (rescheduleUpdate.data() != null) {
-      update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
-    }
-
-    update.updateSingle(jdbcConfig);
-    return true;
-  }
-
-  @Override
   public boolean reschedule(
       Execution execution,
       Instant nextExecutionTime,
@@ -536,6 +510,34 @@ public class JdbcTaskRepository implements TaskRepository {
             .consecutiveFailures(consecutiveFailures)
             .build());
   }
+
+  @Override
+  public boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
+
+    update.picked(false);
+    update.pickedBy(null);
+    update.lastHeartbeat(null);
+    update.executionTime(rescheduleUpdate.executionTime());
+
+    if (rescheduleUpdate.lastSuccess() != null) {
+      update.lastSuccess(rescheduleUpdate.lastSuccess().value());
+    }
+    if (rescheduleUpdate.lastFailure() != null) {
+      update.lastFailure(rescheduleUpdate.lastFailure().value());
+    }
+    if (rescheduleUpdate.consecutiveFailures() != null) {
+      update.consecutiveFailures(rescheduleUpdate.consecutiveFailures().value());
+    }
+    if (rescheduleUpdate.data() != null) {
+      update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
+    }
+
+    update.updateSingle(jdbcConfig);
+    return true;
+  }
+
+
 
   @Override
   public Optional<Execution> pick(Execution e, Instant timePicked) {
