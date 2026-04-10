@@ -15,8 +15,7 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static java.util.stream.Collectors.joining;
 
-import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
+import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.sql.PreparedStatement;
@@ -96,64 +95,28 @@ class ExecutionUpdate {
   }
 
   void updateSingle(JdbcConfig jdbcConfig) {
-    var setColumns = new ArrayList<String>();
-    var setValues = new ArrayList<PreparedStatementParameterSetter>();
+    var updates = new ArrayList<ColumnUpdate>();
 
-    if (executionTime != null) {
-      setColumns.add("execution_time");
-      setValues.add(
-          (ps, index) -> {
-            jdbcConfig.customization().setInstant(ps, index, executionTime.value);
-          });
-    }
+    addIfSet(executionTime, "execution_time", updates,
+        (ps, index) -> jdbcConfig.customization().setInstant(ps, index, executionTime.value));
+    addIfSet(taskData, "task_data", updates,
+        (ps, index) -> jdbcConfig.customization().setTaskData(ps, index, taskData.value));
+    addIfSet(picked, "picked", updates,
+        (ps, index) -> ps.setBoolean(index, toPrimitive(picked.value)));
+    addIfSet(pickedBy, "picked_by", updates,
+        (ps, index) -> ps.setString(index, pickedBy.value));
+    addIfSet(lastSuccess, "last_success", updates,
+        (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastSuccess.value));
+    addIfSet(lastFailure, "last_failure", updates,
+        (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastFailure.value));
+    addIfSet(consecutiveFailures, "consecutive_failures", updates,
+        (ps, index) -> ps.setInt(index, zeroIfNull(consecutiveFailures.value)));
+    addIfSet(lastHeartbeat, "last_heartbeat", updates,
+        (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastHeartbeat.value));
+    addIfSet(version, "version", updates,
+        (ps, index) -> ps.setLong(index, throwIfNull(version.value)));
 
-    if (taskData != null) {
-      setColumns.add("task_data");
-      setValues.add(
-          (ps, index) -> jdbcConfig.customization().setTaskData(ps, index, taskData.value));
-    }
-
-    if (picked != null) {
-      setColumns.add("picked");
-      setValues.add((ps, index) -> ps.setBoolean(index, toPrimitive(picked.value)));
-    }
-
-    if (pickedBy != null) {
-      setColumns.add("picked_by");
-      setValues.add((ps, index) -> ps.setString(index, pickedBy.value));
-    }
-
-    if (lastSuccess != null) {
-      setColumns.add("last_success");
-      setValues.add(
-          (ps, index) -> {
-            jdbcConfig.customization().setInstant(ps, index, lastSuccess.value);
-          });
-    }
-
-    if (lastFailure != null) {
-      setColumns.add("last_failure");
-      setValues.add(
-          (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastFailure.value));
-    }
-
-    if (consecutiveFailures != null) {
-      setColumns.add("consecutive_failures");
-      setValues.add((ps, index) -> ps.setInt(index, zeroIfNull(consecutiveFailures.value)));
-    }
-
-    if (lastHeartbeat != null) {
-      setColumns.add("last_heartbeat");
-      setValues.add(
-          (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastHeartbeat.value));
-    }
-
-    if (version != null) {
-      setColumns.add("version");
-      setValues.add((ps, index) -> ps.setLong(index, throwIfNull(version.value)));
-    }
-
-    if (setColumns.isEmpty()) {
+    if (updates.isEmpty()) {
       return;
     }
 
@@ -161,19 +124,36 @@ class ExecutionUpdate {
         "UPDATE "
             + jdbcConfig.tableName()
             + " SET "
-            + setColumns.stream().map(name -> name + " = ?").collect(joining(", "))
+            + updates.stream().map(u -> u.column + " = ?").collect(joining(", "))
             + " WHERE task_name = ? AND task_instance = ? AND version = ?";
-    setValues.add((ps, index) -> ps.setString(index, taskInstance.getTaskName()));
-    setValues.add((ps, index) -> ps.setString(index, taskInstance.getId()));
-    setValues.add((ps, index) -> ps.setLong(index, versionToUpdate));
 
     LOG.debug("ExecutionUpdate query: {}", query);
-    int updatedRows = jdbcConfig.runner().execute(query, toPreparedStatementSetter(setValues));
+    int updatedRows =
+        jdbcConfig.runner().execute(query, ps -> {
+          int index = 1;
+          for (ColumnUpdate update : updates) {
+            update.setter.setParameter(ps, index++);
+          }
+          ps.setString(index++, taskInstance.getTaskName());
+          ps.setString(index++, taskInstance.getId());
+          ps.setLong(index, versionToUpdate);
+        });
     if (updatedRows != 1) {
-      throw new TaskInstanceException(
+      throw new ExecutionException(
           "Expected one execution to be updated, but updated " + updatedRows + ". Indicates a bug.",
           taskInstance.getTaskName(),
-          taskInstance.getId());
+          taskInstance.getId(),
+          versionToUpdate);
+    }
+  }
+
+  private void addIfSet(
+      @Nullable NewValue<?> field,
+      String column,
+      List<ColumnUpdate> updates,
+      PreparedStatementParameterSetter setter) {
+    if (field != null) {
+      updates.add(new ColumnUpdate(column, setter));
     }
   }
 
@@ -196,15 +176,7 @@ class ExecutionUpdate {
     return value != null ? value : 0;
   }
 
-  private PreparedStatementSetter toPreparedStatementSetter(
-      List<PreparedStatementParameterSetter> setters) {
-    return preparedStatement -> {
-      int index = 1;
-      for (PreparedStatementParameterSetter setValue : setters) {
-        setValue.setParameter(preparedStatement, index++);
-      }
-    };
-  }
+  record ColumnUpdate(String column, PreparedStatementParameterSetter setter) {}
 
   interface PreparedStatementParameterSetter {
     void setParameter(PreparedStatement preparedStatement, int index) throws SQLException;

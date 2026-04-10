@@ -168,9 +168,9 @@ public class JdbcTaskRepositoryExceptionsTest {
     TaskInstance<Void> taskInstance =
         new TaskInstance<>(randomAlphanumeric(10), randomAlphanumeric(10));
     Execution execution = new Execution(Instant.now(), taskInstance);
-    TaskInstanceException actualException =
+    ExecutionException actualException =
         assertThrows(
-            TaskInstanceException.class,
+            ExecutionException.class,
             () -> {
               jdbcTaskRepository.reschedule(execution, Instant.now(), null, null, 0);
             });
@@ -183,6 +183,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             + taskInstance.getId()
             + ")",
         actualException.getMessage());
+    assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());
   }
@@ -198,9 +199,9 @@ public class JdbcTaskRepositoryExceptionsTest {
     TaskInstance<Void> taskInstance =
         new TaskInstance<>(randomAlphanumeric(10), randomAlphanumeric(10));
     Execution execution = new Execution(Instant.now(), taskInstance);
-    TaskInstanceException actualException =
+    ExecutionException actualException =
         assertThrows(
-            TaskInstanceException.class,
+            ExecutionException.class,
             () -> {
               jdbcTaskRepository.reschedule(execution, Instant.now(), "", null, null, 0);
             });
@@ -213,6 +214,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             + taskInstance.getId()
             + ")",
         actualException.getMessage());
+    assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());
   }
