@@ -75,6 +75,10 @@ public class TaskResolver {
     return new ArrayList<>(unresolvedTasks.values());
   }
 
+  public boolean isUnresolved(String taskName) {
+    return unresolvedTasks.containsKey(taskName);
+  }
+
   public List<String> getUnresolvedTaskNames(Duration unresolvedFor) {
     return unresolvedTasks.values().stream()
         .filter(
@@ -89,7 +93,7 @@ public class TaskResolver {
     unresolvedTasks.remove(taskName);
   }
 
-  public class UnresolvedTask {
+  public static class UnresolvedTask {
 
     private final String taskName;
     private final Instant firstUnresolved;
@@ -101,6 +105,10 @@ public class TaskResolver {
 
     public String getTaskName() {
       return taskName;
+    }
+
+    public Instant getFirstUnresolved() {
+      return firstUnresolved;
     }
   }
 }

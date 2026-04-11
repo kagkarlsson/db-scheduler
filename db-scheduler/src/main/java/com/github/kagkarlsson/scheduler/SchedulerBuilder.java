@@ -17,6 +17,7 @@ import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactor
 import static com.github.kagkarlsson.scheduler.Scheduler.THREAD_PREFIX;
 import static java.util.Optional.ofNullable;
 
+import com.github.kagkarlsson.scheduler.PollingStrategyConfig.Type;
 import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
@@ -299,6 +300,11 @@ public class SchedulerBuilder {
 
     if (statsRegistry != null) {
       addSchedulerListener(new StatsRegistryAdapter(statsRegistry));
+    }
+
+    if (pollingStrategyConfig.type == Type.LOCK_AND_FETCH) {
+      addSchedulerListener(
+          new UnresolvedTasksLockAndFetchListener(schedulerTaskRepository, taskResolver));
     }
 
     Waiter waiter = buildWaiter();

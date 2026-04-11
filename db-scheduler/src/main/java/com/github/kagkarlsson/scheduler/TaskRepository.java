@@ -21,6 +21,7 @@ import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -85,6 +86,8 @@ public interface TaskRepository {
       int consecutiveFailures);
 
   Optional<Execution> pick(Execution e, Instant timePicked);
+
+  List<String> unpickUnresolved(Collection<String> unresolvedTaskNames);
 
   List<Execution> getDeadExecutions(Instant olderThan);
 

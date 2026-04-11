@@ -7,8 +7,10 @@ import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMinutes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
@@ -30,6 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -52,6 +55,8 @@ public class JdbcTaskRepositoryTest {
   private OneTimeTask<Void> oneTimeTask;
   private OneTimeTask<Void> alternativeOneTimeTask;
   private OneTimeTask<Integer> oneTimeTaskWithData;
+  private OneTimeTask<?> unknownOneTimeTask;
+  private OneTimeTask<?> unknownAlternativeOneTimeTask;
   private TaskResolver taskResolver;
   private TestableListener testableListener;
 
@@ -60,6 +65,9 @@ public class JdbcTaskRepositoryTest {
     oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
     alternativeOneTimeTask =
         TestTasks.oneTime("AlternativeOneTime", Void.class, TestTasks.DO_NOTHING);
+    unknownOneTimeTask = TestTasks.oneTime("UnknownOneTime", Void.class, TestTasks.DO_NOTHING);
+    unknownAlternativeOneTimeTask =
+        TestTasks.oneTime("UnknownAlternativeOneTime", Void.class, TestTasks.DO_NOTHING);
     oneTimeTaskWithData =
         TestTasks.oneTime("OneTimeWithData", Integer.class, new TestTasks.DoNothingHandler<>());
     List<Task<?>> knownTasks = new ArrayList<>();
@@ -536,6 +544,107 @@ public class JdbcTaskRepositoryTest {
     // should not be able to pick the same execution twice
     assertThat(taskRepository.lockAndFetchGeneric(now, POLLING_LIMIT), hasSize(0));
     assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
+  }
+
+  @Test
+  public void unpickUnresolved_should_release_picked_tasks() {
+    Instant now = Instant.now();
+    TaskInstance<?> unknownOneTimeTaskInstance = unknownOneTimeTask.instance("task1");
+    TaskInstance<?> unknownAlternativeOneTimeTaskInstance =
+        unknownAlternativeOneTimeTask.instance("task2");
+
+    // Create unregistered (unknown) task instances
+    taskRepository.createIfNotExists(
+        new SchedulableTaskInstance<>(unknownOneTimeTaskInstance, now));
+    taskRepository.createIfNotExists(
+        new SchedulableTaskInstance<>(unknownAlternativeOneTimeTaskInstance, now));
+
+    // Try to pick the tasks (simulate adding to unresolved filter)
+    List<Execution> picked = taskRepository.lockAndGetDue(now, POLLING_LIMIT);
+    assertThat(picked, hasSize(0));
+    assertTrue(taskResolver.isUnresolved(unknownOneTimeTask.getName()));
+    assertTrue(taskResolver.isUnresolved(unknownAlternativeOneTimeTask.getName()));
+    assertTrue(taskRepository.getExecution(unknownOneTimeTaskInstance).orElseThrow().picked);
+    assertTrue(
+        taskRepository.getExecution(unknownAlternativeOneTimeTaskInstance).orElseThrow().picked);
+
+    List<String> unpicked =
+        taskRepository.unpickUnresolved(
+            Arrays.asList(unknownOneTimeTask.getName(), unknownAlternativeOneTimeTask.getName()));
+
+    assertThat(unpicked, hasSize(2));
+    assertThat(
+        unpicked,
+        containsInAnyOrder(unknownOneTimeTask.getName(), unknownAlternativeOneTimeTask.getName()));
+
+    assertFalse(taskRepository.getExecution(unknownOneTimeTaskInstance).orElseThrow().picked);
+    assertFalse(
+        taskRepository.getExecution(unknownAlternativeOneTimeTaskInstance).orElseThrow().picked);
+  }
+
+  @Test
+  public void unpickUnresolved_should_handle_single_task() {
+    Instant now = Instant.now();
+    TaskInstance<?> instance = unknownOneTimeTask.instance("id1");
+    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, now));
+
+    List<Execution> picked = taskRepository.lockAndGetDue(now, POLLING_LIMIT);
+    assertThat(picked, hasSize(0));
+    assertTrue(taskResolver.isUnresolved(unknownOneTimeTask.getName()));
+    assertTrue(taskRepository.getExecution(instance).orElseThrow().picked);
+
+    // Unpick single task
+    List<String> unpicked =
+        taskRepository.unpickUnresolved(Collections.singletonList(unknownOneTimeTask.getName()));
+
+    assertThat(unpicked, hasSize(1));
+    assertThat(unpicked, contains(unknownOneTimeTask.getName()));
+
+    assertFalse(taskRepository.getExecution(instance).orElseThrow().picked);
+  }
+
+  @Test
+  public void unpickUnresolved_should_return_empty_when_no_tasks_to_unpick() {
+    List<String> unpicked = taskRepository.unpickUnresolved(Collections.emptyList());
+    assertThat(unpicked, hasSize(0));
+  }
+
+  @Test
+  public void unpickUnresolved_should_ignore_existent_tasks() {
+    Instant now = Instant.now();
+    TaskInstance<Void> instance = oneTimeTask.instance("id1");
+
+    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, now));
+
+    List<Execution> picked = taskRepository.lockAndGetDue(now, POLLING_LIMIT);
+    assertThat(picked, hasSize(1));
+    assertTrue(taskRepository.getExecution(instance).orElseThrow().picked);
+
+    List<String> unpicked =
+        taskRepository.unpickUnresolved(Arrays.asList(oneTimeTask.getName(), "non_existent_task"));
+
+    assertThat(unpicked, hasSize(0));
+    assertThat(unpicked, not(contains(oneTimeTask.getName())));
+    assertTrue(taskRepository.getExecution(instance).orElseThrow().picked);
+  }
+
+  @Test
+  void unpickUnresolved_should_not_crash_when_unresolved_task_not_in_database() {
+    List<String> unpickedTasks =
+        taskRepository.unpickUnresolved(List.of("task-that-does-not-exist"));
+    assertThat(unpickedTasks, empty());
+  }
+
+  @Test
+  void unpickUnresolved_should_return_empty_list_when_no_unresolved_tasks_exist() {
+    List<String> unpickedTasks = taskRepository.unpickUnresolved(List.of("nonexistent-task"));
+    assertThat(unpickedTasks, empty());
+  }
+
+  @Test
+  void unpickUnresolved_should_handle_empty_collection_gracefully() {
+    List<String> unpickedTasks = taskRepository.unpickUnresolved(Collections.emptyList());
+    assertThat(unpickedTasks, empty());
   }
 
   private List<Execution> getScheduledExecutions(

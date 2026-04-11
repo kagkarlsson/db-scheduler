@@ -45,6 +45,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -576,6 +577,53 @@ public class JdbcTaskRepository implements TaskRepository {
           "Updated multiple rows when picking single execution. Should never happen since name and id is primary key. Execution: "
               + e);
     }
+  }
+
+  @Override
+  public List<String> unpickUnresolved(Collection<String> unresolvedTaskNames) {
+    final List<UnresolvedTask> unresolvedTasks =
+        taskResolver.getUnresolved().stream()
+            .filter(unresolvedTask -> unresolvedTaskNames.contains(unresolvedTask.getTaskName()))
+            .toList();
+
+    if (unresolvedTasks.isEmpty()) {
+      LOG.debug("No unresolved tasks to unpick");
+      return new ArrayList<>();
+    }
+
+    final int[] updated =
+        jdbcRunner.executeBatch(
+            "update "
+                + tableName
+                + " set picked = ?, version = version + 1 "
+                + "where picked = ? "
+                + "and task_name = ? "
+                + "and picked_by = ? "
+                + "and execution_time = ?",
+            unresolvedTasks,
+            (unresolvedTask, ps) -> {
+              int index = 1;
+              ps.setBoolean(index++, false);
+              ps.setBoolean(index++, true);
+              ps.setString(index++, unresolvedTask.getTaskName());
+              ps.setString(index++, truncate(schedulerSchedulerName.getName(), 50));
+              jdbcCustomization.setInstant(ps, index, unresolvedTask.getFirstUnresolved());
+            });
+
+    final List<String> taskNames = new ArrayList<>();
+    for (int i = 0; i < updated.length; i++) {
+      String taskName = unresolvedTasks.get(i).getTaskName();
+      if (updated[i] == 1) {
+        taskNames.add(taskName);
+      } else {
+        LOG.error(
+            "Error during unresolved task {} unpicking: expected 1 updated row but got {}",
+            taskName,
+            updated[i]);
+      }
+    }
+    LOG.info("Successfully unpicked unresolved tasks: {}", taskNames);
+    return taskNames;
   }
 
   @Override

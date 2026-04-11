@@ -1,11 +1,17 @@
 package com.github.kagkarlsson.scheduler;
 
-import static java.time.Duration.*;
+import static java.time.Duration.ZERO;
+import static java.time.Duration.between;
+import static java.time.Duration.ofHours;
+import static java.time.Duration.ofMillis;
+import static java.time.Duration.ofMinutes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
+import com.github.kagkarlsson.scheduler.SchedulerName.Fixed;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -337,5 +343,44 @@ public class SchedulerTest {
           lastScheduleTimeDifferenceFromFirstCall.getSeconds(),
           greaterThanOrEqualTo(expectedTimeDifferenceFromFirstCall.minusSeconds(1).getSeconds()));
     }
+  }
+
+  @Test
+  public void should_unpick_unresolved_tasks_during_rolling_update_in_lock_and_fetch() {
+    final TestTasks.CountingHandler<Void> knownTaskHandler = new TestTasks.CountingHandler<>();
+    final OneTimeTask<Void> knownTask =
+        TestTasks.oneTime("KnownTask", Void.class, knownTaskHandler);
+
+    final Scheduler scheduler =
+        Scheduler.create(postgres.getDataSource(), knownTask)
+            .threads(1)
+            .pollingInterval(ofMillis(100))
+            .schedulerName(new Fixed("rolling-update-test"))
+            .pollUsingLockAndFetch(1.0, 3.0)
+            .build();
+    stopScheduler.register(scheduler);
+
+    try {
+      executeKnownAndUnknownTasks(scheduler, knownTask); // first time picking
+      executeKnownAndUnknownTasks(scheduler, knownTask); // second time picking
+    } finally {
+      scheduler.stop();
+    }
+  }
+
+  private void executeKnownAndUnknownTasks(Scheduler scheduler, OneTimeTask<Void> knownTask) {
+    final TaskInstance<Void> unresolvedInstance1 =
+        new TaskInstance<>("UnresolvedTask1", "unresolved-1");
+    final TaskInstance<Void> unresolvedInstance2 =
+        new TaskInstance<>("UnresolvedTask2", "unresolved-2");
+
+    scheduler.schedule(knownTask.instance("known-1"), clock.now());
+    scheduler.schedule(unresolvedInstance1, clock.now());
+    scheduler.schedule(unresolvedInstance2, clock.now());
+
+    scheduler.executeDue();
+
+    assertFalse(scheduler.getScheduledExecution(unresolvedInstance1).orElseThrow().isPicked());
+    assertFalse(scheduler.getScheduledExecution(unresolvedInstance2).orElseThrow().isPicked());
   }
 }
