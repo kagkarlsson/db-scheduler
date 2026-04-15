@@ -50,7 +50,11 @@ import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import com.google.common.collect.Lists;
 import java.time.Duration;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -409,6 +413,8 @@ public abstract class CompatibilityTest {
     TimeZone.setDefault(TimeZone.getTimeZone("Europe/Oslo"));
 
     try {
+      logSessionOffset();
+
       // Winter: Europe/Oslo is CET (UTC+1)
       assertRoundTrip(task, taskRepo, "winter", Instant.parse("2020-01-15T11:00:00Z")); // MariaDB103CompatibilityTest fails here
 
@@ -427,6 +433,34 @@ public abstract class CompatibilityTest {
     } finally {
       TimeZone.setDefault(originalTz);
     }
+  }
+
+  private void logSessionOffset() {
+    OffsetDateTime now = readDbCurrentTimestamp();
+    OffsetDateTime jvmNow = OffsetDateTime.now();
+    LOG.info(
+        "DB session offset: {} (CURRENT_TIMESTAMP = {}) | JVM offset: {} ({})",
+        now == null ? "?" : now.getOffset(),
+        now,
+        jvmNow.getOffset(),
+        TimeZone.getDefault().getID());
+  }
+
+  private OffsetDateTime readDbCurrentTimestamp() {
+    for (String sql : new String[] {
+        "SELECT CURRENT_TIMESTAMP",
+        "SELECT CURRENT_TIMESTAMP FROM DUAL",
+        "SELECT SYSDATETIMEOFFSET()"}) {
+      try (Connection c = getDataSource().getConnection();
+           Statement s = c.createStatement();
+           ResultSet rs = s.executeQuery(sql)) {
+        rs.next();
+        return rs.getObject(1, OffsetDateTime.class);
+      } catch (Exception ignored) {
+        // try next variant
+      }
+    }
+    return null;
   }
 
   private void assertRoundTrip(
