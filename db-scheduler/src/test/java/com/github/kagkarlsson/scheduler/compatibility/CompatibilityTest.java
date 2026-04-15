@@ -104,6 +104,10 @@ public abstract class CompatibilityTest {
     return Optional.empty();
   }
 
+  private JdbcCustomization resolveJdbcCustomization() {
+    return getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource()));
+  }
+
   public Optional<JdbcCustomization> getJdbcCustomizationForUTCTimestampTest() {
     return Optional.empty();
   }
@@ -344,8 +348,7 @@ public abstract class CompatibilityTest {
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
-    JdbcCustomization jdbcCustomization =
-        getJdbcCustomization().orElse(new AutodetectJdbcCustomization(dataSource));
+    JdbcCustomization jdbcCustomization = resolveJdbcCustomization();
     final JdbcTaskRepository jdbcTaskRepository =
         new JdbcTaskRepository(
             dataSource,
@@ -403,7 +406,7 @@ public abstract class CompatibilityTest {
         new JdbcTaskRepository(
             getDataSource(),
             commitWhenAutocommitDisabled(),
-            getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
+            resolveJdbcCustomization(),
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
@@ -486,8 +489,7 @@ public abstract class CompatibilityTest {
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
-    JdbcCustomization jdbcCustomization =
-        getJdbcCustomization().orElse(new AutodetectJdbcCustomization(dataSource));
+    JdbcCustomization jdbcCustomization = resolveJdbcCustomization();
     final JdbcTaskRepository jdbcTaskRepository =
         new JdbcTaskRepository(
             dataSource,
@@ -559,7 +561,7 @@ public abstract class CompatibilityTest {
         new JdbcTaskRepository(
             dataSource,
             commitWhenAutocommitDisabled(),
-            getJdbcCustomization().orElse(new AutodetectJdbcCustomization(dataSource)),
+            resolveJdbcCustomization(),
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
@@ -609,7 +611,7 @@ public abstract class CompatibilityTest {
 
     ZoneSpecificJdbcCustomization jdbcCustomization =
         new ZoneSpecificJdbcCustomization(
-            getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
+            resolveJdbcCustomization(),
             GregorianCalendar.getInstance(TimeZone.getTimeZone(zoneId)));
     return createRepositoryForJdbcCustomization(defaultTaskResolver, jdbcCustomization);
   }

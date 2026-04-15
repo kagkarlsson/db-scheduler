@@ -40,15 +40,14 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
       p.setTimestamp(index, null);
       return;
     }
-
-      p.setTimestamp(index, Timestamp.from(value), UTC);
+    p.setTimestamp(index, Timestamp.from(value), UTC);
   }
 
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-      return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
-          .map(Timestamp::toInstant)
-          .orElse(null);
+    return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
+        .map(Timestamp::toInstant)
+        .orElse(null);
   }
 
   @Override
