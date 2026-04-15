@@ -68,4 +68,8 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
     return false;
   }
 
+  @Override
+  public Optional<JdbcCustomization> getJdbcCustomization() {
+    return Optional.of(new OracleJdbcCustomization(false));
+  }
 }
