@@ -410,7 +410,7 @@ public abstract class CompatibilityTest {
 
     try {
       // Winter: Europe/Oslo is CET (UTC+1)
-      assertRoundTrip(task, taskRepo, "winter", Instant.parse("2020-01-15T11:00:00Z")); // Oracle fails here
+      assertRoundTrip(task, taskRepo, "winter", Instant.parse("2020-01-15T11:00:00Z")); // Oracle11gCompatibilityTest fails here
 
       // Summer: Europe/Oslo is CEST (UTC+2)
       assertRoundTrip(task, taskRepo, "summer", Instant.parse("2020-07-15T11:00:00Z"));
@@ -421,7 +421,7 @@ public abstract class CompatibilityTest {
 
       // Fall-back boundary: 2020-10-25 local 03:00 CEST -> 02:00 CET (01:00 UTC).
       // The local 02:00-03:00 hour is ambiguous — most likely place for fold-related drift.
-      assertRoundTrip(task, taskRepo, "fall_before", Instant.parse("2020-10-25T00:30:00Z")); // MariaDB, OracleUTC fails
+      assertRoundTrip(task, taskRepo, "fall_before", Instant.parse("2020-10-25T00:30:00Z")); // MariaDB103CompatibilityTest fails here
       assertRoundTrip(task, taskRepo, "fall_after", Instant.parse("2020-10-25T01:30:00Z"));
 
     } finally {

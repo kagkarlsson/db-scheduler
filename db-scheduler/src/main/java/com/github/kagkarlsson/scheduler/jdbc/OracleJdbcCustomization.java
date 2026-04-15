@@ -15,6 +15,11 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+
 public class OracleJdbcCustomization extends DefaultJdbcCustomization {
 
   public OracleJdbcCustomization(boolean persistTimestampInUTC) {
@@ -24,6 +29,17 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
   @Override
   public String getName() {
     return "Oracle";
+  }
+
+  @Override
+  public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
+    if (value == null) {
+      p.setTimestamp(index, null);
+      return;
+    }
+
+    // use explicit calendar to avoid diff when database tz != jvm tz
+    p.setTimestamp(index, Timestamp.from(value), UTC);
   }
 
   @Override
