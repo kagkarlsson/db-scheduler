@@ -9,6 +9,7 @@ import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.jdbc.OracleJdbcCustomization;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
@@ -22,6 +23,7 @@ import com.zaxxer.hikari.util.DriverDataSource;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.TimeZone;
 import javax.sql.DataSource;
@@ -77,4 +79,8 @@ public class Oracle11gUtcTimestampCompatibilityTest extends CompatibilityTest {
     return false;
   }
 
+  @Override
+  public Optional<JdbcCustomization> getJdbcCustomization() {
+    return Optional.of(new OracleJdbcCustomization(true));
+  }
 }
