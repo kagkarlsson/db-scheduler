@@ -138,15 +138,16 @@ public abstract class CompatibilityTest {
 
   @Test
   public void test_compatibility_fetch_and_lock_on_execute() {
-    Scheduler scheduler =
+    SchedulerBuilder builder =
         Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
             .pollUsingFetchAndLockOnExecute(0, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH)
             .heartbeatInterval(Duration.ofMillis(100))
             .schedulerName(new SchedulerName.Fixed("test"))
             .addSchedulerListener(testableListener)
-            .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
-            .build();
+            .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled());
+    getJdbcCustomization().ifPresent(builder::jdbcCustomization);
+    Scheduler scheduler = builder.build();
     stopScheduler.register(scheduler);
 
     testCompatibilityForSchedulerConfiguration(scheduler);
@@ -485,10 +486,13 @@ public abstract class CompatibilityTest {
     taskResolver.addTask(oneTime);
 
     DataSource dataSource = getDataSource();
+    JdbcCustomization jdbcCustomization =
+        getJdbcCustomization().orElse(new AutodetectJdbcCustomization(dataSource));
     final JdbcTaskRepository jdbcTaskRepository =
         new JdbcTaskRepository(
             dataSource,
             commitWhenAutocommitDisabled(),
+            jdbcCustomization,
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
@@ -499,6 +503,7 @@ public abstract class CompatibilityTest {
         new JdbcTaskRepository(
             dataSource,
             commitWhenAutocommitDisabled(),
+            jdbcCustomization,
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
@@ -586,12 +591,11 @@ public abstract class CompatibilityTest {
   @RepeatedTest(5)
   void test_compatibility_manual_scheduler() {
     final SettableClock clock = new SettableClock();
-    final ManualScheduler scheduler =
-        (ManualScheduler)
-            new TestHelper.ManualSchedulerBuilder(getDataSource(), List.of(oneTime))
-                .clock(clock)
-                .commitWhenAutocommitDisabled(commitWhenAutocommitDisabled())
-                .build();
+    final TestHelper.ManualSchedulerBuilder builder =
+        new TestHelper.ManualSchedulerBuilder(getDataSource(), List.of(oneTime));
+    builder.clock(clock).commitWhenAutocommitDisabled(commitWhenAutocommitDisabled());
+    getJdbcCustomization().ifPresent(builder::jdbcCustomization);
+    final ManualScheduler scheduler = (ManualScheduler) builder.build();
 
     scheduler.schedule(oneTime.instance("1"), TimeHelper.truncated(clock.now()));
 
