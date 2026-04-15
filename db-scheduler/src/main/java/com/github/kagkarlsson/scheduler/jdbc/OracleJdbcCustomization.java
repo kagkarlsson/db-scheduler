@@ -39,7 +39,7 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
     }
 
     // use explicit calendar to avoid diff when database tz != jvm tz
-    p.setTimestamp(index, Timestamp.from(value), getCalendar());
+    p.setTimestamp(index, Timestamp.from(value), UTC);
   }
 
   @Override

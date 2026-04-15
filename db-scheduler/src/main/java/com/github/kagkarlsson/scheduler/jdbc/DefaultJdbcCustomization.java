@@ -41,24 +41,15 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
       return;
     }
 
-      p.setTimestamp(index, Timestamp.from(value), getCalendar());
+      p.setTimestamp(index, Timestamp.from(value), UTC);
   }
 
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-      return Optional.ofNullable(rs.getTimestamp(columnName, getCalendar()))
+      return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
           .map(Timestamp::toInstant)
           .orElse(null);
   }
-
-  protected Calendar getCalendar() {
-    if (persistTimestampInUTC) {
-      return GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"));
-    } else {
-      return GregorianCalendar.getInstance(TimeZone.getDefault());
-    }
-  }
-
 
   @Override
   public void setTaskData(PreparedStatement p, int index, byte[] value) throws SQLException {
