@@ -49,7 +49,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
+2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [oracle (utc)](db-scheduler/src/test/resources/oracle_tables_utc.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
@@ -218,7 +218,9 @@ i.e. somehow tie the timestamp to a zone. However, some databases have limited s
 (which has no zone information) or other quirks, making "always store in UTC" a better alternative.
 For such cases, use this setting to always store Instants in UTC.
 PostgreSQL and Oracle-schemas is tested to preserve zone-information. **MySQL** and **MariaDB**-schemas
-_does not_ and should use this setting.
+_does not_ and should use this setting. For **Oracle**, there is also a
+[UTC schema variant](db-scheduler/src/test/resources/oracle_tables_utc.sql) using `TIMESTAMP` without
+time zone for use with this setting.
 **NB:** For backwards compatibility, the default behavior
 for "unknown" databases is to assume the database preserves time zone. For "known" databases,
 see the class `AutodetectJdbcCustomization`.

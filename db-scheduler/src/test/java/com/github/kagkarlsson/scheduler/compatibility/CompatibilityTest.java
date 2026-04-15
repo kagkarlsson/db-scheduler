@@ -35,6 +35,7 @@ import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.jdbc.OracleJdbcCustomization;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
@@ -42,6 +43,7 @@ import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
@@ -375,6 +377,74 @@ public abstract class CompatibilityTest {
         is(summerTaskRepo.getExecution(instance1).get().executionTime));
   }
 
+  /**
+   * Verifies that with {@code alwaysPersistTimestampInUTC()} + plain {@code TIMESTAMP} columns
+   * there is no drift across DST transitions. The JVM timezone is forced to a DST-observing zone
+   * (Europe/Oslo) and instants in winter, summer, and straddling both DST boundaries are
+   * round-tripped through the repository.
+   *
+   * <p>Regression test for kagkarlsson/db-scheduler#794.
+   */
+  @Test
+  public void test_no_drift_when_storing_and_retrieving_instants() {
+    TaskDescriptor<String> descriptor = TaskDescriptor.of("utcTest", String.class);
+    OneTimeTask<String> task = Tasks.oneTime(descriptor).execute((instance, ctx) -> {});
+
+    TaskResolver taskResolver =
+      new TaskResolver(SchedulerListeners.NOOP, new SystemClock(), List.of());
+    taskResolver.addTask(task);
+
+    JdbcTaskRepository taskRepo =
+        new JdbcTaskRepository(
+            getDataSource(),
+            commitWhenAutocommitDisabled(),
+            getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource())),
+            DEFAULT_TABLE_NAME,
+            taskResolver,
+            new SchedulerName.Fixed("scheduler1"),
+            false,
+            new SystemClock());
+
+    TimeZone originalTz = TimeZone.getDefault();
+    TimeZone.setDefault(TimeZone.getTimeZone("Europe/Oslo"));
+
+    try {
+      // Winter: Europe/Oslo is CET (UTC+1)
+      assertRoundTrip(task, taskRepo, "winter", Instant.parse("2020-01-15T11:00:00Z"));
+
+      // Summer: Europe/Oslo is CEST (UTC+2)
+      assertRoundTrip(task, taskRepo, "summer", Instant.parse("2020-07-15T11:00:00Z"));
+
+      // Spring-forward boundary: 2020-03-29 local 02:00 CET -> 03:00 CEST (01:00 UTC).
+      assertRoundTrip(task, taskRepo, "spring_before", Instant.parse("2020-03-29T00:30:00Z"));
+      assertRoundTrip(task, taskRepo, "spring_after", Instant.parse("2020-03-29T01:30:00Z"));
+
+      // Fall-back boundary: 2020-10-25 local 03:00 CEST -> 02:00 CET (01:00 UTC).
+      // The local 02:00-03:00 hour is ambiguous — most likely place for fold-related drift.
+      assertRoundTrip(task, taskRepo, "fall_before", Instant.parse("2020-10-25T00:30:00Z"));
+      assertRoundTrip(task, taskRepo, "fall_after", Instant.parse("2020-10-25T01:30:00Z"));
+
+    } finally {
+      TimeZone.setDefault(originalTz);
+    }
+  }
+
+  private void assertRoundTrip(
+    OneTimeTask<String> task,
+    JdbcTaskRepository taskRepo,
+    String instanceId,
+    Instant storedInstant) {
+
+    TaskInstance<String> instance = task.instance(instanceId);
+    taskRepo.createIfNotExists(SchedulableInstance.of(instance, storedInstant));
+
+    Instant roundTripped = taskRepo.getExecution(instance).get().executionTime;
+    assertThat(
+      "round-tripped instant should equal stored instant for " + storedInstant,
+      roundTripped,
+      is(storedInstant));
+  }
+
   private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
     SystemClock clock = new SystemClock();
     TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, List.of());
@@ -476,39 +546,6 @@ public abstract class CompatibilityTest {
         round2, now.plusSeconds(2), null, now.minusSeconds(2), now.minusSeconds(2), 0);
     Execution round3 = jdbcTaskRepository.getExecution(taskInstance).get();
     assertNull(round3.taskInstance.getData());
-  }
-
-  /**
-   * Very uncertain on how to verify that the timestamp is stored in UTC. The asserts in this test
-   * will likely always work, but at least the code for storing in UTC is exercised.
-   */
-  @Test
-  public void test_jdbc_customization_supports_timestamps_in_utc() {
-    Optional<JdbcCustomization> jdbcCustomization = getJdbcCustomizationForUTCTimestampTest();
-
-    if (jdbcCustomization.isEmpty()) {
-      LOG.info(
-          "Skipping test_jdbc_customization_supports_timestamps_in_utc since to JdbcCustomization is spesified.");
-      return;
-    }
-    LOG.info(
-        "Running  test_jdbc_customization_supports_timestamps_in_utc for: "
-            + jdbcCustomization.get().getName());
-
-    TaskResolver defaultTaskResolver =
-        new TaskResolver(SchedulerListeners.NOOP, new SystemClock(), List.of());
-    defaultTaskResolver.addTask(oneTime);
-
-    JdbcTaskRepository taskRepo =
-        createRepositoryForJdbcCustomization(defaultTaskResolver, jdbcCustomization.get());
-
-    ZonedDateTime zonedDateTime =
-        ZonedDateTime.of(2020, 1, 1, 12, 0, 0, 0, ZoneId.of("Europe/Oslo"));
-
-    TaskInstance<String> instance1 = oneTime.instance("future1");
-    taskRepo.createIfNotExists(SchedulableInstance.of(instance1, zonedDateTime.toInstant()));
-
-    assertThat(taskRepo.getExecution(instance1).get().executionTime, is(zonedDateTime.toInstant()));
   }
 
   @RepeatedTest(5)
