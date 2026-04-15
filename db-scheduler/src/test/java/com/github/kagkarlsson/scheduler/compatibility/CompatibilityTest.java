@@ -554,6 +554,7 @@ public abstract class CompatibilityTest {
         new JdbcTaskRepository(
             dataSource,
             commitWhenAutocommitDisabled(),
+            getJdbcCustomization().orElse(new AutodetectJdbcCustomization(dataSource)),
             DEFAULT_TABLE_NAME,
             taskResolver,
             new SchedulerName.Fixed("scheduler1"),
