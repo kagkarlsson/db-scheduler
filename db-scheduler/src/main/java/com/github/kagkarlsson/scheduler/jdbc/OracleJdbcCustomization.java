@@ -18,6 +18,7 @@ import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -40,14 +41,24 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
       return;
     }
 
-    // For TIMESTAMP WITH TIME ZONE on Oracle, setTimestamp(ts, cal) binds with the
-    // session TZ's offset rather than the Calendar's, causing drift when session TZ != UTC.
-    // setObject(OffsetDateTime) honors the supplied offset reliably.
-    p.setObject(index, value.atOffset(ZoneOffset.UTC));
+    if (persistTimestampInUTC) {
+      // Plain TIMESTAMP column (zoneless). ojdbc rejects setObject(OffsetDateTime) here
+      // with ORA-18716. UTC Calendar gives a stable UTC wall-clock on the wire.
+      p.setTimestamp(index, Timestamp.from(value), UTC);
+    } else {
+      // TIMESTAMP WITH TIME ZONE column. setTimestamp(ts, cal) is buggy on ojdbc (binds
+      // session TZ's offset instead of Calendar's), so use setObject(OffsetDateTime)
+      // which reliably attaches the value's offset.
+      p.setObject(index, value.atOffset(ZoneOffset.UTC));
+    }
   }
 
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
+    if (persistTimestampInUTC) {
+      // Delegate to parent's UTC-Calendar read path.
+      return super.getInstant(rs, columnName);
+    }
     OffsetDateTime odt = rs.getObject(columnName, OffsetDateTime.class);
     return odt == null ? null : odt.toInstant();
   }
