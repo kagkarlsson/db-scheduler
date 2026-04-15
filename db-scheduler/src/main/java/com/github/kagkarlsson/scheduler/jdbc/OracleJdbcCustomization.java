@@ -16,9 +16,11 @@ package com.github.kagkarlsson.scheduler.jdbc;
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 public class OracleJdbcCustomization extends DefaultJdbcCustomization {
 
@@ -38,8 +40,16 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
       return;
     }
 
-    // use explicit calendar to avoid diff when database tz != jvm tz
-    p.setTimestamp(index, Timestamp.from(value), UTC);
+    // For TIMESTAMP WITH TIME ZONE on Oracle, setTimestamp(ts, cal) binds with the
+    // session TZ's offset rather than the Calendar's, causing drift when session TZ != UTC.
+    // setObject(OffsetDateTime) honors the supplied offset reliably.
+    p.setObject(index, value.atOffset(ZoneOffset.UTC));
+  }
+
+  @Override
+  public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
+    OffsetDateTime odt = rs.getObject(columnName, OffsetDateTime.class);
+    return odt == null ? null : odt.toInstant();
   }
 
   @Override
