@@ -42,24 +42,24 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
       return;
     }
 
-    if (persistTimestampInUTC) {
+//    if (persistTimestampInUTC) {
       p.setTimestamp(index, Timestamp.from(value), UTC);
-    } else {
-      p.setTimestamp(index, Timestamp.from(value));
-    }
+//    } else {
+//      p.setTimestamp(index, Timestamp.from(value));
+//    }
   }
 
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-    if (persistTimestampInUTC) {
+//    if (persistTimestampInUTC) {
       return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
           .map(Timestamp::toInstant)
           .orElse(null);
-    } else {
-      return Optional.ofNullable(rs.getTimestamp(columnName))
-          .map(Timestamp::toInstant)
-          .orElse(null);
-    }
+//    } else {
+//      return Optional.ofNullable(rs.getTimestamp(columnName))
+//          .map(Timestamp::toInstant)
+//          .orElse(null);
+//    }
   }
 
   @Override
