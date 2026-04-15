@@ -39,6 +39,8 @@ public class MariaDB103CompatibilityTest extends CompatibilityTest {
 
     final HikariConfig hikariConfig = new HikariConfig();
     hikariConfig.setDataSource(datasource);
+    // Force non-UTC session TZ so the round-trip test exercises "session TZ != JVM TZ".
+    hikariConfig.setConnectionInitSql("SET time_zone = '-08:00'");
     pooledDatasource = new HikariDataSource(hikariConfig);
 
     // init schema
