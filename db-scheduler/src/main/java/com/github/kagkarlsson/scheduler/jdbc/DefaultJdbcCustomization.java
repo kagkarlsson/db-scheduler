@@ -28,11 +28,9 @@ import java.util.TimeZone;
 public class DefaultJdbcCustomization implements JdbcCustomization {
 
   public static final Calendar UTC = GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"));
-  public static final Calendar DEFAULT = GregorianCalendar.getInstance(TimeZone.getDefault());
   private final boolean persistTimestampInUTC;
 
   public DefaultJdbcCustomization(boolean persistTimestampInUTC) {
-
     this.persistTimestampInUTC = persistTimestampInUTC;
   }
 
@@ -43,15 +41,24 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
       return;
     }
 
-      p.setTimestamp(index, Timestamp.from(value), DEFAULT);
+      p.setTimestamp(index, Timestamp.from(value), getCalendar());
   }
 
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-      return Optional.ofNullable(rs.getTimestamp(columnName, DEFAULT))
+      return Optional.ofNullable(rs.getTimestamp(columnName, getCalendar()))
           .map(Timestamp::toInstant)
           .orElse(null);
   }
+
+  protected Calendar getCalendar() {
+    if (persistTimestampInUTC) {
+      return GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"));
+    } else {
+      return GregorianCalendar.getInstance(TimeZone.getDefault());
+    }
+  }
+
 
   @Override
   public void setTaskData(PreparedStatement p, int index, byte[] value) throws SQLException {
