@@ -28,7 +28,7 @@ import java.util.TimeZone;
 public class DefaultJdbcCustomization implements JdbcCustomization {
 
   public static final Calendar UTC = GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"));
-  private final boolean persistTimestampInUTC;
+  protected final boolean persistTimestampInUTC;
 
   public DefaultJdbcCustomization(boolean persistTimestampInUTC) {
     this.persistTimestampInUTC = persistTimestampInUTC;
