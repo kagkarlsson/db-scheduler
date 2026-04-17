@@ -40,13 +40,11 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
     }
 
     if (persistTimestampInUTC) {
-      // Plain TIMESTAMP column (zoneless). ojdbc rejects setObject(OffsetDateTime) here
-      // with ORA-18716. UTC Calendar gives a stable UTC wall-clock on the wire.
+      // Plain TIMESTAMP column (zoneless). setObject(OffsetDateTime) does not work
       p.setTimestamp(index, Timestamp.from(value), UTC);
     } else {
       // TIMESTAMP WITH TIME ZONE column. setTimestamp(ts, cal) is buggy on ojdbc (binds
-      // session TZ's offset instead of Calendar's), so use setObject(OffsetDateTime)
-      // which reliably attaches the value's offset.
+      // session TZ's offset instead of Calendar's). Using setObject(OffsetDateTime)
       p.setObject(index, value.atOffset(ZoneOffset.UTC));
     }
   }
