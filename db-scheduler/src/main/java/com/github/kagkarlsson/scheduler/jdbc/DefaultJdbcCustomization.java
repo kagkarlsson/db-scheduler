@@ -36,6 +36,29 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
+    if (persistTimestampInUTC) {
+      setInstantAsUTC(p, index, value);
+    } else {
+      if (value == null) {
+        p.setTimestamp(index, null);
+        return;
+      }
+      p.setTimestamp(index, Timestamp.from(value));
+    }
+  }
+
+  @Override
+  public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
+    if (persistTimestampInUTC) {
+      return getInstantAsUTC(rs, columnName);
+    } else {
+      return Optional.ofNullable(rs.getTimestamp(columnName))
+          .map(Timestamp::toInstant)
+          .orElse(null);
+    }
+  }
+
+  protected void setInstantAsUTC(PreparedStatement p, int index, Instant value) throws SQLException {
     if (value == null) {
       p.setTimestamp(index, null);
       return;
@@ -43,8 +66,7 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     p.setTimestamp(index, Timestamp.from(value), UTC);
   }
 
-  @Override
-  public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
+  protected Instant getInstantAsUTC(ResultSet rs, String columnName) throws SQLException {
     return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
         .map(Timestamp::toInstant)
         .orElse(null);

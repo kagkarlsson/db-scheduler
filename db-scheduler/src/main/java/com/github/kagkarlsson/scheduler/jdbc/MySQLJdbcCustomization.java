@@ -13,6 +13,10 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +30,17 @@ public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
   @Override
   public String getName() {
     return "MySQL < v8";
+  }
+
+  @Override
+  public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
+    // MySQL timestamp columns are zoneless — always use UTC Calendar for safe round-trips
+    setInstantAsUTC(p, index, value);
+  }
+
+  @Override
+  public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
+    return getInstantAsUTC(rs, columnName);
   }
 
   @Override
