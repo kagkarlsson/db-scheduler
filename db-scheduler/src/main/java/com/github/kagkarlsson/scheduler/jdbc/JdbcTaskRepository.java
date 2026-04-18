@@ -16,6 +16,7 @@ package com.github.kagkarlsson.scheduler.jdbc;
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.partitioningBy;
 import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
@@ -31,6 +32,7 @@ import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
+import com.github.kagkarlsson.scheduler.exceptions.FailedToUnpickBatchException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
@@ -46,6 +48,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -343,6 +346,28 @@ public class JdbcTaskRepository implements TaskRepository {
     return getExecutions(jdbcRunner, selectDueQuery, now, limit, unresolvedFilter);
   }
 
+  private List<Execution> lockAndFetchSingleStatement(Instant now, int limit) {
+    return jdbcRunner.inTransaction(
+        txRunner -> {
+          List<Execution> allCandidates =
+              jdbcCustomization.lockAndFetchSingleStatement(
+                  getTaskRespositoryContext(), now, limit, orderByPriority);
+
+          Map<Boolean, List<Execution>> allCandidatesByIsUnresolved =
+              allCandidates.stream()
+                  .collect(
+                      partitioningBy(
+                          execution -> taskResolver.isUnresolved(execution.getTaskName())));
+
+          List<Execution> unresolvedExecutions = allCandidatesByIsUnresolved.get(Boolean.TRUE);
+          if (unresolvedExecutions != null && !unresolvedExecutions.isEmpty()) {
+            unpickPickedBatch(unresolvedExecutions);
+          }
+
+          return allCandidatesByIsUnresolved.get(Boolean.FALSE);
+        });
+  }
+
   @Override
   public List<Execution> lockAndFetchGeneric(Instant now, int limit) {
     return jdbcRunner.inTransaction(
@@ -443,8 +468,7 @@ public class JdbcTaskRepository implements TaskRepository {
   public List<Execution> lockAndGetDue(Instant now, int limit) {
     if (jdbcCustomization.supportsSingleStatementLockAndFetch()) {
       LOG.trace("Using single-statement lock-and-fetch");
-      return jdbcCustomization.lockAndFetchSingleStatement(
-          getTaskRespositoryContext(), now, limit, orderByPriority);
+      return lockAndFetchSingleStatement(now, limit);
     } else if (jdbcCustomization.supportsGenericLockAndFetch()) {
       LOG.trace("Using generic transaction-based lock-and-fetch");
       return lockAndFetchGeneric(now, limit);
@@ -576,6 +600,50 @@ public class JdbcTaskRepository implements TaskRepository {
           "Updated multiple rows when picking single execution. Should never happen since name and id is primary key. Execution: "
               + e);
     }
+  }
+
+  @Override
+  public void unpickPickedBatch(List<Execution> executions) {
+    if (executions.isEmpty()) {
+      return;
+    }
+
+    final int[] updated =
+        jdbcRunner.executeBatch(
+            "update "
+                + tableName
+                + " set picked = ?, picked_by = ?, version = version + 1 "
+                + "where picked = ? "
+                + "and version = ?"
+                + "and task_name = ?"
+                + "and task_instance = ?",
+            executions,
+            (execution, ps) -> {
+              int index = 1;
+              ps.setBoolean(index++, false); // picked
+              ps.setString(index++, null); // picked_by
+              ps.setBoolean(index++, true); // only picked
+              ps.setLong(index++, execution.version);
+              ps.setString(index++, execution.getTaskName());
+              ps.setString(index++, execution.getId());
+            });
+
+    final List<Execution> unpickedTasks = new ArrayList<>();
+    final List<Execution> nonUnpickedTasks = new ArrayList<>();
+    for (int i = 0; i < updated.length; i++) {
+      Execution task = executions.get(i);
+      if (updated[i] == 1) {
+        unpickedTasks.add(task);
+      } else {
+        nonUnpickedTasks.add(task);
+      }
+    }
+    if (!nonUnpickedTasks.isEmpty()) {
+      throw new FailedToUnpickBatchException(
+          "Error while unpicking tasks batch. Failed to unpick: %s, successfully unpicked: %s"
+              .formatted(nonUnpickedTasks, unpickedTasks));
+    }
+    LOG.info("Successfully unpicked tasks: {}", unpickedTasks);
   }
 
   @Override
@@ -717,7 +785,7 @@ public class JdbcTaskRepository implements TaskRepository {
         tableName,
         schedulerSchedulerName,
         jdbcRunner,
-        () -> new ExecutionResultSetMapper(false, true));
+        () -> new ExecutionResultSetMapper(true, true));
   }
 
   private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
