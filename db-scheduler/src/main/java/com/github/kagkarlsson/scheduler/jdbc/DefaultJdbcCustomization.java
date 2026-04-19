@@ -58,7 +58,7 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
   }
 
-  protected void setInstantAsUTC(PreparedStatement p, int index, Instant value) throws SQLException {
+  protected static void setInstantAsUTC(PreparedStatement p, int index, Instant value) throws SQLException {
     if (value == null) {
       p.setTimestamp(index, null);
       return;
@@ -66,7 +66,7 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     p.setTimestamp(index, Timestamp.from(value), UTC);
   }
 
-  protected Instant getInstantAsUTC(ResultSet rs, String columnName) throws SQLException {
+  protected static Instant getInstantAsUTC(ResultSet rs, String columnName) throws SQLException {
     return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
         .map(Timestamp::toInstant)
         .orElse(null);
