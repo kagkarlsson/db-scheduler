@@ -34,15 +34,16 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
 
   @Override
   public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
+    if (value == null) {
+      p.setTimestamp(index, null);
+      return;
+    }
+
     if (persistTimestampInUTC) {
       // Plain TIMESTAMP column (zoneless). setObject(OffsetDateTime) does not work
       // on ojdbc (ORA-18716), so use UTC Calendar.
       setInstantAsUTC(p, index, value);
     } else {
-      if (value == null) {
-        p.setTimestamp(index, null);
-        return;
-      }
       // TIMESTAMP WITH TIME ZONE column. setTimestamp(ts, cal) is buggy on ojdbc (binds
       // session TZ's offset instead of Calendar's). Using setObject(OffsetDateTime)
       p.setObject(index, value.atOffset(ZoneOffset.UTC));
