@@ -1,3 +1,6 @@
+-- When using TIMESTAMP WITH TIME ZONE, avoid using .alwaysPersistTimestampInUTC() setting
+--  to ensure correct handling of instants.
+
 create table scheduled_tasks
 (
     task_name            varchar(100),

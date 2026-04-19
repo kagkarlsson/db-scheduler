@@ -1,3 +1,6 @@
+-- When using TIMESTAMP without time zone, always use .alwaysPersistTimestampInUTC() setting
+--  to ensure correct handling of instants.
+
 create table scheduled_tasks
 (
     task_name            varchar(100),
@@ -19,5 +22,3 @@ CREATE INDEX scheduled_tasks_execution_time_idx on scheduled_tasks(execution_tim
 CREATE INDEX scheduled_tasks_last_heartbeat_idx on scheduled_tasks(last_heartbeat);
 CREATE INDEX scheduled_tasks_priority_execution_time_idx on scheduled_tasks(priority desc, execution_time asc);
 
--- For use with .alwaysPersistTimestampInUTC()
--- Uses TIMESTAMP without time zone since all values are stored in UTC
