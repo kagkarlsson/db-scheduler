@@ -33,17 +33,6 @@ public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
-  public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
-    // MySQL timestamp columns are zoneless — always use UTC Calendar for safe round-trips
-    setInstantAsUTC(p, index, value);
-  }
-
-  @Override
-  public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-    return getInstantAsUTC(rs, columnName);
-  }
-
-  @Override
   public String getQueryLimitPart(int limit) {
     return Queries.postgresSqlLimitPart(limit);
   }
