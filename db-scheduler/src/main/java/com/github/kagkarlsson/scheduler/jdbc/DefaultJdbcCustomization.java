@@ -36,13 +36,14 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
 
   @Override
   public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
+    if (value == null) {
+      p.setTimestamp(index, null);
+      return;
+    }
+
     if (persistTimestampInUTC) {
       setInstantAsUTC(p, index, value);
     } else {
-      if (value == null) {
-        p.setTimestamp(index, null);
-        return;
-      }
       p.setTimestamp(index, Timestamp.from(value));
     }
   }
