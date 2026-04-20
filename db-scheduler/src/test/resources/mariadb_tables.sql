@@ -3,7 +3,7 @@ create table test.scheduled_tasks (
   task_name varchar(100) not null,
   task_instance varchar(100) not null,
   task_data blob,
-  execution_time timestamp(6) not null,
+  execution_time timestamp(6) not null default current_timestamp(6),
   picked BOOLEAN not null,
   picked_by varchar(50),
   last_success timestamp(6) null,
