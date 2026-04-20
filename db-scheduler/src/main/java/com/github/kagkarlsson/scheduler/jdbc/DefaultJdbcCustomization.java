@@ -42,6 +42,7 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
 
     if (persistTimestampInUTC) {
+      // This should be the default for most, always specify conversion time zone
       setInstantAsUTC(p, index, value);
     } else {
       p.setTimestamp(index, Timestamp.from(value));

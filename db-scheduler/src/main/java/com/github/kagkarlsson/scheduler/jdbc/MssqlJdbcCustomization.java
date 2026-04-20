@@ -15,10 +15,6 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +29,8 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
     super(persistTimestampInUTC);
     if (!persistTimestampInUTC) {
       LOG.warn(
-          "{} must explicitly specify timezone when persisting a timestamp. "
-              + "Persisting timestamp with undefined timezone is not recommended and will likely cause issues",
+          "Always use .persistTimestampInUTC() with {} to ensure correct serialization/deserialization of"
+              + " timestamps when db and jvm time zone differs.",
           getClass().getName());
     }
   }
@@ -42,17 +38,6 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
   @Override
   public String getName() {
     return "MSSQL";
-  }
-
-  @Override
-  public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
-    // MSSQL datetimeoffset — always use UTC Calendar for safe round-trips
-    setInstantAsUTC(p, index, value);
-  }
-
-  @Override
-  public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-    return getInstantAsUTC(rs, columnName);
   }
 
   @Override

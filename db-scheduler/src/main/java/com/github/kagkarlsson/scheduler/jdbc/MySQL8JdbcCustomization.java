@@ -15,11 +15,7 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
-  private static final Logger LOG = LoggerFactory.getLogger(MySQL8JdbcCustomization.class);
 
   public MySQL8JdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);

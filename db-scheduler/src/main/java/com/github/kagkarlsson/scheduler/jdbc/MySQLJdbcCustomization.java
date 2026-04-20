@@ -13,11 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
-  private static final Logger LOG = LoggerFactory.getLogger(MySQLJdbcCustomization.class);
 
   public MySQLJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
