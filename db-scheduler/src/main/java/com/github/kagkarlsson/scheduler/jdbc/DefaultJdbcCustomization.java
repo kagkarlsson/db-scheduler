@@ -59,7 +59,8 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
   }
 
-  protected static void setInstantAsUTC(PreparedStatement p, int index, Instant value) throws SQLException {
+  protected static void setInstantAsUTC(PreparedStatement p, int index, Instant value)
+      throws SQLException {
     if (value == null) {
       p.setTimestamp(index, null);
       return;

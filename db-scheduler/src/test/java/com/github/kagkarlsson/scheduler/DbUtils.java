@@ -36,7 +36,8 @@ public class DbUtils {
         if (splitStatements) {
           for (String statement : statements.split(";")) {
             String stripped =
-                statement.lines()
+                statement
+                    .lines()
                     .filter(line -> !line.trim().startsWith("--"))
                     .collect(java.util.stream.Collectors.joining("\n"))
                     .trim();
