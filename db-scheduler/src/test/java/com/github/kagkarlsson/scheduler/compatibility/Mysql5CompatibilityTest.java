@@ -64,5 +64,4 @@ public class Mysql5CompatibilityTest extends CompatibilityTest {
   public Optional<JdbcCustomization> getJdbcCustomization() {
     return Optional.of(new AutodetectJdbcCustomization(getDataSource(), true));
   }
-
 }

@@ -35,7 +35,6 @@ import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.jdbc.OracleJdbcCustomization;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
@@ -49,14 +48,12 @@ import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import com.google.common.collect.Lists;
-import java.time.Duration;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -399,7 +396,7 @@ public abstract class CompatibilityTest {
     OneTimeTask<String> task = Tasks.oneTime(descriptor).execute((instance, ctx) -> {});
 
     TaskResolver taskResolver =
-      new TaskResolver(SchedulerListeners.NOOP, new SystemClock(), List.of());
+        new TaskResolver(SchedulerListeners.NOOP, new SystemClock(), List.of());
     taskResolver.addTask(task);
 
     JdbcTaskRepository taskRepo =
@@ -420,7 +417,11 @@ public abstract class CompatibilityTest {
       logSessionOffset();
 
       // Winter: Europe/Oslo is CET (UTC+1)
-      assertRoundTrip(task, taskRepo, "winter", Instant.parse("2020-01-15T11:00:00Z")); // MariaDB103CompatibilityTest fails here
+      assertRoundTrip(
+          task,
+          taskRepo,
+          "winter",
+          Instant.parse("2020-01-15T11:00:00Z")); // MariaDB103CompatibilityTest fails here
 
       // Summer: Europe/Oslo is CEST (UTC+2)
       assertRoundTrip(task, taskRepo, "summer", Instant.parse("2020-07-15T11:00:00Z"));
@@ -451,13 +452,15 @@ public abstract class CompatibilityTest {
   }
 
   private OffsetDateTime readDbCurrentTimestamp() {
-    for (String sql : new String[] {
-        "SELECT CURRENT_TIMESTAMP",
-        "SELECT CURRENT_TIMESTAMP FROM DUAL",
-        "SELECT SYSDATETIMEOFFSET()"}) {
+    for (String sql :
+        new String[] {
+          "SELECT CURRENT_TIMESTAMP",
+          "SELECT CURRENT_TIMESTAMP FROM DUAL",
+          "SELECT SYSDATETIMEOFFSET()"
+        }) {
       try (Connection c = getDataSource().getConnection();
-           Statement s = c.createStatement();
-           ResultSet rs = s.executeQuery(sql)) {
+          Statement s = c.createStatement();
+          ResultSet rs = s.executeQuery(sql)) {
         rs.next();
         return rs.getObject(1, OffsetDateTime.class);
       } catch (Exception ignored) {
@@ -468,19 +471,19 @@ public abstract class CompatibilityTest {
   }
 
   private void assertRoundTrip(
-    OneTimeTask<String> task,
-    JdbcTaskRepository taskRepo,
-    String instanceId,
-    Instant storedInstant) {
+      OneTimeTask<String> task,
+      JdbcTaskRepository taskRepo,
+      String instanceId,
+      Instant storedInstant) {
 
     TaskInstance<String> instance = task.instance(instanceId);
     taskRepo.createIfNotExists(SchedulableInstance.of(instance, storedInstant));
 
     Instant roundTripped = taskRepo.getExecution(instance).get().executionTime;
     assertThat(
-      "round-tripped instant should equal stored instant for " + storedInstant,
-      roundTripped,
-      is(storedInstant));
+        "round-tripped instant should equal stored instant for " + storedInstant,
+        roundTripped,
+        is(storedInstant));
   }
 
   private void doJDBCRepositoryCompatibilityTestUsingData(String data) {
