@@ -34,7 +34,8 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
   @Container
   private static final MSSQLServerContainer MSSQL =
       new MSSQLServerContainer<>(
-          DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"));
+          DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"))
+          .withEnv("TZ", "America/Los_Angeles");
 
   private static DataSource pooledDatasource;
 
