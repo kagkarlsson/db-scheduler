@@ -50,9 +50,6 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
 
       if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
         LOG.info("Using MSSQL jdbc-overrides.");
-        if (persistTimestampInUTC) {
-          LOG.info("Redundant 'persistTimestampInUTC' setting. MSSQL will always persist in UTC.");
-        }
         detectedCustomization = new MssqlJdbcCustomization(true);
       } else if (databaseProductName.equals(POSTGRESQL)) {
         LOG.info("Using PostgreSQL jdbc-overrides.");

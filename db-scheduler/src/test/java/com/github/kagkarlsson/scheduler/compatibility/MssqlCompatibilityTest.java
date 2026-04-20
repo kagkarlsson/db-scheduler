@@ -1,9 +1,12 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
 import com.github.kagkarlsson.scheduler.DbUtils;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.MssqlJdbcCustomization;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
+import java.util.Optional;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
@@ -80,5 +83,10 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
   @Override
   public boolean commitWhenAutocommitDisabled() {
     return false;
+  }
+
+  @Override
+  public Optional<JdbcCustomization> getJdbcCustomization() {
+    return Optional.of(new MssqlJdbcCustomization(true));
   }
 }

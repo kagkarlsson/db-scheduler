@@ -417,11 +417,7 @@ public abstract class CompatibilityTest {
       logSessionOffset();
 
       // Winter: Europe/Oslo is CET (UTC+1)
-      assertRoundTrip(
-          task,
-          taskRepo,
-          "winter",
-          Instant.parse("2020-01-15T11:00:00Z")); // MariaDB103CompatibilityTest fails here
+      assertRoundTrip(task, taskRepo, "winter", Instant.parse("2020-01-15T11:00:00Z"));
 
       // Summer: Europe/Oslo is CEST (UTC+2)
       assertRoundTrip(task, taskRepo, "summer", Instant.parse("2020-07-15T11:00:00Z"));
