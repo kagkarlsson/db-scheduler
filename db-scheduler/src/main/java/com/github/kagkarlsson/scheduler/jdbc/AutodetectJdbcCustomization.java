@@ -50,9 +50,6 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
 
       if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
         LOG.info("Using MSSQL jdbc-overrides.");
-        if (persistTimestampInUTC) {
-          LOG.info("Redundant 'persistTimestampInUTC' setting. MSSQL will always persist in UTC.");
-        }
         detectedCustomization = new MssqlJdbcCustomization(true);
       } else if (databaseProductName.equals(POSTGRESQL)) {
         LOG.info("Using PostgreSQL jdbc-overrides.");
@@ -162,13 +159,13 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   private void logWarningIfNotUTC(String database, boolean persistTimestampInUTC) {
     if (!persistTimestampInUTC) {
       SILENCABLE_LOG.warn(
-          "{}-schema does not support persistent timezones. "
-              + "It is recommended to store time in UTC to avoid issues with for example DST. "
-              + "For first time users, use setting 'alwaysPersistTimestampInUtc' to achieve this. "
-              + "Users upgrading from a version prior to v14.0.0 can either silence this logger, "
-              + "or perform a controlled upgrade to UTC timestamps. All old instances "
-              + "of the scheduler must be stopped and timestamps migrated to UTC before starting "
-              + "again, using 'alwaysPersistTimestampInUtc=true'.",
+          "{} uses zoneless timestamp columns, so the scheduler cannot rely on the database "
+              + "to preserve timezone information. It is recommended to enable "
+              + "'.alwaysPersistTimestampInUTC()' which ensures timestamps are always written and "
+              + "read as UTC, making them safe regardless of JVM timezone or database session "
+              + "timezone. Without this setting, timestamps may drift if the JVM timezone changes. "
+              + "NOTE: if upgrading an existing deployment, all scheduler instances must be stopped "
+              + "and existing timestamps migrated to UTC before enabling this setting.",
           database);
     }
   }

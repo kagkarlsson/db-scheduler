@@ -47,6 +47,9 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
     final HikariConfig hikariConfig = new HikariConfig();
     hikariConfig.setDataSource(datasource);
     hikariConfig.setMaximumPoolSize(10);
+    // Force a non-UTC, non-JVM session TZ so the round-trip test actually
+    // exercises the "session TZ ≠ JVM TZ" path.
+    hikariConfig.setConnectionInitSql("ALTER SESSION SET TIME_ZONE = 'America/Los_Angeles'");
     pooledDatasource = new HikariDataSource(hikariConfig);
 
     // init schema
@@ -69,7 +72,7 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
   }
 
   @Override
-  public Optional<JdbcCustomization> getJdbcCustomizationForUTCTimestampTest() {
-    return Optional.of(new OracleJdbcCustomization(true));
+  public Optional<JdbcCustomization> getJdbcCustomization() {
+    return Optional.of(new OracleJdbcCustomization(false));
   }
 }

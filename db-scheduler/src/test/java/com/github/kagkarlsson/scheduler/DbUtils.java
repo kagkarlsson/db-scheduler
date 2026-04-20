@@ -35,8 +35,14 @@ public class DbUtils {
                 new InputStreamReader(DbUtils.class.getResourceAsStream(resource)));
         if (splitStatements) {
           for (String statement : statements.split(";")) {
-            if (!statement.trim().isEmpty() && !statement.trim().startsWith("--")) {
-              jdbcRunner.execute(statement, NOOP);
+            String stripped =
+                statement
+                    .lines()
+                    .filter(line -> !line.trim().startsWith("--"))
+                    .collect(java.util.stream.Collectors.joining("\n"))
+                    .trim();
+            if (!stripped.isEmpty()) {
+              jdbcRunner.execute(stripped, NOOP);
             }
           }
         } else {

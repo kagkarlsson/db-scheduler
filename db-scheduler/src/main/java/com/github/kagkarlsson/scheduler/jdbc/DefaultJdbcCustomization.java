@@ -28,10 +28,9 @@ import java.util.TimeZone;
 public class DefaultJdbcCustomization implements JdbcCustomization {
 
   public static final Calendar UTC = GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"));
-  private final boolean persistTimestampInUTC;
+  protected final boolean persistTimestampInUTC;
 
   public DefaultJdbcCustomization(boolean persistTimestampInUTC) {
-
     this.persistTimestampInUTC = persistTimestampInUTC;
   }
 
@@ -43,7 +42,8 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
 
     if (persistTimestampInUTC) {
-      p.setTimestamp(index, Timestamp.from(value), UTC);
+      // This should be the default for most, always specify conversion time zone
+      setInstantAsUTC(p, index, value);
     } else {
       p.setTimestamp(index, Timestamp.from(value));
     }
@@ -52,14 +52,27 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
     if (persistTimestampInUTC) {
-      return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
-          .map(Timestamp::toInstant)
-          .orElse(null);
+      return getInstantAsUTC(rs, columnName);
     } else {
       return Optional.ofNullable(rs.getTimestamp(columnName))
           .map(Timestamp::toInstant)
           .orElse(null);
     }
+  }
+
+  protected static void setInstantAsUTC(PreparedStatement p, int index, Instant value)
+      throws SQLException {
+    if (value == null) {
+      p.setTimestamp(index, null);
+      return;
+    }
+    p.setTimestamp(index, Timestamp.from(value), UTC);
+  }
+
+  protected static Instant getInstantAsUTC(ResultSet rs, String columnName) throws SQLException {
+    return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
+        .map(Timestamp::toInstant)
+        .orElse(null);
   }
 
   @Override

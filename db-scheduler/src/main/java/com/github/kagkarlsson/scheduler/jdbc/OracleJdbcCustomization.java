@@ -15,6 +15,12 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneOffset;
+
 public class OracleJdbcCustomization extends DefaultJdbcCustomization {
 
   public OracleJdbcCustomization(boolean persistTimestampInUTC) {
@@ -24,6 +30,30 @@ public class OracleJdbcCustomization extends DefaultJdbcCustomization {
   @Override
   public String getName() {
     return "Oracle";
+  }
+
+  @Override
+  public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
+    if (value == null) {
+      p.setTimestamp(index, null);
+      return;
+    }
+
+    if (persistTimestampInUTC) {
+      // Plain TIMESTAMP column (zoneless). setObject(OffsetDateTime) does not work
+      // on ojdbc (ORA-18716), so use UTC Calendar.
+      setInstantAsUTC(p, index, value);
+    } else {
+      // TIMESTAMP WITH TIME ZONE column. setTimestamp(ts, cal) is buggy on ojdbc (binds
+      // session TZ's offset instead of Calendar's). Using setObject(OffsetDateTime)
+      p.setObject(index, value.atOffset(ZoneOffset.UTC));
+    }
+  }
+
+  @Override
+  public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
+    // UTC Calendar works correctly for both TSTZ and plain TIMESTAMP on the read path
+    return getInstantAsUTC(rs, columnName);
   }
 
   @Override

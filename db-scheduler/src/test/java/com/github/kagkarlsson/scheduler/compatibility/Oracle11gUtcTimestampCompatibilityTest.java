@@ -1,53 +1,57 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
 import com.github.kagkarlsson.scheduler.DbUtils;
-import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.OracleJdbcCustomization;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.containers.OracleContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @Tag("compatibility")
 @Testcontainers
-public class MariaDB103CompatibilityTest extends CompatibilityTest {
-
-  @Container
-  private static final MariaDBContainer MARIADB =
-      new MariaDBContainer(DockerImageName.parse("mariadb").withTag("10.3"));
-
+public class Oracle11gUtcTimestampCompatibilityTest extends CompatibilityTest {
+  @Container private static final OracleContainer ORACLE = new OracleContainer("gvenzl/oracle-xe");
   private static HikariDataSource pooledDatasource;
 
-  public MariaDB103CompatibilityTest() {
-    super(false, false); // FIXLATER: fix syntax and enable
+  public Oracle11gUtcTimestampCompatibilityTest() {
+    super(false, false);
   }
 
   @BeforeAll
   static void initSchema() {
     final DriverDataSource datasource =
         new DriverDataSource(
-            MARIADB.getJdbcUrl(),
-            "org.mariadb.jdbc.Driver",
+            ORACLE.getJdbcUrl(),
+            "oracle.jdbc.OracleDriver",
             new Properties(),
-            MARIADB.getUsername(),
-            MARIADB.getPassword());
+            ORACLE.getUsername(),
+            ORACLE.getPassword());
 
     final HikariConfig hikariConfig = new HikariConfig();
     hikariConfig.setDataSource(datasource);
-    // Force non-UTC session TZ so the round-trip test exercises "session TZ != JVM TZ".
-    hikariConfig.setConnectionInitSql("SET time_zone = '-08:00'");
+    hikariConfig.setMaximumPoolSize(10);
+    // Force a non-UTC, non-JVM session TZ so the round-trip test actually
+    // exercises the "session TZ ≠ JVM TZ" path.
+    hikariConfig.setConnectionInitSql("ALTER SESSION SET TIME_ZONE = 'America/Los_Angeles'");
     pooledDatasource = new HikariDataSource(hikariConfig);
 
     // init schema
-    DbUtils.runSqlResource("/mariadb_tables.sql").accept(pooledDatasource);
+    DbUtils.runSqlResource("/oracle_tables_utc.sql", true).accept(pooledDatasource);
+  }
+
+  @BeforeEach
+  void overrideSchedulerShutdown() {
+    stopScheduler.setWaitBeforeInterrupt(Duration.ofMillis(100));
   }
 
   @Override
@@ -62,6 +66,6 @@ public class MariaDB103CompatibilityTest extends CompatibilityTest {
 
   @Override
   public Optional<JdbcCustomization> getJdbcCustomization() {
-    return Optional.of(new AutodetectJdbcCustomization(getDataSource(), true));
+    return Optional.of(new OracleJdbcCustomization(true));
   }
 }
