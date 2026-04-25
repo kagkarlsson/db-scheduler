@@ -9,7 +9,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
-import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
@@ -96,6 +95,15 @@ class ScheduleRecurringOnStartupTest {
   }
 
   private ScheduledExecution<Object> scheduled(Instant executionTime) {
-    return new ScheduledExecution<>(Object.class, new Execution(executionTime, TASK_INSTANCE));
+    return new ScheduledExecution<>(
+        Object.class,
+        TASK_INSTANCE,
+        executionTime,
+        null,
+        null,
+        0,
+        false,
+        null,
+        TASK_INSTANCE.getData());
   }
 }
