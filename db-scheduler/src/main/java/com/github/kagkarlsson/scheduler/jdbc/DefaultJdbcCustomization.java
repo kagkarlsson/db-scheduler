@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -34,32 +36,6 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     this.persistTimestampInUTC = persistTimestampInUTC;
   }
 
-  @Override
-  public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
-    if (value == null) {
-      p.setTimestamp(index, null);
-      return;
-    }
-
-    if (persistTimestampInUTC) {
-      // This should be the default for most, always specify conversion time zone
-      setInstantAsUTC(p, index, value);
-    } else {
-      p.setTimestamp(index, Timestamp.from(value));
-    }
-  }
-
-  @Override
-  public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
-    if (persistTimestampInUTC) {
-      return getInstantAsUTC(rs, columnName);
-    } else {
-      return Optional.ofNullable(rs.getTimestamp(columnName))
-          .map(Timestamp::toInstant)
-          .orElse(null);
-    }
-  }
-
   protected static void setInstantAsUTC(PreparedStatement p, int index, Instant value)
       throws SQLException {
     if (value == null) {
@@ -73,6 +49,32 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
         .map(Timestamp::toInstant)
         .orElse(null);
+  }
+
+  @Override
+  public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
+    if (value == null) {
+      p.setTimestamp(index, null);
+      return;
+    }
+
+    if (persistTimestampInUTC) {
+      // This should be the default for most, always specify conversion time zone
+      setInstantAsUTC(p, index, value);
+    } else {
+      p.setObject(index, value.atOffset(ZoneOffset.UTC));
+    }
+  }
+
+  @Override
+  public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
+    if (persistTimestampInUTC) {
+      return getInstantAsUTC(rs, columnName);
+    } else {
+      return Optional.ofNullable(rs.getObject(columnName, OffsetDateTime.class))
+          .map(OffsetDateTime::toInstant)
+          .orElse(null);
+    }
   }
 
   @Override
