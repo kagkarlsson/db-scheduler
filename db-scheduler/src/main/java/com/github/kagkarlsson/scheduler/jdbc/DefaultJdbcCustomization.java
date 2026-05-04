@@ -44,13 +44,11 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
 
     if (persistTimestampInUTC) {
-      // Plain TIMESTAMP column (zoneless). Bind via UTC Calendar so the value is
-      // stored as UTC regardless of session/JVM time zone. Also avoids ORA-18716
-      // on ojdbc, which rejects setObject(OffsetDateTime) against plain TIMESTAMP.
-      setInstantAsUTC(p, index, value);
+      // Plain TIMESTAMP column (zone-less). Bind via UTC Calendar so the value is
+      // transferred and stored as UTC regardless of session/JVM time zone.
+      p.setTimestamp(index, Timestamp.from(value), UTC);
     } else {
-      // TIMESTAMP WITH TIME ZONE column. Use setObject(OffsetDateTime) — on ojdbc
-      // setTimestamp(ts, cal) binds the session TZ's offset instead of the Calendar's.
+      // TIMESTAMP WITH TIME ZONE column. Use setObject(OffsetDateTime)
       p.setObject(index, value.atOffset(ZoneOffset.UTC));
     }
   }
@@ -58,27 +56,14 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
   @Override
   public Instant getInstant(ResultSet rs, String columnName) throws SQLException {
     if (persistTimestampInUTC) {
-      return getInstantAsUTC(rs, columnName);
+      return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
+          .map(Timestamp::toInstant)
+          .orElse(null);
     } else {
       return Optional.ofNullable(rs.getObject(columnName, OffsetDateTime.class))
           .map(OffsetDateTime::toInstant)
           .orElse(null);
     }
-  }
-
-  protected static void setInstantAsUTC(PreparedStatement p, int index, Instant value)
-      throws SQLException {
-    if (value == null) {
-      p.setTimestamp(index, null);
-      return;
-    }
-    p.setTimestamp(index, Timestamp.from(value), UTC);
-  }
-
-  protected static Instant getInstantAsUTC(ResultSet rs, String columnName) throws SQLException {
-    return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
-        .map(Timestamp::toInstant)
-        .orElse(null);
   }
 
   @Override

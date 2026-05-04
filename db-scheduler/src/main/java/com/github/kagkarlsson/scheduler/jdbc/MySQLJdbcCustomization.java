@@ -13,10 +13,20 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
+  private static final Logger LOG = LoggerFactory.getLogger(MySQLJdbcCustomization.class);
 
   public MySQLJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
+    if (!persistTimestampInUTC) {
+      LOG.warn(
+        "Always use .persistTimestampInUTC() with {} to ensure correct serialization/deserialization of"
+          + " timestamps.",
+        getClass().getName());
+    }
   }
 
   @Override

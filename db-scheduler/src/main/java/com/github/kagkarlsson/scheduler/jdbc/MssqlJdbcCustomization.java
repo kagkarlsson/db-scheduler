@@ -30,7 +30,7 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
     if (!persistTimestampInUTC) {
       LOG.warn(
           "Always use .persistTimestampInUTC() with {} to ensure correct serialization/deserialization of"
-              + " timestamps when db and jvm time zone differs.",
+              + " timestamps.",
           getClass().getName());
     }
   }

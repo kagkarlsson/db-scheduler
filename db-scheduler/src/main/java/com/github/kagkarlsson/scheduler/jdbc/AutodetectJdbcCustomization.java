@@ -26,14 +26,14 @@ import org.slf4j.LoggerFactory;
 
 public class AutodetectJdbcCustomization implements JdbcCustomization {
 
-  private static final Logger LOG = LoggerFactory.getLogger(AutodetectJdbcCustomization.class);
-  private static final Logger SILENCABLE_LOG =
-      LoggerFactory.getLogger(LOG.getName() + ".utc_warning");
   public static final String MICROSOFT_SQL_SERVER = "Microsoft SQL Server";
   public static final String POSTGRESQL = "PostgreSQL";
   public static final String ORACLE = "Oracle";
   public static final String MYSQL = "MySQL";
   public static final String MARIADB = "MariaDB";
+  private static final Logger LOG = LoggerFactory.getLogger(AutodetectJdbcCustomization.class);
+  private static final Logger SILENCABLE_LOG =
+      LoggerFactory.getLogger(LOG.getName() + ".utc_warning");
   private final JdbcCustomization jdbcCustomization;
 
   public AutodetectJdbcCustomization(DataSource dataSource) {
@@ -51,38 +51,37 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
       if (databaseProductName.equals(MICROSOFT_SQL_SERVER)) {
         LOG.info("Using MSSQL jdbc-overrides.");
         detectedCustomization = new MssqlJdbcCustomization(true);
+
       } else if (databaseProductName.equals(POSTGRESQL)) {
         LOG.info("Using PostgreSQL jdbc-overrides.");
         detectedCustomization = new PostgreSqlJdbcCustomization(false, persistTimestampInUTC);
+
       } else if (databaseProductName.contains(ORACLE)) {
         LOG.info("Using Oracle jdbc-overrides.");
         detectedCustomization = new OracleJdbcCustomization(persistTimestampInUTC);
+
       } else if (databaseProductName.contains(MARIADB)) {
         LOG.info("Using MariaDB jdbc-overrides.");
-        logWarningIfNotUTC("MariaDB", persistTimestampInUTC);
-        detectedCustomization = new MariaDBJdbcCustomization(persistTimestampInUTC);
+        logWarningIfNotUTCForMySQL("MariaDB", persistTimestampInUTC);
+        detectedCustomization = new MariaDBJdbcCustomization(true);
+
       } else if (databaseProductName.contains(MYSQL)) {
         int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
         String dbVersion = c.getMetaData().getDatabaseProductVersion();
-        logWarningIfNotUTC("MySQL", persistTimestampInUTC);
+        logWarningIfNotUTCForMySQL("MySQL", persistTimestampInUTC);
         if (databaseMajorVersion >= 8) {
           LOG.info("Using MySQL jdbc-overrides version 8 and later. (v {})", dbVersion);
-          detectedCustomization = new MySQL8JdbcCustomization(persistTimestampInUTC);
+          detectedCustomization = new MySQL8JdbcCustomization(true);
         } else {
           LOG.info("Using MySQL jdbc-overrides for version older than 8. (v {})", dbVersion);
-          detectedCustomization = new MySQLJdbcCustomization(persistTimestampInUTC);
+          detectedCustomization = new MySQLJdbcCustomization(true);
         }
+
       } else {
-        if (persistTimestampInUTC) {
-          LOG.info(
-              "No database-specific jdbc-overrides applied. Behavior overridden to always store "
-                  + "timestamps in zone UTC");
-        } else {
-          SILENCABLE_LOG.warn(
-              "No database-specific jdbc-overrides applied. Assuming time-related columns "
-                  + "to be of type compatibe with 'TIMESTAMP WITH TIME ZONE', i.e. zone is persisted."
-                  + " If not, consider overriding to always UTC via '.alwaysPersistTimestampInUTC()'.");
-        }
+        SILENCABLE_LOG.warn(
+            "No database-specific jdbc-overrides applied. Se 'DefaultJdbcCustomization' for "
+                + "default behavior. If using zone-less types for time-columns, consider "
+                + "using '.alwaysPersistTimestampInUTC()'.");
       }
 
     } catch (SQLException e) {
@@ -156,16 +155,12 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     return jdbcCustomization.getName();
   }
 
-  private void logWarningIfNotUTC(String database, boolean persistTimestampInUTC) {
+  private void logWarningIfNotUTCForMySQL(String database, boolean persistTimestampInUTC) {
     if (!persistTimestampInUTC) {
       SILENCABLE_LOG.warn(
-          "{} uses zoneless timestamp columns, so the scheduler cannot rely on the database "
-              + "to preserve timezone information. It is recommended to enable "
-              + "'.alwaysPersistTimestampInUTC()' which ensures timestamps are always written and "
-              + "read as UTC, making them safe regardless of JVM timezone or database session "
-              + "timezone. Without this setting, timestamps may drift if the JVM timezone changes. "
-              + "NOTE: if upgrading an existing deployment, all scheduler instances must be stopped "
-              + "and existing timestamps migrated to UTC before enabling this setting.",
+          "{}-schema uses zone-less type for time-columns and thus requires that timestamps are "
+              + "transferred in UTC-zone. Automatically enabling '.alwaysPersistTimestampInUTC()'. "
+              + "to preserve timezone information. It is recommended to enable ",
           database);
     }
   }
