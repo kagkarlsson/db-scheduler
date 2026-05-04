@@ -36,21 +36,6 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     this.persistTimestampInUTC = persistTimestampInUTC;
   }
 
-  protected static void setInstantAsUTC(PreparedStatement p, int index, Instant value)
-      throws SQLException {
-    if (value == null) {
-      p.setTimestamp(index, null);
-      return;
-    }
-    p.setTimestamp(index, Timestamp.from(value), UTC);
-  }
-
-  protected static Instant getInstantAsUTC(ResultSet rs, String columnName) throws SQLException {
-    return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
-        .map(Timestamp::toInstant)
-        .orElse(null);
-  }
-
   @Override
   public void setInstant(PreparedStatement p, int index, Instant value) throws SQLException {
     if (value == null) {
@@ -59,9 +44,13 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
 
     if (persistTimestampInUTC) {
-      // This should be the default for most, always specify conversion time zone
+      // Plain TIMESTAMP column (zoneless). Bind via UTC Calendar so the value is
+      // stored as UTC regardless of session/JVM time zone. Also avoids ORA-18716
+      // on ojdbc, which rejects setObject(OffsetDateTime) against plain TIMESTAMP.
       setInstantAsUTC(p, index, value);
     } else {
+      // TIMESTAMP WITH TIME ZONE column. Use setObject(OffsetDateTime) — on ojdbc
+      // setTimestamp(ts, cal) binds the session TZ's offset instead of the Calendar's.
       p.setObject(index, value.atOffset(ZoneOffset.UTC));
     }
   }
@@ -75,6 +64,21 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
           .map(OffsetDateTime::toInstant)
           .orElse(null);
     }
+  }
+
+  protected static void setInstantAsUTC(PreparedStatement p, int index, Instant value)
+      throws SQLException {
+    if (value == null) {
+      p.setTimestamp(index, null);
+      return;
+    }
+    p.setTimestamp(index, Timestamp.from(value), UTC);
+  }
+
+  protected static Instant getInstantAsUTC(ResultSet rs, String columnName) throws SQLException {
+    return Optional.ofNullable(rs.getTimestamp(columnName, UTC))
+        .map(Timestamp::toInstant)
+        .orElse(null);
   }
 
   @Override
