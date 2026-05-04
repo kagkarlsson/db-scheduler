@@ -30,4 +30,9 @@ public class PostgresqlGenericFetchAndLockCompatibilityTest extends Compatibilit
   public Optional<JdbcCustomization> getJdbcCustomization() {
     return Optional.of(new PostgreSqlJdbcCustomization(true, false));
   }
+
+  @Override
+  protected String readDbSessionZone() {
+    return querySingleString("SHOW timezone");
+  }
 }

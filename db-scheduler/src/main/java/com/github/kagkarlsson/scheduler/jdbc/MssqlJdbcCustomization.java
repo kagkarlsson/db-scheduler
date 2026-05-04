@@ -29,8 +29,8 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
     super(persistTimestampInUTC);
     if (!persistTimestampInUTC) {
       LOG.warn(
-          "{} must explicitly specify timezone when persisting a timestamp. "
-              + "Persisting timestamp with undefined timezone is not recommended and will likely cause issues",
+          "Always use .persistTimestampInUTC() with {} to ensure correct serialization/deserialization of"
+              + " timestamps.",
           getClass().getName());
     }
   }

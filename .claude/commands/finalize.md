@@ -1,6 +1,7 @@
 ---
+
 description: Format, license-header, and verify before committing.
----
+------------------------------------------------------------------
 
 Run the pre-commit gauntlet for db-scheduler in this order, stopping on the first
 failure and reporting it:
