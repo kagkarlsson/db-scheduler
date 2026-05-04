@@ -25,9 +25,9 @@ public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
     super(persistTimestampInUTC);
     if (!persistTimestampInUTC) {
       LOG.warn(
-        "Always use .persistTimestampInUTC() with {} to ensure correct serialization/deserialization of"
-          + " timestamps.",
-        getClass().getName());
+          "Always use .persistTimestampInUTC() with {} to ensure correct serialization/deserialization of"
+              + " timestamps.",
+          getClass().getName());
     }
   }
 
