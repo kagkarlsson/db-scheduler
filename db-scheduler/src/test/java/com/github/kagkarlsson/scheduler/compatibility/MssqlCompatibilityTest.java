@@ -90,4 +90,9 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
   public Optional<JdbcCustomization> getJdbcCustomization() {
     return Optional.of(new MssqlJdbcCustomization(true));
   }
+
+  @Override
+  protected String readDbSessionZone() {
+    return querySingleString("SELECT CURRENT_TIMEZONE()");
+  }
 }

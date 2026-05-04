@@ -49,7 +49,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [oracle (utc)](db-scheduler/src/test/resources/oracle_tables_utc.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
+2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
@@ -218,7 +218,7 @@ i.e. somehow ties timestamps to zones. However, some databases have limited supp
 or other quirks, requiring overriding how timestamps are transferred and stored.
 For such cases, use this setting to always transfer, store and retrieve Instants in UTC.
 **Update:** Regardless of this setting, this is now always enabled for SQL Server, MySQL and MariaDB.
-The Oracle-schema uses a `TIMESTAMPZ` type, only use this override if also changing type to `TIMESTAMP`.
+The Oracle-schema uses a `TIMESTAMPTZ` type, only use this override if also changing type to `TIMESTAMP`.
 **NB:** The default behavior for "unknown" databases is to assume the database correctly handles instants. For "known" databases,
 see the class `AutodetectJdbcCustomization`.
 

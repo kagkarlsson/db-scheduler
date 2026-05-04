@@ -64,4 +64,9 @@ public class Mysql8CompatibilityTest extends CompatibilityTest {
   public Optional<JdbcCustomization> getJdbcCustomization() {
     return Optional.of(new AutodetectJdbcCustomization(getDataSource(), true));
   }
+
+  @Override
+  protected String readDbSessionZone() {
+    return querySingleString("SELECT @@session.time_zone");
+  }
 }

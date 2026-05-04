@@ -75,4 +75,9 @@ public class Oracle11gCompatibilityTest extends CompatibilityTest {
   public Optional<JdbcCustomization> getJdbcCustomization() {
     return Optional.of(new OracleJdbcCustomization(false));
   }
+
+  @Override
+  protected String readDbSessionZone() {
+    return querySingleString("SELECT SESSIONTIMEZONE FROM DUAL");
+  }
 }

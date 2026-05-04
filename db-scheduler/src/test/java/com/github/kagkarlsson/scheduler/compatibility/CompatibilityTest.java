@@ -102,7 +102,7 @@ public abstract class CompatibilityTest {
   }
 
   private JdbcCustomization resolveJdbcCustomization() {
-    return getJdbcCustomization().orElse(new AutodetectJdbcCustomization(getDataSource()));
+    return getJdbcCustomization().orElseGet(() -> new AutodetectJdbcCustomization(getDataSource()));
   }
 
   public Optional<JdbcCustomization> getJdbcCustomizationForUTCTimestampTest() {
@@ -437,33 +437,33 @@ public abstract class CompatibilityTest {
   }
 
   private void logSessionOffset() {
-    OffsetDateTime now = readDbCurrentTimestamp();
     OffsetDateTime jvmNow = OffsetDateTime.now();
     LOG.info(
-        "DB session offset: {} (CURRENT_TIMESTAMP = {}) | JVM offset: {} ({})",
-        now == null ? "?" : now.getOffset(),
-        now,
+        "DB session zone: {} | JVM offset: {} ({})",
+        readDbSessionZone(),
         jvmNow.getOffset(),
         TimeZone.getDefault().getID());
   }
 
-  private OffsetDateTime readDbCurrentTimestamp() {
-    for (String sql :
-        new String[] {
-          "SELECT CURRENT_TIMESTAMP",
-          "SELECT CURRENT_TIMESTAMP FROM DUAL",
-          "SELECT SYSDATETIMEOFFSET()"
-        }) {
-      try (Connection c = getDataSource().getConnection();
-          Statement s = c.createStatement();
-          ResultSet rs = s.executeQuery(sql)) {
-        rs.next();
-        return rs.getObject(1, OffsetDateTime.class);
-      } catch (Exception ignored) {
-        // try next variant
-      }
+  /**
+   * Returns a string describing the actual DB session time zone. Subclasses should override with a
+   * dialect-specific query (e.g. {@code SELECT @@session.time_zone}, {@code SHOW timezone}, {@code
+   * SELECT SESSIONTIMEZONE FROM DUAL}). Avoid mapping {@code CURRENT_TIMESTAMP} to {@code
+   * OffsetDateTime} for zoneless dialects — the driver attaches the JVM default zone in that case
+   * and the result misrepresents the session.
+   */
+  protected String readDbSessionZone() {
+    return "unknown";
+  }
+
+  protected final String querySingleString(String sql) {
+    try (Connection c = getDataSource().getConnection();
+        Statement s = c.createStatement();
+        ResultSet rs = s.executeQuery(sql)) {
+      return rs.next() ? rs.getString(1) : null;
+    } catch (Exception e) {
+      return "<error: " + e.getMessage() + ">";
     }
-    return null;
   }
 
   private void assertRoundTrip(

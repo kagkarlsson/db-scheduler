@@ -68,4 +68,9 @@ public class Oracle11gUtcTimestampCompatibilityTest extends CompatibilityTest {
   public Optional<JdbcCustomization> getJdbcCustomization() {
     return Optional.of(new OracleJdbcCustomization(true));
   }
+
+  @Override
+  protected String readDbSessionZone() {
+    return querySingleString("SELECT SESSIONTIMEZONE FROM DUAL");
+  }
 }
