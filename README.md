@@ -1,7 +1,7 @@
 # db-scheduler
 
 ![build status](https://github.com/kagkarlsson/db-scheduler/workflows/build/badge.svg)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.kagkarlsson/db-scheduler)](https://central.sonatype.com/artifact/com.github.kagkarlsson/db-scheduler)
 [![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
@@ -276,7 +276,7 @@ as they do not support descending indexes.
 #### Polling strategy
 
 If you are running >1000 executions/s you might want to use the `lock-and-fetch` polling-strategy for lower overhead
-and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` will be fine.
+and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` (configured as `fetch` in Fluent API and Spring Boot) will be fine.
 
 :gear: `.pollUsingFetchAndLockOnExecute(double, double)`<br/>
 Use default polling strategy `fetch-and-lock-on-execute`.<br/>
@@ -452,9 +452,6 @@ db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
 db-scheduler.missed-heartbeats-limit=6
 db-scheduler.polling-interval=10s
-db-scheduler.polling-strategy=fetch
-db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
-db-scheduler.polling-strategy-upper-limit-fraction-of-threads=3.0
 db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=
@@ -464,7 +461,7 @@ db-scheduler.priority-enabled=false
 # Ignored if a custom DbSchedulerStarter bean is defined
 db-scheduler.delay-startup-until-context-ready=false
 
-db-scheduler.polling-strategy=fetch
+db-scheduler.polling-strategy=fetch # fetch-and-lock-on-execute (default)
 db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
 db-scheduler.polling-strategy-upper-limit-fraction-of-threads=3.0
 
@@ -605,7 +602,7 @@ Observations for these tests:
   * seem to consistently handle 10k executions/s for these configurations
   * throughput did not scale with postgres instance-size (4-8 core), so bottleneck is somewhere else
 
-Currently, polling strategy `lock-and-fetch` is implemented only for Postgres. Contributions adding support for more databases are welcome.
+Currently, polling strategy `lock-and-fetch` is implemented only for Postgres (single statement mode), SQL Server and MySQL v8+ (generic mode). Contributions adding support for more databases are welcome.
 
 ### User testimonial
 
