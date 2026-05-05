@@ -294,7 +294,16 @@ public abstract class CompatibilityTest {
   }
 
   private ScheduledExecution<?> toScheduled(Execution execution) {
-    return new ScheduledExecution<>(String.class, execution);
+    return new ScheduledExecution<>(
+        String.class,
+        execution.taskInstance,
+        execution.executionTime,
+        execution.lastSuccess,
+        execution.lastFailure,
+        execution.consecutiveFailures,
+        execution.picked,
+        execution.pickedBy,
+        execution.taskInstance.getData());
   }
 
   private static List<String> idsFrom(List<Execution> firstPage) {

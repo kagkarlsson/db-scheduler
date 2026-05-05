@@ -20,65 +20,78 @@ import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Instant;
 import java.util.Objects;
 
-public class ScheduledExecution<DATA_TYPE> {
-  private final Class<DATA_TYPE> dataClass;
-  private final Execution execution;
+@SuppressWarnings("rawtypes")
+public record ScheduledExecution<DATA_TYPE>(
+    Class<DATA_TYPE> dataClass,
+    TaskInstanceId taskInstance,
+    Instant executionTime,
+    Instant lastSuccess,
+    Instant lastFailure,
+    int consecutiveFailures,
+    boolean picked,
+    String pickedBy,
+    Object taskData) {
 
-  public ScheduledExecution(Class<DATA_TYPE> dataClass, Execution execution) {
-    this.dataClass = dataClass;
-    this.execution = execution;
+  static <T> ScheduledExecution<T> from(Class<T> dataClass, Execution execution) {
+    return new ScheduledExecution<>(
+        dataClass,
+        execution.taskInstance,
+        execution.executionTime,
+        execution.lastSuccess,
+        execution.lastFailure,
+        execution.consecutiveFailures,
+        execution.picked,
+        execution.pickedBy,
+        execution.taskInstance.getData());
   }
 
   public TaskInstanceId getTaskInstance() {
-    return execution.taskInstance;
+    return taskInstance;
   }
 
   public Instant getExecutionTime() {
-    return execution.getExecutionTime();
+    return executionTime;
   }
 
   @SuppressWarnings("unchecked")
   public DATA_TYPE getData() {
-    Object data = this.execution.taskInstance.getData();
-    if (data == null) {
+    if (taskData == null) {
       return null;
-    } else if (dataClass.isInstance(data)) {
-      return (DATA_TYPE) data;
+    } else if (dataClass.isInstance(taskData)) {
+      return (DATA_TYPE) taskData;
     }
-    throw new DataClassMismatchException(dataClass, data.getClass());
+    throw new DataClassMismatchException(dataClass, taskData.getClass());
   }
 
   public boolean hasRawData() {
-    Object data = this.execution.taskInstance.getData();
-    return data == null || data.getClass().equals(byte[].class);
+    return taskData == null || taskData.getClass().equals(byte[].class);
   }
 
   public byte[] getRawData() {
     if (!hasRawData()) {
       throw new MissingRawDataException(dataClass);
     }
-
-    return (byte[]) this.execution.taskInstance.getData();
+    return (byte[]) taskData;
   }
 
   public Instant getLastSuccess() {
-    return execution.lastSuccess;
+    return lastSuccess;
   }
 
   public Instant getLastFailure() {
-    return execution.lastFailure;
+    return lastFailure;
   }
 
   public int getConsecutiveFailures() {
-    return execution.consecutiveFailures;
+    return consecutiveFailures;
   }
 
   public boolean isPicked() {
-    return execution.picked;
+    return picked;
   }
 
   public String getPickedBy() {
-    return execution.pickedBy;
+    return pickedBy;
   }
 
   @Override
@@ -86,16 +99,12 @@ public class ScheduledExecution<DATA_TYPE> {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ScheduledExecution<?> that = (ScheduledExecution<?>) o;
-    return Objects.equals(execution, that.execution);
+    return Objects.equals(executionTime, that.executionTime)
+        && Objects.equals(taskInstance, that.taskInstance);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(execution);
-  }
-
-  @Override
-  public String toString() {
-    return "ScheduledExecution{" + "execution=" + execution + '}';
+    return Objects.hash(executionTime, taskInstance);
   }
 }

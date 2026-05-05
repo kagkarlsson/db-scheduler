@@ -600,7 +600,7 @@ public interface SchedulerClient {
     public void fetchScheduledExecutions(
         ScheduledExecutionsFilter filter, Consumer<ScheduledExecution<Object>> consumer) {
       taskRepository.getScheduledExecutions(
-          filter, execution -> consumer.accept(new ScheduledExecution<>(Object.class, execution)));
+          filter, execution -> consumer.accept(ScheduledExecution.from(Object.class, execution)));
     }
 
     @Override
@@ -619,7 +619,7 @@ public interface SchedulerClient {
       taskRepository.getScheduledExecutions(
           filter,
           taskName,
-          execution -> consumer.accept(new ScheduledExecution<>(dataClass, execution)));
+          execution -> consumer.accept(ScheduledExecution.from(dataClass, execution)));
     }
 
     @Override
@@ -627,7 +627,7 @@ public interface SchedulerClient {
         TaskInstanceId taskInstanceId) {
       Optional<Execution> e =
           taskRepository.getExecution(taskInstanceId.getTaskName(), taskInstanceId.getId());
-      return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
+      return e.map(oe -> ScheduledExecution.from(Object.class, oe));
     }
   }
 
