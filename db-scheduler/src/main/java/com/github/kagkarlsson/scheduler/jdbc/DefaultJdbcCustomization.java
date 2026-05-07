@@ -26,9 +26,12 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Optional;
 import java.util.TimeZone;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DefaultJdbcCustomization implements JdbcCustomization {
 
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultJdbcCustomization.class);
   public static final Calendar UTC = GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"));
   protected final boolean persistTimestampInUTC;
 
@@ -126,4 +129,15 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
   public String getName() {
     return "Default";
   }
+
+  public static void warnIfNotPersistingInUTC(
+    boolean persistTimestampInUTC, Class<? extends JdbcCustomization> customization) {
+    if (!persistTimestampInUTC) {
+      LOG.warn(
+        "Always use .persistTimestampInUTC() with {} to ensure correct serialization/deserialization of"
+          + " timestamps.",
+        customization.getName());
+    }
+  }
+
 }

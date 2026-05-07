@@ -159,7 +159,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     if (!persistTimestampInUTC) {
       SILENCABLE_LOG.warn(
           "{}-schema uses zone-less type for time-columns and thus requires that timestamps are "
-              + "transferred in UTC-zone. Automatically enabling '.alwaysPersistTimestampInUTC()'. "
+              + "transferred in UTC-zone for less quirks. Automatically enabling '.alwaysPersistTimestampInUTC()'. "
               + "to preserve timezone information. It is recommended to enable ",
           database);
     }
