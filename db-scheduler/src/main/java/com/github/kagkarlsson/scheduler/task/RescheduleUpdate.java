@@ -25,7 +25,7 @@ public record RescheduleUpdate(
     @Nullable NewValue<Instant> lastFailure,
     @Nullable NewValue<Integer> consecutiveFailures) {
 
-  public static Builder to(Instant executionTime) {
+  public static Builder toExecutionTime(Instant executionTime) {
     return new Builder(executionTime);
   }
 

@@ -82,6 +82,8 @@ public interface TaskRepository {
 
   void reactivate(Execution execution, Instant newExecutionTime);
 
+  boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
+
   boolean reschedule(
       Execution execution,
       Instant nextExecutionTime,
@@ -96,8 +98,6 @@ public interface TaskRepository {
       Instant lastSuccess,
       Instant lastFailure,
       int consecutiveFailures);
-
-  boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
 
   Optional<Execution> pick(Execution e, Instant timePicked);
 

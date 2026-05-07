@@ -151,10 +151,10 @@ public class JdbcTaskRepository implements TaskRepository {
     this.jdbcRunner = jdbcRunner;
     this.serializer = serializer;
     this.jdbcCustomization = jdbcCustomization;
+    this.jdbcConfig = new JdbcConfig(tableName, jdbcRunner, jdbcCustomization);
     this.orderByPriority = orderByPriority;
     this.clock = clock;
     this.insertQuery = getInsertQuery(tableName);
-    this.jdbcConfig = new JdbcConfig(tableName, jdbcRunner, jdbcCustomization);
   }
 
   private static <T> Supplier<T> memoize(Supplier<T> original) {
@@ -558,7 +558,7 @@ public class JdbcTaskRepository implements TaskRepository {
       int consecutiveFailures) {
     return reschedule(
         execution,
-        RescheduleUpdate.to(nextExecutionTime)
+        RescheduleUpdate.toExecutionTime(nextExecutionTime)
             .lastSuccess(lastSuccess)
             .lastFailure(lastFailure)
             .consecutiveFailures(consecutiveFailures)
@@ -575,7 +575,7 @@ public class JdbcTaskRepository implements TaskRepository {
       int consecutiveFailures) {
     return reschedule(
         execution,
-        RescheduleUpdate.to(nextExecutionTime)
+        RescheduleUpdate.toExecutionTime(nextExecutionTime)
             .data(newData)
             .lastSuccess(lastSuccess)
             .lastFailure(lastFailure)

@@ -23,6 +23,7 @@
     <bytebuddy.version>1.17.8</bytebuddy.version>
     <zonky-pg-embedded.version>2.1.1</zonky-pg-embedded.version>
     <slf4j.version>1.7.36</slf4j.version>
+    <assertj.version>3.27.6</assertj.version>
     <test.excludedTags>compatibility,compatibility-cluster</test.excludedTags>
   </properties>
 
@@ -81,7 +82,6 @@
     <dependency>
       <groupId>org.jspecify</groupId>
       <artifactId>jspecify</artifactId>
-      <version>1.0.0</version>
     </dependency>
     <!-- Shaded -->
     <dependency>
@@ -174,7 +174,7 @@
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
-      <version>3.27.6</version>
+      <version>${assertj.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

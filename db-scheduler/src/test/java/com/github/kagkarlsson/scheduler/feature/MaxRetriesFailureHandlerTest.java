@@ -81,7 +81,7 @@ public class MaxRetriesFailureHandlerTest {
                 .retryEvery(RETRY_INTERVAL)
                 .then(
                     (complete, ops) ->
-                        ops.reschedule(RescheduleUpdate.to(tomorrow).resetFailures().build())));
+                        ops.reschedule(RescheduleUpdate.toExecutionTime(tomorrow).resetFailures().build())));
 
     runTimes(3);
 
@@ -103,7 +103,7 @@ public class MaxRetriesFailureHandlerTest {
                 .then(
                     (complete, ops) ->
                         ops.reschedule(
-                            RescheduleUpdate.to(tomorrow).consecutiveFailures(10).build())));
+                            RescheduleUpdate.toExecutionTime(tomorrow).consecutiveFailures(10).build())));
 
     runTimes(3);
 
@@ -146,7 +146,7 @@ public class MaxRetriesFailureHandlerTest {
                 .retryEvery(RETRY_INTERVAL)
                 .then(
                     (complete, ops) ->
-                        ops.reschedule(RescheduleUpdate.to(tomorrow).resetFailures().build())));
+                        ops.reschedule(RescheduleUpdate.toExecutionTime(tomorrow).resetFailures().build())));
 
     runTimes(2);
 

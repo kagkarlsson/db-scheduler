@@ -35,8 +35,6 @@ public class JdbcTaskRepositoryExceptionsTest {
   JdbcTaskRepository jdbcTaskRepository;
 
   @Mock JdbcRunner mockJdbcRunner;
-  @Mock JdbcCustomization mockJdbcCustomization;
-  @Mock Serializer mockSerializer;
 
   private String expectedTableName;
 
@@ -45,11 +43,11 @@ public class JdbcTaskRepositoryExceptionsTest {
     expectedTableName = randomAlphanumeric(5);
     jdbcTaskRepository =
         new JdbcTaskRepository(
-            mockJdbcCustomization,
+            new DefaultJdbcCustomization(false),
             expectedTableName,
             null,
             null,
-            mockSerializer,
+            Serializer.DEFAULT_JAVA_SERIALIZER,
             mockJdbcRunner,
             false,
             new SystemClock());
@@ -170,9 +168,9 @@ public class JdbcTaskRepositoryExceptionsTest {
     TaskInstance<Void> taskInstance =
         new TaskInstance<>(randomAlphanumeric(10), randomAlphanumeric(10));
     Execution execution = new Execution(Instant.now(), taskInstance);
-    TaskInstanceException actualException =
+    ExecutionException actualException =
         assertThrows(
-            TaskInstanceException.class,
+            ExecutionException.class,
             () -> {
               jdbcTaskRepository.reschedule(execution, Instant.now(), null, null, 0);
             });
@@ -185,6 +183,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             + taskInstance.getId()
             + ")",
         actualException.getMessage());
+    assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());
   }
@@ -192,7 +191,6 @@ public class JdbcTaskRepositoryExceptionsTest {
   @ParameterizedTest(name = "Reschedule with new data ends up modifying {0} records")
   @ValueSource(ints = {0, 2})
   public void rescheduleUpdatesUnexpectedNumberOfRowsWithNewData(int updateCount) {
-    when(mockSerializer.serialize(any())).thenReturn(new byte[0]);
     when(mockJdbcRunner.execute(
             ArgumentMatchers.startsWith("UPDATE " + expectedTableName + " SET "),
             any(PreparedStatementSetter.class)))
@@ -201,11 +199,11 @@ public class JdbcTaskRepositoryExceptionsTest {
     TaskInstance<Void> taskInstance =
         new TaskInstance<>(randomAlphanumeric(10), randomAlphanumeric(10));
     Execution execution = new Execution(Instant.now(), taskInstance);
-    TaskInstanceException actualException =
+    ExecutionException actualException =
         assertThrows(
-            TaskInstanceException.class,
+            ExecutionException.class,
             () -> {
-              jdbcTaskRepository.reschedule(execution, Instant.now(), "newData", null, null, 0);
+              jdbcTaskRepository.reschedule(execution, Instant.now(), "", null, null, 0);
             });
     assertEquals(
         "Expected one execution to be updated, but updated "
@@ -216,6 +214,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             + taskInstance.getId()
             + ")",
         actualException.getMessage());
+    assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());
   }

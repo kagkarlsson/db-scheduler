@@ -12,6 +12,11 @@
   <url>https://github.com/kagkarlsson/db-scheduler</url>
   <inceptionYear>2015</inceptionYear>
 
+  <organization>
+    <name>Gustav Karlsson</name>
+    <url>https://github.com/kagkarlsson</url>
+  </organization>
+
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -44,10 +49,6 @@
       <id>ossrh</id>
       <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
   </distributionManagement>
 
   <properties>
@@ -67,8 +68,8 @@
     <!-- Dependency versions -->
     <slf4j.version>1.7.36</slf4j.version>
     <logback.version>1.2.13</logback.version>
-    <spring-boot.version>3.5.5</spring-boot.version>
-    <spring-boot-4.version>4.0.1</spring-boot-4.version>
+    <spring-boot.version>3.5.11</spring-boot.version>
+    <spring-boot-4.version>4.0.3</spring-boot-4.version>
     <micrometer.version>1.15.3</micrometer.version>
     <gson.version>2.13.2</gson.version>
     <jackson.version>2.20.0</jackson.version>
@@ -98,6 +99,11 @@
         <version>1.21.3</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jspecify</groupId>
+        <artifactId>jspecify</artifactId>
+        <version>1.0.0</version>
       </dependency>
       <!-- Override to make testcontainers work on M1 -->
       <dependency>
@@ -277,28 +283,6 @@
           <artifactId>maven-deploy-plugin</artifactId>
           <version>3.1.4</version>
         </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-gpg-plugin</artifactId>
-          <version>1.6</version>
-          <configuration>
-            <keyname>github.com/kagkarlsson</keyname>
-            <passphraseServerId>github.com/kagkarlsson</passphraseServerId>
-            <gpgArguments>
-              <arg>--pinentry-mode</arg>
-              <arg>loopback</arg>
-            </gpgArguments>
-          </configuration>
-          <executions>
-            <execution>
-              <id>sign-artifacts</id>
-              <goals>
-                <goal>sign</goal>
-              </goals>
-              <phase>verify</phase>
-            </execution>
-          </executions>
-        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -342,6 +326,9 @@
             <includes>
               <include>**/*.md</include>
             </includes>
+            <excludes>
+              <exclude>.claude/**</exclude>
+            </excludes>
             <flexmark/>
           </markdown>
         </configuration>
@@ -374,9 +361,6 @@
           </plugin>
           <plugin>
             <artifactId>maven-source-plugin</artifactId>
-          </plugin>
-          <plugin>
-            <artifactId>maven-gpg-plugin</artifactId>
           </plugin>
         </plugins>
       </build>

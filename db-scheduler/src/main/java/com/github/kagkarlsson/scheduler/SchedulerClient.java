@@ -574,7 +574,7 @@ public interface SchedulerClient {
       }
 
       RescheduleUpdate.Builder rescheduleUpdate =
-          RescheduleUpdate.to(newExecutionTime)
+          RescheduleUpdate.toExecutionTime(newExecutionTime)
               .lastSuccess(null)
               .lastFailure(null)
               .consecutiveFailures(0);

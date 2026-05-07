@@ -1,6 +1,5 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import static com.github.kagkarlsson.scheduler.TestTasks.ONETIME_TASK;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
@@ -29,6 +28,10 @@ class ExecutionUpdateTest {
   private static final String TASK_ID = "id-1";
   private static final Instant AN_INSTANT = Instant.parse("2020-01-01T12:00:00.00Z");
   private static final Instant ANOTHER_INSTANT = Instant.parse("2022-01-01T12:00:00.00Z");
+
+  private static final OneTimeTask<Void> ONETIME_TASK =
+      Tasks.oneTime("task-onetime")
+          .execute((TaskInstance<Void> taskInstance, ExecutionContext ctx) -> {});
 
   private static final OneTimeTask<String> STRING_TASK =
       Tasks.oneTime("string-tas", String.class)
