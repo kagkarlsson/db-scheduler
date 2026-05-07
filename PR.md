@@ -15,9 +15,9 @@ but keeping it as a historic record for deduplicatation or possibility to resume
 
 ### Schema/query changes
 
-- [ ] Add nullable `state` column (text/varchar). (null considered 'active')
-- [ ] Suggest appropriate indices in schema-files
-- [ ] Existing queries for fetching due is updated with state-condition: `(state=ACTIVE or state is null)`
+- [x] Add nullable `state` column (text/varchar). (null considered 'active')
+- [x] Suggest appropriate indices in schema-files
+- [x] Existing queries for fetching due is updated with state-condition: `(state=ACTIVE or state is null)`
 
 ### Execution states
 
