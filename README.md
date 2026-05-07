@@ -347,8 +347,6 @@ The Oracle-schema uses a `TIMESTAMPTZ` type, only use this override if also chan
 **NB:** The default behavior for "unknown" databases is to assume the database correctly handles instants. For "known" databases,
 see the class `AutodetectJdbcCustomization`.
 
-
-
 ### Task configuration
 
 Tasks are created using one of the builder-classes in `Tasks`. The builders have sensible defaults, but the following options can be overridden.

@@ -383,10 +383,9 @@ public abstract class CompatibilityTest {
   }
 
   /**
-   * Verifies that there is no drift when storing and retrieving timestamps.
-   * The JVM timezone is forced to a DST-observing zone, and database should be running in
-   * separate zone for better tests (-08:00).
-   * Also logs zone-offset in both jvm and db for debuggability.
+   * Verifies that there is no drift when storing and retrieving timestamps. The JVM timezone is
+   * forced to a DST-observing zone, and database should be running in separate zone for better
+   * tests (-08:00). Also logs zone-offset in both jvm and db for debuggability.
    */
   @Test
   public void test_no_drift_when_storing_and_retrieving_instants() {

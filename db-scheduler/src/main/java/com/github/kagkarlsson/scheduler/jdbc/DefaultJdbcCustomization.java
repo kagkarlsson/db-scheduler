@@ -131,13 +131,12 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
   }
 
   public static void warnIfNotPersistingInUTC(
-    boolean persistTimestampInUTC, Class<? extends JdbcCustomization> customization) {
+      boolean persistTimestampInUTC, Class<? extends JdbcCustomization> customization) {
     if (!persistTimestampInUTC) {
       LOG.warn(
-        "Always use .persistTimestampInUTC() with {} to ensure correct serialization/deserialization of"
-          + " timestamps.",
-        customization.getName());
+          "Always use .persistTimestampInUTC() with {} to ensure correct serialization/deserialization of"
+              + " timestamps.",
+          customization.getName());
     }
   }
-
 }
