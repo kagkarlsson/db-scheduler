@@ -12,6 +12,11 @@
   <url>https://github.com/kagkarlsson/db-scheduler</url>
   <inceptionYear>2015</inceptionYear>
 
+  <organization>
+    <name>Gustav Karlsson</name>
+    <url>https://github.com/kagkarlsson</url>
+  </organization>
+
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -347,6 +352,9 @@
             <includes>
               <include>**/*.md</include>
             </includes>
+            <excludes>
+              <exclude>.claude/**</exclude>
+            </excludes>
             <flexmark/>
           </markdown>
         </configuration>
