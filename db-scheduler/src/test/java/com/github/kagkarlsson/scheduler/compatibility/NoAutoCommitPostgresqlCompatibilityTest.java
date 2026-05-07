@@ -52,4 +52,9 @@ public class NoAutoCommitPostgresqlCompatibilityTest extends CompatibilityTest {
   public boolean commitWhenAutocommitDisabled() {
     return true;
   }
+
+  @Override
+  protected String readDbSessionZone() {
+    return querySingleString("SHOW timezone");
+  }
 }

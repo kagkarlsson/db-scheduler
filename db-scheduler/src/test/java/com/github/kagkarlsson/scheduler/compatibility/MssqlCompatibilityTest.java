@@ -6,13 +6,14 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 import com.github.kagkarlsson.scheduler.DbUtils;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
+import com.github.kagkarlsson.scheduler.jdbc.MssqlJdbcCustomization;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.jdbc.MssqlJdbcCustomization;
 import com.github.kagkarlsson.scheduler.serializer.JacksonSerializer;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -20,6 +21,7 @@ import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.util.DriverDataSource;
+import java.util.Optional;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -54,7 +56,8 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
   @Container
   private static final MSSQLServerContainer MSSQL =
       new MSSQLServerContainer<>(
-          DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"));
+              DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"))
+          .withEnv("TZ", "America/Los_Angeles");
 
   private static DataSource pooledDatasource;
 
@@ -177,5 +180,15 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
             }
           }
         });
+  }
+
+  @Override
+  public Optional<JdbcCustomization> getJdbcCustomization() {
+    return Optional.of(new MssqlJdbcCustomization(true));
+  }
+
+  @Override
+  protected String readDbSessionZone() {
+    return querySingleString("SELECT CURRENT_TIMEZONE()");
   }
 }

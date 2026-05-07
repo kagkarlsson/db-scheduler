@@ -45,6 +45,8 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
                     .build();
           }
           config.setDataSource(nonPooledDatasource);
+          // Force a non-UTC session TZ so tests exercise the "session TZ ≠ JVM TZ" path.
+          config.setConnectionInitSql("SET timezone = 'America/Los_Angeles'");
 
           dataSource = new HikariDataSource(config);
 

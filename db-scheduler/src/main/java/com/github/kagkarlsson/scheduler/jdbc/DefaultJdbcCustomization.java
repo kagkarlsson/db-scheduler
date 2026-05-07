@@ -19,6 +19,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -28,10 +30,9 @@ import java.util.TimeZone;
 public class DefaultJdbcCustomization implements JdbcCustomization {
 
   public static final Calendar UTC = GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"));
-  private final boolean persistTimestampInUTC;
+  protected final boolean persistTimestampInUTC;
 
   public DefaultJdbcCustomization(boolean persistTimestampInUTC) {
-
     this.persistTimestampInUTC = persistTimestampInUTC;
   }
 
@@ -43,9 +44,12 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
     }
 
     if (persistTimestampInUTC) {
+      // Plain TIMESTAMP column (zone-less). Bind via UTC Calendar so the value is
+      // transferred and stored as UTC regardless of session/JVM time zone.
       p.setTimestamp(index, Timestamp.from(value), UTC);
     } else {
-      p.setTimestamp(index, Timestamp.from(value));
+      // TIMESTAMP WITH TIME ZONE column. Use setObject(OffsetDateTime)
+      p.setObject(index, value.atOffset(ZoneOffset.UTC));
     }
   }
 
@@ -56,8 +60,8 @@ public class DefaultJdbcCustomization implements JdbcCustomization {
           .map(Timestamp::toInstant)
           .orElse(null);
     } else {
-      return Optional.ofNullable(rs.getTimestamp(columnName))
-          .map(Timestamp::toInstant)
+      return Optional.ofNullable(rs.getObject(columnName, OffsetDateTime.class))
+          .map(OffsetDateTime::toInstant)
           .orElse(null);
     }
   }

@@ -1,4 +1,5 @@
 ---
+
 name: schema-change
 description: Use when changing the db-scheduler database schema (adding/removing/altering columns, indexes, or the scheduled_tasks table). Walks through the lock-step update across every supported DB dialect, the matching JdbcCustomization changes, and the documentation copies. Skip for code-only changes that don't touch table structure.
 ---

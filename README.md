@@ -213,14 +213,13 @@ Number of threads. Default `10`.
 How often the scheduler checks the database for due executions. Default `10s`.<br/>
 
 :gear: `.alwaysPersistTimestampInUTC()`<br/>
-The Scheduler assumes that columns for persisting timestamps persist `Instant`s, not `LocalDateTime`s,
-i.e. somehow tie the timestamp to a zone. However, some databases have limited support for such types
-(which has no zone information) or other quirks, making "always store in UTC" a better alternative.
-For such cases, use this setting to always store Instants in UTC.
-PostgreSQL and Oracle-schemas is tested to preserve zone-information. **MySQL** and **MariaDB**-schemas
-_does not_ and should use this setting.
-**NB:** For backwards compatibility, the default behavior
-for "unknown" databases is to assume the database preserves time zone. For "known" databases,
+By default the Scheduler assumes that the underlying database-schema stores instants,
+i.e. somehow ties timestamps to zones. However, some databases have limited support for this
+or other quirks, requiring overriding how timestamps are transferred and stored.
+For such cases, use this setting to always transfer, store and retrieve Instants in UTC.
+**Update:** Regardless of this setting, this is now always enabled for SQL Server, MySQL and MariaDB.
+The Oracle-schema uses a `TIMESTAMPTZ` type, only use this override if also changing type to `TIMESTAMP`.
+**NB:** The default behavior for "unknown" databases is to assume the database correctly handles instants. For "known" databases,
 see the class `AutodetectJdbcCustomization`.
 
 :gear: `.enableImmediateExecution()`<br/>
