@@ -6,7 +6,6 @@ import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import java.time.Instant;
-import java.util.List;
 
 public class SchedulerTester {
 
