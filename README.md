@@ -279,10 +279,10 @@ as they do not support descending indexes.
 #### Polling strategy
 
 If you are running >1000 executions/s you might want to use the `lock-and-fetch` polling-strategy for lower overhead
-and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` (configured as `fetch` in Fluent API and Spring Boot) will be fine.
+and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch` will be fine.
 
-:gear: `.pollUsingFetchAndLockOnExecute(double, double)`<br/>
-Use default polling strategy `fetch-and-lock-on-execute`.<br/>
+:gear: `.pollUsingFetch(double, double)`<br/>
+Use default polling strategy `fetch`.<br/>
 If the last fetch from the database was a full batch (`executionsPerBatchFractionOfThreads`), a new fetch will be triggered
 when the number of executions left are less than or equal to `lowerLimitFractionOfThreads * nr-of-threads`.
 Fetched executions are not locked/picked, so the scheduler will compete with other instances for the lock
@@ -464,7 +464,7 @@ db-scheduler.priority-enabled=false
 # Ignored if a custom DbSchedulerStarter bean is defined
 db-scheduler.delay-startup-until-context-ready=false
 
-db-scheduler.polling-strategy=fetch # fetch-and-lock-on-execute (default)
+db-scheduler.polling-strategy=fetch
 db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
 db-scheduler.polling-strategy-upper-limit-fraction-of-threads=3.0
 
@@ -560,9 +560,9 @@ While db-scheduler initially was targeted at low-to-medium throughput use-cases,
 due to the fact that its data-model is very simple, consisting of a single table of executions.
 To understand how it will perform, it is useful to consider the SQL statements it runs per batch of executions.
 
-### Polling strategy fetch-and-lock-on-execute
+### Polling strategy fetch
 
-The original and default polling strategy, `fetch-and-lock-on-execute`, will do the following:
+The original and default polling strategy, `fetch`, will do the following:
 1. `select` a batch of due executions
 2. For every execution, on execute, try to `update` the execution to `picked=true` for this scheduler-instance. May miss due to competing schedulers.
 3. If execution was picked, when execution is done, `update` or `delete` the record according to handlers.
@@ -597,7 +597,7 @@ TPS is the approx. transactions per second as shown in GCP.
 
 Observations for these tests:
 
-* For `fetch-and-lock-on-execute`
+* For `fetch`
   * TPS ≈ 4-5 * execution-throughput. A bit higher than the best-case 2 * execution-throughput, likely due the inefficiency of missed executions.
   * throughput did scale with postgres instance-size, from 2000 executions/s on 4core to 4000 executions/s on 8core
 * For `lock-and-fetch`
