@@ -77,10 +77,10 @@ public abstract class CompatibilityTest {
   private static final int POLLING_LIMIT = 10_000;
   private static final TaskDescriptor<String> ONETIME = TaskDescriptor.of("oneTime", String.class);
   private static final Instant anInstant = truncatedInstantNow();
-  private Logger LOG = LoggerFactory.getLogger(getClass());
   private final boolean supportsSelectForUpdate;
   private final boolean shouldHavePersistentTimezone;
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
+  private Logger LOG = LoggerFactory.getLogger(getClass());
   private TestTasks.CountingHandler<String> delayingHandlerOneTime;
   private TestTasks.CountingHandler<Void> delayingHandlerRecurring;
   private OneTimeTask<String> oneTime;
@@ -93,6 +93,10 @@ public abstract class CompatibilityTest {
   public CompatibilityTest(boolean supportsSelectForUpdate, boolean shouldHavePersistentTimezone) {
     this.supportsSelectForUpdate = supportsSelectForUpdate;
     this.shouldHavePersistentTimezone = shouldHavePersistentTimezone;
+  }
+
+  private static List<String> idsFrom(List<Execution> firstPage) {
+    return firstPage.stream().map(Execution::getId).toList();
   }
 
   public abstract DataSource getDataSource();
@@ -305,10 +309,6 @@ public abstract class CompatibilityTest {
     return new ScheduledExecution<>(String.class, execution);
   }
 
-  private static List<String> idsFrom(List<Execution> firstPage) {
-    return firstPage.stream().map(Execution::getId).toList();
-  }
-
   private void schedule(
       JdbcTaskRepository repo,
       TaskDescriptor<String> descriptor,
@@ -383,12 +383,10 @@ public abstract class CompatibilityTest {
   }
 
   /**
-   * Verifies that with {@code alwaysPersistTimestampInUTC()} + plain {@code TIMESTAMP} columns
-   * there is no drift across DST transitions. The JVM timezone is forced to a DST-observing zone
-   * (Europe/Oslo) and instants in winter, summer, and straddling both DST boundaries are
-   * round-tripped through the repository.
-   *
-   * <p>Regression test for kagkarlsson/db-scheduler#794.
+   * Verifies that there is no drift when storing and retrieving timestamps.
+   * The JVM timezone is forced to a DST-observing zone, and database should be running in
+   * separate zone for better tests (-08:00).
+   * Also logs zone-offset in both jvm and db for debuggability.
    */
   @Test
   public void test_no_drift_when_storing_and_retrieving_instants() {
@@ -427,7 +425,6 @@ public abstract class CompatibilityTest {
       assertRoundTrip(task, taskRepo, "spring_after", Instant.parse("2020-03-29T01:30:00Z"));
 
       // Fall-back boundary: 2020-10-25 local 03:00 CEST -> 02:00 CET (01:00 UTC).
-      // The local 02:00-03:00 hour is ambiguous — most likely place for fold-related drift.
       assertRoundTrip(task, taskRepo, "fall_before", Instant.parse("2020-10-25T00:30:00Z"));
       assertRoundTrip(task, taskRepo, "fall_after", Instant.parse("2020-10-25T01:30:00Z"));
 
