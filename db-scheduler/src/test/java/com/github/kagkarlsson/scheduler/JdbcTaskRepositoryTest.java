@@ -38,18 +38,22 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
-import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class JdbcTaskRepositoryTest {
 
@@ -552,89 +556,56 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
   }
 
-  @Test
-  public void
-      lockAndGetDue_should_release_unknown_picked_tasks_for_single_statement_lock_and_fetch() {
+  @ParameterizedTest
+  @MethodSource("fetchMethodsAndIsLockAndFetch")
+  public void should_release_unknown_tasks(
+      BiFunction<Instant, JdbcTaskRepository, List<Execution>> taskSupplier, boolean lockAndFetch) {
     Instant now = Instant.now();
-    TaskInstance<?> knownTaskInstance = oneTimeTask.instance(UUID.randomUUID().toString());
-    TaskInstance<?> unknownTaskInstance1 =
-        unknownOneTimeTask.instance(UUID.randomUUID().toString());
-    TaskInstance<?> unknownOneTimeTaskInstance2 =
-        unknownOneTimeTask.instance(UUID.randomUUID().toString());
-    TaskInstance<?> unknownAlternativeOneTimeTaskInstance =
-        unknownSecondOneTimeTask.instance(UUID.randomUUID().toString());
+    TaskInstance<?> knownTaskInstance = oneTimeTask.instance("knownTaskInstance");
+    TaskInstance<?> unknownInstance1 = unknownOneTimeTask.instance("unknownInstance1");
+    TaskInstance<?> unknownInstance2 = unknownOneTimeTask.instance("unknownInstance2");
+    TaskInstance<?> unknownAlternativeTaskInstance =
+        unknownSecondOneTimeTask.instance("unknownAlternativeTaskInstance");
 
-    // Create unregistered (unknown) task instances
-    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(knownTaskInstance, now));
-    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(unknownTaskInstance1, now));
-    taskRepository.createIfNotExists(
-        new SchedulableTaskInstance<>(unknownOneTimeTaskInstance2, now));
-    taskRepository.createIfNotExists(
-        new SchedulableTaskInstance<>(unknownAlternativeOneTimeTaskInstance, now));
+    createIfNotExists(
+        SchedulableInstance.of(knownTaskInstance, now),
+        SchedulableInstance.of(unknownInstance1, now),
+        SchedulableInstance.of(unknownInstance2, now),
+        SchedulableInstance.of(unknownAlternativeTaskInstance, now));
 
-    // Try to pick the tasks (simulate adding to unresolved filter)
-    List<Execution> picked = taskRepository.lockAndGetDue(now, POLLING_LIMIT);
+    List<Execution> picked = taskSupplier.apply(now, taskRepository);
     assertThat(picked, hasSize(1));
     assertTrue(taskResolver.isUnresolved(unknownOneTimeTask.getName()));
     assertTrue(taskResolver.isUnresolved(unknownSecondOneTimeTask.getName()));
 
-    checkPicked(knownTaskInstance, true);
-    checkPicked(unknownTaskInstance1, false);
-    checkPicked(unknownOneTimeTaskInstance2, false);
-    checkPicked(unknownAlternativeOneTimeTaskInstance, false);
+    checkPicked(lockAndFetch, knownTaskInstance);
+    checkPicked(false, unknownInstance1, unknownInstance2, unknownAlternativeTaskInstance);
   }
 
-  @Test
-  public void lockAndFetchGeneric_should_release_unknown_picked_tasks_for_generic_lock_and_fetch() {
-    Instant now = Instant.now();
-    TaskInstance<?> knownTaskInstance = oneTimeTask.instance(UUID.randomUUID().toString());
-    TaskInstance<?> unknownTaskInstance = unknownOneTimeTask.instance(UUID.randomUUID().toString());
-
-    // Create unregistered (unknown) task instances
-    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(knownTaskInstance, now));
-    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(unknownTaskInstance, now));
-
-    // Try to pick the tasks (simulate adding to unresolved filter)
-    List<Execution> picked = taskRepository.lockAndFetchGeneric(now, POLLING_LIMIT);
-    assertThat(picked, hasSize(1));
-    assertTrue(taskResolver.isUnresolved(unknownOneTimeTask.getName()));
-
-    checkPicked(knownTaskInstance, true);
-    checkPicked(unknownTaskInstance, false);
-  }
-
-  @Test
-  public void unpickPickedBatch_should_release_unknown_picked_tasks() {
-    Instant now = Instant.now();
-    TaskInstance<?> knownTaskInstance = oneTimeTask.instance(UUID.randomUUID().toString());
-    TaskInstance<?> unknownTaskInstance = unknownOneTimeTask.instance(UUID.randomUUID().toString());
-
-    // Create unregistered (unknown) task instances
-    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(knownTaskInstance, now));
-    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(unknownTaskInstance, now));
-    Execution execution1 = taskRepository.getExecution(knownTaskInstance).orElseThrow();
-    Execution execution2 = taskRepository.getExecution(unknownTaskInstance).orElseThrow();
-    taskRepository.pick(execution1, now);
-    taskRepository.pick(execution2, now);
-
-    execution1 = taskRepository.getExecution(knownTaskInstance).orElseThrow();
-    execution2 = taskRepository.getExecution(unknownTaskInstance).orElseThrow();
-
-    taskRepository.unpickPickedBatch(List.of(execution1, execution2));
-
-    checkPicked(knownTaskInstance, false);
-    checkPicked(unknownTaskInstance, false);
+  static List<Arguments> fetchMethodsAndIsLockAndFetch() {
+    BiFunction<Instant, JdbcTaskRepository, List<Execution>> getDue =
+        (now, taskRepo) -> taskRepo.getDue(now, POLLING_LIMIT);
+    BiFunction<Instant, JdbcTaskRepository, List<Execution>> lockAndFetchGeneric =
+        (now, taskRepo) -> taskRepo.lockAndFetchGeneric(now, POLLING_LIMIT);
+    BiFunction<Instant, JdbcTaskRepository, List<Execution>> lockAndGetDue =
+        (now, taskRepo) -> taskRepo.lockAndGetDue(now, POLLING_LIMIT);
+    return List.of(
+        Arguments.of(getDue, false),
+        Arguments.of(lockAndFetchGeneric, true),
+        Arguments.of(lockAndGetDue, true));
   }
 
   @Test
   public void unpickPickedBatch_should_throw_exception_if_one_of_tasks_is_not_picked() {
     Instant now = Instant.now();
-    TaskInstance<?> knownTaskInstance = oneTimeTask.instance(UUID.randomUUID().toString());
-    TaskInstance<?> unknownTaskInstance = unknownOneTimeTask.instance(UUID.randomUUID().toString());
+    TaskInstance<?> knownTaskInstance = oneTimeTask.instance("knownTaskInstance");
+    TaskInstance<?> unknownTaskInstance = unknownOneTimeTask.instance("unknownTaskInstance");
 
-    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(knownTaskInstance, now));
-    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(unknownTaskInstance, now));
+    taskRepository.createIfNotExists(SchedulableInstance.of(knownTaskInstance, now));
+    taskRepository.createIfNotExists(SchedulableInstance.of(unknownTaskInstance, now));
     taskRepository.pick(taskRepository.getExecution(knownTaskInstance).orElseThrow(), now);
+    Execution notFoundExecution =
+        new Execution(Instant.now(), oneTimeTask.instance("unknownTaskInstance"));
 
     Execution execution1 = taskRepository.getExecution(knownTaskInstance).orElseThrow();
     Execution execution2 = taskRepository.getExecution(unknownTaskInstance).orElseThrow();
@@ -642,48 +613,13 @@ public class JdbcTaskRepositoryTest {
     FailedToUnpickBatchException ex =
         assertThrows(
             FailedToUnpickBatchException.class,
-            () -> taskRepository.unpickPickedBatch(List.of(execution1, execution2)));
+            () ->
+                taskRepository.unpickPickedBatch(
+                    List.of(execution1, execution2, notFoundExecution)));
 
     assertEquals(
-        "Error while unpicking tasks batch. Failed to unpick: [%s], successfully unpicked: [%s]"
-            .formatted(execution2, execution1),
-        ex.getMessage());
-  }
-
-  @Test
-  public void unpickPickedBatch_should_throw_exception_if_one_of_tasks_version_is_updated() {
-    Instant now = Instant.now();
-    TaskInstance<?> knownTaskInstance = oneTimeTask.instance(UUID.randomUUID().toString());
-
-    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(knownTaskInstance, now));
-    Execution execution = taskRepository.getExecution(knownTaskInstance).orElseThrow();
-    taskRepository.pick(execution, now);
-
-    FailedToUnpickBatchException ex =
-        assertThrows(
-            FailedToUnpickBatchException.class,
-            () -> taskRepository.unpickPickedBatch(List.of(execution)));
-
-    assertEquals(
-        "Error while unpicking tasks batch. Failed to unpick: [%s], successfully unpicked: []"
-            .formatted(execution),
-        ex.getMessage());
-  }
-
-  @Test
-  public void unpickPickedBatch_should_throw_exception_if_tasks_not_found() {
-    TaskInstance<?> knownTaskInstance = oneTimeTask.instance(UUID.randomUUID().toString());
-
-    Execution execution = new Execution(Instant.now(), knownTaskInstance);
-
-    FailedToUnpickBatchException ex =
-        assertThrows(
-            FailedToUnpickBatchException.class,
-            () -> taskRepository.unpickPickedBatch(List.of(execution)));
-
-    assertEquals(
-        "Error while unpicking tasks batch. Failed to unpick: [%s], successfully unpicked: []"
-            .formatted(execution),
+        "Error while unpicking tasks batch. Failed to unpick: [%s, %s], successfully unpicked: [%s]"
+            .formatted(execution2, notFoundExecution, execution1),
         ex.getMessage());
   }
 
@@ -693,7 +629,7 @@ public class JdbcTaskRepositoryTest {
   }
 
   @Test
-  void unpickPickedBatch_should_not_crash_when_Picked_batch_task_not_in_database() {
+  public void unpickPickedBatch_should_not_crash_when_Picked_batch_task_not_in_database() {
     Execution execution1 =
         new Execution(Instant.now(), new TaskInstance<>("task-that-does-not-exist", "1"));
     Execution execution2 =
@@ -741,9 +677,16 @@ public class JdbcTaskRepositoryTest {
     return executions.get(0);
   }
 
-  private void checkPicked(TaskInstanceId taskInstance, boolean picked) {
-    Execution execution = taskRepository.getExecution(taskInstance).orElseThrow();
-    assertEquals(
-        picked, execution.picked, "Task instance %s picked field check".formatted(taskInstance));
+  private void createIfNotExists(SchedulableInstance<?>... schedulableInstance) {
+    Arrays.stream(schedulableInstance).forEach(taskRepository::createIfNotExists);
+  }
+
+  private void checkPicked(boolean picked, TaskInstanceId... taskInstances) {
+    Arrays.stream(taskInstances)
+        .forEach(
+            taskInstance -> {
+              Execution execution = taskRepository.getExecution(taskInstance).orElseThrow();
+              assertEquals(picked, execution.picked);
+            });
   }
 }

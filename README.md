@@ -554,6 +554,16 @@ JVM running the scheduler suddenly exits.
 When a dead execution is found, the `Task`is consulted to see what should be done. A dead
 `RecurringTask` is typically rescheduled to `now()`.
 
+### Unknown tasks
+
+If a task instance is found in the database but the corresponding task definition is not registered in the service (e.g., during due execution or dead execution housekeeping), it is treated as an unknown task (see [`TaskResolver`](https://github.com/kagkarlsson/db-scheduler/blob/master/db-scheduler/src/main/java/com/github/kagkarlsson/scheduler/TaskResolver.java)).
+
+Behavior of unknown tasks:
+
+* They are excluded from polling — the current instance will not attempt to pick or execute them.
+* They remain in the database so other instances (e.g., newer versions in a rolling update or canary deployment) can pick and process them.
+* They are **automatically removed** after a configured retention period `deleteUnresolvedAfter`, if they remain unresolved.
+
 ## Performance
 
 While db-scheduler initially was targeted at low-to-medium throughput use-cases, it handles high-throughput use-cases (1000+ executions/second) quite well

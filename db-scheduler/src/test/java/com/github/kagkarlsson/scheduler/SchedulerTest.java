@@ -28,10 +28,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -345,20 +349,20 @@ public class SchedulerTest {
     }
   }
 
-  @Test
-  public void
-      should_unpick_unresolved_tasks_during_rolling_update_in_single_statement_lock_and_fetch() {
+  @ParameterizedTest
+  @MethodSource("pollingStrategySetters")
+  public void should_unpick_unresolved_tasks_during_rolling_update(
+      Function<SchedulerBuilder, SchedulerBuilder> pollingStrategySetter) {
     final TestTasks.CountingHandler<Void> knownTaskHandler = new TestTasks.CountingHandler<>();
     final OneTimeTask<Void> knownTask =
         TestTasks.oneTime("KnownTask", Void.class, knownTaskHandler);
 
-    final Scheduler scheduler =
+    final SchedulerBuilder schedulerBuilder =
         Scheduler.create(postgres.getDataSource(), knownTask)
             .threads(5)
             .pollingInterval(ofMillis(100))
-            .schedulerName(new Fixed("rolling-update-test"))
-            .pollUsingLockAndFetch(1.0, 3.0)
-            .build();
+            .schedulerName(new Fixed("rolling-update-test"));
+    final Scheduler scheduler = pollingStrategySetter.apply(schedulerBuilder).build();
     stopScheduler.register(scheduler);
 
     try {
@@ -367,6 +371,15 @@ public class SchedulerTest {
     } finally {
       scheduler.stop();
     }
+  }
+
+  static List<Arguments> pollingStrategySetters() {
+    Function<SchedulerBuilder, SchedulerBuilder> pollUsingLockAndFetch =
+        schedulerBuilder -> schedulerBuilder.pollUsingLockAndFetch(1.0, 3.0);
+    Function<SchedulerBuilder, SchedulerBuilder> pollUsingFetchAndLockOnExecute =
+        schedulerBuilder -> schedulerBuilder.pollUsingFetchAndLockOnExecute(0.5, 3.0);
+    return List.of(
+        Arguments.of(pollUsingLockAndFetch), Arguments.of(pollUsingFetchAndLockOnExecute));
   }
 
   private void executeKnownAndUnknownTasks(Scheduler scheduler, OneTimeTask<Void> knownTask) {
