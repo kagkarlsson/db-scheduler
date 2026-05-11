@@ -18,7 +18,7 @@ jobs:
           cache: 'maven'
 
       - name: Run Spring Boot 3 tests
-        run: mvn -B -Dspring-boot.version=${{ matrix.spring-boot }} -PspringBootDevelopment clean test -am -pl db-scheduler-spring-boot-starter-parent/db-scheduler-spring-boot3-starter
+        run: mvn -B -Dspring-boot-3.version=${{ matrix.spring-boot }} -PspringBootDevelopment clean test -am -pl db-scheduler-spring-boot-starter-parent/db-scheduler-spring-boot3-starter
         env:
           TZ: UTC
 

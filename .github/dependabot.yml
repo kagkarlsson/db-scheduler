@@ -6,6 +6,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Stay on Spring Boot 3.x for the boot3 starter; 4.x is tracked separately via spring-boot-4.version
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major"]
     groups:
       database-drivers:
         patterns:
