@@ -22,11 +22,19 @@
   </modules>
 
   <properties>
-    <spring-boot-3.version>${spring-boot.version}</spring-boot-3.version>
+    <spring-boot-3.version>3.5.11</spring-boot-3.version>
+    <spring-boot-4.version>4.0.3</spring-boot-4.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot-3.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <dependency>
         <groupId>com.github.kagkarlsson</groupId>
         <artifactId>db-scheduler</artifactId>

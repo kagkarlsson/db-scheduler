@@ -21,6 +21,7 @@
 
   <properties>
     <license.dir>${project.parent.basedir}/.license</license.dir>
+    <spring-boot-4.version>4.0.3</spring-boot-4.version>
   </properties>
 
 </project>
