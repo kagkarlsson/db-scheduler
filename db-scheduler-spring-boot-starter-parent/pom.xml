@@ -22,7 +22,7 @@
   </modules>
 
   <properties>
-    <spring-boot-3.version>${spring-boot.version}</spring-boot-3.version>
+    <spring-boot-3.version>4.0.6</spring-boot-3.version>
   </properties>
 
   <dependencyManagement>
