@@ -109,10 +109,6 @@ public abstract class CompatibilityTest {
     return getJdbcCustomization().orElseGet(() -> new AutodetectJdbcCustomization(getDataSource()));
   }
 
-  public Optional<JdbcCustomization> getJdbcCustomizationForUTCTimestampTest() {
-    return Optional.empty();
-  }
-
   public abstract boolean commitWhenAutocommitDisabled();
 
   @BeforeEach

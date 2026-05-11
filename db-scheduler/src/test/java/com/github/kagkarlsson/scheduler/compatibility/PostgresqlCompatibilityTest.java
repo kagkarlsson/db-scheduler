@@ -39,11 +39,6 @@ public class PostgresqlCompatibilityTest extends CompatibilityTest {
   }
 
   @Override
-  public Optional<JdbcCustomization> getJdbcCustomizationForUTCTimestampTest() {
-    return Optional.of(new PostgreSqlJdbcCustomization(false, true));
-  }
-
-  @Override
   protected String readDbSessionZone() {
     return querySingleString("SHOW timezone");
   }
