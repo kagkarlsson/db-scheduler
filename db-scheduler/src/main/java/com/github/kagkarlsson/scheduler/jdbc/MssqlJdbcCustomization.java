@@ -15,6 +15,8 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +35,11 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
               + "Persisting timestamp with undefined timezone is not recommended and will likely cause issues",
           getClass().getName());
     }
+  }
+
+  @Override
+  public void setTaskData(PreparedStatement p, int index, byte[] value) throws SQLException {
+    p.setBytes(index, value);
   }
 
   @Override
