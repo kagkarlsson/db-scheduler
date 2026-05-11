@@ -21,16 +21,6 @@
       "Bash(tail:*)",
 
       "Bash(mvn:*)"
-    ],
-    "ask": [
-      "Bash(gh pr view:*)",
-      "Bash(gh pr list:*)",
-      "Bash(gh issue view:*)",
-      "Bash(gh issue list:*)",
-
-      "Bash(git push:*)",
-      "Bash(git commit:*)",
-      "Bash(gh api:*)"
     ]
   }
 }
