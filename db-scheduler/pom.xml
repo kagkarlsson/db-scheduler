@@ -25,7 +25,7 @@
     <zonky-pg-embedded.version>2.1.1</zonky-pg-embedded.version>
     <zonky-pg-binaries.version>17.5.0</zonky-pg-binaries.version>
     <slf4j.version>1.7.36</slf4j.version>
-    <assertj.version>3.27.6</assertj.version>
+    <assertj.version>3.27.7</assertj.version>
     <test.excludedTags>compatibility,compatibility-cluster</test.excludedTags>
   </properties>
 
