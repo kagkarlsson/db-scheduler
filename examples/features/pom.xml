@@ -14,7 +14,7 @@
 
   <properties>
     <license.dir>${project.parent.parent.basedir}/.license</license.dir>
-    <kotlin.version>2.2.20</kotlin.version>
+    <kotlin.version>2.3.21</kotlin.version>
     <serialization.version>1.9.0</serialization.version>
   </properties>
 
@@ -87,7 +87,7 @@
     <dependency>
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
-      <version>6.2.1</version>
+      <version>7.0.2</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
