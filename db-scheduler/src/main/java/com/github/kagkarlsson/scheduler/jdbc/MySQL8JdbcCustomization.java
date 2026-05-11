@@ -15,21 +15,15 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
-public class MySQL8JdbcCustomization extends DefaultJdbcCustomization {
+public class MySQL8JdbcCustomization extends MySQLBaseJdbcCustomization {
 
   public MySQL8JdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
-    warnIfNotPersistingInUTC(persistTimestampInUTC, getClass());
   }
 
   @Override
   public String getName() {
     return "MySQL => v8";
-  }
-
-  @Override
-  public String getQueryLimitPart(int limit) {
-    return Queries.postgresSqlLimitPart(limit);
   }
 
   @Override

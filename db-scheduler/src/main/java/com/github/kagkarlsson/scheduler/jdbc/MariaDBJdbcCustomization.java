@@ -15,21 +15,15 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
-public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
+public class MariaDBJdbcCustomization extends MySQLBaseJdbcCustomization {
 
   public MariaDBJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
-    warnIfNotPersistingInUTC(persistTimestampInUTC, getClass());
   }
 
   @Override
   public String getName() {
     return "MariaDB";
-  }
-
-  @Override
-  public String getQueryLimitPart(int limit) {
-    return Queries.postgresSqlLimitPart(limit);
   }
 
   @Override

@@ -63,7 +63,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
       } else if (databaseProductName.contains(MARIADB)) {
         LOG.info("Using MariaDB jdbc-overrides.");
         logWarningIfNotUTCForMySQL("MariaDB", persistTimestampInUTC);
-        detectedCustomization = new MariaDBJdbcCustomization(true);
+        detectedCustomization = new MariaDBJdbcCustomization(persistTimestampInUTC);
 
       } else if (databaseProductName.contains(MYSQL)) {
         int databaseMajorVersion = c.getMetaData().getDatabaseMajorVersion();
@@ -71,10 +71,10 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
         logWarningIfNotUTCForMySQL("MySQL", persistTimestampInUTC);
         if (databaseMajorVersion >= 8) {
           LOG.info("Using MySQL jdbc-overrides version 8 and later. (v {})", dbVersion);
-          detectedCustomization = new MySQL8JdbcCustomization(true);
+          detectedCustomization = new MySQL8JdbcCustomization(persistTimestampInUTC);
         } else {
           LOG.info("Using MySQL jdbc-overrides for version older than 8. (v {})", dbVersion);
-          detectedCustomization = new MySQLJdbcCustomization(true);
+          detectedCustomization = new MySQLJdbcCustomization(persistTimestampInUTC);
         }
 
       } else {
@@ -158,9 +158,9 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   private void logWarningIfNotUTCForMySQL(String database, boolean persistTimestampInUTC) {
     if (!persistTimestampInUTC) {
       SILENCABLE_LOG.warn(
-          "{}-schema uses zone-less type for time-columns and thus requires that timestamps are "
-              + "transferred in UTC-zone for less quirks. Automatically enabling '.alwaysPersistTimestampInUTC()'. "
-              + "to preserve timezone information. It is recommended to enable ",
+          "{} uses a zone-less TIMESTAMP and need to transfer read and write timestamps in UTC to "
+            + "avoid quirks. Use '.alwaysPersistTimestampInUTC()' to avoid this. "
+              + "See upgrade instructions at https://github.com/kagkarlsson/db-scheduler/releases/tag/v14.0.0",
           database);
     }
   }

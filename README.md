@@ -212,6 +212,20 @@ Number of threads. Default `10`.
 :gear: `.pollingInterval(Duration)`<br/>
 How often the scheduler checks the database for due executions. Default `10s`.<br/>
 
+:gear: `.alwaysPersistTimestampInUTC()`<br/>
+Always transfer timestamps using UTC zone. By default the Scheduler assumes that the underlying database-schema stores instants,
+i.e. somehow ties timestamps to zones. However, some databases have limited support for this
+or other quirks, requiring overriding how timestamps are transferred and stored.
+For such cases, use this setting to always transfer, store and retrieve Instants in UTC.
+**SQL Server** always persists in UTC regardless of this setting.
+**MySQL** and **MariaDB** use a zone-less `TIMESTAMP` type and must enable this setting.
+Upgrading an existing installation requires a controlled migration:
+stop all scheduler instances, migrate existing timestamps to UTC, then restart with `.alwaysPersistTimestampInUTC()` set.
+**Oracle** default schema uses a `TIMESTAMPTZ` type which preserves timezone — only use this override
+if for some reason using plain `TIMESTAMP` types.
+**NB:** The default behavior for "unknown" databases is to assume that timestamps can be get/set reliably
+using `get/setObject(OffsetDateTime)`. For "known" databases, see the class `AutodetectJdbcCustomization`.
+
 :gear: `.enableImmediateExecution()`<br/>
 If this is enabled, the scheduler will attempt to hint to the local `Scheduler` that there are executions to be executed after they are scheduled to
 run `now()`, or a time in the past. **NB:** If the call to `schedule(..)`/`reschedule(..)` occur from within a transaction, the scheduler might attempt to run
@@ -336,16 +350,6 @@ behavior and have the Scheduler always issue commits. Default `false`.
 :gear: `.failureLogging(Level, boolean)`<br/>
 Configures how to log task failures, i.e. `Throwable`s thrown from a task execution handler. Use log level `OFF` to disable
 this kind of logging completely. Default `WARN, true`.
-
-:gear: `.alwaysPersistTimestampInUTC()`<br/>
-By default the Scheduler assumes that the underlying database-schema stores instants,
-i.e. somehow ties timestamps to zones. However, some databases have limited support for this
-or other quirks, requiring overriding how timestamps are transferred and stored.
-For such cases, use this setting to always transfer, store and retrieve Instants in UTC.
-**Update:** Regardless of this setting, this is now always enabled for SQL Server, MySQL and MariaDB.
-The Oracle-schema uses a `TIMESTAMPTZ` type, only use this override if also changing type to `TIMESTAMP`.
-**NB:** The default behavior for "unknown" databases is to assume the database correctly handles instants. For "known" databases,
-see the class `AutodetectJdbcCustomization`.
 
 ### Task configuration
 

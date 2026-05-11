@@ -13,20 +13,14 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
+public class MySQLJdbcCustomization extends MySQLBaseJdbcCustomization {
 
   public MySQLJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
-    warnIfNotPersistingInUTC(persistTimestampInUTC, getClass());
   }
 
   @Override
   public String getName() {
     return "MySQL < v8";
-  }
-
-  @Override
-  public String getQueryLimitPart(int limit) {
-    return Queries.postgresSqlLimitPart(limit);
   }
 }
