@@ -85,7 +85,10 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
       postgresJdbc.execute("CREATE ROLE test LOGIN PASSWORD ''", NOOP);
     }
 
-    postgresJdbc.execute("CREATE SCHEMA IF NOT EXISTS AUTHORIZATION test ", NOOP);
+    // PostgreSQL 15+ revoked CREATE on public schema from PUBLIC; grant it explicitly
+    final JdbcRunner testDbJdbc =
+        new JdbcRunner(newEmbeddedPostgresql.getDatabase("postgres", "test"));
+    testDbJdbc.execute("GRANT CREATE ON SCHEMA public TO test", NOOP);
 
     return newEmbeddedPostgresql;
   }
