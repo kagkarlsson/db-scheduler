@@ -347,25 +347,21 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   private List<Execution> lockAndFetchSingleStatement(Instant now, int limit) {
-    return jdbcRunner.inTransaction(
-        txRunner -> {
-          List<Execution> allCandidates =
-              jdbcCustomization.lockAndFetchSingleStatement(
-                  getTaskRespositoryContext(), now, limit, orderByPriority);
+    List<Execution> allCandidates =
+        jdbcCustomization.lockAndFetchSingleStatement(
+            getTaskRespositoryContext(), now, limit, orderByPriority);
 
-          Map<Boolean, List<Execution>> allCandidatesByIsUnresolved =
-              allCandidates.stream()
-                  .collect(
-                      partitioningBy(
-                          execution -> taskResolver.isUnresolved(execution.getTaskName())));
+    Map<Boolean, List<Execution>> allCandidatesByIsUnresolved =
+        allCandidates.stream()
+            .collect(
+                partitioningBy(execution -> taskResolver.isUnresolved(execution.getTaskName())));
 
-          List<Execution> unresolvedExecutions = allCandidatesByIsUnresolved.get(Boolean.TRUE);
-          if (unresolvedExecutions != null && !unresolvedExecutions.isEmpty()) {
-            unpickPickedBatch(unresolvedExecutions);
-          }
+    List<Execution> unresolvedExecutions = allCandidatesByIsUnresolved.get(Boolean.TRUE);
+    if (unresolvedExecutions != null && !unresolvedExecutions.isEmpty()) {
+      unpickPickedBatch(unresolvedExecutions);
+    }
 
-          return allCandidatesByIsUnresolved.get(Boolean.FALSE);
-        });
+    return allCandidatesByIsUnresolved.get(Boolean.FALSE);
   }
 
   @Override
@@ -614,8 +610,8 @@ public class JdbcTaskRepository implements TaskRepository {
                 + tableName
                 + " set picked = ?, picked_by = ?, version = version + 1 "
                 + "where picked = ? "
-                + "and version = ?"
-                + "and task_name = ?"
+                + "and version = ? "
+                + "and task_name = ? "
                 + "and task_instance = ?",
             executions,
             (execution, ps) -> {
