@@ -159,7 +159,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     if (!persistTimestampInUTC) {
       SILENCABLE_LOG.warn(
           "{} uses a zone-less TIMESTAMP and need to transfer read and write timestamps in UTC to "
-            + "avoid quirks. Use '.alwaysPersistTimestampInUTC()' to avoid this. "
+              + "avoid quirks. Use '.alwaysPersistTimestampInUTC()' to avoid this. "
               + "See upgrade instructions at https://github.com/kagkarlsson/db-scheduler/releases/tag/v14.0.0",
           database);
     }

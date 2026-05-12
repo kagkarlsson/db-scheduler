@@ -39,7 +39,6 @@ public class MySQLBaseJdbcCustomization extends DefaultJdbcCustomization {
     } else {
       p.setTimestamp(index, Timestamp.from(value));
     }
-
   }
 
   @Override
@@ -48,8 +47,8 @@ public class MySQLBaseJdbcCustomization extends DefaultJdbcCustomization {
       return super.getInstant(rs, columnName);
     } else {
       return Optional.ofNullable(rs.getTimestamp(columnName))
-        .map(Timestamp::toInstant)
-        .orElse(null);
+          .map(Timestamp::toInstant)
+          .orElse(null);
     }
   }
 
