@@ -356,6 +356,26 @@ public abstract class CompatibilityTest {
   }
 
   @Test
+  public void test_jdbc_repository_support_timestamps_in_far_future() {
+    var jdbcTaskRepository = createJdbcTaskRepository(false);
+    var farFuture = Instant.parse("2500-01-01T12:00:00.00Z");
+    var taskInstance = ONETIME.instance("id").scheduledTo(anInstant);
+
+    jdbcTaskRepository.createIfNotExists(taskInstance);
+    var execution = jdbcTaskRepository.getExecution(taskInstance).orElseThrow();
+
+    jdbcTaskRepository.reschedule(execution, farFuture, farFuture, farFuture, 0);
+    execution = jdbcTaskRepository.getExecution(taskInstance).orElseThrow();
+    jdbcTaskRepository.updateHeartbeat(execution, farFuture);
+    execution = jdbcTaskRepository.getExecution(taskInstance).orElseThrow();
+
+    assertThat(execution.getExecutionTime(), is(farFuture));
+    assertThat(execution.lastSuccess, is(farFuture));
+    assertThat(execution.lastFailure, is(farFuture));
+    assertThat(execution.lastHeartbeat, is(farFuture));
+  }
+
+  @Test
   public void test_has_peristent_time_zone() {
     if (!shouldHavePersistentTimezone) {
       return;
