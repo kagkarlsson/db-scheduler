@@ -1,4 +1,5 @@
 ---
+
 description: Format, license-header, and verify before committing.
 ---
 

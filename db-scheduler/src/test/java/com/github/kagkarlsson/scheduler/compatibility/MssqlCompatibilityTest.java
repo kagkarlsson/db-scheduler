@@ -11,6 +11,7 @@ import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.jdbc.MssqlJdbcCustomization;
 import com.github.kagkarlsson.scheduler.serializer.JacksonSerializer;
@@ -26,6 +27,7 @@ import java.sql.ResultSet;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,7 +56,8 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
   @Container
   private static final MSSQLServerContainer MSSQL =
       new MSSQLServerContainer<>(
-          DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"));
+              DockerImageName.parse("mcr.microsoft.com/mssql/server:2022-latest"))
+          .withEnv("TZ", "America/Los_Angeles");
 
   private static DataSource pooledDatasource;
 
@@ -177,5 +180,15 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
             }
           }
         });
+  }
+
+  @Override
+  public Optional<JdbcCustomization> getJdbcCustomization() {
+    return Optional.of(new MssqlJdbcCustomization(true));
+  }
+
+  @Override
+  protected String readDbSessionZone() {
+    return querySingleString("SELECT CURRENT_TIMEZONE()");
   }
 }
