@@ -78,7 +78,7 @@ public class MssqlClusterTest {
           ClusterTests.testConcurrencyForPollingStrategy(
               pooledDatasource,
               (SchedulerBuilder b) -> {
-                b.pollUsingFetchAndLockOnExecute(0, NUMBER_OF_THREADS * 3);
+                b.pollUsingFetch(0, NUMBER_OF_THREADS * 3);
                 b.jdbcCustomization(new MssqlJdbcCustomization());
               },
               stopScheduler);

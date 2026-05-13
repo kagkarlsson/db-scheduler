@@ -78,7 +78,7 @@ public final class DbSchedulerConfigurationSupport {
     builder.pollingInterval(config.getPollingInterval());
 
     if (config.getPollingStrategy() == PollingStrategyConfig.Type.FETCH) {
-      builder.pollUsingFetchAndLockOnExecute(
+      builder.pollUsingFetch(
           config.getPollingStrategyLowerLimitFractionOfThreads(),
           config.getPollingStrategyUpperLimitFractionOfThreads());
     } else if (config.getPollingStrategy() == PollingStrategyConfig.Type.LOCK_AND_FETCH) {

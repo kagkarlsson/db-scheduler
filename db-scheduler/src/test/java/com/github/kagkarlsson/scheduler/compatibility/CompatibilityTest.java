@@ -142,7 +142,7 @@ public abstract class CompatibilityTest {
     SchedulerBuilder builder =
         Scheduler.create(getDataSource(), Lists.newArrayList(oneTime, recurring))
             .pollingInterval(Duration.ofMillis(10))
-            .pollUsingFetchAndLockOnExecute(0, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH)
+            .pollUsingFetch(0, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH)
             .heartbeatInterval(Duration.ofMillis(100))
             .schedulerName(new SchedulerName.Fixed("test"))
             .addSchedulerListener(testableListener)
