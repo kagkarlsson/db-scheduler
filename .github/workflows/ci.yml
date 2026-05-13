@@ -21,3 +21,13 @@ jobs:
       run: mvn -B -Ptests-for-ci,publication clean package --file pom.xml
       env:
         TZ: UTC
+
+    - name: Upload coverage to Codecov
+      if: matrix.java == '17'
+      uses: codecov/codecov-action@v5
+      with:
+        files: db-scheduler/target/site/jacoco/jacoco.xml
+        flags: db-scheduler
+        fail_ci_if_error: false
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
