@@ -474,4 +474,17 @@ public class Scheduler implements SchedulerClient {
   public static SchedulerBuilder create(DataSource dataSource, List<Task<?>> knownTasks) {
     return new SchedulerBuilder(dataSource, knownTasks);
   }
+
+  public static void printFibonacci(int n) {
+    int first = 0, second = 1;
+    System.out.print("Fibonacci Series: " + first + ", " + second);
+
+    for (int i = 2; i < n; i++) {
+      int next = first + second;
+      System.out.print(", " + next);
+      first = second;
+      second = next;
+    }
+  }
+
 }
