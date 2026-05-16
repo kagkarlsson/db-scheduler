@@ -51,6 +51,7 @@ public class SchedulerBuilder {
       new PollingStrategyConfig(
           PollingStrategyConfig.Type.FETCH, 0.5, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH);
   public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.WARN;
+  public static final boolean DEFAULT_REGISTER_EXECUTORS_METRICS = false;
   public static final boolean LOG_STACK_TRACE_ON_FAILURE = true;
   private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
   protected final DataSource dataSource;
@@ -77,6 +78,7 @@ public class SchedulerBuilder {
   protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
   protected boolean enablePriority = false;
   protected boolean registerShutdownHook = false;
+  protected boolean registerExecutorsMetrics = DEFAULT_REGISTER_EXECUTORS_METRICS;
   protected int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
   protected boolean alwaysPersistTimestampInUTC = false;
   protected List<SchedulerListener> schedulerListeners = new ArrayList<>();
@@ -241,6 +243,11 @@ public class SchedulerBuilder {
     return this;
   }
 
+  public SchedulerBuilder registerExecutorsMetrics() {
+    this.registerExecutorsMetrics = true;
+    return this;
+  }
+
   public SchedulerBuilder enablePriority() {
     this.enablePriority = true;
     return this;
@@ -308,6 +315,12 @@ public class SchedulerBuilder {
 
     if (statsRegistry != null) {
       addSchedulerListener(new StatsRegistryAdapter(statsRegistry));
+
+      if (registerExecutorsMetrics) {
+        statsRegistry.registerCandidateExecutor(candidateExecutorService);
+        statsRegistry.registerCandidateDueExecutor(candidateDueExecutor);
+        statsRegistry.registerHousekeeperExecutor(candidateHousekeeperExecutor);
+      }
     }
 
     Waiter waiter = buildWaiter();

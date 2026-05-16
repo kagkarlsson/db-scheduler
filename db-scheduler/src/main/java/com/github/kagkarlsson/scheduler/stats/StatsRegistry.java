@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler.stats;
 
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import java.util.concurrent.ExecutorService;
 
 public interface StatsRegistry {
 
@@ -49,6 +50,12 @@ public interface StatsRegistry {
 
   void registerSingleCompletedExecution(ExecutionComplete completeEvent);
 
+  void registerCandidateExecutor(ExecutorService candidateExecutor);
+
+  void registerCandidateDueExecutor(ExecutorService candidateDueExecutor);
+
+  void registerHousekeeperExecutor(ExecutorService housekeeperExecutor);
+
   StatsRegistry NOOP = new DefaultStatsRegistry();
 
   class DefaultStatsRegistry implements StatsRegistry {
@@ -64,5 +71,14 @@ public interface StatsRegistry {
 
     @Override
     public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {}
+
+    @Override
+    public void registerCandidateExecutor(ExecutorService candidateExecutor) {}
+
+    @Override
+    public void registerCandidateDueExecutor(ExecutorService candidateDueExecutor) {}
+
+    @Override
+    public void registerHousekeeperExecutor(ExecutorService housekeeperExecutor) {}
   }
 }
