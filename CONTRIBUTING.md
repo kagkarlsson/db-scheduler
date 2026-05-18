@@ -2,13 +2,9 @@
 
 ### AI Contribution Policy
 
-Contributions made with the assistance of AI tools are welcome, but contributors must use them responsibly and disclose that use clearly.
-
-* If AI tools were used, **disclose** in the PR-description what tool was used and the extent to which the work was AI-assisted.
-
-* The contributor must **fully understand** all the changes made and all the code supplied.
-
-* The supplied code must always be **reviewed critically** prior to creating the PR. This includes tests.
+Contributions made with the assistance of AI tools are welcome, but must follow the
+[AI Contribution Policy](AI_POLICY.md). In short: disclose AI use, fully understand the changes,
+and don't paste raw AI output into issues or discussions.
 
 ### Are you new and looking to dive in?
 
