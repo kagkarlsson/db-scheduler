@@ -85,15 +85,15 @@ public interface FailureHandler<T> {
     }
 
     /**
-     * After max retries, call the callback with full control (no automatic remove). The callback
-     * should call one of the ExecutionOperations methods (remove or reschedule).
+     * After max retries, delegate to the given handler with full control (no automatic remove).
+     * The handler should call one of the ExecutionOperations methods (remove or reschedule).
      */
-    public FailureHandler<T> then(BiConsumer<ExecutionComplete, ExecutionOperations<T>> callback) {
+    public FailureHandler<T> then(FailureHandler<T> handler) {
       FailureHandler<T> retryHandler = getRetryHandler();
       return (executionComplete, executionOperations) -> {
         int totalFailures = executionComplete.getExecution().consecutiveFailures + 1;
         if (totalFailures > maxRetries) {
-          callback.accept(executionComplete, executionOperations);
+          handler.onFailure(executionComplete, executionOperations);
         } else {
           retryHandler.onFailure(executionComplete, executionOperations);
         }
