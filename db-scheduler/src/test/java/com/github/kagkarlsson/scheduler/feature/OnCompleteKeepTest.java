@@ -46,6 +46,23 @@ public class OnCompleteKeepTest {
     tester.assertNoExecution(INSTANCE);
   }
 
+  @Test
+  public void should_keep_record_execution_indefinitely() {
+    var scheduler =
+        createManualScheduler(
+            Tasks.oneTime(ONETIME).onCompleteKeep(State.RECORD).execute(TestTasks.DO_NOTHING));
+    var tester = new SchedulerTester(scheduler);
+
+    scheduler.schedule(INSTANCE);
+    scheduler.runAnyDueExecutions();
+    tester.assertThatExecution(INSTANCE).hasState(State.RECORD);
+
+    // Well past the 14d default — must still survive
+    clock.tick(Duration.ofDays(365));
+    scheduler.runDeleteOldDeactivatedExecutions();
+    tester.assertThatExecution(INSTANCE).hasState(State.RECORD);
+  }
+
   private ManualScheduler createManualScheduler(OneTimeTask<Void> task) {
     return TestHelper.createManualScheduler(postgres.getDataSource(), task).clock(clock).build();
   }
