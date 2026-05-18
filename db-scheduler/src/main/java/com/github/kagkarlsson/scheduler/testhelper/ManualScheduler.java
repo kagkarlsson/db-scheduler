@@ -101,6 +101,10 @@ public class ManualScheduler extends Scheduler {
     super.deleteOldDeactivatedExecutions();
   }
 
+  public void runDeleteOldDeactivatedExecutions(int batchLimit) {
+    super.deleteOldDeactivatedExecutions(batchLimit);
+  }
+
   public void runOnStartup() {
     super.executeOnStartup();
   }

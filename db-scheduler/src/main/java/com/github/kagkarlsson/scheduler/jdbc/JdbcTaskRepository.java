@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
+import com.github.kagkarlsson.jdbc.RowMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
@@ -41,6 +42,7 @@ import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -782,35 +784,49 @@ public class JdbcTaskRepository implements TaskRepository {
     String statesInClause =
         states.stream().map(s -> "'" + s.name() + "'").collect(Collectors.joining(", "));
 
-    // Double-subquery is required for MySQL (can't select from table being deleted without wrapping
-    // in a derived table). EXISTS avoids row-value constructors which SQL Server does not support.
-    String sql =
-        "DELETE FROM "
+    String selectSql =
+        "SELECT task_name, task_instance FROM "
             + tableName
-            + " WHERE EXISTS ("
-            + "  SELECT 1 FROM ("
-            + "    SELECT task_name, task_instance FROM "
-            + tableName
-            + "    WHERE state IN ("
+            + " WHERE state IN ("
             + statesInClause
-            + ")"
-            + "      AND execution_time < ?"
-            + "    ORDER BY execution_time"
-            + jdbcCustomization.getQueryLimitPart(limit)
-            + "  ) sub"
-            + "  WHERE sub.task_name = "
-            + tableName
-            + ".task_name"
-            + "  AND sub.task_instance = "
-            + tableName
-            + ".task_instance"
-            + ")";
+            + ") AND execution_time < ?"
+            + " ORDER BY execution_time ASC"
+            + (jdbcCustomization.supportsExplicitQueryLimitPart()
+                ? jdbcCustomization.getQueryLimitPart(limit)
+                : "");
 
-    return jdbcRunner.execute(
-        sql,
-        ps -> {
-          jdbcCustomization.setInstant(ps, 1, olderThan);
-        });
+    List<TaskInstanceId> candidates =
+        jdbcRunner.query(
+            selectSql,
+            (PreparedStatement p) -> {
+              jdbcCustomization.setInstant(p, 1, olderThan);
+              if (!jdbcCustomization.supportsExplicitQueryLimitPart()) {
+                p.setMaxRows(limit);
+              }
+            },
+            (RowMapper<TaskInstanceId>)
+                (ResultSet rs) ->
+                    TaskInstanceId.of(rs.getString("task_name"), rs.getString("task_instance")));
+
+    if (candidates.isEmpty()) {
+      return 0;
+    }
+
+    int[] deleteResults =
+        jdbcRunner.executeBatch(
+            "DELETE FROM "
+                + tableName
+                + " WHERE task_name = ? AND task_instance = ?"
+                + " AND state IN ("
+                + statesInClause
+                + ") AND execution_time < ?",
+            candidates,
+            (key, ps) -> {
+              ps.setString(1, key.getTaskName());
+              ps.setString(2, key.getId());
+              jdbcCustomization.setInstant(ps, 3, olderThan);
+            });
+    return IntStream.of(deleteResults).sum();
   }
 
   @Override

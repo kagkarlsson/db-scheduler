@@ -155,11 +155,6 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
     return jdbcCustomization.getName();
   }
 
-  @Override
-  public boolean supportsDeleteWithLimit() {
-    return jdbcCustomization.supportsDeleteWithLimit();
-  }
-
   private void logWarningIfNotUTCForMySQL(String database, boolean persistTimestampInUTC) {
     if (!persistTimestampInUTC) {
       SILENCABLE_LOG.warn(

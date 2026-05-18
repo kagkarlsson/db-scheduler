@@ -49,6 +49,7 @@ public class Scheduler implements SchedulerClient {
 
   public static final double TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO = 0.5;
   public static final String THREAD_PREFIX = "db-scheduler";
+  static final int DELETE_OLD_DEACTIVATED_BATCH_LIMIT = 10_000;
   private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
   protected final PollStrategy executeDueStrategy;
   protected final Executor executor;
@@ -445,6 +446,10 @@ public class Scheduler implements SchedulerClient {
   }
 
   protected void deleteOldDeactivatedExecutions() {
+    deleteOldDeactivatedExecutions(DELETE_OLD_DEACTIVATED_BATCH_LIMIT);
+  }
+
+  protected void deleteOldDeactivatedExecutions(int batchLimit) {
     if (deleteDeactivatedAfter.isZero()) {
       LOG.trace("Deletion of old deactivated executions is disabled.");
       return;
@@ -456,15 +461,15 @@ public class Scheduler implements SchedulerClient {
     // Delete all deactivated states except RECORD (kept indefinitely)
     EnumSet<State> deleteInStates =
         EnumSet.of(State.COMPLETE, State.PAUSED, State.FAILED, State.WAITING);
-    int limit = 10000;
 
     int totalRemoved = 0;
     int removed;
     do {
       removed =
-          schedulerTaskRepository.removeOldDeactivatedExecutions(deleteInStates, olderThan, limit);
+          schedulerTaskRepository.removeOldDeactivatedExecutions(
+              deleteInStates, olderThan, batchLimit);
       totalRemoved += removed;
-    } while (removed == limit && !schedulerState.isShuttingDown());
+    } while (removed == batchLimit && !schedulerState.isShuttingDown());
 
     if (totalRemoved > 0) {
       LOG.info("Removed {} old deactivated executions", totalRemoved);
