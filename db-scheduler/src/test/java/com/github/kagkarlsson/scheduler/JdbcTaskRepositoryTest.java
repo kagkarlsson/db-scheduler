@@ -18,11 +18,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
-import com.github.kagkarlsson.scheduler.exceptions.FailedToUnpickBatchException;
 import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
@@ -54,6 +57,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 
 public class JdbcTaskRepositoryTest {
 
@@ -557,9 +561,9 @@ public class JdbcTaskRepositoryTest {
   }
 
   @ParameterizedTest
-  @MethodSource("fetchMethodsAndIsLockAndFetch")
-  public void should_release_unknown_tasks(
-      BiFunction<Instant, JdbcTaskRepository, List<Execution>> taskSupplier, boolean lockAndFetch) {
+  @MethodSource("pickFunctions")
+  public void should_release_unresolved_tasks(
+      BiFunction<Instant, JdbcTaskRepository, List<Execution>> pickFunction, boolean lockAndFetch) {
     Instant now = Instant.now();
     TaskInstance<?> knownTaskInstance = oneTimeTask.instance("knownTaskInstance");
     TaskInstance<?> unknownInstance1 = unknownOneTimeTask.instance("unknownInstance1");
@@ -573,7 +577,7 @@ public class JdbcTaskRepositoryTest {
         SchedulableInstance.of(unknownInstance2, now),
         SchedulableInstance.of(unknownAlternativeTaskInstance, now));
 
-    List<Execution> picked = taskSupplier.apply(now, taskRepository);
+    List<Execution> picked = pickFunction.apply(now, taskRepository);
     assertThat(picked, hasSize(1));
     assertTrue(taskResolver.isUnresolved(unknownOneTimeTask.getName()));
     assertTrue(taskResolver.isUnresolved(unknownSecondOneTimeTask.getName()));
@@ -582,7 +586,7 @@ public class JdbcTaskRepositoryTest {
     checkPicked(false, unknownInstance1, unknownInstance2, unknownAlternativeTaskInstance);
   }
 
-  static List<Arguments> fetchMethodsAndIsLockAndFetch() {
+  static List<Arguments> pickFunctions() {
     BiFunction<Instant, JdbcTaskRepository, List<Execution>> getDue =
         (now, taskRepo) -> taskRepo.getDue(now, POLLING_LIMIT);
     BiFunction<Instant, JdbcTaskRepository, List<Execution>> lockAndFetchGeneric =
@@ -597,6 +601,7 @@ public class JdbcTaskRepositoryTest {
 
   @Test
   public void unpickPickedBatch_should_throw_exception_if_one_of_tasks_is_not_picked() {
+    ListAppender<ILoggingEvent> appender = startAndGetLogListAppender();
     Instant now = Instant.now();
     TaskInstance<?> knownTaskInstance = oneTimeTask.instance("knownTaskInstance");
     TaskInstance<?> unknownTaskInstance = unknownOneTimeTask.instance("unknownTaskInstance");
@@ -610,17 +615,13 @@ public class JdbcTaskRepositoryTest {
     Execution execution1 = taskRepository.getExecution(knownTaskInstance).orElseThrow();
     Execution execution2 = taskRepository.getExecution(unknownTaskInstance).orElseThrow();
 
-    FailedToUnpickBatchException ex =
-        assertThrows(
-            FailedToUnpickBatchException.class,
-            () ->
-                taskRepository.unpickPickedBatch(
-                    List.of(execution1, execution2, notFoundExecution)));
+    taskRepository.unpickPickedBatch(List.of(execution1, execution2, notFoundExecution));
 
-    assertEquals(
+    checkFirstLogEvent(
+        appender,
+        Level.ERROR,
         "Error while unpicking tasks batch. Failed to unpick: [%s, %s], successfully unpicked: [%s]"
-            .formatted(execution2, notFoundExecution, execution1),
-        ex.getMessage());
+            .formatted(execution2, notFoundExecution, execution1));
   }
 
   @Test
@@ -630,14 +631,21 @@ public class JdbcTaskRepositoryTest {
 
   @Test
   public void unpickPickedBatch_should_not_crash_when_Picked_batch_task_not_in_database() {
+    ListAppender<ILoggingEvent> appender = startAndGetLogListAppender();
+
     Execution execution1 =
         new Execution(Instant.now(), new TaskInstance<>("task-that-does-not-exist", "1"));
     Execution execution2 =
         new Execution(Instant.now(), new TaskInstance<>("task-that-does-not-exist-2", "1"));
-    List<Execution> unknownExecutions = List.of(execution1, execution2);
-    assertThrows(
-        FailedToUnpickBatchException.class,
-        () -> taskRepository.unpickPickedBatch(unknownExecutions));
+    List<Execution> unresolvedExecutions = List.of(execution1, execution2);
+
+    taskRepository.unpickPickedBatch(unresolvedExecutions);
+
+    checkFirstLogEvent(
+        appender,
+        Level.ERROR,
+        "Error while unpicking tasks batch. Failed to unpick: %s, successfully unpicked: []"
+            .formatted(unresolvedExecutions));
   }
 
   private List<Execution> getScheduledExecutions(
@@ -688,5 +696,23 @@ public class JdbcTaskRepositoryTest {
               Execution execution = taskRepository.getExecution(taskInstance).orElseThrow();
               assertEquals(picked, execution.picked);
             });
+  }
+
+  private static ListAppender<ILoggingEvent> startAndGetLogListAppender() {
+    ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+
+    Logger logger = (Logger) LoggerFactory.getLogger(JdbcTaskRepository.class);
+    logger.setLevel(ch.qos.logback.classic.Level.ALL);
+    logger.addAppender(appender);
+
+    return appender;
+  }
+
+  private static void checkFirstLogEvent(
+      ListAppender<ILoggingEvent> appender, Level expectedLevel, String expectedMessage) {
+    ILoggingEvent logEvent = appender.list.get(0);
+    assertEquals(expectedLevel, logEvent.getLevel());
+    assertEquals(expectedMessage, logEvent.getFormattedMessage());
   }
 }

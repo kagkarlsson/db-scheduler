@@ -331,7 +331,7 @@ If specified, use this externally managed executor service to run executions. Id
 will use should still be supplied (for scheduler polling optimizations). Default `null`.
 
 :gear: `.deleteUnresolvedAfter(Duration)`<br/>
-The time after which executions with unknown tasks are automatically deleted. These can typically be old recurring
+The time after which executions with unresolved tasks are automatically deleted. These can typically be old recurring
 tasks that are not in use anymore. This is non-zero to prevent accidental removal of tasks through a configuration
 error (missing known-tasks) and problems during rolling upgrades. Default `14d`.
 
@@ -554,11 +554,11 @@ JVM running the scheduler suddenly exits.
 When a dead execution is found, the `Task`is consulted to see what should be done. A dead
 `RecurringTask` is typically rescheduled to `now()`.
 
-### Unknown tasks
+### Unresolved tasks
 
-If a task instance is found in the database but the corresponding task definition is not registered in the service (e.g., during due execution or dead execution housekeeping), it is treated as an unknown task (see [`TaskResolver`](https://github.com/kagkarlsson/db-scheduler/blob/master/db-scheduler/src/main/java/com/github/kagkarlsson/scheduler/TaskResolver.java)).
+If a task instance is found in the database but the corresponding task definition is not registered in the service (e.g., during due execution or dead execution housekeeping), it is treated as an unresolved task (see [`TaskResolver`](https://github.com/kagkarlsson/db-scheduler/blob/master/db-scheduler/src/main/java/com/github/kagkarlsson/scheduler/TaskResolver.java)).
 
-Behavior of unknown tasks:
+Behavior of unresolved tasks:
 
 * They are excluded from polling — the current instance will not attempt to pick or execute them.
 * They remain in the database so other instances (e.g., newer versions in a rolling update or canary deployment) can pick and process them.

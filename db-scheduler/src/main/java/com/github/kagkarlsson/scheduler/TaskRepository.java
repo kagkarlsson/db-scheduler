@@ -86,7 +86,7 @@ public interface TaskRepository {
 
   Optional<Execution> pick(Execution e, Instant timePicked);
 
-  void unpickPickedBatch(List<Execution> unresolvedExecutions);
+  void unpickPickedBatch(List<Execution> pickedExecutions);
 
   List<Execution> getDeadExecutions(Instant olderThan);
 

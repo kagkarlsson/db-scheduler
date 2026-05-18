@@ -32,7 +32,6 @@ import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
-import com.github.kagkarlsson.scheduler.exceptions.FailedToUnpickBatchException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
@@ -599,8 +598,8 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public void unpickPickedBatch(List<Execution> executions) {
-    if (executions.isEmpty()) {
+  public void unpickPickedBatch(List<Execution> pickedExecutions) {
+    if (pickedExecutions.isEmpty()) {
       return;
     }
 
@@ -613,7 +612,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 + "and version = ? "
                 + "and task_name = ? "
                 + "and task_instance = ?",
-            executions,
+            pickedExecutions,
             (execution, ps) -> {
               int index = 1;
               ps.setBoolean(index++, false); // picked
@@ -627,19 +626,21 @@ public class JdbcTaskRepository implements TaskRepository {
     final List<Execution> unpickedTasks = new ArrayList<>();
     final List<Execution> nonUnpickedTasks = new ArrayList<>();
     for (int i = 0; i < updated.length; i++) {
-      Execution task = executions.get(i);
+      Execution task = pickedExecutions.get(i);
       if (updated[i] == 1) {
         unpickedTasks.add(task);
       } else {
         nonUnpickedTasks.add(task);
       }
     }
-    if (!nonUnpickedTasks.isEmpty()) {
-      throw new FailedToUnpickBatchException(
-          "Error while unpicking tasks batch. Failed to unpick: %s, successfully unpicked: %s"
-              .formatted(nonUnpickedTasks, unpickedTasks));
+    if (nonUnpickedTasks.isEmpty()) {
+      LOG.info("Successfully unpicked tasks: {}", unpickedTasks);
+    } else {
+      LOG.error(
+          "Error while unpicking tasks batch. Failed to unpick: {}, successfully unpicked: {}",
+          nonUnpickedTasks,
+          unpickedTasks);
     }
-    LOG.info("Successfully unpicked tasks: {}", unpickedTasks);
   }
 
   @Override
