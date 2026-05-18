@@ -68,13 +68,13 @@
     <!-- Dependency versions -->
     <slf4j.version>1.7.36</slf4j.version>
     <logback.version>1.2.13</logback.version>
-    <spring-boot.version>3.5.11</spring-boot.version>
-    <spring-boot-4.version>4.0.3</spring-boot-4.version>
-    <micrometer.version>1.15.3</micrometer.version>
-    <gson.version>2.13.2</gson.version>
-    <jackson.version>2.20.0</jackson.version>
-    <postgresql.version>42.7.8</postgresql.version>
-    <guava.version>33.5.0-jre</guava.version>
+    <spring-boot-3.version>3.5.14</spring-boot-3.version>
+    <spring-boot-4.version>4.0.6</spring-boot-4.version>
+    <micrometer.version>1.16.5</micrometer.version>
+    <gson.version>2.14.0</gson.version>
+    <jackson.version>2.21.3</jackson.version>
+    <postgresql.version>42.7.11</postgresql.version>
+    <guava.version>33.6.0-jre</guava.version>
   </properties>
 
   <dependencyManagement>
@@ -82,7 +82,7 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.14.0</version>
+        <version>6.0.3</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -96,7 +96,7 @@
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
-        <version>1.21.3</version>
+        <version>2.0.5</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -109,7 +109,7 @@
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.17.0</version>
+        <version>5.18.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -126,18 +126,18 @@
       <plugins>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.14.1</version>
+          <version>3.15.0</version>
           <configuration>
             <compilerArgument>${compilerArgument}</compilerArgument>
           </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.5.4</version>
+          <version>3.5.5</version>
         </plugin>
         <plugin>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.9.0</version>
+          <version>3.10.0</version>
           <executions>
             <execution>
               <goals>
@@ -187,7 +187,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.6.1</version>
+          <version>3.6.2</version>
           <configuration>
             <createSourcesJar>true</createSourcesJar>
             <shadeSourcesContent>true</shadeSourcesContent>
@@ -245,7 +245,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.4.0</version>
           <executions>
             <execution>
               <id>attach-sources</id>
@@ -299,7 +299,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.4.0</version>
         <configuration>
           <java>
             <includes>

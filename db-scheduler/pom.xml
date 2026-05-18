@@ -16,14 +16,15 @@
     <!-- Dependencies -->
     <cron-utils.version>9.2.1</cron-utils.version>
     <hamcrest.version>3.0</hamcrest.version>
-    <hikaricp.version>6.2.1</hikaricp.version>
+    <hikaricp.version>7.0.2</hikaricp.version>
     <hsqldb.version>2.7.4</hsqldb.version>
     <java8-matchers.version>1.6</java8-matchers.version>
-    <equals-verifier.version>3.19.1</equals-verifier.version>
-    <bytebuddy.version>1.17.8</bytebuddy.version>
-    <zonky-pg-embedded.version>2.1.1</zonky-pg-embedded.version>
+    <equals-verifier.version>4.5</equals-verifier.version>
+    <bytebuddy.version>1.18.8</bytebuddy.version>
+    <zonky-pg-embedded.version>2.2.2</zonky-pg-embedded.version>
+    <zonky-pg-binaries.version>17.5.0</zonky-pg-binaries.version>
     <slf4j.version>1.7.36</slf4j.version>
-    <assertj.version>3.27.6</assertj.version>
+    <assertj.version>3.27.7</assertj.version>
     <test.excludedTags>compatibility,compatibility-cluster</test.excludedTags>
   </properties>
 
@@ -67,6 +68,13 @@
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
         <version>${jackson.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.zonky.test.postgres</groupId>
+        <artifactId>embedded-postgres-binaries-bom</artifactId>
+        <version>${zonky-pg-binaries.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -227,6 +235,26 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.zonky.test.postgres</groupId>
+      <artifactId>embedded-postgres-binaries-linux-amd64</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.zonky.test.postgres</groupId>
+      <artifactId>embedded-postgres-binaries-linux-arm64v8</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.zonky.test.postgres</groupId>
+      <artifactId>embedded-postgres-binaries-darwin-amd64</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.zonky.test.postgres</groupId>
+      <artifactId>embedded-postgres-binaries-darwin-arm64v8</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
       <version>${hikaricp.version}</version>
@@ -246,56 +274,56 @@
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>postgresql</artifactId>
+      <artifactId>testcontainers-postgresql</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>mysql</artifactId>
+      <artifactId>testcontainers-mysql</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>mariadb</artifactId>
+      <artifactId>testcontainers-mariadb</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>mssqlserver</artifactId>
+      <artifactId>testcontainers-mssqlserver</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>oracle-xe</artifactId>
+      <artifactId>testcontainers-oracle-xe</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
-      <version>9.4.0</version>
+      <version>9.7.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.microsoft.sqlserver</groupId>
       <artifactId>mssql-jdbc</artifactId>
-      <version>13.2.1.jre8</version>
+      <version>13.4.0.jre8</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.oracle.database.jdbc</groupId>
       <artifactId>ojdbc8</artifactId>
-      <version>23.9.0.25.07</version>
+      <version>23.26.1.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
-      <version>3.5.6</version>
+      <version>3.5.8</version>
       <scope>test</scope>
     </dependency>
 
@@ -360,6 +388,26 @@
             </transformer>
           </transformers>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.13</version>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <goals>
+              <goal>report</goal>
+            </goals>
+            <phase>prepare-package</phase>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

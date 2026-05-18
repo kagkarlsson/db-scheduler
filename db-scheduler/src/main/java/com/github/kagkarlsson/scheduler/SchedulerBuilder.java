@@ -209,7 +209,16 @@ public class SchedulerBuilder {
     return this;
   }
 
+  /**
+   * @deprecated use {@link SchedulerBuilder#pollUsingFetch} instead.
+   */
+  @Deprecated
   public SchedulerBuilder pollUsingFetchAndLockOnExecute(
+      double lowerLimitFractionOfThreads, double executionsPerBatchFractionOfThreads) {
+    return pollUsingFetch(lowerLimitFractionOfThreads, executionsPerBatchFractionOfThreads);
+  }
+
+  public SchedulerBuilder pollUsingFetch(
       double lowerLimitFractionOfThreads, double executionsPerBatchFractionOfThreads) {
     this.pollingStrategyConfig =
         new PollingStrategyConfig(

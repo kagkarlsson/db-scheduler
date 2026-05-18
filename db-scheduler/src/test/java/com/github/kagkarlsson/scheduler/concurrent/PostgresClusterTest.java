@@ -36,7 +36,7 @@ public class PostgresClusterTest {
     DEBUG_LOG.info("Starting test_concurrency_optimistic_locking");
     testConcurrencyForPollingStrategy(
         DB.getDataSource(),
-        (SchedulerBuilder b) -> b.pollUsingFetchAndLockOnExecute(0, NUMBER_OF_THREADS * 3),
+        (SchedulerBuilder b) -> b.pollUsingFetch(0, NUMBER_OF_THREADS * 3),
         stopScheduler);
   }
 

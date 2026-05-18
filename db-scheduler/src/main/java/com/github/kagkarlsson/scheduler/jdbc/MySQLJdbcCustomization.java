@@ -13,11 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler.jdbc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
-  private static final Logger LOG = LoggerFactory.getLogger(MySQLJdbcCustomization.class);
+public class MySQLJdbcCustomization extends MySQLBaseJdbcCustomization {
 
   public MySQLJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
@@ -26,10 +22,5 @@ public class MySQLJdbcCustomization extends DefaultJdbcCustomization {
   @Override
   public String getName() {
     return "MySQL < v8";
-  }
-
-  @Override
-  public String getQueryLimitPart(int limit) {
-    return Queries.postgresSqlLimitPart(limit);
   }
 }

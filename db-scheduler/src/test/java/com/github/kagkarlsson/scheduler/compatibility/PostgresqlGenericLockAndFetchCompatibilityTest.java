@@ -7,12 +7,12 @@ import java.util.Optional;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class PostgresqlGenericFetchAndLockCompatibilityTest extends CompatibilityTest {
+public class PostgresqlGenericLockAndFetchCompatibilityTest extends CompatibilityTest {
 
   @RegisterExtension
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
 
-  public PostgresqlGenericFetchAndLockCompatibilityTest() {
+  public PostgresqlGenericLockAndFetchCompatibilityTest() {
     super(true, true);
   }
 
@@ -29,5 +29,10 @@ public class PostgresqlGenericFetchAndLockCompatibilityTest extends Compatibilit
   @Override
   public Optional<JdbcCustomization> getJdbcCustomization() {
     return Optional.of(new PostgreSqlJdbcCustomization(true, false));
+  }
+
+  @Override
+  protected String readDbSessionZone() {
+    return querySingleString("SHOW timezone");
   }
 }

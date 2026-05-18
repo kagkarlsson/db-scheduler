@@ -1,4 +1,10 @@
-## How to be a contributor to this project
+## Contribution Guidelines
+
+### AI Contribution Policy
+
+Contributions made with the assistance of AI tools are welcome, but must follow the
+[AI Contribution Policy](AI_POLICY.md). In short: disclose AI use, fully understand the changes,
+and don't paste raw AI output into issues or discussions.
 
 ### Are you new and looking to dive in?
 
@@ -22,8 +28,8 @@
 ### Running tests
 
 Simply running `mvn clean test` will run most of the tests. There are a layer of compatibilty-tests that also should be run
-but take longer time as they spin up numerous docker containers. Run using `mvn -Ptests-for-ci clean test`. (NB: These
-might fail on ARM if not using colima)
+but take longer time as they spin up numerous docker containers. Run using `mvn -Ptests-for-ci clean test`. (NB: Some of these
+might fail on ARM arch)
 
 ### Formatting
 

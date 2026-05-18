@@ -35,9 +35,14 @@ public class DbUtils {
                 new InputStreamReader(DbUtils.class.getResourceAsStream(resource)));
         if (splitStatements) {
           for (String statement : statements.split(";")) {
-            String cleaned = removeCommentLines(statement);
-            if (!cleaned.trim().isEmpty()) {
-              jdbcRunner.execute(cleaned, NOOP);
+            String stripped =
+                statement
+                    .lines()
+                    .filter(line -> !line.trim().startsWith("--"))
+                    .collect(java.util.stream.Collectors.joining("\n"))
+                    .trim();
+            if (!stripped.isEmpty()) {
+              jdbcRunner.execute(stripped, NOOP);
             }
           }
         } else {
@@ -47,16 +52,6 @@ public class DbUtils {
         throw new RuntimeException(e);
       }
     };
-  }
-
-  private static String removeCommentLines(String sql) {
-    StringBuilder result = new StringBuilder();
-    for (String line : sql.split("\n")) {
-      if (!line.trim().startsWith("--")) {
-        result.append(line).append("\n");
-      }
-    }
-    return result.toString();
   }
 
   public static int countExecutions(DataSource dataSource) {

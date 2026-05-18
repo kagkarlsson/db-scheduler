@@ -1,7 +1,7 @@
 # db-scheduler
 
 ![build status](https://github.com/kagkarlsson/db-scheduler/workflows/build/badge.svg)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.kagkarlsson/db-scheduler)](https://central.sonatype.com/artifact/com.github.kagkarlsson/db-scheduler)
 [![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
@@ -213,15 +213,18 @@ Number of threads. Default `10`.
 How often the scheduler checks the database for due executions. Default `10s`.<br/>
 
 :gear: `.alwaysPersistTimestampInUTC()`<br/>
-The Scheduler assumes that columns for persisting timestamps persist `Instant`s, not `LocalDateTime`s,
-i.e. somehow tie the timestamp to a zone. However, some databases have limited support for such types
-(which has no zone information) or other quirks, making "always store in UTC" a better alternative.
-For such cases, use this setting to always store Instants in UTC.
-PostgreSQL and Oracle-schemas is tested to preserve zone-information. **MySQL** and **MariaDB**-schemas
-_does not_ and should use this setting.
-**NB:** For backwards compatibility, the default behavior
-for "unknown" databases is to assume the database preserves time zone. For "known" databases,
-see the class `AutodetectJdbcCustomization`.
+Always transfer timestamps using UTC zone. By default the Scheduler assumes that the underlying database-schema stores instants,
+i.e. somehow ties timestamps to zones. However, some databases have limited support for this
+or other quirks, requiring overriding how timestamps are transferred and stored.
+For such cases, use this setting to always transfer, store and retrieve Instants in UTC.
+**SQL Server** always persists in UTC regardless of this setting.
+**MySQL** and **MariaDB** use a zone-less `TIMESTAMP` type and must enable this setting.
+Upgrading an existing installation requires a controlled migration:
+stop all scheduler instances, migrate existing timestamps to UTC, then restart with `.alwaysPersistTimestampInUTC()` set.
+**Oracle** default schema uses a `TIMESTAMPTZ` type which preserves timezone — only use this override
+if for some reason using plain `TIMESTAMP` types.
+**NB:** The default behavior for "unknown" databases is to assume that timestamps can be get/set reliably
+using `get/setObject(OffsetDateTime)`. For "known" databases, see the class `AutodetectJdbcCustomization`.
 
 :gear: `.enableImmediateExecution()`<br/>
 If this is enabled, the scheduler will attempt to hint to the local `Scheduler` that there are executions to be executed after they are scheduled to
@@ -276,10 +279,10 @@ as they do not support descending indexes.
 #### Polling strategy
 
 If you are running >1000 executions/s you might want to use the `lock-and-fetch` polling-strategy for lower overhead
-and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` will be fine.
+and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch` will be fine.
 
-:gear: `.pollUsingFetchAndLockOnExecute(double, double)`<br/>
-Use default polling strategy `fetch-and-lock-on-execute`.<br/>
+:gear: `.pollUsingFetch(double, double)`<br/>
+Use default polling strategy `fetch`.<br/>
 If the last fetch from the database was a full batch (`executionsPerBatchFractionOfThreads`), a new fetch will be triggered
 when the number of executions left are less than or equal to `lowerLimitFractionOfThreads * nr-of-threads`.
 Fetched executions are not locked/picked, so the scheduler will compete with other instances for the lock
@@ -452,9 +455,6 @@ db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
 db-scheduler.missed-heartbeats-limit=6
 db-scheduler.polling-interval=10s
-db-scheduler.polling-strategy=fetch
-db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
-db-scheduler.polling-strategy-upper-limit-fraction-of-threads=3.0
 db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=
@@ -560,9 +560,9 @@ While db-scheduler initially was targeted at low-to-medium throughput use-cases,
 due to the fact that its data-model is very simple, consisting of a single table of executions.
 To understand how it will perform, it is useful to consider the SQL statements it runs per batch of executions.
 
-### Polling strategy fetch-and-lock-on-execute
+### Polling strategy fetch
 
-The original and default polling strategy, `fetch-and-lock-on-execute`, will do the following:
+The original and default polling strategy, `fetch`, will do the following:
 1. `select` a batch of due executions
 2. For every execution, on execute, try to `update` the execution to `picked=true` for this scheduler-instance. May miss due to competing schedulers.
 3. If execution was picked, when execution is done, `update` or `delete` the record according to handlers.
@@ -597,7 +597,7 @@ TPS is the approx. transactions per second as shown in GCP.
 
 Observations for these tests:
 
-* For `fetch-and-lock-on-execute`
+* For `fetch`
   * TPS ≈ 4-5 * execution-throughput. A bit higher than the best-case 2 * execution-throughput, likely due the inefficiency of missed executions.
   * throughput did scale with postgres instance-size, from 2000 executions/s on 4core to 4000 executions/s on 8core
 * For `lock-and-fetch`
@@ -605,7 +605,7 @@ Observations for these tests:
   * seem to consistently handle 10k executions/s for these configurations
   * throughput did not scale with postgres instance-size (4-8 core), so bottleneck is somewhere else
 
-Currently, polling strategy `lock-and-fetch` is implemented only for Postgres. Contributions adding support for more databases are welcome.
+Currently, polling strategy `lock-and-fetch` is implemented only for Postgres (single statement mode), SQL Server and MySQL v8+ (generic mode). Contributions adding support for more databases are welcome.
 
 ### User testimonial
 
