@@ -22,7 +22,7 @@ import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.SchedulerTester;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
-import com.github.kagkarlsson.scheduler.task.FailureHandler.MaxRetriesExceededListener;
+import com.github.kagkarlsson.scheduler.task.MaxRetriesExceededListener;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;

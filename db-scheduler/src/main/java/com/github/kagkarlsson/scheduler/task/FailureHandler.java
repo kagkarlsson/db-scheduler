@@ -28,16 +28,6 @@ public interface FailureHandler<T> {
 
   void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);
 
-  /**
-   * Notified after max retries have been exceeded and the execution has been handled (rescheduled,
-   * removed or similar). To take action over the terminal step instead, use {@link
-   * MaxRetriesBuilder#then(FailureHandler)}.
-   */
-  @FunctionalInterface
-  interface MaxRetriesExceededListener {
-    void onMaxRetriesExceeded(ExecutionComplete executionComplete);
-  }
-
   /** Start building a max-retries failure handler. */
   static <T> MaxRetriesBuilder<T> maxRetries(int maxRetries) {
     return new MaxRetriesBuilder<>(maxRetries);
