@@ -28,10 +28,14 @@ public interface FailureHandler<T> {
 
   void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);
 
-  /** Callback invoked when max retries have been exceeded and the execution has been removed. */
+  /**
+   * Notified after max retries have been exceeded and the execution has been handled (rescheduled,
+   * removed or similar). To take action over the terminal step instead, use {@link
+   * MaxRetriesBuilder#then(FailureHandler)}.
+   */
   @FunctionalInterface
-  interface MaxRetriesExceededCallback {
-    void maxRetriesExceeded(ExecutionComplete executionComplete);
+  interface MaxRetriesExceededListener {
+    void onMaxRetriesExceeded(ExecutionComplete executionComplete);
   }
 
   /** Start building a max-retries failure handler. */
@@ -72,21 +76,21 @@ public interface FailureHandler<T> {
       return thenRemove(complete -> {});
     }
 
-    /** After max retries, remove the execution and call the callback. */
-    public FailureHandler<T> thenRemove(MaxRetriesExceededCallback callback) {
+    /** After max retries, remove the execution and notify the listener. */
+    public FailureHandler<T> thenRemove(MaxRetriesExceededListener listener) {
       return then(
           (complete, ops) -> {
             LOG.error(
                 "Execution has failed max retries for task instance {}. Removing.",
                 complete.getExecution().taskInstance);
             ops.remove();
-            callback.maxRetriesExceeded(complete);
+            listener.onMaxRetriesExceeded(complete);
           });
     }
 
     /**
-     * After max retries, delegate to the given handler with full control (no automatic remove).
-     * The handler should call one of the ExecutionOperations methods (remove or reschedule).
+     * After max retries, delegate to the given handler with full control (no automatic remove). The
+     * handler should call one of the ExecutionOperations methods (remove or reschedule).
      */
     public FailureHandler<T> then(FailureHandler<T> handler) {
       FailureHandler<T> retryHandler = getRetryHandler();
