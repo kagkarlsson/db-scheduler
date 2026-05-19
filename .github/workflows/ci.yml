@@ -24,7 +24,7 @@ jobs:
 
     - name: Upload coverage to Codecov
       if: matrix.java == '17'
-      uses: codecov/codecov-action@v5
+      uses: codecov/codecov-action@v6
       with:
         files: db-scheduler/target/site/jacoco/jacoco.xml
         flags: db-scheduler
