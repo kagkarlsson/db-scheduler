@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 public record DeactivateUpdate(
     @Nullable NewValue<Instant> lastSuccess,
     @Nullable NewValue<Instant> lastFailure,
+    @Nullable NewValue<Integer> consecutiveFailures,
     @Nullable NewValue<State> state) {
 
   public static Builder toState(State state) {
@@ -30,6 +31,7 @@ public record DeactivateUpdate(
   public static class Builder {
     @Nullable private NewValue<Instant> lastSuccess;
     @Nullable private NewValue<Instant> lastFailure;
+    @Nullable private NewValue<Integer> consecutiveFailures;
     @Nullable private NewValue<State> state;
 
     public Builder(State state) {
@@ -46,13 +48,18 @@ public record DeactivateUpdate(
       return this;
     }
 
+    public Builder consecutiveFailures(Integer consecutiveFailures) {
+      this.consecutiveFailures = new NewValue<>(consecutiveFailures);
+      return this;
+    }
+
     public Builder state(State state) {
       this.state = new NewValue<>(state);
       return this;
     }
 
     public DeactivateUpdate build() {
-      return new DeactivateUpdate(lastSuccess, lastFailure, state);
+      return new DeactivateUpdate(lastSuccess, lastFailure, consecutiveFailures, state);
     }
   }
 }

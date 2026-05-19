@@ -61,6 +61,24 @@ public class SchedulerTester {
       return this;
     }
 
+    public ExecutionAssertion hasLastSuccess(Instant expected) {
+      assertThat(scheduler.getScheduledExecution(instance))
+          .as(
+              "Execution %s/%s has last success %s",
+              instance.getTaskName(), instance.getId(), expected)
+          .hasValueSatisfying(e -> assertThat(e.getLastSuccess()).isEqualTo(expected));
+      return this;
+    }
+
+    public ExecutionAssertion hasLastFailure(Instant expected) {
+      assertThat(scheduler.getScheduledExecution(instance))
+          .as(
+              "Execution %s/%s has last failure %s",
+              instance.getTaskName(), instance.getId(), expected)
+          .hasValueSatisfying(e -> assertThat(e.getLastFailure()).isEqualTo(expected));
+      return this;
+    }
+
     public ExecutionAssertion hasExecutionTime(Instant expected) {
       assertThat(scheduler.getScheduledExecution(instance))
           .as(

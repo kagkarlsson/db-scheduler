@@ -519,7 +519,6 @@ public class JdbcTaskRepository implements TaskRepository {
 
     update.picked(false);
     update.pickedBy(null);
-    update.consecutiveFailures(0);
     update.lastHeartbeat(null);
 
     if (deactivateUpdate.lastSuccess() != null) {
@@ -528,6 +527,10 @@ public class JdbcTaskRepository implements TaskRepository {
 
     if (deactivateUpdate.lastFailure() != null) {
       update.lastFailure(deactivateUpdate.lastFailure().value());
+    }
+
+    if (deactivateUpdate.consecutiveFailures() != null) {
+      update.consecutiveFailures(deactivateUpdate.consecutiveFailures().value());
     }
 
     if (deactivateUpdate.state() != null) {

@@ -15,6 +15,8 @@ import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -24,8 +26,12 @@ import org.slf4j.LoggerFactory;
 public class TestTasks {
 
   public static final TaskDescriptor<Void> ONETIME = TaskDescriptor.of("task-onetime", Void.class);
+  public static final TaskDescriptor<Void> RECURRING =
+      TaskDescriptor.of("task-recurring", Void.class);
   public static final Task<Void> ONETIME_TASK =
       TestTasks.oneTime("task-onetime", Void.class, TestTasks.DO_NOTHING);
+
+  public static final Schedule EVERY_FIVE_SEC = Schedules.fixedDelay(Duration.ofSeconds(5));
 
   public static final CompletionHandler<Void> REMOVE_ON_COMPLETE =
       new CompletionHandler.OnCompleteRemove<>();
