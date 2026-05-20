@@ -522,9 +522,7 @@ public class JdbcTaskRepository implements TaskRepository {
       update.consecutiveFailures(deactivateUpdate.consecutiveFailures().value());
     }
 
-    if (deactivateUpdate.state() != null) {
-      update.state(deactivateUpdate.state().value());
-    }
+    update.state(deactivateUpdate.state().value());
 
     update.updateSingle(jdbcConfig);
   }

@@ -22,7 +22,7 @@ public record DeactivateUpdate(
     @Nullable NewValue<Instant> lastSuccess,
     @Nullable NewValue<Instant> lastFailure,
     @Nullable NewValue<Integer> consecutiveFailures,
-    @Nullable NewValue<State> state) {
+    NewValue<State> state) {
 
   public static Builder toState(State state) {
     return new Builder(state);
@@ -32,7 +32,7 @@ public record DeactivateUpdate(
     @Nullable private NewValue<Instant> lastSuccess;
     @Nullable private NewValue<Instant> lastFailure;
     @Nullable private NewValue<Integer> consecutiveFailures;
-    @Nullable private NewValue<State> state;
+    private final NewValue<State> state;
 
     public Builder(State state) {
       this.state = new NewValue<>(state);

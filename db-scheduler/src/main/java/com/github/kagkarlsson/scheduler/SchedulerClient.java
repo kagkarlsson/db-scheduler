@@ -230,9 +230,7 @@ public interface SchedulerClient {
    * @param taskInstanceId the task instance to reactivate
    * @param newExecutionTime the new scheduled execution time
    * @throws TaskInstanceNotFoundException if the given instance does not exist
-   * @throws TaskInstanceCurrentlyExecutingException if the given instance is currently being
-   *     executed
-   * @throws TaskInstanceAlreadyActiveException if the execution is not in a deactivated state
+   * @throws TaskInstanceAlreadyActiveException if the execution is already in the active state
    */
   void reactivate(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
@@ -633,10 +631,6 @@ public interface SchedulerClient {
           taskRepository
               .getExecution(taskInstanceId)
               .orElseThrow(() -> new TaskInstanceNotFoundException(taskInstanceId));
-
-      if (execution.isPicked()) {
-        throw new TaskInstanceCurrentlyExecutingException(taskInstanceId);
-      }
 
       if (execution.isActive()) {
         throw new TaskInstanceAlreadyActiveException(taskInstanceId);
