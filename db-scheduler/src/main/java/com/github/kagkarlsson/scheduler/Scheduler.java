@@ -51,28 +51,28 @@ public class Scheduler implements SchedulerClient {
   public static final String THREAD_PREFIX = "db-scheduler";
   static final int DELETE_OLD_DEACTIVATED_BATCH_LIMIT = 10_000;
   private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
-  protected final PollStrategy executeDueStrategy;
-  protected final Executor executor;
-  protected final List<OnStartup> onStartup;
+  private final SchedulerClient delegate;
   final Clock clock;
   final TaskRepository schedulerTaskRepository;
   final TaskResolver taskResolver;
-  final SchedulerListeners schedulerListeners;
-  final SettableSchedulerState schedulerState = new SettableSchedulerState();
-  final ConfigurableLogger failureLogger;
-  private final SchedulerClient delegate;
+  protected final PollStrategy executeDueStrategy;
+  protected final Executor executor;
   private final ScheduledExecutorService housekeeperExecutor;
   private final HeartbeatConfig heartbeatConfig;
   private final int numberOfMissedHeartbeatsBeforeDead;
+  int threadpoolSize;
   private final Waiter executeDueWaiter;
   private final Duration deleteUnresolvedAfter;
   private final Duration deleteDeactivatedAfter;
   private final Duration shutdownMaxWait;
+  protected final List<OnStartup> onStartup;
   private final Waiter detectDeadWaiter;
   private final Duration heartbeatInterval;
+  final SchedulerListeners schedulerListeners;
   private final ExecutorService dueExecutor;
   private final Waiter heartbeatWaiter;
-  int threadpoolSize;
+  final SettableSchedulerState schedulerState = new SettableSchedulerState();
+  final ConfigurableLogger failureLogger;
 
   protected Scheduler(
       Clock clock,
@@ -157,14 +157,6 @@ public class Scheduler implements SchedulerClient {
           "Unknown polling-strategy type: " + pollingStrategyConfig.type);
     }
     LOG.info("Using polling-strategy: " + pollingStrategyConfig.describe());
-  }
-
-  public static SchedulerBuilder create(DataSource dataSource, Task<?>... knownTasks) {
-    return create(dataSource, Arrays.asList(knownTasks));
-  }
-
-  public static SchedulerBuilder create(DataSource dataSource, List<Task<?>> knownTasks) {
-    return new SchedulerBuilder(dataSource, knownTasks);
   }
 
   public void registerSchedulerListener(SchedulerListener listener) {
@@ -529,5 +521,13 @@ public class Scheduler implements SchedulerClient {
 
   Duration getMaxAgeBeforeConsideredDead() {
     return heartbeatInterval.multipliedBy(numberOfMissedHeartbeatsBeforeDead);
+  }
+
+  public static SchedulerBuilder create(DataSource dataSource, Task<?>... knownTasks) {
+    return create(dataSource, Arrays.asList(knownTasks));
+  }
+
+  public static SchedulerBuilder create(DataSource dataSource, List<Task<?>> knownTasks) {
+    return new SchedulerBuilder(dataSource, knownTasks);
   }
 }
