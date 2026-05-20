@@ -16,6 +16,7 @@ package com.github.kagkarlsson.scheduler.task;
 import static java.lang.Math.pow;
 import static java.lang.Math.round;
 
+import com.github.kagkarlsson.scheduler.task.MaxRetriesExceededListener.OnMaxRetriesLogWarn;
 import com.github.kagkarlsson.scheduler.task.helper.ScheduleAndData;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import java.time.Duration;
@@ -63,16 +64,13 @@ public interface FailureHandler<T> {
 
     /** After max retries, remove the execution. */
     public FailureHandler<T> thenRemove() {
-      return thenRemove(complete -> {});
+      return thenRemove(complete -> new OnMaxRetriesLogWarn());
     }
 
     /** After max retries, remove the execution and notify the listener. */
     public FailureHandler<T> thenRemove(MaxRetriesExceededListener listener) {
       return then(
           (complete, ops) -> {
-            LOG.error(
-                "Execution has failed max retries for task instance {}. Removing.",
-                complete.getExecution().taskInstance);
             ops.remove();
             listener.onMaxRetriesExceeded(complete);
           });
@@ -83,11 +81,16 @@ public interface FailureHandler<T> {
      * handler should call one of the ExecutionOperations methods (remove or reschedule).
      */
     public FailureHandler<T> then(FailureHandler<T> handler) {
+      return then(handler, new OnMaxRetriesLogWarn());
+    }
+
+    public FailureHandler<T> then(FailureHandler<T> handler, MaxRetriesExceededListener listener) {
       FailureHandler<T> retryHandler = getRetryHandler();
       return (executionComplete, executionOperations) -> {
         int totalFailures = executionComplete.getExecution().consecutiveFailures + 1;
         if (totalFailures > maxRetries) {
           handler.onFailure(executionComplete, executionOperations);
+          listener.onMaxRetriesExceeded(executionComplete);
         } else {
           retryHandler.onFailure(executionComplete, executionOperations);
         }
