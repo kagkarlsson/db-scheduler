@@ -298,7 +298,7 @@ public class Tasks {
       return this;
     }
 
-    public OneTimeTaskBuilder<T> onCompleteKeep(State state) {
+    public OneTimeTaskBuilder<T> onCompleteDeactivate(State state) {
       this.completionHandler = new CompletionHandler.OnCompleteDeactivate<>(state);
       return this;
     }

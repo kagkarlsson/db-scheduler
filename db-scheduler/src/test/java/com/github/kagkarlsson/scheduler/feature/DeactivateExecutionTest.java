@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
 import com.github.kagkarlsson.scheduler.SchedulerTester;
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotActiveException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceAlreadyDeactivatedException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -84,7 +84,7 @@ public class DeactivateExecutionTest {
     scheduler.deactivate(instance, State.PAUSED);
 
     assertThatThrownBy(() -> scheduler.deactivate(instance, State.PAUSED))
-        .isInstanceOf(TaskInstanceNotActiveException.class);
+        .isInstanceOf(TaskInstanceAlreadyDeactivatedException.class);
   }
 
   private ManualScheduler createManualScheduler(Task<Void> task) {

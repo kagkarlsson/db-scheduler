@@ -19,8 +19,8 @@ import static java.util.stream.Collectors.toList;
 import com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.WhenExists;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotActiveException;
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotDeactivatedException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceAlreadyDeactivatedException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceAlreadyActiveException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
@@ -232,7 +232,7 @@ public interface SchedulerClient {
    * @throws TaskInstanceNotFoundException if the given instance does not exist
    * @throws TaskInstanceCurrentlyExecutingException if the given instance is currently being
    *     executed
-   * @throws TaskInstanceNotDeactivatedException if the execution is not in a deactivated state
+   * @throws TaskInstanceAlreadyActiveException if the execution is not in a deactivated state
    */
   void reactivate(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
@@ -621,7 +621,7 @@ public interface SchedulerClient {
       }
 
       if (!execution.isActive()) {
-        throw new TaskInstanceNotActiveException(taskInstanceId);
+        throw new TaskInstanceAlreadyDeactivatedException(taskInstanceId);
       }
 
       taskRepository.deactivate(execution, DeactivateUpdate.toState(state).build());
@@ -639,7 +639,7 @@ public interface SchedulerClient {
       }
 
       if (execution.isActive()) {
-        throw new TaskInstanceNotDeactivatedException(taskInstanceId);
+        throw new TaskInstanceAlreadyActiveException(taskInstanceId);
       }
 
       taskRepository.reactivate(execution, newExecutionTime);

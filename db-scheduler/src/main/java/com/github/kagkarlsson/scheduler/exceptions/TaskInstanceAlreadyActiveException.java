@@ -11,26 +11,19 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler;
+package com.github.kagkarlsson.scheduler.exceptions;
 
-import com.github.kagkarlsson.scheduler.task.Execution;
-import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
-import java.time.Instant;
+import java.io.Serial;
 
-public record DeactivatedExecution(
-    TaskInstanceId taskInstance,
-    State state,
-    Instant lastSuccess,
-    Instant lastFailure,
-    int consecutiveFailures) {
+public class TaskInstanceAlreadyActiveException extends TaskInstanceException {
+  @Serial private static final long serialVersionUID = 1L;
 
-  public static DeactivatedExecution from(Execution execution) {
-    return new DeactivatedExecution(
-        execution.taskInstance,
-        execution.state,
-        execution.lastSuccess,
-        execution.lastFailure,
-        execution.consecutiveFailures);
+  public TaskInstanceAlreadyActiveException(TaskInstanceId taskInstanceId) {
+    this(taskInstanceId.getTaskName(), taskInstanceId.getId());
+  }
+
+  public TaskInstanceAlreadyActiveException(String taskName, String instanceId) {
+    super("Cannot reactivate task because it is already in the active state.", taskName, instanceId);
   }
 }

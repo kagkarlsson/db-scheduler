@@ -16,14 +16,17 @@ package com.github.kagkarlsson.scheduler.exceptions;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.io.Serial;
 
-public class TaskInstanceNotDeactivatedException extends TaskInstanceException {
+public class TaskInstanceAlreadyDeactivatedException extends TaskInstanceException {
   @Serial private static final long serialVersionUID = 1L;
 
-  public TaskInstanceNotDeactivatedException(TaskInstanceId taskInstanceId) {
+  public TaskInstanceAlreadyDeactivatedException(TaskInstanceId taskInstanceId) {
     this(taskInstanceId.getTaskName(), taskInstanceId.getId());
   }
 
-  public TaskInstanceNotDeactivatedException(String taskName, String instanceId) {
-    super("Cannot reactivate task because it is not in a deactivated state.", taskName, instanceId);
+  public TaskInstanceAlreadyDeactivatedException(String taskName, String instanceId) {
+    super(
+        "Cannot deactivate task because it is already in a deactivated state.",
+        taskName,
+        instanceId);
   }
 }

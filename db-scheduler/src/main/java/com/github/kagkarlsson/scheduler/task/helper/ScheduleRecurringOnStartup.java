@@ -62,7 +62,7 @@ public class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
 
     if (preexistingExecution.isPresent()) {
       ScheduledExecution<Object> execution = preexistingExecution.get();
-      var state = preexistingExecution.get().getState();
+      var state = execution.getState();
 
       // WARN if execution is deactivated (for now)
       if (state != State.ACTIVE) {
