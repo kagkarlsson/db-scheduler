@@ -303,6 +303,14 @@ public class Tasks {
       return this;
     }
 
+    public OneTimeTaskBuilder<T> onCompleteDelayRemoval() {
+      return onCompleteDeactivate(State.COMPLETE);
+    }
+
+    public OneTimeTaskBuilder<T> onCompleteKeepAsRecord() {
+      return onCompleteDeactivate(State.RECORD);
+    }
+
     public OneTimeTask<T> execute(VoidExecutionHandler<T> executionHandler) {
       return new OneTimeTask<>(
           name, dataClass, onFailure, onDeadExecution, defaultPriority, completionHandler) {

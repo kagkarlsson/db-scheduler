@@ -28,9 +28,7 @@ public class OnCompleteKeepTest {
   public void should_keep_execution_with_state_complete_after_successful_run() {
     var scheduler =
         createManualScheduler(
-            Tasks.oneTime(ONETIME)
-                .onCompleteDeactivate(State.COMPLETE)
-                .execute(TestTasks.DO_NOTHING));
+            Tasks.oneTime(ONETIME).onCompleteDelayRemoval().execute(TestTasks.DO_NOTHING));
     var tester = new SchedulerTester(scheduler);
 
     scheduler.schedule(INSTANCE);
@@ -52,9 +50,7 @@ public class OnCompleteKeepTest {
   public void should_keep_record_execution_indefinitely() {
     var scheduler =
         createManualScheduler(
-            Tasks.oneTime(ONETIME)
-                .onCompleteDeactivate(State.RECORD)
-                .execute(TestTasks.DO_NOTHING));
+            Tasks.oneTime(ONETIME).onCompleteKeepAsRecord().execute(TestTasks.DO_NOTHING));
     var tester = new SchedulerTester(scheduler);
 
     scheduler.schedule(INSTANCE);
