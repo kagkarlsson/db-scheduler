@@ -388,6 +388,38 @@ More details on the time zone formats can be found [here](https://docs.oracle.co
 A `Schedule` can be marked as disabled. The scheduler will not schedule the initial executions for tasks with a disabled schedule,
 and it will remove any existing executions for that task.
 
+### Execution state and deactivation
+
+Since v17(?), a task-instance has a `state` field (and column) indicating if the execution is `ACTIVE` or not.
+Only `ACTIVE` executions are considered for execution; everything else is considered _deactivated_.
+Rows with `state == NULL` are treated as `ACTIVE` for backward compatibility.
+See table below for a full list of states.
+
+|  State   |                                                                 Description / Intended use                                                                  |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ACTIVE   | Will run.                                                                                                                                                   |
+| COMPLETE | Has run and **completed successfully**. Auto-deleted after the configured retention (default 14 days). May help ensure indempotency.                        |
+| RECORD   | Has run and **completed successfully**. **Kept indefinitely** as a historic record (similar to a Liquibase migration row — useful to guarantee run-once).   |
+| FAILED   | Has run but **failed permanently** (set by a `FailureHandler`). Auto-deleted after the configured retention. Similar to a DLQ. Can be manually reactivated. |
+| PAUSED   | Temporarily and manually deactivated. Intended for recurring tasks and manual reactivation. Never auto-deleted.                                             |
+| WAITING  | Waiting for activation by another automatic process. Never auto-deleted.                                                                                    |
+
+**Client API:**
+
+* `SchedulerClient.deactivate(TaskInstanceId, State)` — deactivate an execution to the given state. Keeps `lastSuccess`, `lastFailure` and `consecutiveFailures`.
+* `SchedulerClient.reactivate(TaskInstanceId, Instant)` — reschedule a deactivated execution as `ACTIVE`, resetting execution history.
+* `ScheduledExecutionsFilter.active()` / `.deactivated()` / `.allActiveAndDeactivated()` — filter executions by state when listing.
+
+**Completion- and failure-handlers:**
+
+* `Tasks.oneTime(...).onCompleteDeactivate(State)` — keep execution in a deactivated state after a successful run.
+* `Tasks.oneTime(...).onCompleteDelayRemoval()` — convenience for `onCompleteDeactivate(State.COMPLETE)`.
+* `Tasks.oneTime(...).onCompleteKeepAsRecord()` — convenience for `onCompleteDeactivate(State.RECORD)`.
+* `FailureHandler.maxRetries(n).withBackoff(...).thenDeactivate(State.FAILED)` — fluent failure handler that deactivates after `n` retries.
+
+**Housekeeping:** a background job runs every 24h and removes `COMPLETE` and `FAILED` executions older than `deleteDeactivatedAfter`
+(default 14d). `RECORD`, `PAUSED` and `WAITING` are never auto-deleted. Set the duration to `Duration.ZERO` to disable.
+
 ### Serializers
 
 A task-instance may have some associated data in the field `task_data`. The scheduler uses a `Serializer` to read and write this

@@ -348,8 +348,7 @@ public abstract class CompatibilityTest {
         .containsExactlyInAnyOrder("oldRecord", "recentComplete");
   }
 
-  private void deactivate(
-      JdbcTaskRepository repo, String id, Instant executionTime, State state) {
+  private void deactivate(JdbcTaskRepository repo, String id, Instant executionTime, State state) {
     Execution execution = createExecution(repo, ONETIME.instance(id).scheduledTo(executionTime));
     repo.deactivate(execution, DeactivateUpdate.toState(state).build());
   }
