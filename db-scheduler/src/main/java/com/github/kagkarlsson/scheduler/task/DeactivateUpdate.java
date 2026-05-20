@@ -53,11 +53,6 @@ public record DeactivateUpdate(
       return this;
     }
 
-    public Builder state(State state) {
-      this.state = new NewValue<>(state);
-      return this;
-    }
-
     public DeactivateUpdate build() {
       return new DeactivateUpdate(lastSuccess, lastFailure, consecutiveFailures, state);
     }
