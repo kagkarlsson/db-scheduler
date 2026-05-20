@@ -114,7 +114,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.19.0</version>
+        <version>3.20.0</version>
         <scope>test</scope>
       </dependency>
 
@@ -261,7 +261,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.6.2</version>
+          <version>3.6.3</version>
           <executions>
             <execution>
               <id>enforce-maven</id>
@@ -299,7 +299,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.4.0</version>
+        <version>3.5.1</version>
         <configuration>
           <java>
             <includes>

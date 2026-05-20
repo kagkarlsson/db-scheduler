@@ -317,7 +317,7 @@
     <dependency>
       <groupId>com.oracle.database.jdbc</groupId>
       <artifactId>ojdbc8</artifactId>
-      <version>23.26.1.0.0</version>
+      <version>23.26.2.0.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -392,7 +392,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.13</version>
+        <version>0.8.14</version>
         <executions>
           <execution>
             <id>prepare-agent</id>
