@@ -556,7 +556,7 @@ public class JdbcTaskRepositoryTest {
 
     assertThat(toIds(taskRepository.getDue(truncatedNow, POLLING_LIMIT))).containsExactly("active");
 
-    assertThat(taskRepository.getDeactivatedExecutions())
+    assertThat(taskRepository.getScheduledExecutions(ScheduledExecutionsFilter.deactivated()))
         .satisfiesExactly(
             e -> {
               assertThat(e.taskInstance.getId()).isEqualTo("toDeactivate");
@@ -708,7 +708,8 @@ public class JdbcTaskRepositoryTest {
             EnumSet.of(State.COMPLETE), truncatedNow.minus(ofDays(14)), 2);
 
     assertEquals(2, removed);
-    assertEquals(3, taskRepository.getDeactivatedExecutions().size());
+    assertEquals(
+        3, taskRepository.getScheduledExecutions(ScheduledExecutionsFilter.deactivated()).size());
   }
 
   private void createDeactivatedExecution(String id, Instant executionTime, State state) {

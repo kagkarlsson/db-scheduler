@@ -358,17 +358,6 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  public void getDeactivatedExecutions(Consumer<Execution> consumer) {
-    QueryBuilder q = QueryBuilder.selectFromTable(tableName);
-    q.andCondition(new DeactivatedCondition());
-
-    jdbcRunner.query(
-        q.getQuery(jdbcCustomization),
-        q.getPreparedStatementSetter(jdbcCustomization),
-        new ExecutionResultSetConsumer(consumer, true, false));
-  }
-
-  @Override
   public List<Execution> getDue(Instant now, int limit) {
     LOG.trace("Using generic fetch-then-lock query");
     final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());

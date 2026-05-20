@@ -64,14 +64,6 @@ public interface TaskRepository {
     return results;
   }
 
-  void getDeactivatedExecutions(Consumer<Execution> consumer);
-
-  default List<Execution> getDeactivatedExecutions() {
-    var results = new ArrayList<Execution>();
-    getDeactivatedExecutions(results::add);
-    return results;
-  }
-
   List<Execution> lockAndFetchGeneric(Instant now, int limit);
 
   List<Execution> lockAndGetDue(Instant now, int limit);

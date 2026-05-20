@@ -21,6 +21,7 @@ import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
+import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -315,7 +316,8 @@ public abstract class CompatibilityTest {
     repo.deactivate(toDeactivate, DeactivateUpdate.toState(State.PAUSED).build());
 
     assertThat(toIds(repo.getDue(aDueInstant, POLLING_LIMIT))).containsExactly("active");
-    assertThat(toIds(repo.getDeactivatedExecutions())).containsExactly("toDeactivate");
+    assertThat(toIds(repo.getScheduledExecutions(ScheduledExecutionsFilter.deactivated())))
+        .containsExactly("toDeactivate");
   }
 
   private ScheduledExecution<?> toScheduled(Execution execution) {

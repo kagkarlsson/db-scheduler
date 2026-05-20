@@ -74,7 +74,7 @@ public final class Execution implements TaskInstanceId, Resolvable {
   }
 
   public State getState() {
-    return state == null ? State.ACTIVE : state;
+    return state;
   }
 
   public Execution updateToPicked(String newPickedBy, Instant newLastHeartbeat) {
