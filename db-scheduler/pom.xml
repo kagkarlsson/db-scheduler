@@ -13,7 +13,6 @@
   <url>https://github.com/kagkarlsson/db-scheduler</url>
 
   <properties>
-    <license.dir>${project.parent.basedir}/.license</license.dir>
     <!-- Dependencies -->
     <cron-utils.version>9.2.1</cron-utils.version>
     <hamcrest.version>3.0</hamcrest.version>

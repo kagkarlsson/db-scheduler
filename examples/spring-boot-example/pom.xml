@@ -12,10 +12,6 @@
   <description>Examples on how to use db-scheduler with Spring Boot</description>
   <url>https://github.com/kagkarlsson/db-scheduler</url>
 
-  <properties>
-    <license.dir>${project.parent.parent.basedir}/.license</license.dir>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
