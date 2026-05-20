@@ -458,9 +458,11 @@ public class Scheduler implements SchedulerClient {
     LOG.debug("Deleting old deactivated executions.");
     Instant olderThan = clock.now().minus(deleteDeactivatedAfter);
 
-    // Delete all deactivated states except RECORD (kept indefinitely)
-    EnumSet<State> deleteInStates =
-        EnumSet.of(State.COMPLETE, State.PAUSED, State.FAILED, State.WAITING);
+    // Only auto-clean states COMPLETE, FAILED
+    // RECORD - keep indefinitely
+    // PAUSED, WAITING - for now user must handle, future improvement with separate
+    //                   retention for these
+    EnumSet<State> deleteInStates = EnumSet.of(State.COMPLETE, State.FAILED);
 
     int totalRemoved = 0;
     int removed;
