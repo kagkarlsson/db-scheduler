@@ -59,6 +59,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Optional;
@@ -318,6 +319,39 @@ public abstract class CompatibilityTest {
     assertThat(toIds(repo.getDue(aDueInstant, POLLING_LIMIT))).containsExactly("active");
     assertThat(toIds(repo.getScheduledExecutions(ScheduledExecutionsFilter.deactivated())))
         .containsExactly("toDeactivate");
+  }
+
+  @Test
+  public void test_remove_old_deactivated_executions() {
+    final JdbcTaskRepository repo = createJdbcTaskRepository(false);
+    Instant oldTime = aDueInstant.minus(Duration.ofDays(30));
+    Instant recentTime = aDueInstant.minus(Duration.ofDays(7));
+    Instant ageLimit = aDueInstant.minus(Duration.ofDays(14));
+
+    // Should be deleted: old + in matching state
+    deactivate(repo, "oldComplete", oldTime, State.COMPLETE);
+    deactivate(repo, "oldFailed", oldTime, State.FAILED);
+
+    // Should be kept
+    createExecution(repo, ONETIME.instance("active").scheduledTo(oldTime));
+    deactivate(repo, "oldRecord", oldTime, State.RECORD); // RECORD is excluded
+    deactivate(repo, "recentComplete", recentTime, State.COMPLETE); // newer than age limit
+
+    int removed =
+        repo.removeOldDeactivatedExecutions(
+            EnumSet.of(State.COMPLETE, State.FAILED), ageLimit, 1000);
+
+    assertEquals(2, removed);
+    assertThat(toIds(repo.getScheduledExecutions(ScheduledExecutionsFilter.active())))
+        .containsExactly("active");
+    assertThat(toIds(repo.getScheduledExecutions(ScheduledExecutionsFilter.deactivated())))
+        .containsExactlyInAnyOrder("oldRecord", "recentComplete");
+  }
+
+  private void deactivate(
+      JdbcTaskRepository repo, String id, Instant executionTime, State state) {
+    Execution execution = createExecution(repo, ONETIME.instance(id).scheduledTo(executionTime));
+    repo.deactivate(execution, DeactivateUpdate.toState(state).build());
   }
 
   private ScheduledExecution<?> toScheduled(Execution execution) {
