@@ -26,11 +26,11 @@ import javax.sql.DataSource;
 
 public class MaxRetriesMain extends Example {
 
+  public static final TaskDescriptor<Void> MAX_RETRIES_TASK = TaskDescriptor.of("max_retries_task");
+
   public static void main(String[] args) {
     new MaxRetriesMain().runWithDatasource();
   }
-
-  public static final TaskDescriptor<Void> MAX_RETRIES_TASK = TaskDescriptor.of("max_retries_task");
 
   @Override
   public void run(DataSource dataSource) {
@@ -39,7 +39,7 @@ public class MaxRetriesMain extends Example {
         Tasks.oneTime(MAX_RETRIES_TASK)
             .onFailure(
                 FailureHandler.<Void>maxRetries(3)
-                    .withBackoff(Duration.ofSeconds(1), 2.0)
+                    .retryEvery(Duration.ofSeconds(2))
                     .thenDeactivate(State.FAILED))
             .execute(
                 (taskInstance, executionContext) -> {

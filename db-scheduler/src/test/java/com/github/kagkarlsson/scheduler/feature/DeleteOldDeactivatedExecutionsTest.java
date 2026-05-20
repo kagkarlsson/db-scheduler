@@ -38,7 +38,8 @@ public class DeleteOldDeactivatedExecutionsTest {
 
   @Test
   public void should_iterate_until_all_old_deactivated_are_removed() {
-    var task = Tasks.oneTime(ONETIME).onCompleteDeactivate(State.COMPLETE).execute(TestTasks.DO_NOTHING);
+    var task =
+        Tasks.oneTime(ONETIME).onCompleteDeactivate(State.COMPLETE).execute(TestTasks.DO_NOTHING);
     var scheduler = createManualScheduler(task);
 
     for (int i = 0; i < 5; i++) {

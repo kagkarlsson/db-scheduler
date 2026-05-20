@@ -24,6 +24,7 @@ public class TaskInstanceAlreadyActiveException extends TaskInstanceException {
   }
 
   public TaskInstanceAlreadyActiveException(String taskName, String instanceId) {
-    super("Cannot reactivate task because it is already in the active state.", taskName, instanceId);
+    super(
+        "Cannot reactivate task because it is already in the active state.", taskName, instanceId);
   }
 }

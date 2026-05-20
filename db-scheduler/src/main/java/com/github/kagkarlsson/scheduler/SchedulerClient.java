@@ -18,9 +18,9 @@ import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.WhenExists;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
-import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceAlreadyDeactivatedException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceAlreadyActiveException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceAlreadyDeactivatedException;
+import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceCurrentlyExecutingException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceNotFoundException;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;

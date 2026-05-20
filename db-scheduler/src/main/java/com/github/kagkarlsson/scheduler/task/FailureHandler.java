@@ -26,6 +26,11 @@ import org.slf4j.LoggerFactory;
 
 public interface FailureHandler<T> {
 
+  /** Start building a max-retries failure handler. */
+  static <T> MaxRetriesBuilder<T> maxRetries(int maxRetries) {
+    return new MaxRetriesBuilder<>(maxRetries);
+  }
+
   void onFailure(ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations);
 
   /**
@@ -161,17 +166,20 @@ public interface FailureHandler<T> {
 
     /** After max retries, deactivate with the specified state. */
     public FailureHandler<T> thenDeactivate(State state) {
-      return thenDeactivate(state, complete -> {});
+      return thenDeactivate(
+          state,
+          complete -> {
+            LOG.error(
+                "Execution has failed max retries for task instance {}. Deactivating with state {}.",
+                complete.getExecution().taskInstance,
+                state);
+          });
     }
 
     /** After max retries, deactivate with the specified state and call the callback. */
     public FailureHandler<T> thenDeactivate(State state, MaxRetriesExceededCallback callback) {
       return then(
           (complete, ops) -> {
-            LOG.error(
-                "Execution has failed max retries for task instance {}. Deactivating with state {}.",
-                complete.getExecution().taskInstance,
-                state);
             ops.deactivate(
                 DeactivateUpdate.toState(state).lastFailure(complete.getTimeDone()).build());
             callback.maxRetriesExceeded(complete);
@@ -202,11 +210,6 @@ public interface FailureHandler<T> {
       }
       return retryHandler;
     }
-  }
-
-  /** Start building a max-retries failure handler. */
-  static <T> MaxRetriesBuilder<T> maxRetries(int maxRetries) {
-    return new MaxRetriesBuilder<>(maxRetries);
   }
 
   class OnFailureRetryLater<T> implements FailureHandler<T> {
