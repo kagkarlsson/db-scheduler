@@ -22,7 +22,7 @@
     <equals-verifier.version>4.5</equals-verifier.version>
     <bytebuddy.version>1.18.8</bytebuddy.version>
     <zonky-pg-embedded.version>2.2.2</zonky-pg-embedded.version>
-    <zonky-pg-binaries.version>17.5.0</zonky-pg-binaries.version>
+    <zonky-pg-binaries.version>18.3.0</zonky-pg-binaries.version>
     <slf4j.version>1.7.36</slf4j.version>
     <assertj.version>3.27.7</assertj.version>
     <test.excludedTags>compatibility,compatibility-cluster</test.excludedTags>
