@@ -10,5 +10,7 @@ create table custom_tablename (
   last_heartbeat timestamp with time zone,
   version BIGINT not null,
   priority INT,
+  consecutive_failures INT,
+  state text,
   PRIMARY KEY (task_name, task_instance)
 )

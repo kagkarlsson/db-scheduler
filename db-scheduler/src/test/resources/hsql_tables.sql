@@ -2,7 +2,7 @@ create table scheduled_tasks (
     task_name varchar(100),
     task_instance varchar(100),
     task_data blob,
-    execution_time TIMESTAMP WITH TIME ZONE,
+    execution_time TIMESTAMP WITH TIME ZONE not null,
     picked BIT,
     picked_by varchar(50),
     last_success TIMESTAMP WITH TIME ZONE,
@@ -12,4 +12,7 @@ create table scheduled_tasks (
     version BIGINT,
     priority SMALLINT,
     PRIMARY KEY (task_name, task_instance)
-)
+);
+
+-- Migrations
+ALTER TABLE scheduled_tasks ADD COLUMN state varchar(20);

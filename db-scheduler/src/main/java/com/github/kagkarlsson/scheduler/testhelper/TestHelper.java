@@ -139,6 +139,7 @@ public class TestHelper {
           executionInterceptors,
           Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
           deleteUnresolvedAfter,
+          deleteDeactivatedAfter,
           LogLevel.DEBUG,
           true,
           startTasks,

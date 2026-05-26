@@ -102,6 +102,12 @@ public class DbSchedulerProperties {
       SchedulerBuilder.DEFAULT_DELETION_OF_UNRESOLVED_TASKS_DURATION;
 
   /**
+   * The time after which old deactivated executions are automatically deleted. Set to 0 to disable.
+   */
+  @DurationUnit(HOURS)
+  private Duration deleteDeactivatedAfter = SchedulerBuilder.DEFAULT_DELETE_DEACTIVATED_AFTER;
+
+  /**
    * How long the scheduler will wait before interrupting executor-service threads. If you find
    * yourself using this, consider if it is possible to instead regularly check <code>
    * executionContext.getSchedulerState().isShuttingDown()</code> in the ExecutionHandler and abort
@@ -202,6 +208,14 @@ public class DbSchedulerProperties {
 
   public void setDeleteUnresolvedAfter(Duration deleteUnresolvedAfter) {
     this.deleteUnresolvedAfter = deleteUnresolvedAfter;
+  }
+
+  public Duration getDeleteDeactivatedAfter() {
+    return deleteDeactivatedAfter;
+  }
+
+  public void setDeleteDeactivatedAfter(Duration deleteDeactivatedAfter) {
+    this.deleteDeactivatedAfter = deleteDeactivatedAfter;
   }
 
   public Duration getShutdownMaxWait() {

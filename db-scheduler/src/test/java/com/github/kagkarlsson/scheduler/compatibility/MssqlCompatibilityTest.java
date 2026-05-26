@@ -5,12 +5,14 @@ import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_T
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
+import ch.qos.logback.classic.Level;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
+import com.github.kagkarlsson.scheduler.helper.ChangeLogLevelsExtension;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.jdbc.MssqlJdbcCustomization;
@@ -33,6 +35,7 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -53,6 +56,12 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 public class MssqlCompatibilityTest extends CompatibilityTest {
 
+  //        Enable if test gets flaky!
+  @RegisterExtension
+  public ChangeLogLevelsExtension changeLogLevels =
+      new ChangeLogLevelsExtension(
+          new ChangeLogLevelsExtension.LogLevelOverride("com.github.kagkarlsson", Level.DEBUG));
+
   @Container
   private static final MSSQLServerContainer MSSQL =
       new MSSQLServerContainer<>(
@@ -68,7 +77,7 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
   @BeforeAll
   static void initSchema() {
     //      For MANUAL testing, see javadoc comment
-    //        String jdbcUrl = "jdbc:sqlserver://localhost:1433";
+    //        String jdbcUrl = "jdbc:sqlserver://localhost:1433;trustServerCertificate=true";
     //        DataSource datasource =
     //            new DriverDataSource(
     //                jdbcUrl,
@@ -95,7 +104,7 @@ public class MssqlCompatibilityTest extends CompatibilityTest {
 
     // init schema
     DbUtils.dropTables(pooledDatasource);
-    DbUtils.runSqlResource("/mssql_tables.sql").accept(pooledDatasource);
+    DbUtils.runSqlResource("/mssql_tables.sql", true).accept(pooledDatasource);
   }
 
   @Override

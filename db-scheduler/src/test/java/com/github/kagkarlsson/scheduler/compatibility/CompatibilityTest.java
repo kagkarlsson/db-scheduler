@@ -1,11 +1,12 @@
 package com.github.kagkarlsson.scheduler.compatibility;
 
-import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.active;
 import static com.github.kagkarlsson.scheduler.SchedulerBuilder.UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH;
 import static com.github.kagkarlsson.scheduler.helper.TimeHelper.truncatedInstantNow;
 import static com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository.DEFAULT_TABLE_NAME;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
@@ -20,6 +21,7 @@ import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.DbUtils;
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
 import com.github.kagkarlsson.scheduler.ScheduledExecution;
+import com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SchedulerBuilder;
 import com.github.kagkarlsson.scheduler.SchedulerName;
@@ -35,9 +37,11 @@ import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
@@ -55,6 +59,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Optional;
@@ -76,7 +81,7 @@ public abstract class CompatibilityTest {
 
   private static final int POLLING_LIMIT = 10_000;
   private static final TaskDescriptor<String> ONETIME = TaskDescriptor.of("oneTime", String.class);
-  private static final Instant anInstant = truncatedInstantNow();
+  private static final Instant aDueInstant = truncatedInstantNow();
   private final boolean supportsSelectForUpdate;
   private final boolean shouldHavePersistentTimezone;
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
@@ -210,13 +215,13 @@ public abstract class CompatibilityTest {
   @Test
   public void test_jdbc_limit_before_after_compatibility() {
     var repo = createJdbcTaskRepository(false);
-    schedule(repo, ONETIME, "1", anInstant.plusSeconds(10));
-    schedule(repo, ONETIME, "2", anInstant.plusSeconds(20));
-    schedule(repo, ONETIME, "3", anInstant.plusSeconds(30));
-    schedule(repo, ONETIME, "4", anInstant.plusSeconds(40));
-    schedule(repo, ONETIME, "5", anInstant.plusSeconds(50));
+    schedule(repo, ONETIME, "1", aDueInstant.plusSeconds(10));
+    schedule(repo, ONETIME, "2", aDueInstant.plusSeconds(20));
+    schedule(repo, ONETIME, "3", aDueInstant.plusSeconds(30));
+    schedule(repo, ONETIME, "4", aDueInstant.plusSeconds(40));
+    schedule(repo, ONETIME, "5", aDueInstant.plusSeconds(50));
 
-    List<Execution> firstPage = repo.getScheduledExecutions(all().limit(3));
+    List<Execution> firstPage = repo.getScheduledExecutions(active().limit(3));
     assertThat(idsFrom(firstPage), contains("1", "2", "3"));
 
     var theSecond = firstPage.get(1); // id=2
@@ -224,20 +229,20 @@ public abstract class CompatibilityTest {
 
     var beforePage =
         repo.getScheduledExecutions(
-            all().before(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
+            active().before(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
 
     assertThat(idsFrom(beforePage), contains("2", "1"));
 
     var afterPage =
         repo.getScheduledExecutions(
-            all().after(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
+            active().after(ExecutionTimeAndId.from(toScheduled(theThird))).limit(10));
     assertThat(idsFrom(afterPage), contains("4", "5"));
 
     var theFourth = afterPage.get(0); // id=4
 
     var rangePage =
         repo.getScheduledExecutions(
-            all()
+            active()
                 .after(ExecutionTimeAndId.from(toScheduled(theSecond)))
                 .before(ExecutionTimeAndId.from(toScheduled(theFourth)))
                 .limit(10));
@@ -301,6 +306,53 @@ public abstract class CompatibilityTest {
     assertCorrectOrder(false, (r) -> r.lockAndGetDue(truncatedInstantNow(), POLLING_LIMIT));
   }
 
+  @Test
+  public void test_state_filtering_for_due_executions() {
+    final JdbcTaskRepository repo = createJdbcTaskRepository(false);
+
+    createExecution(repo, ONETIME.instance("active").scheduledTo(aDueInstant));
+    var toDeactivate =
+        createExecution(repo, ONETIME.instance("toDeactivate").scheduledTo(aDueInstant));
+
+    repo.deactivate(toDeactivate, DeactivateUpdate.toState(State.PAUSED).build());
+
+    assertThat(toIds(repo.getDue(aDueInstant, POLLING_LIMIT))).containsExactly("active");
+    assertThat(toIds(repo.getScheduledExecutions(ScheduledExecutionsFilter.deactivated())))
+        .containsExactly("toDeactivate");
+  }
+
+  @Test
+  public void test_remove_old_deactivated_executions() {
+    final JdbcTaskRepository repo = createJdbcTaskRepository(false);
+    Instant oldTime = aDueInstant.minus(Duration.ofDays(30));
+    Instant recentTime = aDueInstant.minus(Duration.ofDays(7));
+    Instant ageLimit = aDueInstant.minus(Duration.ofDays(14));
+
+    // Should be deleted: old + in matching state
+    deactivate(repo, "oldComplete", oldTime, State.COMPLETE);
+    deactivate(repo, "oldFailed", oldTime, State.FAILED);
+
+    // Should be kept
+    createExecution(repo, ONETIME.instance("active").scheduledTo(oldTime));
+    deactivate(repo, "oldRecord", oldTime, State.RECORD); // RECORD is excluded
+    deactivate(repo, "recentComplete", recentTime, State.COMPLETE); // newer than age limit
+
+    int removed =
+        repo.removeOldDeactivatedExecutions(
+            EnumSet.of(State.COMPLETE, State.FAILED), ageLimit, 1000);
+
+    assertEquals(2, removed);
+    assertThat(toIds(repo.getScheduledExecutions(ScheduledExecutionsFilter.active())))
+        .containsExactly("active");
+    assertThat(toIds(repo.getScheduledExecutions(ScheduledExecutionsFilter.deactivated())))
+        .containsExactlyInAnyOrder("oldRecord", "recentComplete");
+  }
+
+  private void deactivate(JdbcTaskRepository repo, String id, Instant executionTime, State state) {
+    Execution execution = createExecution(repo, ONETIME.instance(id).scheduledTo(executionTime));
+    repo.deactivate(execution, DeactivateUpdate.toState(state).build());
+  }
+
   private ScheduledExecution<?> toScheduled(Execution execution) {
     return new ScheduledExecution<>(String.class, execution);
   }
@@ -359,7 +411,7 @@ public abstract class CompatibilityTest {
   public void test_jdbc_repository_support_timestamps_in_far_future() {
     var jdbcTaskRepository = createJdbcTaskRepository(false);
     var farFuture = Instant.parse("2500-01-01T12:00:00.00Z");
-    var taskInstance = ONETIME.instance("id").scheduledTo(anInstant);
+    var taskInstance = ONETIME.instance("id").scheduledTo(aDueInstant);
 
     jdbcTaskRepository.createIfNotExists(taskInstance);
     var execution = jdbcTaskRepository.getExecution(taskInstance).orElseThrow();
@@ -638,5 +690,15 @@ public abstract class CompatibilityTest {
         new SchedulerName.Fixed("scheduler1"),
         false,
         new SystemClock());
+  }
+
+  private List<String> toIds(List<Execution> due) {
+    return due.stream().map(Execution::getId).toList();
+  }
+
+  private <T> Execution createExecution(JdbcTaskRepository repo, SchedulableInstance<T> instance) {
+    repo.createIfNotExists(instance);
+    return repo.getExecution(instance)
+        .orElseThrow(() -> new IllegalStateException("Execution should exist"));
   }
 }

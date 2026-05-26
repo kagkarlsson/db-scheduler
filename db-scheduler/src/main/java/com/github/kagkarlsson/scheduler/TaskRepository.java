@@ -13,16 +13,19 @@
  */
 package com.github.kagkarlsson.scheduler;
 
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public interface TaskRepository {
@@ -67,6 +70,10 @@ public interface TaskRepository {
 
   void remove(Execution execution);
 
+  void deactivate(Execution execution, DeactivateUpdate deactivateUpdate);
+
+  void reactivate(Execution execution, Instant newExecutionTime);
+
   boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
 
   boolean reschedule(
@@ -101,6 +108,8 @@ public interface TaskRepository {
   }
 
   int removeExecutions(String taskName);
+
+  int removeOldDeactivatedExecutions(Set<State> states, Instant olderThan, int limit);
 
   void verifySupportsLockAndFetch();
 }

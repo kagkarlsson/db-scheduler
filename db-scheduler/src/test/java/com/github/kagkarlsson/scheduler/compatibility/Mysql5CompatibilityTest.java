@@ -47,7 +47,7 @@ public class Mysql5CompatibilityTest extends CompatibilityTest {
     pooledDatasource = new HikariDataSource(hikariConfig);
 
     // init schema
-    DbUtils.runSqlResource("/mysql_tables.sql").accept(pooledDatasource);
+    DbUtils.runSqlResource("/mysql_tables.sql", true).accept(pooledDatasource);
   }
 
   @Override

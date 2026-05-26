@@ -16,6 +16,7 @@ package com.github.kagkarlsson.examples;
 import com.github.kagkarlsson.examples.helpers.Example;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
@@ -25,11 +26,11 @@ import javax.sql.DataSource;
 
 public class MaxRetriesMain extends Example {
 
+  public static final TaskDescriptor<Void> MAX_RETRIES_TASK = TaskDescriptor.of("max_retries_task");
+
   public static void main(String[] args) {
     new MaxRetriesMain().runWithDatasource();
   }
-
-  public static final TaskDescriptor<Void> MAX_RETRIES_TASK = TaskDescriptor.of("max_retries_task");
 
   @Override
   public void run(DataSource dataSource) {
@@ -38,13 +39,8 @@ public class MaxRetriesMain extends Example {
         Tasks.oneTime(MAX_RETRIES_TASK)
             .onFailure(
                 FailureHandler.<Void>maxRetries(3)
-                    .retryEvery(Duration.ofSeconds(1))
-                    .thenRemove(
-                        complete ->
-                            System.out.println(
-                                "Execution has failed "
-                                    + complete.getExecution().consecutiveFailures
-                                    + " times. Giving up.")))
+                    .retryEvery(Duration.ofSeconds(2))
+                    .thenDeactivate(State.FAILED))
             .execute(
                 (taskInstance, executionContext) -> {
                   throw new RuntimeException("simulated task exception");

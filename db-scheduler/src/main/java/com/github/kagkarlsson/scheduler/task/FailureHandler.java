@@ -64,7 +64,7 @@ public interface FailureHandler<T> {
 
     /** After max retries, remove the execution. */
     public FailureHandler<T> thenRemove() {
-      return thenRemove(complete -> new OnMaxRetriesLogWarn());
+      return thenRemove(new OnMaxRetriesLogWarn());
     }
 
     /** After max retries, remove the execution and notify the listener. */
@@ -76,9 +76,25 @@ public interface FailureHandler<T> {
           });
     }
 
+    /** After max retries, deactivate with the specified state. */
+    public FailureHandler<T> thenDeactivate(State state) {
+      return thenDeactivate(state, new OnMaxRetriesLogWarn());
+    }
+
+    /** After max retries, deactivate with the specified state and notify the listener. */
+    public FailureHandler<T> thenDeactivate(State state, MaxRetriesExceededListener listener) {
+      return then(
+          (complete, ops) -> {
+            ops.deactivate(
+                DeactivateUpdate.toState(state).lastFailure(complete.getTimeDone()).build());
+            listener.onMaxRetriesExceeded(complete);
+          });
+    }
+
     /**
-     * After max retries, delegate to the given handler with full control (no automatic remove). The
-     * handler should call one of the ExecutionOperations methods (remove or reschedule).
+     * After max retries, delegate to the given handler with full control (no automatic
+     * remove/deactivate). The handler should call one of the ExecutionOperations methods (remove,
+     * deactivate, or reschedule).
      */
     public FailureHandler<T> then(FailureHandler<T> handler) {
       return then(handler, new OnMaxRetriesLogWarn());

@@ -34,6 +34,10 @@ public class ExecutionOperations<T> {
     remove();
   }
 
+  public void deactivate(DeactivateUpdate deactivateUpdate) {
+    taskRepository.deactivate(execution, deactivateUpdate);
+  }
+
   public void remove() {
     taskRepository.remove(execution);
   }
@@ -72,6 +76,11 @@ public class ExecutionOperations<T> {
           execution.consecutiveFailures + 1);
     }
     hintExecutionScheduled(completed.getExecution().taskInstance, nextExecutionTime);
+  }
+
+  public void reschedule(RescheduleUpdate update) {
+    taskRepository.reschedule(execution, update);
+    hintExecutionScheduled(execution.taskInstance, update.executionTime());
   }
 
   private void hintExecutionScheduled(TaskInstanceId taskInstanceId, Instant nextExecutionTime) {

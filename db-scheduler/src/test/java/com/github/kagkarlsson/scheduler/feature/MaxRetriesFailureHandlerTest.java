@@ -11,7 +11,7 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.functional;
+package com.github.kagkarlsson.scheduler.feature;
 
 import static com.github.kagkarlsson.scheduler.TestTasks.ONETIME;
 import static com.github.kagkarlsson.scheduler.TestTasks.ON_EXECUTE_THROW;
@@ -23,6 +23,8 @@ import com.github.kagkarlsson.scheduler.SchedulerTester;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
 import com.github.kagkarlsson.scheduler.task.MaxRetriesExceededListener;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
@@ -70,6 +72,35 @@ public class MaxRetriesFailureHandlerTest {
   }
 
   @Test
+  void maxRetries_thenRemove_no_args_should_remove_after_max_failures() {
+    var instance =
+        setupSchedulerAndFailingTask(
+            FailureHandler.<Void>maxRetries(2).retryEvery(RETRY_INTERVAL).thenRemove());
+
+    runTimes(2);
+    tester.assertThatExecution(instance).isScheduled();
+
+    runTimes(1);
+    tester.assertNoExecution(instance);
+  }
+
+  @Test
+  void maxRetries_thenDeactivate_should_deactivate_with_state_after_max_failures() {
+    var instance =
+        setupSchedulerAndFailingTask(
+            FailureHandler.<Void>maxRetries(2)
+                .retryEvery(RETRY_INTERVAL)
+                .thenDeactivate(State.FAILED, callbackTracker));
+
+    runTimes(2);
+    tester.assertThatExecution(instance).isScheduled();
+
+    runTimes(1);
+    tester.assertThatExecution(instance).hasState(State.FAILED);
+    assertThat(callbackTracker.invoked).isTrue();
+  }
+
+  @Test
   void maxRetries_then_callback_should_run_when_max_exceeded() {
     var tomorrow = clock.now().plus(Duration.ofDays(1));
     var instance =
@@ -86,6 +117,47 @@ public class MaxRetriesFailureHandlerTest {
 
     tester.assertThatExecution(instance).isScheduled().hasExecutionTime(tomorrow);
     assertThat(callbackTracker.invoked).isTrue();
+  }
+
+  @Test
+  void maxRetries_then_should_allow_reschedule_with_reset_failures() {
+    var tomorrow = clock.now().plus(Duration.ofDays(1));
+    var instance =
+        setupSchedulerAndFailingTask(
+            FailureHandler.<Void>maxRetries(2)
+                .retryEvery(RETRY_INTERVAL)
+                .then(
+                    (complete, ops) ->
+                        ops.reschedule(
+                            RescheduleUpdate.toExecutionTime(tomorrow).resetFailures().build())));
+
+    runTimes(3);
+
+    tester
+        .assertThatExecution(instance)
+        .isScheduled()
+        .hasExecutionTime(tomorrow)
+        .hasConsecutiveFailures(0)
+        .hasNoLastFailure();
+  }
+
+  @Test
+  void maxRetries_then_should_allow_custom_consecutive_failures() {
+    var tomorrow = clock.now().plus(Duration.ofDays(1));
+    var instance =
+        setupSchedulerAndFailingTask(
+            FailureHandler.<Void>maxRetries(2)
+                .retryEvery(RETRY_INTERVAL)
+                .then(
+                    (complete, ops) ->
+                        ops.reschedule(
+                            RescheduleUpdate.toExecutionTime(tomorrow)
+                                .consecutiveFailures(10)
+                                .build())));
+
+    runTimes(3);
+
+    tester.assertThatExecution(instance).isScheduled().hasConsecutiveFailures(10);
   }
 
   @Test

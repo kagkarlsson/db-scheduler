@@ -21,3 +21,7 @@ CREATE INDEX priority_execution_time_idx on scheduled_tasks (priority desc, exec
 -- an optimization for users of priority might be to add priority to the execution_time_idx
 -- this _might_ save reads as the priority-value is already in the index
 -- CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time asc, priority desc);
+
+-- Migrations
+ALTER TABLE scheduled_tasks ADD COLUMN state text;
+CREATE INDEX state_execution_time_idx ON scheduled_tasks (state, execution_time);
