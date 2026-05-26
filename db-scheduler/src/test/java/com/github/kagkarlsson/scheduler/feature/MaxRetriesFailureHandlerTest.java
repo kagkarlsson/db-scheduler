@@ -72,6 +72,19 @@ public class MaxRetriesFailureHandlerTest {
   }
 
   @Test
+  void maxRetries_thenRemove_no_args_should_remove_after_max_failures() {
+    var instance =
+        setupSchedulerAndFailingTask(
+            FailureHandler.<Void>maxRetries(2).retryEvery(RETRY_INTERVAL).thenRemove());
+
+    runTimes(2);
+    tester.assertThatExecution(instance).isScheduled();
+
+    runTimes(1);
+    tester.assertNoExecution(instance);
+  }
+
+  @Test
   void maxRetries_thenDeactivate_should_deactivate_with_state_after_max_failures() {
     var instance =
         setupSchedulerAndFailingTask(

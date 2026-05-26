@@ -64,7 +64,7 @@ public interface FailureHandler<T> {
 
     /** After max retries, remove the execution. */
     public FailureHandler<T> thenRemove() {
-      return thenRemove(complete -> new OnMaxRetriesLogWarn());
+      return thenRemove(new OnMaxRetriesLogWarn());
     }
 
     /** After max retries, remove the execution and notify the listener. */
