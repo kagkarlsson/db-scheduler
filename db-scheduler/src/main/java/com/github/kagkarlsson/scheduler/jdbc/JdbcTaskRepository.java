@@ -634,7 +634,7 @@ public class JdbcTaskRepository implements TaskRepository {
       }
     }
     if (nonUnpickedTasks.isEmpty()) {
-      LOG.info("Successfully unpicked tasks: {}", unpickedTasks);
+      LOG.debug("Successfully unpicked tasks: {}", unpickedTasks);
     } else {
       LOG.error(
           "Error while unpicking tasks batch. Failed to unpick: {}, successfully unpicked: {}",

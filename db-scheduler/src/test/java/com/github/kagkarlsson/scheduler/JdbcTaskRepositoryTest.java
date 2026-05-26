@@ -51,6 +51,7 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -73,6 +74,7 @@ public class JdbcTaskRepositoryTest {
   private OneTimeTask<?> unknownSecondOneTimeTask;
   private TaskResolver taskResolver;
   private TestableListener testableListener;
+  private ListAppender<ILoggingEvent> appender;
 
   @BeforeEach
   public void setUp() {
@@ -92,6 +94,12 @@ public class JdbcTaskRepositoryTest {
     taskResolver =
         new TaskResolver(new SchedulerListeners(testableListener), new SystemClock(), knownTasks);
     taskRepository = createRepository(taskResolver, false);
+    appender = startAndGetLogListAppender();
+  }
+
+  @AfterEach
+  public void removeAppender() {
+    detachLogListAppender();
   }
 
   @Test
@@ -600,8 +608,7 @@ public class JdbcTaskRepositoryTest {
   }
 
   @Test
-  public void unpickPickedBatch_should_throw_exception_if_one_of_tasks_is_not_picked() {
-    ListAppender<ILoggingEvent> appender = startAndGetLogListAppender();
+  public void unpickPickedBatch_should_log_warn_if_one_of_tasks_is_not_picked() {
     Instant now = Instant.now();
     TaskInstance<?> knownTaskInstance = oneTimeTask.instance("knownTaskInstance");
     TaskInstance<?> unknownTaskInstance = unknownOneTimeTask.instance("unknownTaskInstance");
@@ -631,8 +638,6 @@ public class JdbcTaskRepositoryTest {
 
   @Test
   public void unpickPickedBatch_should_not_crash_when_Picked_batch_task_not_in_database() {
-    ListAppender<ILoggingEvent> appender = startAndGetLogListAppender();
-
     Execution execution1 =
         new Execution(Instant.now(), new TaskInstance<>("task-that-does-not-exist", "1"));
     Execution execution2 =
@@ -707,6 +712,11 @@ public class JdbcTaskRepositoryTest {
     logger.addAppender(appender);
 
     return appender;
+  }
+
+  private void detachLogListAppender() {
+    Logger logger = (Logger) LoggerFactory.getLogger(JdbcTaskRepository.class);
+    logger.detachAppender(appender);
   }
 
   private static void checkFirstLogEvent(
