@@ -34,6 +34,7 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   private static final Logger LOG = LoggerFactory.getLogger(AutodetectJdbcCustomization.class);
   private static final Logger SILENCABLE_LOG =
       LoggerFactory.getLogger(LOG.getName() + ".utc_warning");
+  public static final String SQLITE = "SQLite";
   private final JdbcCustomization jdbcCustomization;
 
   public AutodetectJdbcCustomization(DataSource dataSource) {
@@ -77,6 +78,9 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
           detectedCustomization = new MySQLJdbcCustomization(persistTimestampInUTC);
         }
 
+      } else if (databaseProductName.contains(SQLITE)) {
+        LOG.info("Using SQLite jdbc-overrides.");
+        detectedCustomization = new SqliteJdbcCustomization();
       } else {
         SILENCABLE_LOG.warn(
             "No database-specific jdbc-overrides applied. Se 'DefaultJdbcCustomization' for "
