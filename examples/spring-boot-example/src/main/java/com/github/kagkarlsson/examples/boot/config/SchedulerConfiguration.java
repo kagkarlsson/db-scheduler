@@ -13,14 +13,15 @@
  */
 package com.github.kagkarlsson.examples.boot.config;
 
+import com.github.kagkarlsson.scheduler.CurrentlyExecuting;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.boot.autoconfigure.Jackson3Serializer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.event.AbstractSchedulerListener;
-import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +32,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class SchedulerConfiguration {
 
-  public static final String MDC_TASKNAME = "task-name";
-  public static final String MDC_TASKINSTANCEID = "task-instance-id";
+  private static final String MDC_TASK_NAME = "task-name";
+  private static final String MDC_TASK_INSTANCE_ID = "task-instance-id";
   private static final Logger LOG = LoggerFactory.getLogger(SchedulerConfiguration.class);
 
   /** Bean defined when a configuration-property in DbSchedulerCustomizer needs to be overridden. */
@@ -52,30 +53,19 @@ public class SchedulerConfiguration {
   }
 
   @Bean
-  SchedulerListener schedulerListener() {
+  SchedulerListener mdcSchedulerListener() {
     return new AbstractSchedulerListener() {
+      @Override
+      public void onExecutionStart(CurrentlyExecuting executing) {
+        TaskInstance<?> taskInstance = executing.getTaskInstance();
+        MDC.put(MDC_TASK_NAME, taskInstance.getTaskName());
+        MDC.put(MDC_TASK_INSTANCE_ID, taskInstance.getId());
+      }
 
       @Override
       public void onExecutionComplete(ExecutionComplete executionComplete) {
-        LOG.info(
-            "SchedulerListener.onExecutionComplete. Result={}, took={}ms ",
-            executionComplete.getResult(),
-            executionComplete.getDuration().toMillis());
-      }
-    };
-  }
-
-  @Bean
-  ExecutionInterceptor mdcExecutionInterceptor() {
-    return (taskInstance, executionContext, chain) -> {
-      LOG.info("Setting MDC before execution");
-      MDC.put(MDC_TASKNAME, taskInstance.getTaskName());
-      MDC.put(MDC_TASKINSTANCEID, taskInstance.getId());
-      try {
-        return chain.proceed(taskInstance, executionContext);
-      } finally {
-        MDC.remove(MDC_TASKNAME);
-        MDC.remove(MDC_TASKINSTANCEID);
+        MDC.remove(MDC_TASK_NAME);
+        MDC.remove(MDC_TASK_INSTANCE_ID);
       }
     };
   }
