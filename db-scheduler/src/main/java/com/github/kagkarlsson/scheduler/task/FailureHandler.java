@@ -87,8 +87,8 @@ public interface FailureHandler<T> {
           (complete, ops) -> {
             ops.deactivate(
                 DeactivateUpdate.toState(state).lastFailure(complete.getTimeDone()).build());
-            listener.onMaxRetriesExceeded(complete);
-          });
+          },
+          listener);
     }
 
     /**
