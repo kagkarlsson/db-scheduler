@@ -12,11 +12,16 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener.SchedulerEventType;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
@@ -24,23 +29,36 @@ import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchExceptio
 import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
-import com.github.kagkarlsson.scheduler.task.*;
+import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
+import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
+import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.LoggerFactory;
 
 public class JdbcTaskRepositoryTest {
 
@@ -52,14 +70,20 @@ public class JdbcTaskRepositoryTest {
   private OneTimeTask<Void> oneTimeTask;
   private OneTimeTask<Void> alternativeOneTimeTask;
   private OneTimeTask<Integer> oneTimeTaskWithData;
+  private OneTimeTask<?> unknownOneTimeTask;
+  private OneTimeTask<?> unknownSecondOneTimeTask;
   private TaskResolver taskResolver;
   private TestableListener testableListener;
+  private ListAppender<ILoggingEvent> appender;
 
   @BeforeEach
   public void setUp() {
     oneTimeTask = TestTasks.oneTime("OneTime", Void.class, TestTasks.DO_NOTHING);
     alternativeOneTimeTask =
         TestTasks.oneTime("AlternativeOneTime", Void.class, TestTasks.DO_NOTHING);
+    unknownOneTimeTask = TestTasks.oneTime("UnknownOneTime", Void.class, TestTasks.DO_NOTHING);
+    unknownSecondOneTimeTask =
+        TestTasks.oneTime("UnknownAlternativeOneTime", Void.class, TestTasks.DO_NOTHING);
     oneTimeTaskWithData =
         TestTasks.oneTime("OneTimeWithData", Integer.class, new TestTasks.DoNothingHandler<>());
     List<Task<?>> knownTasks = new ArrayList<>();
@@ -70,6 +94,12 @@ public class JdbcTaskRepositoryTest {
     taskResolver =
         new TaskResolver(new SchedulerListeners(testableListener), new SystemClock(), knownTasks);
     taskRepository = createRepository(taskResolver, false);
+    appender = startAndGetLogListAppender();
+  }
+
+  @AfterEach
+  public void removeAppender() {
+    detachLogListAppender();
   }
 
   @Test
@@ -538,6 +568,91 @@ public class JdbcTaskRepositoryTest {
     assertThat(taskRepository.pick(picked.get(0), now), OptionalMatchers.empty());
   }
 
+  @ParameterizedTest
+  @MethodSource("pickFunctions")
+  public void should_release_unresolved_tasks(
+      BiFunction<Instant, JdbcTaskRepository, List<Execution>> pickFunction, boolean lockAndFetch) {
+    Instant now = Instant.now();
+    TaskInstance<?> knownTaskInstance = oneTimeTask.instance("knownTaskInstance");
+    TaskInstance<?> unknownInstance1 = unknownOneTimeTask.instance("unknownInstance1");
+    TaskInstance<?> unknownInstance2 = unknownOneTimeTask.instance("unknownInstance2");
+    TaskInstance<?> unknownAlternativeTaskInstance =
+        unknownSecondOneTimeTask.instance("unknownAlternativeTaskInstance");
+
+    createIfNotExists(
+        SchedulableInstance.of(knownTaskInstance, now),
+        SchedulableInstance.of(unknownInstance1, now),
+        SchedulableInstance.of(unknownInstance2, now),
+        SchedulableInstance.of(unknownAlternativeTaskInstance, now));
+
+    List<Execution> picked = pickFunction.apply(now, taskRepository);
+    assertThat(picked, hasSize(1));
+    assertTrue(taskResolver.isUnresolved(unknownOneTimeTask.getName()));
+    assertTrue(taskResolver.isUnresolved(unknownSecondOneTimeTask.getName()));
+
+    checkPicked(lockAndFetch, knownTaskInstance);
+    checkPicked(false, unknownInstance1, unknownInstance2, unknownAlternativeTaskInstance);
+  }
+
+  static List<Arguments> pickFunctions() {
+    BiFunction<Instant, JdbcTaskRepository, List<Execution>> getDue =
+        (now, taskRepo) -> taskRepo.getDue(now, POLLING_LIMIT);
+    BiFunction<Instant, JdbcTaskRepository, List<Execution>> lockAndFetchGeneric =
+        (now, taskRepo) -> taskRepo.lockAndFetchGeneric(now, POLLING_LIMIT);
+    BiFunction<Instant, JdbcTaskRepository, List<Execution>> lockAndGetDue =
+        (now, taskRepo) -> taskRepo.lockAndGetDue(now, POLLING_LIMIT);
+    return List.of(
+        Arguments.of(getDue, false),
+        Arguments.of(lockAndFetchGeneric, true),
+        Arguments.of(lockAndGetDue, true));
+  }
+
+  @Test
+  public void unpickPickedBatch_should_log_warn_if_one_of_tasks_is_not_picked() {
+    Instant now = Instant.now();
+    TaskInstance<?> knownTaskInstance = oneTimeTask.instance("knownTaskInstance");
+    TaskInstance<?> unknownTaskInstance = unknownOneTimeTask.instance("unknownTaskInstance");
+
+    taskRepository.createIfNotExists(SchedulableInstance.of(knownTaskInstance, now));
+    taskRepository.createIfNotExists(SchedulableInstance.of(unknownTaskInstance, now));
+    taskRepository.pick(taskRepository.getExecution(knownTaskInstance).orElseThrow(), now);
+    Execution notFoundExecution =
+        new Execution(Instant.now(), oneTimeTask.instance("unknownTaskInstance"));
+
+    Execution execution1 = taskRepository.getExecution(knownTaskInstance).orElseThrow();
+    Execution execution2 = taskRepository.getExecution(unknownTaskInstance).orElseThrow();
+
+    taskRepository.unpickPickedBatch(List.of(execution1, execution2, notFoundExecution));
+
+    checkFirstLogEvent(
+        appender,
+        Level.ERROR,
+        "Error while unpicking tasks batch. Failed to unpick: [%s, %s], successfully unpicked: [%s]"
+            .formatted(execution2, notFoundExecution, execution1));
+  }
+
+  @Test
+  public void unpickPickedBatch_should_handle_empty_collection_gracefully() {
+    assertDoesNotThrow(() -> taskRepository.unpickPickedBatch(Collections.emptyList()));
+  }
+
+  @Test
+  public void unpickPickedBatch_should_not_crash_when_Picked_batch_task_not_in_database() {
+    Execution execution1 =
+        new Execution(Instant.now(), new TaskInstance<>("task-that-does-not-exist", "1"));
+    Execution execution2 =
+        new Execution(Instant.now(), new TaskInstance<>("task-that-does-not-exist-2", "1"));
+    List<Execution> unresolvedExecutions = List.of(execution1, execution2);
+
+    taskRepository.unpickPickedBatch(unresolvedExecutions);
+
+    checkFirstLogEvent(
+        appender,
+        Level.ERROR,
+        "Error while unpicking tasks batch. Failed to unpick: %s, successfully unpicked: []"
+            .formatted(unresolvedExecutions));
+  }
+
   private List<Execution> getScheduledExecutions(
       ScheduledExecutionsFilter filter, String taskName) {
     List<Execution> alternativeTasks = new ArrayList<>();
@@ -573,5 +688,41 @@ public class JdbcTaskRepositoryTest {
     List<Execution> executions = new ArrayList<>();
     taskRepository.getScheduledExecutions(onlyResolved().withPicked(false), executions::add);
     return executions.get(0);
+  }
+
+  private void createIfNotExists(SchedulableInstance<?>... schedulableInstance) {
+    Arrays.stream(schedulableInstance).forEach(taskRepository::createIfNotExists);
+  }
+
+  private void checkPicked(boolean picked, TaskInstanceId... taskInstances) {
+    Arrays.stream(taskInstances)
+        .forEach(
+            taskInstance -> {
+              Execution execution = taskRepository.getExecution(taskInstance).orElseThrow();
+              assertEquals(picked, execution.picked);
+            });
+  }
+
+  private static ListAppender<ILoggingEvent> startAndGetLogListAppender() {
+    ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+
+    Logger logger = (Logger) LoggerFactory.getLogger(JdbcTaskRepository.class);
+    logger.setLevel(ch.qos.logback.classic.Level.ALL);
+    logger.addAppender(appender);
+
+    return appender;
+  }
+
+  private void detachLogListAppender() {
+    Logger logger = (Logger) LoggerFactory.getLogger(JdbcTaskRepository.class);
+    logger.detachAppender(appender);
+  }
+
+  private static void checkFirstLogEvent(
+      ListAppender<ILoggingEvent> appender, Level expectedLevel, String expectedMessage) {
+    ILoggingEvent logEvent = appender.list.get(0);
+    assertEquals(expectedLevel, logEvent.getLevel());
+    assertEquals(expectedMessage, logEvent.getFormattedMessage());
   }
 }

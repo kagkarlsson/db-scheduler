@@ -86,6 +86,8 @@ public interface TaskRepository {
 
   Optional<Execution> pick(Execution e, Instant timePicked);
 
+  void unpickPickedBatch(List<Execution> pickedExecutions);
+
   List<Execution> getDeadExecutions(Instant olderThan);
 
   boolean updateHeartbeatWithRetry(Execution execution, Instant newHeartbeat, int tries);
