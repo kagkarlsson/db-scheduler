@@ -454,6 +454,71 @@ public class JdbcTaskRepositoryTest {
   }
 
   @Test
+  public void summary_by_task_name() {
+    Instant now = TimeHelper.truncatedInstantNow();
+
+    // OneTime: scheduled (with a previous success), running, failing, and running-after-failures
+    var scheduled = schedule(oneTimeTask.instance("scheduled"), now.plus(ofMinutes(10)));
+    taskRepository.reschedule(scheduled, now.plus(ofMinutes(10)), now.minus(ofMinutes(2)), null, 0);
+
+    var running = schedule(oneTimeTask.instance("running"), now.plus(ofMinutes(5)));
+    taskRepository.pick(running, now);
+
+    var failing = schedule(oneTimeTask.instance("failing"), now.plus(ofMinutes(20)));
+    taskRepository.reschedule(failing, now.plus(ofMinutes(20)), null, now.minus(ofMinutes(1)), 3);
+
+    var runningFailing = schedule(oneTimeTask.instance("running-failing"), now.plus(ofMinutes(15)));
+    taskRepository.reschedule(
+        runningFailing, now.plus(ofMinutes(15)), null, now.minus(ofMinutes(3)), 2);
+    taskRepository.pick(taskRepository.getExecution(runningFailing.taskInstance).get(), now);
+
+    // OneTimeWithData: a single scheduled execution
+    schedule(oneTimeTaskWithData.instance("only"), now.plus(ofMinutes(30)));
+
+    // Unresolved tasks are still summarized (grouping is purely by task_name)
+    schedule(unknownOneTimeTask.instance("only"), now.plus(ofMinutes(1)));
+
+    List<TaskSummary> summaries = taskRepository.getScheduledExecutionsSummaryByTask();
+    assertThat(summaries, hasSize(3));
+
+    TaskSummary oneTime = findSummary(summaries, oneTimeTask.getName());
+    assertEquals(4, oneTime.instanceCount());
+    assertEquals(2, oneTime.runningCount());
+    assertEquals(1, oneTime.failingCount());
+    assertEquals(1, oneTime.scheduledCount());
+    assertEquals(now.plus(ofMinutes(5)), oneTime.earliestExecutionTime());
+    assertEquals(now.minus(ofMinutes(2)), oneTime.latestLastSuccess());
+    assertEquals(now.minus(ofMinutes(1)), oneTime.latestLastFailure());
+    assertEquals(3, oneTime.maxConsecutiveFailures());
+
+    TaskSummary withData = findSummary(summaries, oneTimeTaskWithData.getName());
+    assertEquals(1, withData.instanceCount());
+    assertEquals(0, withData.runningCount());
+    assertEquals(0, withData.failingCount());
+    assertEquals(1, withData.scheduledCount());
+    assertEquals(now.plus(ofMinutes(30)), withData.earliestExecutionTime());
+    assertThat(withData.latestLastSuccess(), is(nullValue()));
+    assertThat(withData.latestLastFailure(), is(nullValue()));
+    assertEquals(0, withData.maxConsecutiveFailures());
+
+    TaskSummary unresolved = findSummary(summaries, unknownOneTimeTask.getName());
+    assertEquals(1, unresolved.instanceCount());
+    assertEquals(1, unresolved.scheduledCount());
+  }
+
+  private static TaskSummary findSummary(List<TaskSummary> summaries, String taskName) {
+    return summaries.stream()
+        .filter(s -> s.taskName().equals(taskName))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No summary for task-name: " + taskName));
+  }
+
+  private Execution schedule(TaskInstance<?> instance, Instant executionTime) {
+    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, executionTime));
+    return taskRepository.getExecution(instance).get();
+  }
+
+  @Test
   public void get_scheduled_by_task_name() {
     Instant now = TimeHelper.truncatedInstantNow();
     final SchedulableTaskInstance<Void> execution1 =

@@ -42,6 +42,7 @@ mvn test -Dtest=ClassName[#method]
 - AssertJ over Hamcrest in tests.
 - Compact tests are fine — multiple assertions/steps per test to reduce boilerplate.
 - Comments only when WHY is non-obvious.
+- Prefer `var` for local variable declaration
 
 ## Finalizing changes
 

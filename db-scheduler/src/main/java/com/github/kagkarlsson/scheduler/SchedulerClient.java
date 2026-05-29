@@ -306,6 +306,16 @@ public interface SchedulerClient {
    */
   Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
 
+  /**
+   * Summarizes all executions by task-name in the database (a {@code GROUP BY task_name}) and
+   * returns one {@link TaskSummary} per task-name. All executions are included, both picked
+   * (running) and not.
+   *
+   * @return one summary per task-name, empty if no executions exist
+   * @see com.github.kagkarlsson.scheduler.TaskSummary
+   */
+  List<TaskSummary> getScheduledExecutionsSummaryByTask();
+
   class ScheduleOptions {
 
     public static final ScheduleOptions WHEN_EXISTS_DO_NOTHING =
@@ -628,6 +638,11 @@ public interface SchedulerClient {
       Optional<Execution> e =
           taskRepository.getExecution(taskInstanceId.getTaskName(), taskInstanceId.getId());
       return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
+    }
+
+    @Override
+    public List<TaskSummary> getScheduledExecutionsSummaryByTask() {
+      return taskRepository.getScheduledExecutionsSummaryByTask();
     }
   }
 

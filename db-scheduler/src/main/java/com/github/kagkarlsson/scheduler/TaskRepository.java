@@ -61,6 +61,8 @@ public interface TaskRepository {
     return results;
   }
 
+  List<TaskSummary> getScheduledExecutionsSummaryByTask();
+
   List<Execution> lockAndFetchGeneric(Instant now, int limit);
 
   List<Execution> lockAndGetDue(Instant now, int limit);

@@ -26,6 +26,7 @@ import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.StopSchedulerExtension;
 import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.TaskResolver;
+import com.github.kagkarlsson.scheduler.TaskSummary;
 import com.github.kagkarlsson.scheduler.TestTasks;
 import com.github.kagkarlsson.scheduler.TestTasks.DoNothingHandler;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
@@ -243,6 +244,46 @@ public abstract class CompatibilityTest {
                 .limit(10));
 
     assertThat(idsFrom(rangePage), contains("3"));
+  }
+
+  @Test
+  public void test_jdbc_repository_summary_by_task() {
+    var repo = createJdbcTaskRepository(false);
+    var now = truncatedInstantNow();
+
+    // scheduled (with a previous success), running, failing, and running-after-failures
+    var scheduled = createExecution(repo, "scheduled", now.plusSeconds(600));
+    repo.reschedule(scheduled, now.plusSeconds(600), now.minusSeconds(120), null, 0);
+
+    var running = createExecution(repo, "running", now.plusSeconds(300));
+    repo.pick(running, now);
+
+    var failing = createExecution(repo, "failing", now.plusSeconds(1200));
+    repo.reschedule(failing, now.plusSeconds(1200), null, now.minusSeconds(60), 3);
+
+    var runningFailing = createExecution(repo, "running-failing", now.plusSeconds(900));
+    repo.reschedule(runningFailing, now.plusSeconds(900), null, now.minusSeconds(180), 2);
+    repo.pick(repo.getExecution(runningFailing.taskInstance).orElseThrow(), now);
+
+    List<TaskSummary> summaries = repo.getScheduledExecutionsSummaryByTask();
+    assertThat(summaries, hasSize(1));
+
+    TaskSummary summary = summaries.get(0);
+    assertEquals(ONETIME.getTaskName(), summary.taskName());
+    assertEquals(4, summary.instanceCount());
+    assertEquals(2, summary.runningCount()); // picked, regardless of failures
+    assertEquals(1, summary.failingCount()); // not picked, with failures
+    assertEquals(1, summary.scheduledCount()); // not picked, no failures
+    assertEquals(now.plusSeconds(300), summary.earliestExecutionTime());
+    assertEquals(now.minusSeconds(120), summary.latestLastSuccess());
+    assertEquals(now.minusSeconds(60), summary.latestLastFailure());
+    assertEquals(3, summary.maxConsecutiveFailures());
+  }
+
+  private Execution createExecution(JdbcTaskRepository repo, String id, Instant executionTime) {
+    var instance = ONETIME.instance(id).scheduledTo(executionTime);
+    repo.createIfNotExists(instance);
+    return repo.getExecution(instance).orElseThrow();
   }
 
   @Test
