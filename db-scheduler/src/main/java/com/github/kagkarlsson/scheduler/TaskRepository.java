@@ -91,6 +91,8 @@ public interface TaskRepository {
       Instant lastFailure,
       int consecutiveFailures);
 
+  boolean tryReschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
+
   Optional<Execution> pick(Execution e, Instant timePicked);
 
   List<Execution> getDeadExecutions(Instant olderThan);

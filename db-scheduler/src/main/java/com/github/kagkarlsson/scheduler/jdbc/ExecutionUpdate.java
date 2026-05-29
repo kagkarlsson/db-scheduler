@@ -102,6 +102,18 @@ class ExecutionUpdate {
   }
 
   void updateSingle(JdbcConfig jdbcConfig) {
+    var successfulUpdate = tryUpdate(jdbcConfig);
+    if (!successfulUpdate) {
+      throw new ExecutionException(
+          "Expected one execution to be updated, but updated 0 rows. Indicates a bug "
+              + "(i.e. someone else updated the execution before us).",
+          taskInstance.getTaskName(),
+          taskInstance.getId(),
+          versionToUpdate);
+    }
+  }
+
+  boolean tryUpdate(JdbcConfig jdbcConfig) {
     var updates = new ArrayList<ColumnUpdate>();
 
     addIfSet(
@@ -146,7 +158,7 @@ class ExecutionUpdate {
         version, "version", updates, (ps, index) -> ps.setLong(index, throwIfNull(version.value)));
 
     if (updates.isEmpty()) {
-      return;
+      throw new IllegalStateException("No updates specified");
     }
 
     String query =
@@ -171,13 +183,16 @@ class ExecutionUpdate {
                   ps.setString(index++, taskInstance.getId());
                   ps.setLong(index, versionToUpdate);
                 });
-    if (updatedRows != 1) {
+    if (updatedRows > 1) {
       throw new ExecutionException(
-          "Expected one execution to be updated, but updated " + updatedRows + ". Indicates a bug.",
+          "Expected zero or one execution to be updated, but updated "
+              + updatedRows
+              + ". Indicates a bug.",
           taskInstance.getTaskName(),
           taskInstance.getId(),
           versionToUpdate);
     }
+    return updatedRows == 1;
   }
 
   private void addIfSet(

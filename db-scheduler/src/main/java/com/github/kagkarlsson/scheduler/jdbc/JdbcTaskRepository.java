@@ -577,6 +577,16 @@ public class JdbcTaskRepository implements TaskRepository {
 
   @Override
   public boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
+    var rescheduledSuccessfully = tryReschedule(execution, rescheduleUpdate);
+    if (!rescheduledSuccessfully) {
+      throw new ExecutionException(
+          "Expected one execution to be updated, but updated none. Indicates a bug.", execution);
+    }
+    return true;
+  }
+
+  @Override
+  public boolean tryReschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
     ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
 
     update.picked(false);
@@ -597,8 +607,7 @@ public class JdbcTaskRepository implements TaskRepository {
       update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
     }
 
-    update.updateSingle(jdbcConfig);
-    return true;
+    return update.tryUpdate(jdbcConfig);
   }
 
   @Override

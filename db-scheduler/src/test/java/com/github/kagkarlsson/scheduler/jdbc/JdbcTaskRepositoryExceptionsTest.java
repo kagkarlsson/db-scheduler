@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,6 +22,7 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.google.common.collect.Lists;
 import java.time.Instant;
 import java.util.List;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -174,15 +176,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             () -> {
               jdbcTaskRepository.reschedule(execution, Instant.now(), null, null, 0);
             });
-    assertEquals(
-        "Expected one execution to be updated, but updated "
-            + updateCount
-            + ". Indicates a bug. (task name: "
-            + taskInstance.getTaskName()
-            + ", instance id: "
-            + taskInstance.getId()
-            + ")",
-        actualException.getMessage());
+    assertThat(actualException.getMessage()).matches(Pattern.compile("Expected .* execution to be updated, but updated .*"));
     assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());
@@ -205,15 +199,7 @@ public class JdbcTaskRepositoryExceptionsTest {
             () -> {
               jdbcTaskRepository.reschedule(execution, Instant.now(), "", null, null, 0);
             });
-    assertEquals(
-        "Expected one execution to be updated, but updated "
-            + updateCount
-            + ". Indicates a bug. (task name: "
-            + taskInstance.getTaskName()
-            + ", instance id: "
-            + taskInstance.getId()
-            + ")",
-        actualException.getMessage());
+    assertThat(actualException.getMessage()).matches(Pattern.compile("Expected .* execution to be updated, but updated .*"));
     assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());
