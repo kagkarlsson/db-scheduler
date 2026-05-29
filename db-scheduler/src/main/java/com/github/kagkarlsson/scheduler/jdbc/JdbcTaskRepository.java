@@ -30,6 +30,7 @@ import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
+import com.github.kagkarlsson.scheduler.TaskSummary;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
@@ -332,6 +333,32 @@ public class JdbcTaskRepository implements TaskRepository {
         q.getQuery(jdbcCustomization),
         q.getPreparedStatementSetter(jdbcCustomization),
         new ExecutionResultSetConsumer(consumer, filter.getIncludeUnresolved(), false));
+  }
+
+  @Override
+  public List<TaskSummary> getScheduledExecutionsSummaryByTask() {
+    var query =
+        "select task_name, "
+            + "count(*) as instance_count, "
+            + "sum(case when picked = ? then 1 else 0 end) as running_count, "
+            + "sum(case when picked = ? and coalesce(consecutive_failures, 0) > 0 then 1 else 0 end) as failing_count, "
+            + "sum(case when picked = ? and coalesce(consecutive_failures, 0) = 0 then 1 else 0 end) as scheduled_count, "
+            + "min(execution_time) as earliest_execution_time, "
+            + "max(last_success) as latest_last_success, "
+            + "max(last_failure) as latest_last_failure, "
+            + "max(consecutive_failures) as max_consecutive_failures "
+            + "from "
+            + tableName
+            + " group by task_name";
+
+    return jdbcRunner.query(
+        query,
+        (PreparedStatement p) -> {
+          p.setBoolean(1, true); // running: picked
+          p.setBoolean(2, false); // failing: not picked
+          p.setBoolean(3, false); // scheduled: not picked
+        },
+        new TaskSummaryResultSetMapper());
   }
 
   @Override
@@ -801,6 +828,28 @@ public class JdbcTaskRepository implements TaskRepository {
     filter.getLimit().ifPresent(q::limit);
 
     return q;
+  }
+
+  private class TaskSummaryResultSetMapper implements ResultSetMapper<List<TaskSummary>> {
+
+    @Override
+    public List<TaskSummary> map(ResultSet rs) throws SQLException {
+      var summaries = new ArrayList<TaskSummary>();
+      while (rs.next()) {
+        summaries.add(
+            new TaskSummary(
+                rs.getString("task_name"),
+                rs.getInt("instance_count"),
+                rs.getInt("running_count"),
+                rs.getInt("failing_count"),
+                rs.getInt("scheduled_count"),
+                jdbcCustomization.getInstant(rs, "earliest_execution_time"),
+                jdbcCustomization.getInstant(rs, "latest_last_success"),
+                jdbcCustomization.getInstant(rs, "latest_last_failure"),
+                rs.getInt("max_consecutive_failures")));
+      }
+      return summaries;
+    }
   }
 
   private class ExecutionResultSetMapper implements ResultSetMapper<List<Execution>> {
