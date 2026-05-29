@@ -227,6 +227,12 @@
       <version>${postgresql.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+      <version>3.25.2</version>
+      <scope>test</scope>
+    </dependency>
     <!-- https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc -->
     <dependency>
       <groupId>io.zonky.test</groupId>

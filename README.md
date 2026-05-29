@@ -49,7 +49,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
+2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql), [sqlite](db-scheduler/src/test/resources/sqlite_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
