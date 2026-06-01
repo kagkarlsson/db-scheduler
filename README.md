@@ -62,7 +62,7 @@ See [Database compatibility](#database-compatibility) for supported database eng
 
 _Replace the version with the latest, shown in the Maven Central badge above._
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql), [sqlite](db-scheduler/src/test/resources/sqlite_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql). See [Database compatibility](#database-compatibility) for the full list of supported databases and feature support.
+2. Create the `scheduled_tasks` table in your database-schema. See [Database compatibility](#database-compatibility) for a list of supported databases and the table definitions (DDL).
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
@@ -190,16 +190,16 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 
 ## Database compatibility
 
-|  Database  | `fetch` |   `lock-and-fetch`   |                      Notes                      |
-|------------|:-------:|:--------------------:|-------------------------------------------------|
-| PostgreSQL |    ✅    | ✅ (single-statement) |                                                 |
-| SQL Server |    ✅    |     ✅ (generic)      | Always transfers timestamps in UTC.             |
-| MySQL 8+   |    ✅    |     ✅ (generic)      | Requires `.alwaysPersistTimestampInUTC()`.      |
-| MariaDB    |    ✅    |          —           | Requires `.alwaysPersistTimestampInUTC()`.      |
-| Oracle     |    ✅    |          —           | Prefer default schema which uses `TIMESTAMPTZ`. |
-| MySQL 5.x  |    ✅    |          —           |                                                 |
-| SQLite     |    ✅    |          —           |                                                 |
-| HSQLDB     |    ✅    |          —           | Typically used for testing / in-memory.         |
+|                     Database (see link for DDL)                     | `fetch` |   `lock-and-fetch`   |                      Notes                      |
+|---------------------------------------------------------------------|:-------:|:--------------------:|-------------------------------------------------|
+| [PostgreSQL](db-scheduler/src/test/resources/postgresql_tables.sql) |    ✅    | ✅ (single-statement) |                                                 |
+| [SQL Server](db-scheduler/src/test/resources/mssql_tables.sql)      |    ✅    |     ✅ (generic)      | Always transfers timestamps in UTC.             |
+| [MySQL 8+](db-scheduler/src/test/resources/mysql_tables.sql)        |    ✅    |     ✅ (generic)      | Requires `.alwaysPersistTimestampInUTC()`.      |
+| [MariaDB](db-scheduler/src/test/resources/mariadb_tables.sql)       |    ✅    |          —           | Requires `.alwaysPersistTimestampInUTC()`.      |
+| [Oracle](db-scheduler/src/test/resources/oracle_tables.sql)         |    ✅    |          —           | Prefer default schema which uses `TIMESTAMPTZ`. |
+| [MySQL 5.x](db-scheduler/src/test/resources/mysql_tables.sql)       |    ✅    |          —           |                                                 |
+| [SQLite](db-scheduler/src/test/resources/sqlite_tables.sql)         |    ✅    |          —           |                                                 |
+| [HSQLDB](db-scheduler/src/test/resources/hsql_tables.sql)           |    ✅    |          —           | Typically used for testing / in-memory.         |
 
 See [Polling strategy](#polling-strategy) for `fetch` vs `lock-and-fetch`, and
 [`.alwaysPersistTimestampInUTC()`](#consider-tuning) for timestamp-handling details.
