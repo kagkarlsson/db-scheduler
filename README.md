@@ -13,7 +13,7 @@ As such, also appreciated by users ([cbarbosa2](https://github.com/kagkarlsson/d
 >
 > [cbarbosa2](https://github.com/cbarbosa2)
 
-See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
+Used in production by Digipost, Wise, TOMRA and [others](#who-uses-db-scheduler).
 
 ## Features
 
@@ -28,7 +28,6 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 
 * [Requirements](#requirements)
 * [Getting started](#getting-started)
-* [Who uses db-scheduler?](#who-uses-db-scheduler)
 * [Examples](#examples)
 * [Database compatibility](#database-compatibility)
 * [Configuration](#configuration)
@@ -39,6 +38,7 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * [Performance](#performance)
 * [Versions / upgrading](#versions--upgrading)
 * [Building the source](#building-the-source)
+* [Who uses db-scheduler?](#who-uses-db-scheduler)
 * [FAQ](#faq)
 
 ## Requirements
@@ -82,29 +82,6 @@ scheduler.start();
 ```
 
 For more examples, continue reading. For details on the inner workings, see [How it works](#how-it-works). If you have a Spring Boot application, have a look at [Spring Boot Usage](#spring-boot-usage).
-
-## Who uses db-scheduler?
-
-List of organizations known to be running db-scheduler in production:
-
-|                   Company                    |                                                                 Description                                                                 |
-|----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| [Digipost](https://digipost.no)              | Provider of digital mailboxes in Norway                                                                                                     |
-| [Vy Group](https://www.vy.no/en)             | One of the largest transport groups in the Nordic countries.                                                                                |
-| [Wise](https://wise.com/)                    | A cheap, fast way to send money abroad.                                                                                                     |
-| Becker Professional Education                |                                                                                                                                             |
-| [Monitoria](https://monitoria.ca)            | Website monitoring service.                                                                                                                 |
-| [Loadster](https://loadster.app)             | Load testing for web applications.                                                                                                          |
-| [Statens vegvesen](https://www.vegvesen.no/) | The Norwegian Public Roads Administration                                                                                                   |
-| [Lightyear](https://lightyear.com/)          | A simple and approachable way to invest your money globally.                                                                                |
-| [NAV](https://www.nav.no/)                   | The Norwegian Labour and Welfare Administration                                                                                             |
-| [ModernLoop](https://modernloop.io/)         | Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination. |
-| [Diffia](https://www.diffia.com/)            | Norwegian eHealth company                                                                                                                   |
-| [Swan](https://www.swan.io/)                 | Swan helps developers to embed banking services easily into their product.                                                                  |
-| [TOMRA](https://www.tomra.com/)              | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling.                            |
-| [Kartverket](https://kartverket.no/)         | The Norwegian Mapping Authority.                                                                                                            |
-
-Feel free to open a PR to add your organization to the list.
 
 ## Examples
 
@@ -673,6 +650,29 @@ Some users have experienced intermittent test failures when running on a single-
 
 - 2 cores
 - 2GB RAM
+
+## Who uses db-scheduler?
+
+List of organizations known to be running db-scheduler in production:
+
+|                   Company                    |                                                                 Description                                                                 |
+|----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| [Digipost](https://digipost.no)              | Provider of digital mailboxes in Norway                                                                                                     |
+| [Vy Group](https://www.vy.no/en)             | One of the largest transport groups in the Nordic countries.                                                                                |
+| [Wise](https://wise.com/)                    | A cheap, fast way to send money abroad.                                                                                                     |
+| Becker Professional Education                |                                                                                                                                             |
+| [Monitoria](https://monitoria.ca)            | Website monitoring service.                                                                                                                 |
+| [Loadster](https://loadster.app)             | Load testing for web applications.                                                                                                          |
+| [Statens vegvesen](https://www.vegvesen.no/) | The Norwegian Public Roads Administration                                                                                                   |
+| [Lightyear](https://lightyear.com/)          | A simple and approachable way to invest your money globally.                                                                                |
+| [NAV](https://www.nav.no/)                   | The Norwegian Labour and Welfare Administration                                                                                             |
+| [ModernLoop](https://modernloop.io/)         | Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination. |
+| [Diffia](https://www.diffia.com/)            | Norwegian eHealth company                                                                                                                   |
+| [Swan](https://www.swan.io/)                 | Swan helps developers to embed banking services easily into their product.                                                                  |
+| [TOMRA](https://www.tomra.com/)              | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling.                            |
+| [Kartverket](https://kartverket.no/)         | The Norwegian Mapping Authority.                                                                                                            |
+
+Feel free to open a PR to add your organization to the list.
 
 ## FAQ
 
