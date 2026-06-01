@@ -44,7 +44,6 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 
 * **Java 17+** (since v16.x).
 * A relational database and a single `scheduled_tasks` table.
-* Only runtime dependency: `slf4j`.
 
 See [Database compatibility](#database-compatibility) for supported database engines and per-engine feature support.
 
@@ -213,23 +212,23 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 
 ## Database compatibility
 
-|  Database  | `fetch` |   `lock-and-fetch`   |                            Notes                            |
-|------------|:-------:|:--------------------:|-------------------------------------------------------------|
-| PostgreSQL |    ✅    | ✅ (single-statement) |                                                             |
-| SQL Server |    ✅    |     ✅ (generic)      | Always persists timestamps in UTC.                          |
-| MySQL 8+   |    ✅    |     ✅ (generic)      | Requires `.alwaysPersistTimestampInUTC()`.                  |
-| MariaDB    |    ✅    |          —           | Requires `.alwaysPersistTimestampInUTC()`.                  |
-| Oracle     |    ✅    |          —           | Default schema uses `TIMESTAMPTZ` (preserves zone).         |
-| MySQL 5.x  |    ✅    |          —           | No `SKIP LOCKED`; see priority note re: descending indexes. |
-| SQLite     |    ✅    |          —           |                                                             |
-| HSQLDB     |    ✅    |          —           | Typically used for testing / in-memory.                     |
+|  Database  | `fetch` |   `lock-and-fetch`   |                      Notes                      |
+|------------|:-------:|:--------------------:|-------------------------------------------------|
+| PostgreSQL |    ✅    | ✅ (single-statement) |                                                 |
+| SQL Server |    ✅    |     ✅ (generic)      | Always transfers timestamps in UTC.             |
+| MySQL 8+   |    ✅    |     ✅ (generic)      | Requires `.alwaysPersistTimestampInUTC()`.      |
+| MariaDB    |    ✅    |          —           | Requires `.alwaysPersistTimestampInUTC()`.      |
+| Oracle     |    ✅    |          —           | Prefer default schema which uses `TIMESTAMPTZ`. |
+| MySQL 5.x  |    ✅    |          —           |                                                 |
+| SQLite     |    ✅    |          —           |                                                 |
+| HSQLDB     |    ✅    |          —           | Typically used for testing / in-memory.         |
 
 See [Polling strategy](#polling-strategy) for `fetch` vs `lock-and-fetch`, and
 [`.alwaysPersistTimestampInUTC()`](#consider-tuning) for timestamp-handling details.
 
 **Other databases:** db-scheduler may still work on engines not listed here. You need to
 (1) create the `scheduled_tasks` table using DDL compatible with your engine, and
-(2) if auto-detection picks the wrong dialect, supply a custom
+(2) if any jdbc-customization is required, supply a custom
 [`JdbcCustomization`](#less-commonly-tuned) via `.jdbcCustomization(...)`. The default fallback
 assumes timestamps can be get/set via `get/setObject(OffsetDateTime)`; if not, also enable
 `.alwaysPersistTimestampInUTC()`.
