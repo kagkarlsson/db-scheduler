@@ -193,7 +193,7 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 | [SpawningOtherTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SpawningOtherTasksMain.java)                                                   | Demonstrates on task scheduling instances of another by using the `executionContext.getSchedulerClient()`.                                                                                                              |
 | [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)                                                         | Demonstrates some of the `SchedulerClient`'s capabilities. Scheduling, fetching scheduled executions etc.                                                                                                               |
 | [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java)                 | Multi-instance recurring jobs where the `Schedule` is stored as part of the `task_data`. For example suitable for multi-tenant applications where each tenent should have a recurring task.                             |
-| [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java) | Combines a dynamic recurring task (schedule persisted in `task_data`) with **stateful** execution — the returned data is updated and persisted after each run.                                                            |
+| [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java) | Combines a dynamic recurring task (schedule persisted in `task_data`) with **stateful** execution — the returned data is updated and persisted after each run.                                                          |
 | [JsonSerializerMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JsonSerializerMain.java)                                                           | Overrides serialization of `task_data` from Java-serialization (default) to JSON.                                                                                                                                       |
 | [JobChainingUsingTaskDataMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingTaskDataMain.java)                                       | Job chaining, i.e. "when this instance is done executing, schedule another task.                                                                                                                                        |
 | [JobChainingUsingSeparateTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingSeparateTasksMain.java)                             | Job chaining, as above.                                                                                                                                                                                                 |
@@ -213,16 +213,16 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 
 ## Database compatibility
 
-| Database   | `fetch` |   `lock-and-fetch`   | Notes                                                       |
+|  Database  | `fetch` |   `lock-and-fetch`   |                            Notes                            |
 |------------|:-------:|:--------------------:|-------------------------------------------------------------|
-| PostgreSQL |   ✅    | ✅ (single-statement) |                                                             |
-| SQL Server |   ✅    |      ✅ (generic)     | Always persists timestamps in UTC.                          |
-| MySQL 8+   |   ✅    |      ✅ (generic)     | Requires `.alwaysPersistTimestampInUTC()`.                  |
-| MariaDB    |   ✅    |           —          | Requires `.alwaysPersistTimestampInUTC()`.                  |
-| Oracle     |   ✅    |           —          | Default schema uses `TIMESTAMPTZ` (preserves zone).         |
-| MySQL 5.x  |   ✅    |           —          | No `SKIP LOCKED`; see priority note re: descending indexes. |
-| SQLite     |   ✅    |           —          |                                                             |
-| HSQLDB     |   ✅    |           —          | Typically used for testing / in-memory.                     |
+| PostgreSQL |    ✅    | ✅ (single-statement) |                                                             |
+| SQL Server |    ✅    |     ✅ (generic)      | Always persists timestamps in UTC.                          |
+| MySQL 8+   |    ✅    |     ✅ (generic)      | Requires `.alwaysPersistTimestampInUTC()`.                  |
+| MariaDB    |    ✅    |          —           | Requires `.alwaysPersistTimestampInUTC()`.                  |
+| Oracle     |    ✅    |          —           | Default schema uses `TIMESTAMPTZ` (preserves zone).         |
+| MySQL 5.x  |    ✅    |          —           | No `SKIP LOCKED`; see priority note re: descending indexes. |
+| SQLite     |    ✅    |          —           |                                                             |
+| HSQLDB     |    ✅    |          —           | Typically used for testing / in-memory.                     |
 
 See [Polling strategy](#polling-strategy) for `fetch` vs `lock-and-fetch`, and
 [`.alwaysPersistTimestampInUTC()`](#consider-tuning) for timestamp-handling details.
@@ -391,11 +391,11 @@ this kind of logging completely. Default `WARN, true`.
 
 Tasks are created using one of the builder-classes in `Tasks`. The builders have sensible defaults, but the following options can be overridden.
 
-|                  Option                  |        Default        |                                                                                   Description                                                                                   |
-|------------------------------------------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|                  Option                  |        Default        |                                                                                   Description                                                                                    |
+|------------------------------------------|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `.onFailure(FailureHandler)`             | see desc.             | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule`. _One-time tasks_ are retried again in 5m. |
-| `.onDeadExecution(DeadExecutionHandler)` | `ReviveDeadExecution` | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`.                     |
-| `.initialData(T initialData)`            | `null`                | The data to use the first time a _recurring task_ is scheduled.                                                                                                                 |
+| `.onDeadExecution(DeadExecutionHandler)` | `ReviveDeadExecution` | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`.                      |
+| `.initialData(T initialData)`            | `null`                | The data to use the first time a _recurring task_ is scheduled.                                                                                                                  |
 
 ### Schedules
 

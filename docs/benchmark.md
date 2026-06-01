@@ -37,3 +37,4 @@ There are a number of users that are using db-scheduler for high throughput use-
 
 * https://github.com/kagkarlsson/db-scheduler/issues/209#issuecomment-1026699872
 * https://github.com/kagkarlsson/db-scheduler/issues/190#issuecomment-805867950
+
