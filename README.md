@@ -19,15 +19,17 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * **Cluster-friendly**. Guarantees execution by single scheduler instance.
 * **Persistent** tasks. Requires a _single_ database-table for persistence.
 * **Embeddable**. Built to be embedded in existing applications.
-* **High throughput**. Tested to handle 2k - 10k executions / second. [Link](#benchmark-test).
+* **High throughput**. Tested to handle 2k - 10k executions / second. [Link](docs/benchmark.md).
 * **Simple**.
 * **Minimal dependencies**. (slf4j)
 
 ## Table of contents
 
+* [Requirements](#requirements)
 * [Getting started](#getting-started)
 * [Who uses db-scheduler?](#who-uses-db-scheduler)
 * [Examples](#examples)
+* [Database compatibility](#database-compatibility)
 * [Configuration](#configuration)
 * [Third-party extensions](#third-party-extensions)
 * [Spring Boot usage](#spring-boot-usage)
@@ -35,7 +37,16 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 * [How it works](#how-it-works)
 * [Performance](#performance)
 * [Versions / upgrading](#versions--upgrading)
+* [Building the source](#building-the-source)
 * [FAQ](#faq)
+
+## Requirements
+
+* **Java 17+** (since v16.x).
+* A relational database and a single `scheduled_tasks` table.
+* Only runtime dependency: `slf4j`.
+
+See [Database compatibility](#database-compatibility) for supported database engines and per-engine feature support.
 
 ## Getting started
 
@@ -45,11 +56,13 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>16.7.0</version>
+    <version>16.11.0</version>
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql), [sqlite](db-scheduler/src/test/resources/sqlite_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
+_Replace the version with the latest, shown in the Maven Central badge above._
+
+2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql), [sqlite](db-scheduler/src/test/resources/sqlite_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql). See [Database compatibility](#database-compatibility) for the full list of supported databases and feature support.
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
@@ -62,7 +75,6 @@ RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.of
 final Scheduler scheduler = Scheduler
         .create(dataSource)
         .startTasks(hourlyTask)
-        .threads(5)
         .build();
 
 // hourlyTask is automatically scheduled on startup if not already started (i.e. exists in the db)
@@ -111,6 +123,7 @@ RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.of
 final Scheduler scheduler = Scheduler
         .create(dataSource)
         .startTasks(hourlyTask)
+        .threads(5)
         .registerShutdownHook()
         .build();
 
@@ -180,7 +193,7 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 | [SpawningOtherTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SpawningOtherTasksMain.java)                                                   | Demonstrates on task scheduling instances of another by using the `executionContext.getSchedulerClient()`.                                                                                                              |
 | [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)                                                         | Demonstrates some of the `SchedulerClient`'s capabilities. Scheduling, fetching scheduled executions etc.                                                                                                               |
 | [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java)                 | Multi-instance recurring jobs where the `Schedule` is stored as part of the `task_data`. For example suitable for multi-tenant applications where each tenent should have a recurring task.                             |
-| [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java) |                                                                                                                                                                                                                         |
+| [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java) | Combines a dynamic recurring task (schedule persisted in `task_data`) with **stateful** execution — the returned data is updated and persisted after each run.                                                            |
 | [JsonSerializerMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JsonSerializerMain.java)                                                           | Overrides serialization of `task_data` from Java-serialization (default) to JSON.                                                                                                                                       |
 | [JobChainingUsingTaskDataMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingTaskDataMain.java)                                       | Job chaining, i.e. "when this instance is done executing, schedule another task.                                                                                                                                        |
 | [JobChainingUsingSeparateTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingSeparateTasksMain.java)                             | Job chaining, as above.                                                                                                                                                                                                 |
@@ -197,6 +210,29 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 | [ParallelJobSpawner](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/ParallellJobConfiguration.java)                   | Demonstrates how to use a recurring job to spawn one-time jobs, e.g. for parallelization.                                                                                                                                                   |
 | [JobChaining](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/JobChainingConfiguration.java)                           | A one-time job with **multiple steps**. The next step is scheduled after the previous one completes.                                                                                                                                        |
 | [MultiInstanceRecurring](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/MultiInstanceRecurringConfiguration.java)     | Demonstrates how to achieve **multiple recurring jobs** of the same type, but potentially differing schedules and data.                                                                                                                     |
+
+## Database compatibility
+
+| Database   | `fetch` |   `lock-and-fetch`   | Notes                                                       |
+|------------|:-------:|:--------------------:|-------------------------------------------------------------|
+| PostgreSQL |   ✅    | ✅ (single-statement) |                                                             |
+| SQL Server |   ✅    |      ✅ (generic)     | Always persists timestamps in UTC.                          |
+| MySQL 8+   |   ✅    |      ✅ (generic)     | Requires `.alwaysPersistTimestampInUTC()`.                  |
+| MariaDB    |   ✅    |           —          | Requires `.alwaysPersistTimestampInUTC()`.                  |
+| Oracle     |   ✅    |           —          | Default schema uses `TIMESTAMPTZ` (preserves zone).         |
+| MySQL 5.x  |   ✅    |           —          | No `SKIP LOCKED`; see priority note re: descending indexes. |
+| SQLite     |   ✅    |           —          |                                                             |
+| HSQLDB     |   ✅    |           —          | Typically used for testing / in-memory.                     |
+
+See [Polling strategy](#polling-strategy) for `fetch` vs `lock-and-fetch`, and
+[`.alwaysPersistTimestampInUTC()`](#consider-tuning) for timestamp-handling details.
+
+**Other databases:** db-scheduler may still work on engines not listed here. You need to
+(1) create the `scheduled_tasks` table using DDL compatible with your engine, and
+(2) if auto-detection picks the wrong dialect, supply a custom
+[`JdbcCustomization`](#less-commonly-tuned) via `.jdbcCustomization(...)`. The default fallback
+assumes timestamps can be get/set via `get/setObject(OffsetDateTime)`; if not, also enable
+`.alwaysPersistTimestampInUTC()`.
 
 ## Configuration
 
@@ -327,7 +363,7 @@ the table. Default `scheduled_tasks`.
 :gear: `.serializer(Serializer)`<br/>
 Serializer implementation to use when serializing task data. Default to using standard Java serialization,
 but db-scheduler also bundles a `GsonSerializer` and `JacksonSerializer`. See examples for a [KotlinSerializer](https://github.com/kagkarlsson/db-scheduler/blob/master/examples/features/src/main/java/com/github/kagkarlsson/examples/kotlin/KotlinSerializer.kt).
-See also additional documentation under [Serializers](#Serializers).
+See also additional documentation under [Serializers](#serializers).
 
 :gear: `.executorService(ExecutorService)`<br/>
 If specified, use this externally managed executor service to run executions. Ideally, the number of threads it
@@ -357,7 +393,7 @@ Tasks are created using one of the builder-classes in `Tasks`. The builders have
 
 |                  Option                  |        Default        |                                                                                   Description                                                                                   |
 |------------------------------------------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `.onFailure(FailureHandler)`             | see desc.             | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule` _one-time tasks_ are retried again in 5m. |
+| `.onFailure(FailureHandler)`             | see desc.             | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule`. _One-time tasks_ are retried again in 5m. |
 | `.onDeadExecution(DeadExecutionHandler)` | `ReviveDeadExecution` | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`.                     |
 | `.initialData(T initialData)`            | `null`                | The data to use the first time a _recurring task_ is scheduled.                                                                                                                 |
 
@@ -432,7 +468,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
    <dependency>
        <groupId>com.github.kagkarlsson</groupId>
        <artifactId>db-scheduler-spring-boot-4-starter</artifactId>
-       <version>16.7.0</version>
+       <version>16.11.0</version>
    </dependency>
    ```
 
@@ -531,7 +567,7 @@ Create using `Tasks.recurringWithPersistentSchedule(..)`.
 ### One-time tasks
 
 The term _one-time task_ is used for tasks that have a single execution-time.
-In addition to encode data into the `instanceId`of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time. By default, Java serialization is used to marshal/unmarshal the data.
+In addition to encoding data into the `instanceId` of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time. By default, Java serialization is used to marshal/unmarshal the data.
 
 Create using `Tasks.oneTime(..)`.
 
@@ -551,7 +587,7 @@ If an execution is marked as executing, but is not receiving updates to the hear
 it will be considered a _dead execution_ after time X. That may, for example, happen if the
 JVM running the scheduler suddenly exits.
 
-When a dead execution is found, the `Task`is consulted to see what should be done. A dead
+When a dead execution is found, the `Task` is consulted to see what should be done. A dead
 `RecurringTask` is typically rescheduled to `now()`.
 
 ### Unresolved tasks
@@ -589,40 +625,13 @@ Using such a strategy, it is possible to fetch executions pre-locked, and thus g
 
 In sum per batch: 1 select-and-update, 1 * batch-size updates (no misses)
 
-### Benchmark test
+### Benchmark
 
-To get an idea of what to expect from db-scheduler, see results from the tests run in GCP below.
-Tests were run with a few different configurations, but each using 4 competing scheduler-instances running on separate VMs.
-TPS is the approx. transactions per second as shown in GCP.
+For benchmark results (tested up to ~10k executions/second on Postgres) and high-throughput user
+testimonials, see [docs/benchmark.md](docs/benchmark.md).
 
-|                                        | Throughput fetch (ex/s) | TPS fetch (estimates) | Throughput lock-and-fetch (ex/s) | TPS lock-and-fetch (estimates) |
-|----------------------------------------|-------------------------|-----------------------|----------------------------------|--------------------------------|
-| Postgres 4core 25gb ram, 4xVMs(2-core) |                         |                       |                                  |                                |
-| 20 threads, lower 4.0, upper 20.0      | 2000                    | 9000                  | 10600                            | 11500                          |
-| 100 threads, lower 2.0, upper 6.0      | 2560                    | 11000                 | 11200                            | 11200                          |
-|                                        |                         |                       |                                  |                                |
-| Postgres 8core 50gb ram, 4xVMs(4-core) |                         |                       |                                  |                                |
-| 50 threads, lower: 0.5, upper: 4.0     | 4000                    | 22000                 | 11840                            | 10300                          |
-|                                        |                         |                       |                                  |                                |
-
-Observations for these tests:
-
-* For `fetch`
-  * TPS ≈ 4-5 * execution-throughput. A bit higher than the best-case 2 * execution-throughput, likely due the inefficiency of missed executions.
-  * throughput did scale with postgres instance-size, from 2000 executions/s on 4core to 4000 executions/s on 8core
-* For `lock-and-fetch`
-  * TPS ≈ 1 * execution-throughput. As expected.
-  * seem to consistently handle 10k executions/s for these configurations
-  * throughput did not scale with postgres instance-size (4-8 core), so bottleneck is somewhere else
-
-Currently, polling strategy `lock-and-fetch` is implemented only for Postgres (single statement mode), SQL Server and MySQL v8+ (generic mode). Contributions adding support for more databases are welcome.
-
-### User testimonial
-
-There are a number of users that are using db-scheduler for high throughput use-cases. See for example:
-
-* https://github.com/kagkarlsson/db-scheduler/issues/209#issuecomment-1026699872
-* https://github.com/kagkarlsson/db-scheduler/issues/190#issuecomment-805867950
+`lock-and-fetch` is currently implemented only for Postgres (single-statement mode), SQL Server and
+MySQL v8+ (generic mode); see [Database compatibility](#database-compatibility).
 
 ### Things to note / gotchas
 
@@ -634,31 +643,8 @@ There are a number of users that are using db-scheduler for high throughput use-
 
 ## Versions / upgrading
 
-See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
-
-**Upgrading to 16.x**
-* Java 17+ is required now, since we migrated our codebase to Java 17
-
-**Upgrading to 15.x**
-* Priority is a new opt-in feature. To be able to use it, column `priority` and index `priority_execution_time_idx`
-must be added to the database schema. See table definitions for
-[postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql),
-[oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or
-[mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
-At some point, this column will be made mandatory. This will be made clear in future release/upgrade-notes.
-
-**Upgrading to 8.x**
-* Custom Schedules must implement a method `boolean isDeterministic()` to indicate whether they will always produce the same instants or not.
-
-**Upgrading to 4.x**
-* Add column `consecutive_failures` to the database schema. See table definitions for [postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](./db-scheduler/src/test/resources/mysql_tables.sql). `null` is handled as 0, so no need to update existing records.
-
-**Upgrading to 3.x**
-* No schema changes
-* Task creation are preferably done through builders in `Tasks` class
-
-**Upgrading to 2.x**
-* Add column `task_data` to the database schema. See table definitions for [postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
+See [UPGRADING.md](UPGRADING.md) for version-specific upgrade notes (schema changes etc.),
+and [releases](https://github.com/kagkarlsson/db-scheduler/releases) for full release-notes.
 
 ## Building the source
 
