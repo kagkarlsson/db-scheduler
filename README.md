@@ -26,20 +26,13 @@ Used in production by Digipost, Wise, TOMRA and [others](#who-uses-db-scheduler)
 
 ## Table of contents
 
-* [Requirements](#requirements)
-* [Getting started](#getting-started)
-* [Examples](#examples)
-* [Database compatibility](#database-compatibility)
-* [Configuration](#configuration)
-* [Third-party extensions](#third-party-extensions)
-* [Spring Boot usage](#spring-boot-usage)
-* [Interacting with scheduled executions using the SchedulerClient](#interacting-with-scheduled-executions-using-the-schedulerclient)
-* [How it works](#how-it-works)
-* [Performance](#performance)
-* [Versions / upgrading](#versions--upgrading)
-* [Building the source](#building-the-source)
-* [Who uses db-scheduler?](#who-uses-db-scheduler)
-* [FAQ](#faq)
+[Requirements](#requirements) · [Getting started](#getting-started) · [Examples](#examples) ·
+[Databases](#database-compatibility) · [Configuration](#configuration) ·
+[Extensions](#third-party-extensions) · [Spring Boot](#spring-boot-usage) ·
+[SchedulerClient](#interacting-with-scheduled-executions-using-the-schedulerclient) ·
+[How it works](#how-it-works) · [Performance](#performance) ·
+[Upgrading](#versions--upgrading) · [Building](#building-the-source) ·
+[Who uses it](#who-uses-db-scheduler) · [FAQ](#faq)
 
 ## Requirements
 
