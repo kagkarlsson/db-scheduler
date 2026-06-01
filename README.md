@@ -1,7 +1,8 @@
 # db-scheduler
 
-![build status](https://github.com/kagkarlsson/db-scheduler/workflows/build/badge.svg)
+[![build status](https://github.com/kagkarlsson/db-scheduler/actions/workflows/ci.yml/badge.svg)](https://github.com/kagkarlsson/db-scheduler/actions/workflows/ci.yml)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.kagkarlsson/db-scheduler)](https://central.sonatype.com/artifact/com.github.kagkarlsson/db-scheduler)
+[![codecov](https://codecov.io/gh/kagkarlsson/db-scheduler/graph/badge.svg)](https://codecov.io/gh/kagkarlsson/db-scheduler)
 [![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
