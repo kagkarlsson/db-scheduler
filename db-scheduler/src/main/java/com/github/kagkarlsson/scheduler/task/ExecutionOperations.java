@@ -13,6 +13,7 @@
  */
 package com.github.kagkarlsson.scheduler.task;
 
+import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import java.time.Instant;
@@ -22,12 +23,17 @@ public class ExecutionOperations<T> {
   private final TaskRepository taskRepository;
   private final SchedulerListeners schedulerListeners;
   private final Execution execution;
+  private final Clock clock;
 
   public ExecutionOperations(
-      TaskRepository taskRepository, SchedulerListeners schedulerListeners, Execution execution) {
+      TaskRepository taskRepository,
+      SchedulerListeners schedulerListeners,
+      Execution execution,
+      Clock clock) {
     this.taskRepository = taskRepository;
     this.schedulerListeners = schedulerListeners;
     this.execution = execution;
+    this.clock = clock;
   }
 
   public void stop() {
@@ -39,7 +45,9 @@ public class ExecutionOperations<T> {
   }
 
   public void removeAndScheduleNew(SchedulableInstance<?> schedulableInstance) {
-    Instant executionTime = taskRepository.replace(execution, schedulableInstance);
+    Instant executionTime =
+        taskRepository.replace(
+            execution, ScheduledTaskInstance.fixExecutionTime(schedulableInstance, clock));
     hintExecutionScheduled(schedulableInstance.getTaskInstance(), executionTime);
   }
 

@@ -27,7 +27,7 @@ public class TestableListener implements SchedulerListener {
   private final List<ExecutionComplete> completed;
   private final List<SchedulerEventType> stats;
   private List<Condition> waitConditions;
-  private Map<String, AtomicLong> counters = new ConcurrentHashMap();
+  private Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
   private final boolean logEvents;
 
   public TestableListener(boolean logEvents, List<Condition> waitConditions) {

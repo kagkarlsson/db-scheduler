@@ -160,7 +160,7 @@ public class JdbcTaskRepository implements TaskRepository {
   private final String insertQuery;
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "deprecation"})
   public boolean createIfNotExists(SchedulableInstance instance) {
     return createIfNotExists(
         new ScheduledTaskInstance(
@@ -232,7 +232,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "deprecation"})
   public Instant replace(Execution toBeReplaced, SchedulableInstance newInstance) {
     return replace(
         toBeReplaced,

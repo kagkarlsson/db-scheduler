@@ -1,7 +1,6 @@
 package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.task.TaskInstanceId.StandardTaskInstanceId;
-import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -12,6 +11,7 @@ import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import java.time.Instant;
 import java.util.Optional;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,6 +24,10 @@ public class SchedulerClientExceptionsTest {
   @InjectMocks SchedulerClient.StandardSchedulerClient schedulerClient;
 
   @Mock TaskRepository taskRepository;
+
+  private static String randomAlphanumeric(int count) {
+    return RandomStringUtils.insecure().nextAlphanumeric(count);
+  }
 
   @Test
   public void failsToRescheduleWhenTaskIsNotFound() {

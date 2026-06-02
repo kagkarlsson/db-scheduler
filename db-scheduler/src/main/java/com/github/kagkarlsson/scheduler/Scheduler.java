@@ -248,6 +248,7 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
     this.delegate.schedule(schedulableInstance);
   }
@@ -273,6 +274,7 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
     this.delegate.schedule(taskInstance, executionTime);
   }
@@ -400,7 +402,7 @@ public class Scheduler implements SchedulerClient {
                     .deadExecution(
                         ExecutionComplete.failure(execution, now, now, null),
                         new ExecutionOperations(
-                            schedulerTaskRepository, schedulerListeners, execution));
+                            schedulerTaskRepository, schedulerListeners, execution, clock));
               } else {
                 LOG.error(
                     "Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.",
