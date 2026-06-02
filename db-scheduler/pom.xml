@@ -20,7 +20,7 @@
     <hsqldb.version>2.7.4</hsqldb.version>
     <java8-matchers.version>1.6</java8-matchers.version>
     <equals-verifier.version>4.5</equals-verifier.version>
-    <bytebuddy.version>1.18.8</bytebuddy.version>
+    <bytebuddy.version>1.18.9</bytebuddy.version>
     <zonky-pg-embedded.version>2.2.2</zonky-pg-embedded.version>
     <zonky-pg-binaries.version>18.3.0</zonky-pg-binaries.version>
     <slf4j.version>1.7.36</slf4j.version>
@@ -230,7 +230,7 @@
     <dependency>
       <groupId>org.xerial</groupId>
       <artifactId>sqlite-jdbc</artifactId>
-      <version>3.41.2.2</version>
+      <version>3.53.1.0</version>
       <scope>test</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc -->
