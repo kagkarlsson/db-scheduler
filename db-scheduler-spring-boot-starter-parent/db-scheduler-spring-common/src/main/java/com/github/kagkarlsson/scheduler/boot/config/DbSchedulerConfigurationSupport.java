@@ -124,6 +124,9 @@ public final class DbSchedulerConfigurationSupport {
     builder.startTasks(startupTasks(configuredTasks));
     builder.addSchedulerListener(new StatsRegistryAdapter(registry));
     builder.failureLogging(config.getFailureLoggerLevel(), config.isFailureLoggerLogStackTrace());
+    if (config.isRegisterExecutorsMetrics()) {
+      builder.registerExecutorsMetrics();
+    }
     builder.shutdownMaxWait(config.getShutdownMaxWait());
 
     schedulerListeners.forEach(builder::addSchedulerListener);

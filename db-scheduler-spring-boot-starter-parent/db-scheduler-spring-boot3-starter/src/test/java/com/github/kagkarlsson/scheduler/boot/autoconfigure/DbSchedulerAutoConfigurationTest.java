@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
@@ -340,6 +341,15 @@ public class DbSchedulerAutoConfigurationTest {
 
         @Override
         public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {}
+
+        @Override
+        public void registerCandidateExecutor(ExecutorService candidateExecutor) {}
+
+        @Override
+        public void registerCandidateDueExecutor(ExecutorService candidateDueExecutor) {}
+
+        @Override
+        public void registerHousekeeperExecutor(ExecutorService housekeeperExecutor) {}
       };
     }
   }

@@ -118,6 +118,9 @@ public class DbSchedulerProperties {
   /** Which log level to use when logging task failures. Defaults to {@link LogLevel#DEBUG}. */
   private LogLevel failureLoggerLevel = SchedulerBuilder.DEFAULT_FAILURE_LOG_LEVEL;
 
+  /** Whether to register executors (task, candidates due, housekeeping) metrics. */
+  private boolean registerExecutorsMetrics = SchedulerBuilder.DEFAULT_REGISTER_EXECUTORS_METRICS;
+
   /** Whether or not to log the {@link Throwable} that caused a task to fail. */
   private boolean failureLoggerLogStackTrace = SchedulerBuilder.LOG_STACK_TRACE_ON_FAILURE;
 
@@ -222,6 +225,14 @@ public class DbSchedulerProperties {
 
   public boolean isFailureLoggerLogStackTrace() {
     return failureLoggerLogStackTrace;
+  }
+
+  public boolean isRegisterExecutorsMetrics() {
+    return registerExecutorsMetrics;
+  }
+
+  public void setRegisterExecutorsMetrics(boolean registerExecutorsMetrics) {
+    this.registerExecutorsMetrics = registerExecutorsMetrics;
   }
 
   public void setFailureLoggerLogStackTrace(boolean failureLoggerLogStackTrace) {

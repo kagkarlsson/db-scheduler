@@ -19,9 +19,12 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,6 +33,9 @@ public class MicrometerStatsRegistry implements StatsRegistry {
 
   private static final String RESULT_SUCCESS = "ok";
   private static final String RESULT_FAILURE = "failed";
+  private static final String CANDIDATE_EXECUTOR_NAME = "dbSchedulerExecutor";
+  private static final String CANDIDATE_DUE_EXECUTOR_NAME = "dbSchedulerCandidateDueExecutor";
+  private static final String HOUSEKEEPER_EXECUTOR_NAME = "dbSchedulerHousekeeperExecutor";
   private final MeterRegistry meterRegistry;
 
   private Map<String, MetricsHolder> metricsMap = new HashMap<>();
@@ -75,6 +81,26 @@ public class MicrometerStatsRegistry implements StatsRegistry {
     String taskName = completeEvent.getExecution().taskInstance.getTaskName();
     MetricsHolder metrics = getOrInitMetricHolder(taskName);
     metrics.registerExecution(completeEvent);
+  }
+
+  @Override
+  public void registerCandidateExecutor(ExecutorService pool) {
+    bindExecutorToRegistry(CANDIDATE_EXECUTOR_NAME, pool);
+  }
+
+  @Override
+  public void registerCandidateDueExecutor(ExecutorService pool) {
+    bindExecutorToRegistry(CANDIDATE_DUE_EXECUTOR_NAME, pool);
+  }
+
+  @Override
+  public void registerHousekeeperExecutor(ExecutorService pool) {
+    bindExecutorToRegistry(HOUSEKEEPER_EXECUTOR_NAME, pool);
+  }
+
+  private void bindExecutorToRegistry(String executorName, ExecutorService executor) {
+    new ExecutorServiceMetrics(executor, executorName, Collections.emptyList())
+        .bindTo(meterRegistry);
   }
 
   private class MetricsHolder {

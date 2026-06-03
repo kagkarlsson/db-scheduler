@@ -243,6 +243,10 @@ Scheduler-method `scheduler.triggerCheckForDueExecutions()`). Default `false`.
 Registers a shutdown-hook that will call `Scheduler.stop()` on shutdown. Stop should always be called for a
 graceful shutdown and to avoid dead executions.
 
+:gear: `.registerExecutorsMetrics()`<br/>
+Registers metrics for all library (task, candidates due, housekeeping) executors. Currently supported only for Micrometer in Spring Boot. Default `false`.
+**NB:** Requires `--add-opens java.base/java.util.concurrent=ALL-UNNAMED` JVM setting for custom executors (required by [`MicrometerStatsRegistry`](https://github.com/micrometer-metrics/micrometer/blob/main/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/jvm/ExecutorServiceMetrics.java)).
+
 :gear: `.shutdownMaxWait(Duration)`<br/>
 How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this,
 consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()`
@@ -466,6 +470,7 @@ db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=
 db-scheduler.threads=10
 db-scheduler.priority-enabled=false
+db-scheduler.register-executors-metrics=true
 
 # Ignored if a custom DbSchedulerStarter bean is defined
 db-scheduler.delay-startup-until-context-ready=false
