@@ -28,8 +28,7 @@ public class ScheduledExecutionTest {
       String taskname, String id, Instant executionTime) {
     OneTimeTask<Integer> task =
         TestTasks.oneTime(taskname, Integer.class, (instance, executionContext) -> {});
-    return new ScheduledExecution<Void>(
-        Void.class, new Execution(executionTime, task.instance(id)));
+    return ScheduledExecution.from(Void.class, new Execution(executionTime, task.instance(id)));
   }
 
   @Test
@@ -40,7 +39,7 @@ public class ScheduledExecutionTest {
     Execution execution = new Execution(now, task.instance("id1", Integer.valueOf(1)));
 
     ScheduledExecution<Integer> scheduledExecution =
-        new ScheduledExecution<>(Integer.class, execution);
+        ScheduledExecution.from(Integer.class, execution);
     assertEquals(Integer.valueOf(1), scheduledExecution.getData());
   }
 
@@ -57,7 +56,7 @@ public class ScheduledExecutionTest {
                   new Execution(
                       now, task.instance("id1", Integer.valueOf(1))); // Data class is an integer
 
-              new ScheduledExecution<>(String.class, execution)
+              ScheduledExecution.from(String.class, execution)
                   .getData(); // Instantiate with incorrect type
             });
 

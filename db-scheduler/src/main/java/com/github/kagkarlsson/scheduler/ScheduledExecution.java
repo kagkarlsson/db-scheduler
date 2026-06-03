@@ -24,9 +24,13 @@ public class ScheduledExecution<DATA_TYPE> {
   private final Class<DATA_TYPE> dataClass;
   private final Execution execution;
 
-  public ScheduledExecution(Class<DATA_TYPE> dataClass, Execution execution) {
+  ScheduledExecution(Class<DATA_TYPE> dataClass, Execution execution) {
     this.dataClass = dataClass;
     this.execution = execution;
+  }
+
+  public static <T> ScheduledExecution<T> from(Class<T> dataClass, Execution execution) {
+    return new ScheduledExecution<>(dataClass, execution);
   }
 
   public TaskInstanceId getTaskInstance() {
