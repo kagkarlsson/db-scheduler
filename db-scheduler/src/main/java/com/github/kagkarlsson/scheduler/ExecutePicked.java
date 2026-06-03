@@ -129,7 +129,8 @@ class ExecutePicked implements Runnable {
         ExecutionComplete.success(execution, executionStarted, clock.now());
     try {
       completion.complete(
-          completeEvent, new ExecutionOperations(taskRepository, schedulerListeners, execution));
+          completeEvent,
+          new ExecutionOperations(taskRepository, schedulerListeners, execution, clock));
     } catch (Throwable e) {
       schedulerListeners.onSchedulerEvent(SchedulerEventType.COMPLETIONHANDLER_ERROR);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
@@ -159,7 +160,7 @@ class ExecutePicked implements Runnable {
       task.getFailureHandler()
           .onFailure(
               completeEvent,
-              new ExecutionOperations(taskRepository, schedulerListeners, execution));
+              new ExecutionOperations(taskRepository, schedulerListeners, execution, clock));
     } catch (Throwable e) {
       schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILUREHANDLER_ERROR);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);

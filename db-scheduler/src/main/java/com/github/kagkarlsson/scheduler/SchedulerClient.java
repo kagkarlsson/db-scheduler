@@ -444,7 +444,7 @@ public interface SchedulerClient {
     @Override
     public <T> boolean scheduleIfNotExists(TaskInstance<T> taskInstance, Instant executionTime) {
       boolean success =
-          taskRepository.createIfNotExists(SchedulableInstance.of(taskInstance, executionTime));
+          taskRepository.createIfNotExists(new ScheduledTaskInstance(taskInstance, executionTime));
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstance, executionTime);
       }
