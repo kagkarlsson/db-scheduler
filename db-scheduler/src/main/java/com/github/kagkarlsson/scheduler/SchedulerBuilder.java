@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +60,7 @@ public class SchedulerBuilder {
   protected Clock clock = new SystemClock(); // if this is set, waiter-clocks must be updated
   protected SchedulerName schedulerName;
   protected int executorThreads = 10;
+  protected boolean executorThreadsConfigured = false;
   protected Duration poolingInterval = DEFAULT_POLLING_INTERVAL;
   protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
   protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
@@ -118,6 +120,7 @@ public class SchedulerBuilder {
 
   public SchedulerBuilder threads(int numberOfThreads) {
     this.executorThreads = numberOfThreads;
+    this.executorThreadsConfigured = true;
     return this;
   }
 
@@ -291,6 +294,7 @@ public class SchedulerBuilder {
           Executors.newFixedThreadPool(
               executorThreads, defaultThreadFactoryWithPrefix(THREAD_PREFIX + "-"));
     }
+    int candidateExecutorThreads = resolveExecutorThreads(candidateExecutorService);
 
     ExecutorService candidateDueExecutor = dueExecutor;
     if (candidateDueExecutor == null) {
@@ -314,7 +318,7 @@ public class SchedulerBuilder {
 
     LOG.info(
         "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s, enable-immediate-execution={}, enable-priority={}, table-name={}, name={}",
-        executorThreads,
+        candidateExecutorThreads,
         waiter.getWaitDuration().getSeconds(),
         heartbeatInterval.getSeconds(),
         enableImmediateExecution,
@@ -328,7 +332,7 @@ public class SchedulerBuilder {
             schedulerTaskRepository,
             clientTaskRepository,
             taskResolver,
-            executorThreads,
+            candidateExecutorThreads,
             candidateExecutorService,
             schedulerName,
             waiter,
@@ -364,5 +368,20 @@ public class SchedulerBuilder {
 
   protected Waiter buildWaiter() {
     return new Waiter(poolingInterval, clock);
+  }
+
+  private int resolveExecutorThreads(ExecutorService candidateExecutorService) {
+    if (executorThreadsConfigured) {
+      return executorThreads;
+    }
+
+    if (candidateExecutorService instanceof ThreadPoolExecutor) {
+      ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) candidateExecutorService;
+      if (threadPoolExecutor.getCorePoolSize() == threadPoolExecutor.getMaximumPoolSize()) {
+        return threadPoolExecutor.getMaximumPoolSize();
+      }
+    }
+
+    return executorThreads;
   }
 }
