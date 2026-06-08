@@ -20,7 +20,7 @@
     <hsqldb.version>2.7.4</hsqldb.version>
     <java8-matchers.version>1.6</java8-matchers.version>
     <equals-verifier.version>4.5</equals-verifier.version>
-    <bytebuddy.version>1.18.9</bytebuddy.version>
+    <bytebuddy.version>1.18.10</bytebuddy.version>
     <zonky-pg-embedded.version>2.2.2</zonky-pg-embedded.version>
     <zonky-pg-binaries.version>18.4.0</zonky-pg-binaries.version>
     <slf4j.version>1.7.36</slf4j.version>
@@ -230,7 +230,7 @@
     <dependency>
       <groupId>org.xerial</groupId>
       <artifactId>sqlite-jdbc</artifactId>
-      <version>3.53.1.0</version>
+      <version>3.53.2.0</version>
       <scope>test</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc -->
@@ -398,7 +398,7 @@
       <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
-        <version>0.8.14</version>
+        <version>0.8.15</version>
         <executions>
           <execution>
             <id>prepare-agent</id>
