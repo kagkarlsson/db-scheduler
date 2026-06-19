@@ -14,6 +14,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
@@ -60,11 +61,15 @@ public interface TaskRepository {
     return results;
   }
 
+  List<TaskSummary> getScheduledExecutionsSummaryByTask();
+
   List<Execution> lockAndFetchGeneric(Instant now, int limit);
 
   List<Execution> lockAndGetDue(Instant now, int limit);
 
   void remove(Execution execution);
+
+  boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
 
   boolean reschedule(
       Execution execution,
@@ -82,6 +87,8 @@ public interface TaskRepository {
       int consecutiveFailures);
 
   Optional<Execution> pick(Execution e, Instant timePicked);
+
+  void unpickPickedBatch(List<Execution> pickedExecutions);
 
   List<Execution> getDeadExecutions(Instant olderThan);
 

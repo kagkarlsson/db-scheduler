@@ -15,11 +15,7 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
-  private static final Logger LOG = LoggerFactory.getLogger(MariaDBJdbcCustomization.class);
+public class MariaDBJdbcCustomization extends MySQLBaseJdbcCustomization {
 
   public MariaDBJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
@@ -28,11 +24,6 @@ public class MariaDBJdbcCustomization extends DefaultJdbcCustomization {
   @Override
   public String getName() {
     return "MariaDB";
-  }
-
-  @Override
-  public String getQueryLimitPart(int limit) {
-    return Queries.postgresSqlLimitPart(limit);
   }
 
   @Override

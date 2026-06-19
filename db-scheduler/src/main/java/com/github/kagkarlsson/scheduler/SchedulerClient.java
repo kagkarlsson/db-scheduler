@@ -25,6 +25,7 @@ import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.RescheduleUpdate;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -305,6 +306,16 @@ public interface SchedulerClient {
    */
   Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
 
+  /**
+   * Summarizes all executions by task-name in the database (a {@code GROUP BY task_name}) and
+   * returns one {@link TaskSummary} per task-name. All executions are included, both picked
+   * (running) and not.
+   *
+   * @return one summary per task-name, empty if no executions exist
+   * @see com.github.kagkarlsson.scheduler.TaskSummary
+   */
+  List<TaskSummary> getScheduledExecutionsSummaryByTask();
+
   class ScheduleOptions {
 
     public static final ScheduleOptions WHEN_EXISTS_DO_NOTHING =
@@ -433,7 +444,7 @@ public interface SchedulerClient {
     @Override
     public <T> boolean scheduleIfNotExists(TaskInstance<T> taskInstance, Instant executionTime) {
       boolean success =
-          taskRepository.createIfNotExists(SchedulableInstance.of(taskInstance, executionTime));
+          taskRepository.createIfNotExists(new ScheduledTaskInstance(taskInstance, executionTime));
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstance, executionTime);
       }
@@ -554,12 +565,17 @@ public interface SchedulerClient {
         throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
       }
 
-      boolean success;
-      if (newData == null) {
-        success = taskRepository.reschedule(execution, newExecutionTime, null, null, 0);
-      } else {
-        success = taskRepository.reschedule(execution, newExecutionTime, newData, null, null, 0);
+      RescheduleUpdate.Builder rescheduleUpdate =
+          RescheduleUpdate.toExecutionTime(newExecutionTime)
+              .lastSuccess(null)
+              .lastFailure(null)
+              .consecutiveFailures(0);
+
+      if (newData != null) {
+        rescheduleUpdate.data(newData);
       }
+
+      boolean success = taskRepository.reschedule(execution, rescheduleUpdate.build());
 
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
@@ -622,6 +638,11 @@ public interface SchedulerClient {
       Optional<Execution> e =
           taskRepository.getExecution(taskInstanceId.getTaskName(), taskInstanceId.getId());
       return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
+    }
+
+    @Override
+    public List<TaskSummary> getScheduledExecutionsSummaryByTask() {
+      return taskRepository.getScheduledExecutionsSummaryByTask();
     }
   }
 

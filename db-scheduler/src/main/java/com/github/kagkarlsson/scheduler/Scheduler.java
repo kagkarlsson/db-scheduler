@@ -248,6 +248,7 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
     this.delegate.schedule(schedulableInstance);
   }
@@ -273,6 +274,7 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
     this.delegate.schedule(taskInstance, executionTime);
   }
@@ -341,6 +343,11 @@ public class Scheduler implements SchedulerClient {
     return this.delegate.getScheduledExecution(taskInstanceId);
   }
 
+  @Override
+  public List<TaskSummary> getScheduledExecutionsSummaryByTask() {
+    return this.delegate.getScheduledExecutionsSummaryByTask();
+  }
+
   public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {
     return schedulerTaskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
   }
@@ -395,7 +402,7 @@ public class Scheduler implements SchedulerClient {
                     .deadExecution(
                         ExecutionComplete.failure(execution, now, now, null),
                         new ExecutionOperations(
-                            schedulerTaskRepository, schedulerListeners, execution));
+                            schedulerTaskRepository, schedulerListeners, execution, clock));
               } else {
                 LOG.error(
                     "Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.",
@@ -456,7 +463,7 @@ public class Scheduler implements SchedulerClient {
       }
 
     } catch (Throwable ex) { // just-in-case to avoid any "poison-pills"
-      LOG.error("Unexpected failure while while updating heartbeat for execution {}.", e, ex);
+      LOG.error("Unexpected failure while updating heartbeat for execution {}.", e, ex);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILED_HEARTBEAT);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);
       schedulerListeners.onExecutionFailedHeartbeat(currentlyExecuting);

@@ -30,7 +30,10 @@ release:
         contributors:
           - 'GitHub'
     issues:
-      enabled: true
+      # Disabled: the conventional-commits preset extracts `#N` refs from
+      # dependabot commit bodies (upstream repos' release notes), so JReleaser
+      # ends up labelling/commenting on unrelated issues in this repo.
+      enabled: false
 
 signing:
   active: ALWAYS

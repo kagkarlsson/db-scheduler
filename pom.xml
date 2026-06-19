@@ -12,6 +12,11 @@
   <url>https://github.com/kagkarlsson/db-scheduler</url>
   <inceptionYear>2015</inceptionYear>
 
+  <organization>
+    <name>Gustav Karlsson</name>
+    <url>https://github.com/kagkarlsson</url>
+  </organization>
+
   <licenses>
     <license>
       <name>The Apache Software License, Version 2.0</name>
@@ -44,10 +49,6 @@
       <id>ossrh</id>
       <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
   </distributionManagement>
 
   <properties>
@@ -57,7 +58,7 @@
     <maven.compiler.target>${jdk.version}</maven.compiler.target>
     <maven.compiler.release>${jdk.version}</maven.compiler.release>
     <compilerArgument/>
-    <license.dir>${project.basedir}/.license</license.dir>
+    <license.dir>${maven.multiModuleProjectDirectory}/.license</license.dir>
 
     <!-- Build-time flags -->
     <skipChecks>false</skipChecks>
@@ -67,13 +68,13 @@
     <!-- Dependency versions -->
     <slf4j.version>1.7.36</slf4j.version>
     <logback.version>1.2.13</logback.version>
-    <spring-boot.version>3.5.5</spring-boot.version>
-    <spring-boot-4.version>4.0.1</spring-boot-4.version>
-    <micrometer.version>1.15.3</micrometer.version>
-    <gson.version>2.13.2</gson.version>
-    <jackson.version>2.20.0</jackson.version>
-    <postgresql.version>42.7.8</postgresql.version>
-    <guava.version>33.5.0-jre</guava.version>
+    <spring-boot-3.version>3.5.14</spring-boot-3.version>
+    <spring-boot-4.version>4.0.6</spring-boot-4.version>
+    <micrometer.version>1.16.5</micrometer.version>
+    <gson.version>2.14.0</gson.version>
+    <jackson.version>2.21.3</jackson.version>
+    <postgresql.version>42.7.11</postgresql.version>
+    <guava.version>33.6.0-jre</guava.version>
   </properties>
 
   <dependencyManagement>
@@ -81,34 +82,39 @@
       <dependency>
         <groupId>org.junit</groupId>
         <artifactId>junit-bom</artifactId>
-        <version>5.14.0</version>
+        <version>6.1.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-bom</artifactId>
-        <version>5.20.0</version>
+        <version>5.23.0</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
-        <version>1.21.3</version>
+        <version>2.0.5</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jspecify</groupId>
+        <artifactId>jspecify</artifactId>
+        <version>1.0.0</version>
       </dependency>
       <!-- Override to make testcontainers work on M1 -->
       <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.17.0</version>
+        <version>5.18.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.19.0</version>
+        <version>3.20.0</version>
         <scope>test</scope>
       </dependency>
 
@@ -120,18 +126,18 @@
       <plugins>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.14.1</version>
+          <version>3.15.0</version>
           <configuration>
             <compilerArgument>${compilerArgument}</compilerArgument>
           </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>3.5.4</version>
+          <version>3.5.6</version>
         </plugin>
         <plugin>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.9.0</version>
+          <version>3.11.0</version>
           <executions>
             <execution>
               <goals>
@@ -181,7 +187,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.6.1</version>
+          <version>3.6.2</version>
           <configuration>
             <createSourcesJar>true</createSourcesJar>
             <shadeSourcesContent>true</shadeSourcesContent>
@@ -239,7 +245,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.3.1</version>
+          <version>3.4.0</version>
           <executions>
             <execution>
               <id>attach-sources</id>
@@ -255,7 +261,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.6.2</version>
+          <version>3.6.3</version>
           <executions>
             <execution>
               <id>enforce-maven</id>
@@ -277,28 +283,6 @@
           <artifactId>maven-deploy-plugin</artifactId>
           <version>3.1.4</version>
         </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-gpg-plugin</artifactId>
-          <version>1.6</version>
-          <configuration>
-            <keyname>github.com/kagkarlsson</keyname>
-            <passphraseServerId>github.com/kagkarlsson</passphraseServerId>
-            <gpgArguments>
-              <arg>--pinentry-mode</arg>
-              <arg>loopback</arg>
-            </gpgArguments>
-          </configuration>
-          <executions>
-            <execution>
-              <id>sign-artifacts</id>
-              <goals>
-                <goal>sign</goal>
-              </goals>
-              <phase>verify</phase>
-            </execution>
-          </executions>
-        </plugin>
       </plugins>
     </pluginManagement>
 
@@ -315,7 +299,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.0.0</version>
+        <version>3.6.0</version>
         <configuration>
           <java>
             <includes>
@@ -342,6 +326,9 @@
             <includes>
               <include>**/*.md</include>
             </includes>
+            <excludes>
+              <exclude>.claude/**</exclude>
+            </excludes>
             <flexmark/>
           </markdown>
         </configuration>
@@ -374,9 +361,6 @@
           </plugin>
           <plugin>
             <artifactId>maven-source-plugin</artifactId>
-          </plugin>
-          <plugin>
-            <artifactId>maven-gpg-plugin</artifactId>
           </plugin>
         </plugins>
       </build>

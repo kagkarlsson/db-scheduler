@@ -13,9 +13,8 @@
   <url>https://github.com/kagkarlsson/db-scheduler</url>
 
   <properties>
-    <license.dir>${project.parent.parent.basedir}/.license</license.dir>
-    <kotlin.version>2.2.20</kotlin.version>
-    <serialization.version>1.9.0</serialization.version>
+    <kotlin.version>2.3.21</kotlin.version>
+    <serialization.version>1.11.0</serialization.version>
   </properties>
 
   <dependencies>
@@ -70,7 +69,7 @@
     <dependency>
       <groupId>org.jetbrains</groupId>
       <artifactId>annotations</artifactId>
-      <version>26.0.2</version>
+      <version>26.1.0</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
@@ -87,7 +86,7 @@
     <dependency>
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
-      <version>6.2.1</version>
+      <version>7.0.2</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>

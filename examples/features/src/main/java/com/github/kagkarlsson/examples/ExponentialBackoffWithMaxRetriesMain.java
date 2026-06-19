@@ -37,9 +37,7 @@ public class ExponentialBackoffWithMaxRetriesMain extends Example {
   public void run(DataSource dataSource) {
     OneTimeTask<Void> failingTask =
         Tasks.oneTime(EXPONENTIAL_BACKOFF_TASK)
-            .onFailure(
-                new FailureHandler.MaxRetriesFailureHandler<>(
-                    6, new FailureHandler.ExponentialBackoffFailureHandler<>(ofSeconds(1), 2)))
+            .onFailure(FailureHandler.<Void>maxRetries(6).withBackoff(ofSeconds(1), 2).thenRemove())
             .execute(
                 (taskInstance, executionContext) -> {
                   throw new RuntimeException("simulated task exception");

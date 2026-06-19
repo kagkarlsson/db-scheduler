@@ -45,6 +45,8 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
                     .build();
           }
           config.setDataSource(nonPooledDatasource);
+          // Force a non-UTC session TZ so tests exercise the "session TZ ≠ JVM TZ" path.
+          config.setConnectionInitSql("SET timezone = 'America/Los_Angeles'");
 
           dataSource = new HikariDataSource(config);
 
@@ -85,7 +87,10 @@ public class EmbeddedPostgresqlExtension implements AfterEachCallback {
       postgresJdbc.execute("CREATE ROLE test LOGIN PASSWORD ''", NOOP);
     }
 
-    postgresJdbc.execute("CREATE SCHEMA IF NOT EXISTS AUTHORIZATION test ", NOOP);
+    // PostgreSQL 15+ revoked CREATE on public schema from PUBLIC; grant it explicitly
+    final JdbcRunner testDbJdbc =
+        new JdbcRunner(newEmbeddedPostgresql.getDatabase("postgres", "test"));
+    testDbJdbc.execute("GRANT CREATE ON SCHEMA public TO test", NOOP);
 
     return newEmbeddedPostgresql;
   }

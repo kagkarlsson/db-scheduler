@@ -37,17 +37,14 @@ public class MaxRetriesMain extends Example {
     OneTimeTask<Void> failingTask =
         Tasks.oneTime(MAX_RETRIES_TASK)
             .onFailure(
-                new FailureHandler.MaxRetriesFailureHandler<>(
-                    3,
-                    (executionComplete, executionOperations) -> {
-                      // try again in 1 second
-                      System.out.println(
-                          "Execution has failed "
-                              + executionComplete.getExecution().consecutiveFailures
-                              + " times. Trying again in a bit...");
-                      executionOperations.reschedule(
-                          executionComplete, Instant.now().plusSeconds(1));
-                    }))
+                FailureHandler.<Void>maxRetries(3)
+                    .retryEvery(Duration.ofSeconds(1))
+                    .thenRemove(
+                        complete ->
+                            System.out.println(
+                                "Execution has failed "
+                                    + complete.getExecution().consecutiveFailures
+                                    + " times. Giving up.")))
             .execute(
                 (taskInstance, executionContext) -> {
                   throw new RuntimeException("simulated task exception");

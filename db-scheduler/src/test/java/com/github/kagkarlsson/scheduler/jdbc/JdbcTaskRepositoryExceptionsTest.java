@@ -14,6 +14,7 @@ import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
+import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
@@ -42,7 +43,14 @@ public class JdbcTaskRepositoryExceptionsTest {
     expectedTableName = randomAlphanumeric(5);
     jdbcTaskRepository =
         new JdbcTaskRepository(
-            null, expectedTableName, null, null, null, mockJdbcRunner, false, new SystemClock());
+            new DefaultJdbcCustomization(false),
+            expectedTableName,
+            null,
+            null,
+            Serializer.DEFAULT_JAVA_SERIALIZER,
+            mockJdbcRunner,
+            false,
+            new SystemClock());
   }
 
   @Test
@@ -153,21 +161,7 @@ public class JdbcTaskRepositoryExceptionsTest {
   @ValueSource(ints = {0, 2})
   public void rescheduleUpdatesUnexpectedNumberOfRowsWithoutNewData(int updateCount) {
     when(mockJdbcRunner.execute(
-            ArgumentMatchers.eq(
-                "update "
-                    + expectedTableName
-                    + " set "
-                    + "picked = ?, "
-                    + "picked_by = ?, "
-                    + "last_heartbeat = ?, "
-                    + "last_success = ?, "
-                    + "last_failure = ?, "
-                    + "consecutive_failures = ?, "
-                    + "execution_time = ?, "
-                    + "version = version + 1 "
-                    + "where task_name = ? "
-                    + "and task_instance = ? "
-                    + "and version = ?"),
+            ArgumentMatchers.startsWith("UPDATE " + expectedTableName + " SET "),
             any(PreparedStatementSetter.class)))
         .thenReturn(updateCount);
 
@@ -198,22 +192,7 @@ public class JdbcTaskRepositoryExceptionsTest {
   @ValueSource(ints = {0, 2})
   public void rescheduleUpdatesUnexpectedNumberOfRowsWithNewData(int updateCount) {
     when(mockJdbcRunner.execute(
-            ArgumentMatchers.eq(
-                "update "
-                    + expectedTableName
-                    + " set "
-                    + "picked = ?, "
-                    + "picked_by = ?, "
-                    + "last_heartbeat = ?, "
-                    + "last_success = ?, "
-                    + "last_failure = ?, "
-                    + "consecutive_failures = ?, "
-                    + "execution_time = ?, "
-                    + "task_data = ?, "
-                    + "version = version + 1 "
-                    + "where task_name = ? "
-                    + "and task_instance = ? "
-                    + "and version = ?"),
+            ArgumentMatchers.startsWith("UPDATE " + expectedTableName + " SET "),
             any(PreparedStatementSetter.class)))
         .thenReturn(updateCount);
 

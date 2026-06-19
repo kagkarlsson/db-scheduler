@@ -23,6 +23,7 @@ import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
+import com.github.kagkarlsson.scheduler.stats.StatsRegistryAdapter;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.Task;
 import java.io.ByteArrayInputStream;
@@ -78,7 +79,7 @@ public final class DbSchedulerConfigurationSupport {
     builder.pollingInterval(config.getPollingInterval());
 
     if (config.getPollingStrategy() == PollingStrategyConfig.Type.FETCH) {
-      builder.pollUsingFetchAndLockOnExecute(
+      builder.pollUsingFetch(
           config.getPollingStrategyLowerLimitFractionOfThreads(),
           config.getPollingStrategyUpperLimitFractionOfThreads());
     } else if (config.getPollingStrategy() == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
@@ -121,7 +122,7 @@ public final class DbSchedulerConfigurationSupport {
 
     builder.deleteUnresolvedAfter(config.getDeleteUnresolvedAfter());
     builder.startTasks(startupTasks(configuredTasks));
-    builder.statsRegistry(registry);
+    builder.addSchedulerListener(new StatsRegistryAdapter(registry));
     builder.failureLogging(config.getFailureLoggerLevel(), config.isFailureLoggerLogStackTrace());
     builder.shutdownMaxWait(config.getShutdownMaxWait());
 

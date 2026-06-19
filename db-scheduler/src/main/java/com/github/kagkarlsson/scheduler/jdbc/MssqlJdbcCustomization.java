@@ -15,11 +15,10 @@ package com.github.kagkarlsson.scheduler.jdbc;
 
 import static com.github.kagkarlsson.scheduler.jdbc.Queries.selectForUpdate;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
-  private static final Logger LOG = LoggerFactory.getLogger(MssqlJdbcCustomization.class);
 
   public MssqlJdbcCustomization() {
     super(true);
@@ -27,12 +26,12 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
 
   public MssqlJdbcCustomization(boolean persistTimestampInUTC) {
     super(persistTimestampInUTC);
-    if (!persistTimestampInUTC) {
-      LOG.warn(
-          "{} must explicitly specify timezone when persisting a timestamp. "
-              + "Persisting timestamp with undefined timezone is not recommended and will likely cause issues",
-          getClass().getName());
-    }
+    warnIfNotPersistingInUTC(persistTimestampInUTC, getClass());
+  }
+
+  @Override
+  public void setTaskData(PreparedStatement p, int index, byte[] value) throws SQLException {
+    p.setBytes(index, value);
   }
 
   @Override

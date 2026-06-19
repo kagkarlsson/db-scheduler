@@ -76,7 +76,7 @@ class ScheduleRecurringOnStartup<T> implements ScheduleOnStartup<T> {
           "Creating initial execution for task-instance '{}'. Next execution-time: {}",
           instanceWithoutData,
           initialExecutionTime);
-      scheduler.schedule(getSchedulableInstance(task), initialExecutionTime);
+      scheduler.scheduleIfNotExists(getSchedulableInstance(task), initialExecutionTime);
     }
   }
 

@@ -21,10 +21,6 @@
     <module>db-scheduler-spring-boot4-starter</module>
   </modules>
 
-  <properties>
-    <spring-boot-3.version>${spring-boot.version}</spring-boot-3.version>
-  </properties>
-
   <dependencyManagement>
     <dependencies>
       <dependency>

@@ -67,6 +67,7 @@ public class TestHelper {
       return this;
     }
 
+    @SuppressWarnings("deprecation")
     public ManualSchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
       super.statsRegistry = statsRegistry;
       return this;
@@ -136,6 +137,7 @@ public class TestHelper {
           heartbeatInterval,
           enableImmediateExecution,
           List.of(new StatsRegistryAdapter(statsRegistry)),
+          executionInterceptors,
           Optional.ofNullable(pollingStrategyConfig).orElse(PollingStrategyConfig.DEFAULT_FETCH),
           deleteUnresolvedAfter,
           LogLevel.DEBUG,

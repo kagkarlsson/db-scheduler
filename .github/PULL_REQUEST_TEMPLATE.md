@@ -1,14 +1,13 @@
-## Brief, plain english overview of your changes here
+<Brief, plain english overview of your changes here>
 
-## Fixes
+Fixes #issue-nr (if applicable)
 
-<!--- Which issue # does this fix? --->
-
-## Reminders
+#### Reminders
 
 - [ ] Added/ran automated tests
 - [ ] Update README and/or examples
 - [ ] Ran `mvn spotless:apply`
+- [ ] If AI tools were used, disclosed per the [AI Contribution Policy](../AI_POLICY.md)
 
 ---
 

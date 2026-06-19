@@ -25,28 +25,27 @@ import java.util.function.Consumer;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.Version;
 import tools.jackson.databind.MapperFeature;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleModule;
 
 public class Jackson3Serializer implements Serializer {
-  private final ObjectMapper objectMapper;
+  private final JsonMapper jsonMapper;
 
   public Jackson3Serializer() {
-    this(getDefaultObjectMapper());
+    this(getDefaultJsonMapper());
   }
 
-  public Jackson3Serializer(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
+  public Jackson3Serializer(JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
   }
 
-  public Jackson3Serializer(Consumer<ObjectMapper> objectMapperCustomizer) {
-    ObjectMapper defaultObjectMapper = getDefaultObjectMapper();
-    objectMapperCustomizer.accept(defaultObjectMapper);
-    this.objectMapper = defaultObjectMapper;
+  public Jackson3Serializer(Consumer<JsonMapper> jsonMapperCustomizer) {
+    JsonMapper defaultJsonMapper = getDefaultJsonMapper();
+    jsonMapperCustomizer.accept(defaultJsonMapper);
+    this.jsonMapper = defaultJsonMapper;
   }
 
-  public static ObjectMapper getDefaultObjectMapper() {
+  public static JsonMapper getDefaultJsonMapper() {
     SimpleModule module = new SimpleModule("CustomInstantModule", Version.unknownVersion());
     module.addSerializer(Instant.class, new InstantSerializer());
     module.addDeserializer(Instant.class, new InstantDeserializer());
@@ -62,7 +61,7 @@ public class Jackson3Serializer implements Serializer {
   @Override
   public byte[] serialize(Object object) {
     try {
-      return objectMapper.writeValueAsBytes(object);
+      return jsonMapper.writeValueAsBytes(object);
     } catch (JacksonException e) {
       throw new SerializationException("Failed to serialize object.", e);
     }
@@ -71,7 +70,7 @@ public class Jackson3Serializer implements Serializer {
   @Override
   public <T> T deserialize(Class<T> clazz, byte[] serializedData) {
     try {
-      return objectMapper.readValue(serializedData, clazz);
+      return jsonMapper.readValue(serializedData, clazz);
     } catch (JacksonException e) {
       throw new SerializationException("Failed to deserialize object.", e);
     }

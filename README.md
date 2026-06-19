@@ -1,7 +1,8 @@
 # db-scheduler
 
-![build status](https://github.com/kagkarlsson/db-scheduler/workflows/build/badge.svg)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.github.kagkarlsson/db-scheduler)
+[![build status](https://github.com/kagkarlsson/db-scheduler/actions/workflows/ci.yml/badge.svg)](https://github.com/kagkarlsson/db-scheduler/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.kagkarlsson/db-scheduler)](https://central.sonatype.com/artifact/com.github.kagkarlsson/db-scheduler)
+[![codecov](https://codecov.io/gh/kagkarlsson/db-scheduler/graph/badge.svg)](https://codecov.io/gh/kagkarlsson/db-scheduler)
 [![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 Task-scheduler for Java that was inspired by the need for a clustered `java.util.concurrent.ScheduledExecutorService` simpler than Quartz.
@@ -12,30 +13,33 @@ As such, also appreciated by users ([cbarbosa2](https://github.com/kagkarlsson/d
 >
 > [cbarbosa2](https://github.com/cbarbosa2)
 
-See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
+Used in production by Digipost, Wise, TOMRA and [others](#who-uses-db-scheduler).
 
 ## Features
 
 * **Cluster-friendly**. Guarantees execution by single scheduler instance.
 * **Persistent** tasks. Requires a _single_ database-table for persistence.
 * **Embeddable**. Built to be embedded in existing applications.
-* **High throughput**. Tested to handle 2k - 10k executions / second. [Link](#benchmark-test).
+* **High throughput**. Tested to handle 2k - 10k executions / second. [Link](docs/performance.md).
 * **Simple**.
 * **Minimal dependencies**. (slf4j)
 
 ## Table of contents
 
-* [Getting started](#getting-started)
-* [Who uses db-scheduler?](#who-uses-db-scheduler)
-* [Examples](#examples)
-* [Configuration](#configuration)
-* [Third-party extensions](#third-party-extensions)
-* [Spring Boot usage](#spring-boot-usage)
-* [Interacting with scheduled executions using the SchedulerClient](#interacting-with-scheduled-executions-using-the-schedulerclient)
-* [How it works](#how-it-works)
-* [Performance](#performance)
-* [Versions / upgrading](#versions--upgrading)
-* [FAQ](#faq)
+[Requirements](#requirements) · [Getting started](#getting-started) · [Examples](#examples) ·
+[Databases](#database-compatibility) · [Configuration](#configuration) ·
+[Extensions](#third-party-extensions) · [Spring Boot](#spring-boot-usage) ·
+[SchedulerClient](#interacting-with-scheduled-executions-using-the-schedulerclient) ·
+[How it works](#how-it-works) · [Performance](docs/performance.md) ·
+[Things to note](#things-to-note--gotchas) · [Upgrading](#versions--upgrading) ·
+[Building](#building-the-source) · [Who uses it](#who-uses-db-scheduler) · [FAQ](#faq)
+
+## Requirements
+
+* **Java 17+** (since v16.x).
+* A relational database and a single `scheduled_tasks` table.
+
+See [Database compatibility](#database-compatibility) for supported database engines and per-engine feature support.
 
 ## Getting started
 
@@ -45,11 +49,13 @@ See also [why not Quartz?](#why-db-scheduler-when-there-is-quartz)
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>16.7.0</version>
+    <version>16.11.0</version>
 </dependency>
 ```
 
-2. Create the `scheduled_tasks` table in your database-schema. See table definition for [postgresql](db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](db-scheduler/src/test/resources/oracle_tables.sql), [mssql](db-scheduler/src/test/resources/mssql_tables.sql) or [mysql](db-scheduler/src/test/resources/mysql_tables.sql).
+_Replace the version with the latest, shown in the Maven Central badge above._
+
+2. Create the `scheduled_tasks` table in your database-schema. See [Database compatibility](#database-compatibility) for a list of supported databases and the table definitions (DDL).
 
 3. Instantiate and start the scheduler, which then will start any defined recurring tasks.
 
@@ -62,7 +68,6 @@ RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.of
 final Scheduler scheduler = Scheduler
         .create(dataSource)
         .startTasks(hourlyTask)
-        .threads(5)
         .build();
 
 // hourlyTask is automatically scheduled on startup if not already started (i.e. exists in the db)
@@ -70,29 +75,6 @@ scheduler.start();
 ```
 
 For more examples, continue reading. For details on the inner workings, see [How it works](#how-it-works). If you have a Spring Boot application, have a look at [Spring Boot Usage](#spring-boot-usage).
-
-## Who uses db-scheduler?
-
-List of organizations known to be running db-scheduler in production:
-
-|                   Company                    |                                                                 Description                                                                 |
-|----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| [Digipost](https://digipost.no)              | Provider of digital mailboxes in Norway                                                                                                     |
-| [Vy Group](https://www.vy.no/en)             | One of the largest transport groups in the Nordic countries.                                                                                |
-| [Wise](https://wise.com/)                    | A cheap, fast way to send money abroad.                                                                                                     |
-| Becker Professional Education                |                                                                                                                                             |
-| [Monitoria](https://monitoria.ca)            | Website monitoring service.                                                                                                                 |
-| [Loadster](https://loadster.app)             | Load testing for web applications.                                                                                                          |
-| [Statens vegvesen](https://www.vegvesen.no/) | The Norwegian Public Roads Administration                                                                                                   |
-| [Lightyear](https://lightyear.com/)          | A simple and approachable way to invest your money globally.                                                                                |
-| [NAV](https://www.nav.no/)                   | The Norwegian Labour and Welfare Administration                                                                                             |
-| [ModernLoop](https://modernloop.io/)         | Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination. |
-| [Diffia](https://www.diffia.com/)            | Norwegian eHealth company                                                                                                                   |
-| [Swan](https://www.swan.io/)                 | Swan helps developers to embed banking services easily into their product.                                                                  |
-| [TOMRA](https://www.tomra.com/)              | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling.                            |
-| [Kartverket](https://kartverket.no/)         | The Norwegian Mapping Authority.                                                                                                            |
-
-Feel free to open a PR to add your organization to the list.
 
 ## Examples
 
@@ -111,6 +93,7 @@ RecurringTask<Void> hourlyTask = Tasks.recurring("my-hourly-task", FixedDelay.of
 final Scheduler scheduler = Scheduler
         .create(dataSource)
         .startTasks(hourlyTask)
+        .threads(5)
         .registerShutdownHook()
         .build();
 
@@ -180,7 +163,7 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 | [SpawningOtherTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SpawningOtherTasksMain.java)                                                   | Demonstrates on task scheduling instances of another by using the `executionContext.getSchedulerClient()`.                                                                                                              |
 | [SchedulerClientMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/SchedulerClientMain.java)                                                         | Demonstrates some of the `SchedulerClient`'s capabilities. Scheduling, fetching scheduled executions etc.                                                                                                               |
 | [RecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/RecurringTaskWithPersistentScheduleMain.java)                 | Multi-instance recurring jobs where the `Schedule` is stored as part of the `task_data`. For example suitable for multi-tenant applications where each tenent should have a recurring task.                             |
-| [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java) |                                                                                                                                                                                                                         |
+| [StatefulRecurringTaskWithPersistentScheduleMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/StatefulRecurringTaskWithPersistentScheduleMain.java) | Combines a dynamic recurring task (schedule persisted in `task_data`) with **stateful** execution — the returned data is updated and persisted after each run.                                                          |
 | [JsonSerializerMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JsonSerializerMain.java)                                                           | Overrides serialization of `task_data` from Java-serialization (default) to JSON.                                                                                                                                       |
 | [JobChainingUsingTaskDataMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingTaskDataMain.java)                                       | Job chaining, i.e. "when this instance is done executing, schedule another task.                                                                                                                                        |
 | [JobChainingUsingSeparateTasksMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/JobChainingUsingSeparateTasksMain.java)                             | Job chaining, as above.                                                                                                                                                                                                 |
@@ -198,6 +181,29 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 | [JobChaining](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/JobChainingConfiguration.java)                           | A one-time job with **multiple steps**. The next step is scheduled after the previous one completes.                                                                                                                                        |
 | [MultiInstanceRecurring](./examples/spring-boot-example/src/main/java/com/github/kagkarlsson/examples/boot/config/MultiInstanceRecurringConfiguration.java)     | Demonstrates how to achieve **multiple recurring jobs** of the same type, but potentially differing schedules and data.                                                                                                                     |
 
+## Database compatibility
+
+|                     Database (see link for DDL)                     | `fetch` |   `lock-and-fetch`   |                      Notes                      |
+|---------------------------------------------------------------------|:-------:|:--------------------:|-------------------------------------------------|
+| [PostgreSQL](db-scheduler/src/test/resources/postgresql_tables.sql) |    ✅    | ✅ (single-statement) |                                                 |
+| [SQL Server](db-scheduler/src/test/resources/mssql_tables.sql)      |    ✅    |     ✅ (generic)      | Always transfers timestamps in UTC.             |
+| [MySQL 8+](db-scheduler/src/test/resources/mysql_tables.sql)        |    ✅    |     ✅ (generic)      | Requires `.alwaysPersistTimestampInUTC()`.      |
+| [MariaDB](db-scheduler/src/test/resources/mariadb_tables.sql)       |    ✅    |          —           | Requires `.alwaysPersistTimestampInUTC()`.      |
+| [Oracle](db-scheduler/src/test/resources/oracle_tables.sql)         |    ✅    |          —           | Prefer default schema which uses `TIMESTAMPTZ`. |
+| [MySQL 5.x](db-scheduler/src/test/resources/mysql_tables.sql)       |    ✅    |          —           |                                                 |
+| [SQLite](db-scheduler/src/test/resources/sqlite_tables.sql)         |    ✅    |          —           |                                                 |
+| [HSQLDB](db-scheduler/src/test/resources/hsql_tables.sql)           |    ✅    |          —           | Typically used for testing / in-memory.         |
+
+See [Polling strategy](#polling-strategy) for `fetch` vs `lock-and-fetch`, and
+[`.alwaysPersistTimestampInUTC()`](#consider-tuning) for timestamp-handling details.
+
+**Other databases:** db-scheduler may still work on engines not listed here. You need to
+(1) create the `scheduled_tasks` table using DDL compatible with your engine, and
+(2) if any jdbc-customization is required, supply a custom
+[`JdbcCustomization`](#less-commonly-tuned) via `.jdbcCustomization(...)`. The default fallback
+assumes timestamps can be get/set via `get/setObject(OffsetDateTime)`; if not, also enable
+`.alwaysPersistTimestampInUTC()`.
+
 ## Configuration
 
 ### Scheduler configuration
@@ -213,15 +219,18 @@ Number of threads. Default `10`.
 How often the scheduler checks the database for due executions. Default `10s`.<br/>
 
 :gear: `.alwaysPersistTimestampInUTC()`<br/>
-The Scheduler assumes that columns for persisting timestamps persist `Instant`s, not `LocalDateTime`s,
-i.e. somehow tie the timestamp to a zone. However, some databases have limited support for such types
-(which has no zone information) or other quirks, making "always store in UTC" a better alternative.
-For such cases, use this setting to always store Instants in UTC.
-PostgreSQL and Oracle-schemas is tested to preserve zone-information. **MySQL** and **MariaDB**-schemas
-_does not_ and should use this setting.
-**NB:** For backwards compatibility, the default behavior
-for "unknown" databases is to assume the database preserves time zone. For "known" databases,
-see the class `AutodetectJdbcCustomization`.
+Always transfer timestamps using UTC zone. By default the Scheduler assumes that the underlying database-schema stores instants,
+i.e. somehow ties timestamps to zones. However, some databases have limited support for this
+or other quirks, requiring overriding how timestamps are transferred and stored.
+For such cases, use this setting to always transfer, store and retrieve Instants in UTC.
+**SQL Server** always persists in UTC regardless of this setting.
+**MySQL** and **MariaDB** use a zone-less `TIMESTAMP` type and must enable this setting.
+Upgrading an existing installation requires a controlled migration:
+stop all scheduler instances, migrate existing timestamps to UTC, then restart with `.alwaysPersistTimestampInUTC()` set.
+**Oracle** default schema uses a `TIMESTAMPTZ` type which preserves timezone — only use this override
+if for some reason using plain `TIMESTAMP` types.
+**NB:** The default behavior for "unknown" databases is to assume that timestamps can be get/set reliably
+using `get/setObject(OffsetDateTime)`. For "known" databases, see the class `AutodetectJdbcCustomization`.
 
 :gear: `.enableImmediateExecution()`<br/>
 If this is enabled, the scheduler will attempt to hint to the local `Scheduler` that there are executions to be executed after they are scheduled to
@@ -276,10 +285,10 @@ as they do not support descending indexes.
 #### Polling strategy
 
 If you are running >1000 executions/s you might want to use the `lock-and-fetch` polling-strategy for lower overhead
-and higher throughput ([read more](#polling-strategy-lock-and-fetch)). If not, the default `fetch-and-lock-on-execute` will be fine.
+and higher throughput ([read more](docs/performance.md#polling-strategy-lock-and-fetch)). If not, the default `fetch` will be fine.
 
-:gear: `.pollUsingFetchAndLockOnExecute(double, double)`<br/>
-Use default polling strategy `fetch-and-lock-on-execute`.<br/>
+:gear: `.pollUsingFetch(double, double)`<br/>
+Use default polling strategy `fetch`.<br/>
 If the last fetch from the database was a full batch (`executionsPerBatchFractionOfThreads`), a new fetch will be triggered
 when the number of executions left are less than or equal to `lowerLimitFractionOfThreads * nr-of-threads`.
 Fetched executions are not locked/picked, so the scheduler will compete with other instances for the lock
@@ -324,14 +333,14 @@ the table. Default `scheduled_tasks`.
 :gear: `.serializer(Serializer)`<br/>
 Serializer implementation to use when serializing task data. Default to using standard Java serialization,
 but db-scheduler also bundles a `GsonSerializer` and `JacksonSerializer`. See examples for a [KotlinSerializer](https://github.com/kagkarlsson/db-scheduler/blob/master/examples/features/src/main/java/com/github/kagkarlsson/examples/kotlin/KotlinSerializer.kt).
-See also additional documentation under [Serializers](#Serializers).
+See also additional documentation under [Serializers](#serializers).
 
 :gear: `.executorService(ExecutorService)`<br/>
 If specified, use this externally managed executor service to run executions. Ideally, the number of threads it
 will use should still be supplied (for scheduler polling optimizations). Default `null`.
 
 :gear: `.deleteUnresolvedAfter(Duration)`<br/>
-The time after which executions with unknown tasks are automatically deleted. These can typically be old recurring
+The time after which executions with unresolved tasks are automatically deleted. These can typically be old recurring
 tasks that are not in use anymore. This is non-zero to prevent accidental removal of tasks through a configuration
 error (missing known-tasks) and problems during rolling upgrades. Default `14d`.
 
@@ -352,11 +361,11 @@ this kind of logging completely. Default `WARN, true`.
 
 Tasks are created using one of the builder-classes in `Tasks`. The builders have sensible defaults, but the following options can be overridden.
 
-|                  Option                  |        Default        |                                                                                   Description                                                                                   |
-|------------------------------------------|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `.onFailure(FailureHandler)`             | see desc.             | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule` _one-time tasks_ are retried again in 5m. |
-| `.onDeadExecution(DeadExecutionHandler)` | `ReviveDeadExecution` | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`.                     |
-| `.initialData(T initialData)`            | `null`                | The data to use the first time a _recurring task_ is scheduled.                                                                                                                 |
+|                  Option                  |        Default        |                                                                                   Description                                                                                    |
+|------------------------------------------|-----------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `.onFailure(FailureHandler)`             | see desc.             | What to do when a `ExecutionHandler` throws an exception. By default, _Recurring tasks_ are rescheduled according to their `Schedule`. _One-time tasks_ are retried again in 5m. |
+| `.onDeadExecution(DeadExecutionHandler)` | `ReviveDeadExecution` | What to do when a _dead executions_ is detected, i.e. an execution with a stale heartbeat timestamp. By default dead executions are rescheduled to `now()`.                      |
+| `.initialData(T initialData)`            | `null`                | The data to use the first time a _recurring task_ is scheduled.                                                                                                                  |
 
 ### Schedules
 
@@ -429,7 +438,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
    <dependency>
        <groupId>com.github.kagkarlsson</groupId>
        <artifactId>db-scheduler-spring-boot-4-starter</artifactId>
-       <version>16.7.0</version>
+       <version>16.11.0</version>
    </dependency>
    ```
 
@@ -453,9 +462,6 @@ db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
 db-scheduler.missed-heartbeats-limit=6
 db-scheduler.polling-interval=10s
-db-scheduler.polling-strategy=fetch
-db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
-db-scheduler.polling-strategy-upper-limit-fraction-of-threads=3.0
 db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
 db-scheduler.scheduler-name=
@@ -532,7 +538,7 @@ Create using `Tasks.recurringWithPersistentSchedule(..)`.
 ### One-time tasks
 
 The term _one-time task_ is used for tasks that have a single execution-time.
-In addition to encode data into the `instanceId`of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time. By default, Java serialization is used to marshal/unmarshal the data.
+In addition to encoding data into the `instanceId` of a task-execution, it is possible to store arbitrary binary data in a separate field for use at execution-time. By default, Java serialization is used to marshal/unmarshal the data.
 
 Create using `Tasks.oneTime(..)`.
 
@@ -552,70 +558,20 @@ If an execution is marked as executing, but is not receiving updates to the hear
 it will be considered a _dead execution_ after time X. That may, for example, happen if the
 JVM running the scheduler suddenly exits.
 
-When a dead execution is found, the `Task`is consulted to see what should be done. A dead
+When a dead execution is found, the `Task` is consulted to see what should be done. A dead
 `RecurringTask` is typically rescheduled to `now()`.
 
-## Performance
+### Unresolved tasks
 
-While db-scheduler initially was targeted at low-to-medium throughput use-cases, it handles high-throughput use-cases (1000+ executions/second) quite well
-due to the fact that its data-model is very simple, consisting of a single table of executions.
-To understand how it will perform, it is useful to consider the SQL statements it runs per batch of executions.
+If a task instance is found in the database but the corresponding task definition is not registered in the service (e.g., during due execution or dead execution housekeeping), it is treated as an unresolved task (see [`TaskResolver`](https://github.com/kagkarlsson/db-scheduler/blob/master/db-scheduler/src/main/java/com/github/kagkarlsson/scheduler/TaskResolver.java)).
 
-### Polling strategy fetch-and-lock-on-execute
+Behavior of unresolved tasks:
 
-The original and default polling strategy, `fetch-and-lock-on-execute`, will do the following:
-1. `select` a batch of due executions
-2. For every execution, on execute, try to `update` the execution to `picked=true` for this scheduler-instance. May miss due to competing schedulers.
-3. If execution was picked, when execution is done, `update` or `delete` the record according to handlers.
+* They are excluded from polling — the current instance will not attempt to pick or execute them.
+* They remain in the database so other instances (e.g., newer versions in a rolling update or canary deployment) can pick and process them.
+* They are **automatically removed** after a configured retention period `deleteUnresolvedAfter`, if they remain unresolved.
 
-In sum per batch: 1 select, 2 * batch-size updates   (excluding misses)
-
-### Polling strategy lock-and-fetch
-
-In v10, a new polling strategy (`lock-and-fetch`) was added. It utilizes the fact that most databases now have support for `SKIP LOCKED` in `SELECT FOR UPDATE` statements (see [2ndquadrant blog](https://www.2ndquadrant.com/en/blog/what-is-select-skip-locked-for-in-postgresql-9-5/)).
-Using such a strategy, it is possible to fetch executions pre-locked, and thus getting one statement less:
-
-1. `select for update .. skip locked` a batch of due executions. These will already be picked by the scheduler-instance.
-2. When execution is done, `update` or `delete` the record according to handlers.
-
-In sum per batch: 1 select-and-update, 1 * batch-size updates (no misses)
-
-### Benchmark test
-
-To get an idea of what to expect from db-scheduler, see results from the tests run in GCP below.
-Tests were run with a few different configurations, but each using 4 competing scheduler-instances running on separate VMs.
-TPS is the approx. transactions per second as shown in GCP.
-
-|                                        | Throughput fetch (ex/s) | TPS fetch (estimates) | Throughput lock-and-fetch (ex/s) | TPS lock-and-fetch (estimates) |
-|----------------------------------------|-------------------------|-----------------------|----------------------------------|--------------------------------|
-| Postgres 4core 25gb ram, 4xVMs(2-core) |                         |                       |                                  |                                |
-| 20 threads, lower 4.0, upper 20.0      | 2000                    | 9000                  | 10600                            | 11500                          |
-| 100 threads, lower 2.0, upper 6.0      | 2560                    | 11000                 | 11200                            | 11200                          |
-|                                        |                         |                       |                                  |                                |
-| Postgres 8core 50gb ram, 4xVMs(4-core) |                         |                       |                                  |                                |
-| 50 threads, lower: 0.5, upper: 4.0     | 4000                    | 22000                 | 11840                            | 10300                          |
-|                                        |                         |                       |                                  |                                |
-
-Observations for these tests:
-
-* For `fetch-and-lock-on-execute`
-  * TPS ≈ 4-5 * execution-throughput. A bit higher than the best-case 2 * execution-throughput, likely due the inefficiency of missed executions.
-  * throughput did scale with postgres instance-size, from 2000 executions/s on 4core to 4000 executions/s on 8core
-* For `lock-and-fetch`
-  * TPS ≈ 1 * execution-throughput. As expected.
-  * seem to consistently handle 10k executions/s for these configurations
-  * throughput did not scale with postgres instance-size (4-8 core), so bottleneck is somewhere else
-
-Currently, polling strategy `lock-and-fetch` is implemented only for Postgres. Contributions adding support for more databases are welcome.
-
-### User testimonial
-
-There are a number of users that are using db-scheduler for high throughput use-cases. See for example:
-
-* https://github.com/kagkarlsson/db-scheduler/issues/209#issuecomment-1026699872
-* https://github.com/kagkarlsson/db-scheduler/issues/190#issuecomment-805867950
-
-### Things to note / gotchas
+## Things to note / gotchas
 
 * There are no guarantees that all instants in a schedule for a `RecurringTask` will be executed. The `Schedule` is consulted after the previous task-execution finishes, and the closest time in the future will be selected for next execution-time. A new type of task may be added in the future to provide such functionality.
 
@@ -625,31 +581,8 @@ There are a number of users that are using db-scheduler for high throughput use-
 
 ## Versions / upgrading
 
-See [releases](https://github.com/kagkarlsson/db-scheduler/releases) for release-notes.
-
-**Upgrading to 16.x**
-* Java 17+ is required now, since we migrated our codebase to Java 17
-
-**Upgrading to 15.x**
-* Priority is a new opt-in feature. To be able to use it, column `priority` and index `priority_execution_time_idx`
-must be added to the database schema. See table definitions for
-[postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql),
-[oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or
-[mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
-At some point, this column will be made mandatory. This will be made clear in future release/upgrade-notes.
-
-**Upgrading to 8.x**
-* Custom Schedules must implement a method `boolean isDeterministic()` to indicate whether they will always produce the same instants or not.
-
-**Upgrading to 4.x**
-* Add column `consecutive_failures` to the database schema. See table definitions for [postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](./db-scheduler/src/test/resources/mysql_tables.sql). `null` is handled as 0, so no need to update existing records.
-
-**Upgrading to 3.x**
-* No schema changes
-* Task creation are preferably done through builders in `Tasks` class
-
-**Upgrading to 2.x**
-* Add column `task_data` to the database schema. See table definitions for [postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql), [oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or [mysql](./db-scheduler/src/test/resources/mysql_tables.sql).
+See [UPGRADING.md](UPGRADING.md) for version-specific upgrade notes (schema changes etc.),
+and [releases](https://github.com/kagkarlsson/db-scheduler/releases) for full release-notes.
 
 ## Building the source
 
@@ -678,6 +611,29 @@ Some users have experienced intermittent test failures when running on a single-
 
 - 2 cores
 - 2GB RAM
+
+## Who uses db-scheduler?
+
+List of organizations known to be running db-scheduler in production:
+
+|                   Company                    |                                                                 Description                                                                 |
+|----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| [Digipost](https://digipost.no)              | Provider of digital mailboxes in Norway                                                                                                     |
+| [Vy Group](https://www.vy.no/en)             | One of the largest transport groups in the Nordic countries.                                                                                |
+| [Wise](https://wise.com/)                    | A cheap, fast way to send money abroad.                                                                                                     |
+| Becker Professional Education                |                                                                                                                                             |
+| [Monitoria](https://monitoria.ca)            | Website monitoring service.                                                                                                                 |
+| [Loadster](https://loadster.app)             | Load testing for web applications.                                                                                                          |
+| [Statens vegvesen](https://www.vegvesen.no/) | The Norwegian Public Roads Administration                                                                                                   |
+| [Lightyear](https://lightyear.com/)          | A simple and approachable way to invest your money globally.                                                                                |
+| [NAV](https://www.nav.no/)                   | The Norwegian Labour and Welfare Administration                                                                                             |
+| [ModernLoop](https://modernloop.io/)         | Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination. |
+| [Diffia](https://www.diffia.com/)            | Norwegian eHealth company                                                                                                                   |
+| [Swan](https://www.swan.io/)                 | Swan helps developers to embed banking services easily into their product.                                                                  |
+| [TOMRA](https://www.tomra.com/)              | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling.                            |
+| [Kartverket](https://kartverket.no/)         | The Norwegian Mapping Authority.                                                                                                            |
+
+Feel free to open a PR to add your organization to the list.
 
 ## FAQ
 
