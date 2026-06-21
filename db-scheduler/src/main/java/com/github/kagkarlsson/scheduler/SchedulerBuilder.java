@@ -311,10 +311,12 @@ public class SchedulerBuilder {
     }
 
     Waiter waiter = buildWaiter();
+    String executorThreadsConfig =
+        executorService == null ? "threads=" + executorThreads + ", " : "";
 
     LOG.info(
-        "Creating scheduler with configuration: threads={}, pollInterval={}s, heartbeat={}s, enable-immediate-execution={}, enable-priority={}, table-name={}, name={}",
-        executorThreads,
+        "Creating scheduler with configuration: {}pollInterval={}s, heartbeat={}s, enable-immediate-execution={}, enable-priority={}, table-name={}, name={}",
+        executorThreadsConfig,
         waiter.getWaitDuration().getSeconds(),
         heartbeatInterval.getSeconds(),
         enableImmediateExecution,
