@@ -11,8 +11,11 @@ import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
+import java.util.function.UnaryOperator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.json.JsonMapper.Builder;
 
 public class Jackson3SerializerTest {
 
@@ -93,4 +96,39 @@ public class Jackson3SerializerTest {
         deserialized.getSchedule().getInitialExecutionTime(now));
     assertEquals(50, deserialized.getData());
   }
+
+  @Test
+  public void serialize_enum_with_custom_configuration() {
+    UnaryOperator<Builder> customizer =
+        b ->
+            b.disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+                .disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING);
+
+    Jackson3Serializer customSerializer = new Jackson3Serializer(customizer);
+
+    DataWithEnum data = new DataWithEnum(TestEnum.FOO);
+    assertEquals(
+        data, customSerializer.deserialize(DataWithEnum.class, customSerializer.serialize(data)));
+  }
+
+  private enum TestEnum {
+    FOO("foo_value");
+
+    private final String value;
+
+    TestEnum(String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return "TestEnum{" + "value='" + value + '\'' + '}';
+    }
+  }
+
+  private record DataWithEnum(TestEnum value) {}
 }

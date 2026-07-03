@@ -21,11 +21,12 @@ import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.serializer.jackson.ScheduleMixin;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import java.time.Instant;
-import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.Version;
 import tools.jackson.databind.MapperFeature;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.json.JsonMapper.Builder;
 import tools.jackson.databind.module.SimpleModule;
 
 public class Jackson3Serializer implements Serializer {
@@ -39,13 +40,11 @@ public class Jackson3Serializer implements Serializer {
     this.jsonMapper = jsonMapper;
   }
 
-  public Jackson3Serializer(Consumer<JsonMapper> jsonMapperCustomizer) {
-    JsonMapper defaultJsonMapper = getDefaultJsonMapper();
-    jsonMapperCustomizer.accept(defaultJsonMapper);
-    this.jsonMapper = defaultJsonMapper;
+  public Jackson3Serializer(UnaryOperator<JsonMapper.Builder> jsonMapperCustomizer) {
+    this.jsonMapper = jsonMapperCustomizer.apply(getDefaultJsonMapperBuilder()).build();
   }
 
-  public static JsonMapper getDefaultJsonMapper() {
+  static Builder getDefaultJsonMapperBuilder() {
     SimpleModule module = new SimpleModule("CustomInstantModule", Version.unknownVersion());
     module.addSerializer(Instant.class, new InstantSerializer());
     module.addDeserializer(Instant.class, new InstantDeserializer());
@@ -54,8 +53,11 @@ public class Jackson3Serializer implements Serializer {
         .enable(MapperFeature.ALLOW_FINAL_FIELDS_AS_MUTATORS)
         .changeDefaultVisibility(v -> v.withFieldVisibility(JsonAutoDetect.Visibility.ANY))
         .addMixIn(Schedule.class, ScheduleMixin.class)
-        .addModule(module)
-        .build();
+        .addModule(module);
+  }
+
+  public static JsonMapper getDefaultJsonMapper() {
+    return getDefaultJsonMapperBuilder().build();
   }
 
   @Override
