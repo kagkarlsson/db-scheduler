@@ -42,6 +42,7 @@ public class ExecutionOperations<T> {
 
   public void remove() {
     taskRepository.remove(execution);
+    schedulerListeners.onExecutionRemoved(execution);
   }
 
   public void removeAndScheduleNew(SchedulableInstance<?> schedulableInstance) {

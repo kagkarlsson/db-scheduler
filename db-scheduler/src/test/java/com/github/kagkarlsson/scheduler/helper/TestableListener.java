@@ -22,6 +22,7 @@ public class TestableListener implements SchedulerListener {
           SchedulerEventType.FAILUREHANDLER_ERROR,
           SchedulerEventType.DEAD_EXECUTION);
 
+  private final List<Execution> removed = Collections.synchronizedList(new ArrayList<>());
   private static final Logger LISTENER_LOGGER = LoggerFactory.getLogger(TestableListener.class);
 
   private final List<ExecutionComplete> completed;
@@ -66,6 +67,16 @@ public class TestableListener implements SchedulerListener {
   @Override
   public void onExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting) {
     logOnExecutionFailedHeartbeat(currentlyExecuting);
+  }
+
+  @Override
+  public void onExecutionRemoved(Execution execution) {
+    removed.add(execution);
+    log("Execution removed: " + execution);
+  }
+
+  public List<Execution> getRemoved() {
+    return removed;
   }
 
   @Override
