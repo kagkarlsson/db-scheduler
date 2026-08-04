@@ -973,7 +973,7 @@ public class JdbcTaskRepository implements TaskRepository {
         return delegate.get();
       }
 
-      Supplier<T> delegate = this::firstTime;
+      volatile Supplier<T> delegate = this::firstTime;
     };
   }
 
