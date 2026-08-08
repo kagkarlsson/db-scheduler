@@ -3,6 +3,11 @@
 Version-specific upgrade notes. For the full list of changes per release, see
 [releases](https://github.com/kagkarlsson/db-scheduler/releases).
 
+**Upgrading to 16.13.x**
+* The internal JDBC helpers (`JdbcRunner`, `SQLRuntimeException`, etc.) have moved from
+`com.github.kagkarlsson.shaded.jdbc` to `com.github.kagkarlsson.jdbc`. Unlikely to affect anyone, but if you
+reference these classes directly you will have to update your imports.
+
 **Upgrading to 16.x**
 * Java 17+ is required now, since we migrated our codebase to Java 17
 

@@ -208,10 +208,6 @@
             </filters>
             <relocations>
               <relocation>
-                <pattern>com.github.kagkarlsson.jdbc</pattern>
-                <shadedPattern>com.github.kagkarlsson.shaded.jdbc</shadedPattern>
-              </relocation>
-              <relocation>
                 <pattern>com.cronutils</pattern>
                 <shadedPattern>com.github.kagkarlsson.shaded.cronutils</shadedPattern>
               </relocation>
