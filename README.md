@@ -133,7 +133,7 @@ scheduler.start();
 // Schedule the task for execution a certain time in the future and optionally provide custom data for the execution
 scheduler.schedule(
     MY_TASK
-        .instanceWithId("1045")
+        .instance("1045")
         .data(new MyTaskData(1001L))
         .scheduledTo(Instant.now().plusSeconds(5)));
 ```
