@@ -155,25 +155,18 @@
         </plugin>
       </plugins>
     </pluginManagement>
-  </build>
 
-  <!--  TODO: enable when we get working -->
-  <!--    <build>-->
-  <!--        <pluginManagement>-->
-  <!--          <plugins>-->
-  <!--            <plugin>-->
-  <!--                <groupId>org.apache.maven.plugins</groupId>-->
-  <!--                <artifactId>maven-jar-plugin</artifactId>-->
-  <!--                <version>3.3.0</version>-->
-  <!--                <configuration>-->
-  <!--                    <archive>-->
-  <!--                        <manifestEntries>-->
-  <!--                            <Automatic-Module-Name>com.github.kagkarlsson.scheduler.boot</Automatic-Module-Name>-->
-  <!--                        </manifestEntries>-->
-  <!--                    </archive>-->
-  <!--                </configuration>-->
-  <!--            </plugin>-->
-  <!--          </plugins>-->
-  <!--        </pluginManagement>-->
-  <!--    </build>-->
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Automatic-Module-Name>com.github.kagkarlsson.scheduler.boot</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

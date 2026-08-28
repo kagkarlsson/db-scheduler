@@ -167,5 +167,19 @@
         </plugin>
       </plugins>
     </pluginManagement>
+
+    <plugins>
+      <!-- Must differ from the Boot 3 starter's name; identical names silently shadow each other on a module path -->
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Automatic-Module-Name>com.github.kagkarlsson.scheduler.boot4</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>
