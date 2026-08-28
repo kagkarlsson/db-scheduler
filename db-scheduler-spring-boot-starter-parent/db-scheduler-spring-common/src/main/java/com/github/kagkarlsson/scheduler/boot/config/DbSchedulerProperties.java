@@ -115,7 +115,7 @@ public class DbSchedulerProperties {
    */
   private boolean alwaysPersistTimestampInUtc = false;
 
-  /** Which log level to use when logging task failures. Defaults to {@link LogLevel#DEBUG}. */
+  /** Which log level to use when logging task failures. Defaults to {@link LogLevel#WARN}. */
   private LogLevel failureLoggerLevel = SchedulerBuilder.DEFAULT_FAILURE_LOG_LEVEL;
 
   /** Whether or not to log the {@link Throwable} that caused a task to fail. */
