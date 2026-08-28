@@ -42,6 +42,10 @@ public class Schedules {
     return new CronSchedule(cronPattern, zoneId);
   }
 
+  public static CronSchedule cron(String cronPattern, ZoneId zoneId, CronStyle cronStyle) {
+    return new CronSchedule(cronPattern, zoneId, cronStyle);
+  }
+
   /**
    * Currently supports Daily- and FixedDelay-schedule on the formats:
    *

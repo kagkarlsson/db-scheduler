@@ -7,6 +7,7 @@ import static com.github.kagkarlsson.scheduler.SchedulerBuilder.DEFAULT_POLLING_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import com.github.kagkarlsson.scheduler.ScheduledExecution;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
@@ -16,16 +17,26 @@ import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.boot.testconfig.CustomStarterConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.CustomStatsRegistryConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.MixingAnnotationAndBeanTaskConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.MultipleTasksConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.SingleTaskConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithCronConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithPropertyPathConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.TaskFromAnnotationWithZoneIdConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.TasksFromAnnotationWithCronStylesConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.TasksFromAnnotationWithDifferentInputsConfiguration;
 import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.DefaultStatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.google.common.collect.ImmutableList;
+import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.LazyInitializationExcludeFilter;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -35,6 +46,10 @@ import org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterR
 import org.springframework.boot.micrometer.metrics.autoconfigure.MetricsAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.datasource.init.DataSourceInitializer;
+import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
@@ -46,12 +61,11 @@ import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
  */
 @ActiveProfiles("integration-test")
 @Sql(
-    scripts = "classpath:schema/init_schema.sql",
-    executionPhase = ExecutionPhase.BEFORE_TEST_CLASS)
-@Sql(
     scripts = "classpath:schema/truncate_schema.sql",
-    executionPhase = ExecutionPhase.BEFORE_TEST_METHOD)
+    executionPhase = ExecutionPhase.AFTER_TEST_METHOD)
 class DbSchedulerAutoConfigurationTest {
+
+  private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfigurationTest.class);
 
   @ImportAutoConfiguration({
     DataSourceAutoConfiguration.class,
@@ -59,9 +73,28 @@ class DbSchedulerAutoConfigurationTest {
     CompositeMeterRegistryAutoConfiguration.class,
     DbSchedulerMetricsAutoConfiguration.class,
     DbSchedulerActuatorAutoConfiguration.class,
-    DbSchedulerAutoConfiguration.class
+    DbSchedulerAutoConfiguration.class,
+    RecurringTaskAnnotationAutoConfiguration.class
   })
-  static class CommonAutoConfig {}
+  static class CommonAutoConfig {
+    /*
+    This datasource initializer is required to initialize db in the same time
+    as a datasource bean.
+
+    @Sql annotation doesn't work because the script is executed when db-scheduler is launched
+    and running and writing/reading to an empty db, which gives an unpredictable behaviour.
+     */
+    @Bean
+    public DataSourceInitializer dataSourceInitializer(DataSource dataSource) {
+      ResourceDatabasePopulator populator = new ResourceDatabasePopulator();
+      populator.addScript(new ClassPathResource("schema/init_schema.sql"));
+
+      DataSourceInitializer initializer = new DataSourceInitializer();
+      initializer.setDataSource(dataSource);
+      initializer.setDatabasePopulator(populator);
+      return initializer;
+    }
+  }
 
   @Nested
   @SpringBootTest(classes = {CommonAutoConfig.class})
@@ -320,5 +353,121 @@ class DbSchedulerAutoConfigurationTest {
       assertThat(ctx.getBeansOfType(StatsRegistry.class)).hasSize(1);
       assertThat(ctx.getBean("customStatsRegistry"));
     }
+  }
+
+  /* -------------------------------------------------------------------------
+   *  Custom RecurringTask annotation tests
+   * ------------------------------------------------------------------------- */
+  @Nested
+  @SpringBootTest(
+      classes = {CommonAutoConfig.class, TasksFromAnnotationWithDifferentInputsConfiguration.class})
+  class WithDifferentInputsConfiguration {
+
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void it_should_parse_input_arguments_for_tasks_from_annotation() {
+      ImmutableList.of(
+              "taskNoInputs",
+              "taskWithExecutionContextInput",
+              "taskWithTaskInstanceInput",
+              "taskWithBothInputsExpectedOrder",
+              "taskWithBothInputsReverseOrder")
+          .forEach(
+              beanName -> {
+                Task<Void> task = (Task<Void>) ctx.getBean(beanName, Task.class);
+                assertThat(task).isNotNull();
+
+                // Runtime validation that input parameters are passed correctly
+                task.execute(task.instance("1"), null);
+              });
+    }
+  }
+
+  @Nested
+  @SpringBootTest(classes = {CommonAutoConfig.class, TaskFromAnnotationWithCronConfiguration.class})
+  class WithCronConfiguration {
+
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void it_should_create_valid_cron_from_annotation() {
+      assertTaskScheduled("taskFromAnnotationWithCron", ctx);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = {CommonAutoConfig.class, TaskFromAnnotationWithPropertyPathConfiguration.class},
+      properties = {
+        "my-custom-task.name=taskFromAnnotationWithPropertyPath",
+        "my-custom-task.cron=0 0 7 19 * *",
+        "my-custom-task.zone-id=Australia/Tasmania",
+        "my-custom-task.cron-style=SPRING"
+      })
+  class WithCronPropertyConfiguration {
+
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void it_should_resolve_cron_from_properties() {
+      assertTaskScheduled("taskFromAnnotationWithPropertyPath", ctx);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = {CommonAutoConfig.class, TaskFromAnnotationWithZoneIdConfiguration.class})
+  class WithZoneIdConfiguration {
+
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void it_should_create_valid_zone_id_from_annotation() {
+      assertTaskScheduled("taskFromAnnotationWithZoneId", ctx);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = {CommonAutoConfig.class, TasksFromAnnotationWithCronStylesConfiguration.class})
+  class WithCronStyleConfiguration {
+
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void it_should_create_valid_cron_style_from_annotation() {
+      assertTaskScheduled("taskFromAnnotationWithCronStyleQuartz", ctx);
+      assertTaskScheduled("taskFromAnnotationWithCronStyleCron4j", ctx);
+      assertTaskScheduled("taskFromAnnotationWithCronStyleUnix", ctx);
+      assertTaskScheduled("taskFromAnnotationWithCronStyleSpring", ctx);
+      assertTaskScheduled("taskFromAnnotationWithCronStyleSpring53", ctx);
+    }
+  }
+
+  @Nested
+  @SpringBootTest(
+      classes = {CommonAutoConfig.class, MixingAnnotationAndBeanTaskConfiguration.class})
+  class WithMixingAnnotationAndBeanTaskConfiguration {
+
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void it_should_mix_bean_tasks_and_annotation_tasks() {
+      ImmutableList.of("taskFromAnnotation", "firstTask", "secondTask", "thirdTask")
+          .forEach(beanName -> assertThat(ctx.getBean(beanName, Task.class)).isNotNull());
+    }
+  }
+
+  private void assertTaskScheduled(String taskName, ApplicationContext ctx) {
+    Task<Void> task = (Task<Void>) ctx.getBean(taskName, Task.class);
+    assertThat(task).isNotNull();
+
+    Scheduler scheduler = ctx.getBean(Scheduler.class);
+
+    List<ScheduledExecution<Object>> scheduledExecutions =
+        scheduler.getScheduledExecutionsForTask(taskName);
+    assertThat(scheduledExecutions).hasSize(1);
+    assertThat(scheduledExecutions.get(0).getTaskInstance().getTaskName()).isEqualTo(taskName);
   }
 }
