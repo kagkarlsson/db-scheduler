@@ -74,7 +74,7 @@
     <gson.version>2.14.0</gson.version>
     <jackson.version>2.21.3</jackson.version>
     <jackson3.version>3.1.2</jackson3.version>
-    <postgresql.version>42.7.11</postgresql.version>
+    <postgresql.version>42.7.13</postgresql.version>
     <guava.version>33.6.0-jre</guava.version>
   </properties>
 
@@ -300,7 +300,7 @@
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
-        <version>3.6.0</version>
+        <version>3.10.0</version>
         <configuration>
           <java>
             <includes>
