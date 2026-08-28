@@ -24,6 +24,7 @@ import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
+import com.github.kagkarlsson.scheduler.stats.ExecutorStatsBinder;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Task;
 import java.util.List;
@@ -91,6 +92,14 @@ public class DbSchedulerAutoConfiguration {
     return StatsRegistry.NOOP;
   }
 
+  /** Provide an empty executor stats binder if not present in the context. */
+  @ConditionalOnMissingBean(ExecutorStatsBinder.class)
+  @Bean
+  ExecutorStatsBinder noopExecutorStatsBinder() {
+    log.debug("Missing ExecutorStatsBinder bean in context, creating a no-op ExecutorStatsBinder");
+    return ExecutorStatsBinder.NOOP;
+  }
+
   @ConditionalOnMissingBean
   @Bean("dbSchedulerClock")
   public Clock clock() {
@@ -102,12 +111,16 @@ public class DbSchedulerAutoConfiguration {
   @DependsOnDatabaseInitialization
   @Bean(destroyMethod = "stop")
   public Scheduler scheduler(
-      DbSchedulerCustomizer customizer, StatsRegistry registry, Clock clock) {
+      DbSchedulerCustomizer customizer,
+      StatsRegistry registry,
+      ExecutorStatsBinder executorStatsBinder,
+      Clock clock) {
     log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
     return DbSchedulerConfigurationSupport.buildScheduler(
         config,
         customizer,
         registry,
+        executorStatsBinder,
         clock,
         existingDataSource,
         configuredTasks,
