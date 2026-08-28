@@ -15,6 +15,7 @@ import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,7 +29,9 @@ import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.helper.TestableListener;
 import com.github.kagkarlsson.scheduler.helper.TimeHelper;
+import com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
+import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
@@ -47,6 +50,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -716,6 +725,65 @@ public class JdbcTaskRepositoryTest {
         Level.ERROR,
         "Error while unpicking tasks batch. Failed to unpick: %s, successfully unpicked: []"
             .formatted(unresolvedExecutions));
+  }
+
+  @Test
+  public void task_data_should_be_deserialized_once_and_shared_when_accessed_concurrently()
+      throws InterruptedException {
+    AtomicInteger deserializations = new AtomicInteger();
+    Serializer countingSerializer =
+        new Serializer() {
+          @Override
+          public byte[] serialize(Object data) {
+            return Serializer.DEFAULT_JAVA_SERIALIZER.serialize(data);
+          }
+
+          @Override
+          public <T> T deserialize(Class<T> clazz, byte[] serializedData) {
+            deserializations.incrementAndGet();
+            return Serializer.DEFAULT_JAVA_SERIALIZER.deserialize(clazz, serializedData);
+          }
+        };
+    JdbcTaskRepository repository =
+        new JdbcTaskRepository(
+            DB.getDataSource(),
+            false,
+            new AutodetectJdbcCustomization(DB.getDataSource()),
+            DEFAULT_TABLE_NAME,
+            taskResolver,
+            new SchedulerName.Fixed(SCHEDULER_NAME),
+            countingSerializer,
+            false,
+            new SystemClock());
+
+    // outside the Integer cache, so identity is meaningful
+    repository.createIfNotExists(
+        new SchedulableTaskInstance<>(
+            oneTimeTaskWithData.instance("id1", 1_000_000), TimeHelper.truncatedInstantNow()));
+    TaskInstance<?> fetched = repository.getDue(Instant.now(), POLLING_LIMIT).get(0).taskInstance;
+
+    int threads = 8;
+    CyclicBarrier allThreadsReady = new CyclicBarrier(threads);
+    List<Object> seenData = new CopyOnWriteArrayList<>();
+    ExecutorService pool = Executors.newFixedThreadPool(threads);
+    try {
+      for (int i = 0; i < threads; i++) {
+        pool.submit(
+            () -> {
+              allThreadsReady.await();
+              seenData.add(fetched.getData());
+              return null;
+            });
+      }
+      pool.shutdown();
+      assertTrue(pool.awaitTermination(10, TimeUnit.SECONDS));
+    } finally {
+      pool.shutdownNow();
+    }
+
+    assertEquals(threads, seenData.size());
+    assertEquals(1, deserializations.get());
+    seenData.forEach(data -> assertSame(seenData.get(0), data));
   }
 
   private List<Execution> getScheduledExecutions(
