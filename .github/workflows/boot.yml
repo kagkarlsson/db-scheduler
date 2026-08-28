@@ -8,7 +8,7 @@ jobs:
         spring-boot: [ '2.7.18', '3.3.13', '3.4.5', '3.5.8' ]
     name: Spring Boot 3 - ${{ matrix.spring-boot }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -29,7 +29,7 @@ jobs:
         spring-boot: [ '4.0.1' ]
     name: Spring Boot 4 - ${{ matrix.spring-boot }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Java
         uses: actions/setup-java@v5
