@@ -8,8 +8,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerOverrides;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.AbstractSchedulerStarter;
@@ -25,6 +27,8 @@ import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
@@ -143,6 +147,7 @@ public class DbSchedulerAutoConfigurationTest {
   }
 
   @Test
+  @SuppressWarnings("removal")
   public void it_should_skip_autoconfiguration_if_explicitly_disabled() {
     ctxRunner
         .withPropertyValues("db-scheduler.enabled=false")
@@ -150,6 +155,7 @@ public class DbSchedulerAutoConfigurationTest {
             (AssertableApplicationContext ctx) -> {
               assertThat(ctx).doesNotHaveBean(Scheduler.class);
               assertThat(ctx).doesNotHaveBean(DbSchedulerStarter.class);
+              assertThat(ctx).doesNotHaveBean(DbSchedulerOverrides.class);
               assertThat(ctx).doesNotHaveBean(DbSchedulerCustomizer.class);
               assertThat(ctx).doesNotHaveBean(DbSchedulerHealthIndicator.class);
               assertThat(ctx).doesNotHaveBean(StatsRegistry.class);
@@ -195,6 +201,47 @@ public class DbSchedulerAutoConfigurationTest {
 
               DbSchedulerProperties props = ctx.getBean(DbSchedulerProperties.class);
               assertThat(props.isPriorityEnabled()).isTrue();
+            });
+  }
+
+  @Test
+  public void it_should_apply_a_db_scheduler_overrides_bean() {
+    OverridesConfiguration.SCHEDULER_NAME_USED.set(false);
+
+    ctxRunner
+        .withUserConfiguration(OverridesConfiguration.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+              assertThat(OverridesConfiguration.SCHEDULER_NAME_USED).isTrue();
+            });
+  }
+
+  @Test
+  public void it_should_still_apply_a_deprecated_customizer_bean() {
+    LegacyCustomizerConfiguration.SCHEDULER_NAME_USED.set(false);
+
+    ctxRunner
+        .withUserConfiguration(LegacyCustomizerConfiguration.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+              assertThat(LegacyCustomizerConfiguration.SCHEDULER_NAME_USED).isTrue();
+            });
+  }
+
+  /** customizeBuilder is applied last, so it wins over anything derived from the properties. */
+  @Test
+  public void it_should_let_customize_builder_win_over_properties() {
+    CustomizeBuilderConfiguration.SCHEDULER_NAME_USED.set(false);
+
+    ctxRunner
+        .withPropertyValues("db-scheduler.scheduler-name=name-from-property")
+        .withUserConfiguration(CustomizeBuilderConfiguration.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+              assertThat(CustomizeBuilderConfiguration.SCHEDULER_NAME_USED).isTrue();
             });
   }
 
@@ -300,6 +347,55 @@ public class DbSchedulerAutoConfigurationTest {
     Task<String> thirdTask() {
       return namedStringTask("third-task");
     }
+  }
+
+  @Configuration
+  static class OverridesConfiguration extends SingleTaskConfiguration {
+    static final AtomicBoolean SCHEDULER_NAME_USED = new AtomicBoolean();
+
+    @Bean
+    DbSchedulerOverrides dbSchedulerOverrides() {
+      return DbSchedulerOverrides.builder()
+          .schedulerName(recordingSchedulerName(SCHEDULER_NAME_USED))
+          .build();
+    }
+  }
+
+  @Configuration
+  static class LegacyCustomizerConfiguration extends SingleTaskConfiguration {
+    static final AtomicBoolean SCHEDULER_NAME_USED = new AtomicBoolean();
+
+    @Bean
+    @SuppressWarnings("removal")
+    DbSchedulerCustomizer customizer() {
+      return new DbSchedulerCustomizer() {
+        @Override
+        public Optional<SchedulerName> schedulerName() {
+          return Optional.of(recordingSchedulerName(SCHEDULER_NAME_USED));
+        }
+      };
+    }
+  }
+
+  @Configuration
+  static class CustomizeBuilderConfiguration extends SingleTaskConfiguration {
+    static final AtomicBoolean SCHEDULER_NAME_USED = new AtomicBoolean();
+
+    @Bean
+    DbSchedulerOverrides dbSchedulerOverrides() {
+      return DbSchedulerOverrides.builder()
+          .customizeBuilder(
+              builder -> builder.schedulerName(recordingSchedulerName(SCHEDULER_NAME_USED)))
+          .build();
+    }
+  }
+
+  /** A {@link SchedulerName} that records having been asked for its name when the builder runs. */
+  private static SchedulerName recordingSchedulerName(AtomicBoolean used) {
+    return () -> {
+      used.set(true);
+      return "recorded-scheduler-name";
+    };
   }
 
   @Configuration
