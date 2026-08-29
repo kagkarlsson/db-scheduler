@@ -343,7 +343,7 @@ public abstract class CompatibilityTest {
   }
 
   private ScheduledExecution<?> toScheduled(Execution execution) {
-    return new ScheduledExecution<>(String.class, execution);
+    return ScheduledExecution.from(String.class, execution);
   }
 
   private void schedule(

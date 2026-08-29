@@ -96,6 +96,6 @@ class ScheduleRecurringOnStartupTest {
   }
 
   private ScheduledExecution<Object> scheduled(Instant executionTime) {
-    return new ScheduledExecution<>(Object.class, new Execution(executionTime, TASK_INSTANCE));
+    return ScheduledExecution.from(Object.class, new Execution(executionTime, TASK_INSTANCE));
   }
 }
