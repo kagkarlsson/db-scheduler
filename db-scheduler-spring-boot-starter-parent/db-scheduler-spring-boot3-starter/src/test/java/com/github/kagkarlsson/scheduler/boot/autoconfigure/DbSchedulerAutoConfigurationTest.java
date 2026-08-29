@@ -147,6 +147,7 @@ public class DbSchedulerAutoConfigurationTest {
   }
 
   @Test
+  @SuppressWarnings("removal")
   public void it_should_skip_autoconfiguration_if_explicitly_disabled() {
     ctxRunner
         .withPropertyValues("db-scheduler.enabled=false")
@@ -365,6 +366,7 @@ public class DbSchedulerAutoConfigurationTest {
     static final AtomicBoolean SCHEDULER_NAME_USED = new AtomicBoolean();
 
     @Bean
+    @SuppressWarnings("removal")
     DbSchedulerCustomizer customizer() {
       return new DbSchedulerCustomizer() {
         @Override

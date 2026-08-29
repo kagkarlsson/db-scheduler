@@ -147,6 +147,7 @@ class DbSchedulerAutoConfigurationTest {
     @Autowired ApplicationContext ctx;
 
     @Test
+    @SuppressWarnings("removal")
     void it_should_skip_autoconfiguration_if_explicitly_disabled() {
       assertThat(ctx.getBeansOfType(Scheduler.class)).isEmpty();
       assertThat(ctx.getBeansOfType(DbSchedulerStarter.class)).isEmpty();

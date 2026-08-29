@@ -54,6 +54,7 @@ public final class DbSchedulerConfigurationSupport {
    *     along with {@link DbSchedulerCustomizer}.
    */
   @Deprecated(since = "17.0.0", forRemoval = true)
+  @SuppressWarnings("removal")
   public static Scheduler buildScheduler(
       DbSchedulerProperties config,
       DbSchedulerCustomizer customizer,
@@ -195,6 +196,7 @@ public final class DbSchedulerConfigurationSupport {
    *     it.
    */
   @Deprecated(since = "17.0.0", forRemoval = true)
+  @SuppressWarnings("removal")
   private static DbSchedulerOverrides toOverrides(DbSchedulerCustomizer customizer) {
     DbSchedulerOverrides.Builder builder = DbSchedulerOverrides.builder();
 
