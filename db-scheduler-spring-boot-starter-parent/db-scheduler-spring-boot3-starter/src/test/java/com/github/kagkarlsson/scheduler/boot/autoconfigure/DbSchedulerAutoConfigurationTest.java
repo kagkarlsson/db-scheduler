@@ -365,7 +365,6 @@ public class DbSchedulerAutoConfigurationTest {
     static final AtomicBoolean SCHEDULER_NAME_USED = new AtomicBoolean();
 
     @Bean
-    @SuppressWarnings("removal")
     DbSchedulerCustomizer customizer() {
       return new DbSchedulerCustomizer() {
         @Override

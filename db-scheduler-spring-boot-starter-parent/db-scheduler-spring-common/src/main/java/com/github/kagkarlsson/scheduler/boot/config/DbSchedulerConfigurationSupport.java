@@ -195,7 +195,7 @@ public final class DbSchedulerConfigurationSupport {
    *     it.
    */
   @Deprecated(since = "17.0.0", forRemoval = true)
-  public static DbSchedulerOverrides toOverrides(DbSchedulerCustomizer customizer) {
+  private static DbSchedulerOverrides toOverrides(DbSchedulerCustomizer customizer) {
     DbSchedulerOverrides.Builder builder = DbSchedulerOverrides.builder();
 
     customizer.schedulerName().ifPresent(builder::schedulerName);
