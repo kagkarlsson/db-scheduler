@@ -39,6 +39,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,7 @@ public class Scheduler implements SchedulerClient {
   public static final double TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO = 0.5;
   public static final String THREAD_PREFIX = "db-scheduler";
   private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
+  private static final String STACK_TRACE_ELEMENT_INDENT = System.lineSeparator() + "\t\t";
   private final SchedulerClient delegate;
   final Clock clock;
   final TaskRepository schedulerTaskRepository;
@@ -69,6 +71,8 @@ public class Scheduler implements SchedulerClient {
   private final Waiter heartbeatWaiter;
   final SettableSchedulerState schedulerState = new SettableSchedulerState();
   final ConfigurableLogger failureLogger;
+  final boolean logStuckExecutions;
+  final Duration stuckExecutionsLoggingThreshold;
 
   protected Scheduler(
       Clock clock,
@@ -88,6 +92,8 @@ public class Scheduler implements SchedulerClient {
       Duration shutdownMaxWait,
       LogLevel logLevel,
       boolean logStackTrace,
+      boolean logStuckExecutions,
+      Duration stuckExecutionsLoggingThreshold,
       List<OnStartup> onStartup,
       ExecutorService dueExecutor,
       ScheduledExecutorService housekeeperExecutor) {
@@ -112,6 +118,8 @@ public class Scheduler implements SchedulerClient {
     this.housekeeperExecutor = housekeeperExecutor;
     delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
+    this.logStuckExecutions = logStuckExecutions;
+    this.stuckExecutionsLoggingThreshold = stuckExecutionsLoggingThreshold;
 
     if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
       schedulerTaskRepository.verifySupportsLockAndFetch();
@@ -176,6 +184,15 @@ public class Scheduler implements SchedulerClient {
         0,
         heartbeatWaiter.getWaitDuration().toMillis(),
         MILLISECONDS);
+
+    if (logStuckExecutions) {
+      long stuckExecutionsThresholdMillis = stuckExecutionsLoggingThreshold.toMillis();
+      housekeeperExecutor.scheduleWithFixedDelay(
+          new RunAndLogErrors(this::logStuckExecutions, schedulerListeners),
+          stuckExecutionsThresholdMillis,
+          Math.min(detectDeadWaiter.getWaitDuration().toMillis(), stuckExecutionsThresholdMillis),
+          MILLISECONDS);
+    }
 
     schedulerState.setStarted();
   }
@@ -434,6 +451,33 @@ public class Scheduler implements SchedulerClient {
     Instant now = clock.now();
     currentlyProcessing.forEach(execution -> updateHeartbeatForExecution(now, execution));
     schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_UPDATE_HEARTBEATS);
+  }
+
+  void logStuckExecutions() {
+    final List<CurrentlyExecuting> stuckExecutions =
+        executor.getCurrentlyExecuting().stream()
+            .filter(
+                executing -> executing.getDuration().compareTo(stuckExecutionsLoggingThreshold) > 0)
+            .toList();
+    if (stuckExecutions.isEmpty()) {
+      LOG.trace("No stuck executions to log.");
+      return;
+    }
+
+    LOG.debug("Logging {} stuck executions being processed.", stuckExecutions.size());
+    stuckExecutions.forEach(
+        execution -> {
+          LOG.warn(
+              "Execution with {} is stuck during {}: {}",
+              execution.getExecution().taskInstance,
+              execution.getDuration(),
+              Arrays.stream(execution.getCurrentThread().getStackTrace())
+                  .map(StackTraceElement::toString)
+                  .collect(
+                      Collectors.joining(
+                          STACK_TRACE_ELEMENT_INDENT, STACK_TRACE_ELEMENT_INDENT, "")));
+        });
+    schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_LOG_STUCK_EXECUTIONS);
   }
 
   protected void updateHeartbeatForExecution(Instant now, CurrentlyExecuting currentlyExecuting) {

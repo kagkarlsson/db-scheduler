@@ -52,6 +52,8 @@ public class SchedulerBuilder {
           PollingStrategyConfig.Type.FETCH, 0.5, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH);
   public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.WARN;
   public static final boolean LOG_STACK_TRACE_ON_FAILURE = true;
+  public static final boolean LOG_STUCK_EXECUTIONS = true;
+  public static final Duration DEFAULT_STUCK_EXECUTIONS_LOGGING_THRESHOLD = Duration.ofMinutes(30);
   private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
   protected final DataSource dataSource;
   protected final List<Task<?>> knownTasks = new ArrayList<>();
@@ -75,6 +77,8 @@ public class SchedulerBuilder {
   protected PollingStrategyConfig pollingStrategyConfig = DEFAULT_POLLING_STRATEGY;
   protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
   protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
+  protected boolean logStuckTasks = LOG_STUCK_EXECUTIONS;
+  protected Duration stuckExecutionsLoggingThreshold = DEFAULT_STUCK_EXECUTIONS_LOGGING_THRESHOLD;
   protected boolean enablePriority = false;
   protected boolean registerShutdownHook = false;
   protected int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
@@ -236,6 +240,17 @@ public class SchedulerBuilder {
     return this;
   }
 
+  public SchedulerBuilder logStuckExecutions(boolean logStuckTasks) {
+    this.logStuckTasks = logStuckTasks;
+    return this;
+  }
+
+  public SchedulerBuilder stuckExecutionsLoggingThreshold(
+      Duration stuckExecutionsLoggingThreshold) {
+    this.stuckExecutionsLoggingThreshold = stuckExecutionsLoggingThreshold;
+    return this;
+  }
+
   public SchedulerBuilder registerShutdownHook() {
     this.registerShutdownHook = true;
     return this;
@@ -341,6 +356,8 @@ public class SchedulerBuilder {
             shutdownMaxWait,
             logLevel,
             logStackTrace,
+            logStuckTasks,
+            stuckExecutionsLoggingThreshold,
             startTasks,
             candidateDueExecutor,
             candidateHousekeeperExecutor);

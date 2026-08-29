@@ -121,6 +121,14 @@ public class DbSchedulerProperties {
   /** Whether or not to log the {@link Throwable} that caused a task to fail. */
   private boolean failureLoggerLogStackTrace = SchedulerBuilder.LOG_STACK_TRACE_ON_FAILURE;
 
+  /** Whether to run housekeeping periodical job for stuck executions logging. */
+  private boolean logStuckExecutions = SchedulerBuilder.LOG_STUCK_EXECUTIONS;
+
+  /** Execution time threshold for stuck executions logging. */
+  @DurationUnit(MINUTES)
+  private Duration stuckExecutionsLoggingThreshold =
+      SchedulerBuilder.DEFAULT_STUCK_EXECUTIONS_LOGGING_THRESHOLD;
+
   /** Whether or executions are ordered by priority */
   private boolean priorityEnabled = false;
 
@@ -218,6 +226,22 @@ public class DbSchedulerProperties {
 
   public void setFailureLoggerLevel(LogLevel failureLoggerLevel) {
     this.failureLoggerLevel = failureLoggerLevel;
+  }
+
+  public boolean isLogStuckExecutions() {
+    return logStuckExecutions;
+  }
+
+  public void setLogStuckExecutions(boolean logStuckExecutions) {
+    this.logStuckExecutions = logStuckExecutions;
+  }
+
+  public Duration getStuckExecutionsLoggingThreshold() {
+    return stuckExecutionsLoggingThreshold;
+  }
+
+  public void setStuckExecutionsLoggingThreshold(Duration stuckExecutionsLoggingThreshold) {
+    this.stuckExecutionsLoggingThreshold = stuckExecutionsLoggingThreshold;
   }
 
   public boolean isFailureLoggerLogStackTrace() {

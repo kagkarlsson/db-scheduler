@@ -80,7 +80,7 @@ class ExecutePicked implements Runnable {
   public void run() {
     // FIXLATER: need to cleanup all the references back to scheduler fields
     CurrentlyExecuting currentlyExecuting =
-        new CurrentlyExecuting(pickedExecution, clock, heartbeatConfig);
+        new CurrentlyExecuting(pickedExecution, clock, heartbeatConfig, Thread.currentThread());
     final UUID executionId = executor.addCurrentlyProcessing(currentlyExecuting);
 
     try {

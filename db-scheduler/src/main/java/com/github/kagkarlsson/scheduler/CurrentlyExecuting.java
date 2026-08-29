@@ -25,11 +25,14 @@ public class CurrentlyExecuting {
   private final Clock clock;
   private final Instant startTime;
   private final HeartbeatState heartbeatState;
+  private final Thread currentThread;
 
-  public CurrentlyExecuting(Execution execution, Clock clock, HeartbeatConfig heartbeatConfig) {
+  public CurrentlyExecuting(
+      Execution execution, Clock clock, HeartbeatConfig heartbeatConfig, Thread currentThread) {
     this.execution = execution;
     this.clock = clock;
     this.startTime = clock.now();
+    this.currentThread = currentThread;
     this.heartbeatState = new HeartbeatState(clock, startTime, heartbeatConfig);
   }
 
@@ -47,6 +50,10 @@ public class CurrentlyExecuting {
 
   public HeartbeatState getHeartbeatState() {
     return heartbeatState;
+  }
+
+  public Thread getCurrentThread() {
+    return currentThread;
   }
 
   public void heartbeat(boolean successful, Instant now) {
