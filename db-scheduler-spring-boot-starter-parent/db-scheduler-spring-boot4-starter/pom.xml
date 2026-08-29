@@ -175,7 +175,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <Automatic-Module-Name>com.github.kagkarlsson.scheduler.boot4</Automatic-Module-Name>
+              <Automatic-Module-Name>com.github.kagkarlsson.scheduler.boot</Automatic-Module-Name>
             </manifestEntries>
           </archive>
         </configuration>
