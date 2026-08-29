@@ -15,6 +15,9 @@ package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.ExecutorUtils.defaultThreadFactoryWithPrefix;
 import static com.github.kagkarlsson.scheduler.Scheduler.THREAD_PREFIX;
+import static com.github.kagkarlsson.scheduler.stats.MicrometerExecutorStatsBinder.CANDIDATE_DUE_EXECUTOR_NAME;
+import static com.github.kagkarlsson.scheduler.stats.MicrometerExecutorStatsBinder.CANDIDATE_EXECUTOR_NAME;
+import static com.github.kagkarlsson.scheduler.stats.MicrometerExecutorStatsBinder.HOUSEKEEPER_EXECUTOR_NAME;
 import static java.util.Optional.ofNullable;
 
 import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
@@ -25,6 +28,7 @@ import com.github.kagkarlsson.scheduler.jdbc.JdbcCustomization;
 import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.logging.LogLevel;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
+import com.github.kagkarlsson.scheduler.stats.ExecutorStatsBinder;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistryAdapter;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
@@ -61,6 +65,7 @@ public class SchedulerBuilder {
   protected int executorThreads = 10;
   protected Duration poolingInterval = DEFAULT_POLLING_INTERVAL;
   protected StatsRegistry statsRegistry = StatsRegistry.NOOP;
+  protected ExecutorStatsBinder executorStatsBinder = ExecutorStatsBinder.NOOP;
   protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   protected Serializer serializer = Serializer.DEFAULT_JAVA_SERIALIZER;
   protected String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
@@ -141,6 +146,10 @@ public class SchedulerBuilder {
   public SchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
     this.statsRegistry = statsRegistry;
     return this;
+  }
+
+  public void executorStatsBinder(ExecutorStatsBinder executorStatsBinder) {
+    this.executorStatsBinder = executorStatsBinder;
   }
 
   public SchedulerBuilder addSchedulerListener(SchedulerListener schedulerListener) {
@@ -308,6 +317,12 @@ public class SchedulerBuilder {
 
     if (statsRegistry != null) {
       addSchedulerListener(new StatsRegistryAdapter(statsRegistry));
+    }
+
+    if (executorStatsBinder != null) {
+      executorStatsBinder.bindToRegistry(candidateExecutorService, CANDIDATE_EXECUTOR_NAME);
+      executorStatsBinder.bindToRegistry(candidateDueExecutor, CANDIDATE_DUE_EXECUTOR_NAME);
+      executorStatsBinder.bindToRegistry(candidateHousekeeperExecutor, HOUSEKEEPER_EXECUTOR_NAME);
     }
 
     Waiter waiter = buildWaiter();
