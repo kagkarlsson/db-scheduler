@@ -157,8 +157,6 @@
     </pluginManagement>
 
     <plugins>
-      <!-- Freezes the name this jar has derived from its filename since 6.0; the clean
-           com.github.kagkarlsson.scheduler.boot goes to the Boot 4 starter, which outlives this one -->
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
