@@ -162,7 +162,7 @@
         <configuration>
           <archive>
             <manifestEntries>
-              <Automatic-Module-Name>com.github.kagkarlsson.scheduler.boot</Automatic-Module-Name>
+              <Automatic-Module-Name>db.scheduler.spring.boot.starter</Automatic-Module-Name>
             </manifestEntries>
           </archive>
         </configuration>
