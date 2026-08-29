@@ -10,12 +10,14 @@ import static org.assertj.core.api.Assertions.fail;
 import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerOverrides;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.boot.testconfig.CustomStarterConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.CustomStatsRegistryConfiguration;
+import com.github.kagkarlsson.scheduler.boot.testconfig.DbSchedulerOverridesConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.MultipleTasksConfiguration;
 import com.github.kagkarlsson.scheduler.boot.testconfig.SingleTaskConfiguration;
 import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
@@ -148,6 +150,7 @@ class DbSchedulerAutoConfigurationTest {
     void it_should_skip_autoconfiguration_if_explicitly_disabled() {
       assertThat(ctx.getBeansOfType(Scheduler.class)).isEmpty();
       assertThat(ctx.getBeansOfType(DbSchedulerStarter.class)).isEmpty();
+      assertThat(ctx.getBeansOfType(DbSchedulerOverrides.class)).isEmpty();
       assertThat(ctx.getBeansOfType(DbSchedulerCustomizer.class)).isEmpty();
       assertThat(ctx.getBeansOfType(DbSchedulerHealthIndicator.class)).isEmpty();
       assertThat(ctx.getBeansOfType(StatsRegistry.class)).isEmpty();
@@ -218,6 +221,27 @@ class DbSchedulerAutoConfigurationTest {
       assertThat(ctx.getBean("firstTask")).isInstanceOf(Task.class);
       assertThat(ctx.getBean("secondTask")).isInstanceOf(Task.class);
       assertThat(ctx.getBean("thirdTask")).isInstanceOf(Task.class);
+    }
+  }
+
+  /* -------------------------------------------------------------------------
+   *  DbSchedulerOverrides bean is picked up
+   * ------------------------------------------------------------------------- */
+  @Nested
+  @SpringBootTest(
+      classes = {
+        CommonAutoConfig.class,
+        SingleTaskConfiguration.class,
+        DbSchedulerOverridesConfiguration.class
+      })
+  class WithOverrides {
+
+    @Autowired ApplicationContext ctx;
+
+    @Test
+    void it_should_apply_a_db_scheduler_overrides_bean() {
+      assertThat(ctx.getBeansOfType(Scheduler.class)).hasSize(1);
+      assertThat(DbSchedulerOverridesConfiguration.SCHEDULER_NAME_USED).isTrue();
     }
   }
 

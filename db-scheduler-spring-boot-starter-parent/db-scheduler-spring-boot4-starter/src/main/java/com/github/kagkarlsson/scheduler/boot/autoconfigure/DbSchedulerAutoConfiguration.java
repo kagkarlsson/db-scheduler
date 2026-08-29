@@ -18,6 +18,7 @@ import com.github.kagkarlsson.scheduler.Scheduler;
 import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerConfigurationSupport;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
+import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerOverrides;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
@@ -31,6 +32,7 @@ import java.util.Objects;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.LazyInitializationExcludeFilter;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -76,13 +78,6 @@ public class DbSchedulerAutoConfiguration {
     this.executionInterceptors = executionInterceptors;
   }
 
-  /** Provide an empty customizer if not present in the context. */
-  @ConditionalOnMissingBean
-  @Bean
-  public DbSchedulerCustomizer noopCustomizer() {
-    return new DbSchedulerCustomizer() {};
-  }
-
   /** Will typically be created if Spring Boot Actuator is not on the classpath. */
   @ConditionalOnMissingBean(StatsRegistry.class)
   @Bean
@@ -101,12 +96,17 @@ public class DbSchedulerAutoConfiguration {
   @ConditionalOnMissingBean
   @DependsOnDatabaseInitialization
   @Bean(destroyMethod = "stop")
+  @SuppressWarnings("removal")
   public Scheduler scheduler(
-      DbSchedulerCustomizer customizer, StatsRegistry registry, Clock clock) {
+      ObjectProvider<DbSchedulerOverrides> overrides,
+      ObjectProvider<DbSchedulerCustomizer> legacyCustomizer,
+      StatsRegistry registry,
+      Clock clock) {
     log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
     return DbSchedulerConfigurationSupport.buildScheduler(
         config,
-        customizer,
+        DbSchedulerConfigurationSupport.resolveOverrides(
+            overrides.getIfAvailable(), legacyCustomizer.getIfAvailable()),
         registry,
         clock,
         existingDataSource,

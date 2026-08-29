@@ -24,7 +24,13 @@ import javax.sql.DataSource;
 /**
  * Provides functionality for customizing various aspects of the db-scheduler configuration that is
  * not easily done with properties.
+ *
+ * @deprecated in favour of {@link DbSchedulerOverrides}, which covers the same settings as an
+ *     immutable value object rather than an interface to implement. Expose a {@code
+ *     DbSchedulerOverrides} bean instead; a bean of this type is still honoured, but support will
+ *     be removed in a future version.
  */
+@Deprecated(since = "17.0.0", forRemoval = true)
 public interface DbSchedulerCustomizer {
   /** Provide a custom {@link SchedulerName} implementation. */
   default Optional<SchedulerName> schedulerName() {

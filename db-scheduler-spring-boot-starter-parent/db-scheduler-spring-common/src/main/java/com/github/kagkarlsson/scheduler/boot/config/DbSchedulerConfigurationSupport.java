@@ -36,6 +36,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ConfigurableObjectInputStream;
@@ -48,6 +49,11 @@ public final class DbSchedulerConfigurationSupport {
 
   private DbSchedulerConfigurationSupport() {}
 
+  /**
+   * @deprecated use the {@link DbSchedulerOverrides} overload. Will be removed in a future version
+   *     along with {@link DbSchedulerCustomizer}.
+   */
+  @Deprecated(since = "17.0.0", forRemoval = true)
   public static Scheduler buildScheduler(
       DbSchedulerProperties config,
       DbSchedulerCustomizer customizer,
@@ -58,8 +64,30 @@ public final class DbSchedulerConfigurationSupport {
       List<SchedulerListener> schedulerListeners,
       List<ExecutionInterceptor> executionInterceptors) {
 
-    Objects.requireNonNull(config, "Configuration must not be null");
     Objects.requireNonNull(customizer, "Customizer must not be null");
+    return buildScheduler(
+        config,
+        toOverrides(customizer),
+        registry,
+        clock,
+        existingDataSource,
+        configuredTasks,
+        schedulerListeners,
+        executionInterceptors);
+  }
+
+  public static Scheduler buildScheduler(
+      DbSchedulerProperties config,
+      DbSchedulerOverrides overrides,
+      StatsRegistry registry,
+      Clock clock,
+      DataSource existingDataSource,
+      List<Task<?>> configuredTasks,
+      List<SchedulerListener> schedulerListeners,
+      List<ExecutionInterceptor> executionInterceptors) {
+
+    Objects.requireNonNull(config, "Configuration must not be null");
+    Objects.requireNonNull(overrides, "Overrides must not be null");
     Objects.requireNonNull(registry, "StatsRegistry must not be null");
     Objects.requireNonNull(clock, "Clock must not be null");
     Objects.requireNonNull(existingDataSource, "DataSource must not be null");
@@ -68,7 +96,7 @@ public final class DbSchedulerConfigurationSupport {
     Objects.requireNonNull(executionInterceptors, "Execution interceptors must not be null");
 
     DataSource transactionalDataSource =
-        configureDataSource(customizer.dataSource().orElse(existingDataSource));
+        configureDataSource(overrides.dataSource().orElse(existingDataSource));
 
     SchedulerBuilder builder =
         Scheduler.create(transactionalDataSource, nonStartupTasks(configuredTasks));
@@ -94,15 +122,15 @@ public final class DbSchedulerConfigurationSupport {
     builder.heartbeatInterval(config.getHeartbeatInterval());
     builder.missedHeartbeatsLimit(config.getMissedHeartbeatsLimit());
 
-    if (customizer.schedulerName().isPresent()) {
-      builder.schedulerName(customizer.schedulerName().get());
+    if (overrides.schedulerName().isPresent()) {
+      builder.schedulerName(overrides.schedulerName().get());
     } else if (config.getSchedulerName() != null) {
       builder.schedulerName(new SchedulerName.Fixed(config.getSchedulerName()));
     }
 
     builder.tableName(config.getTableName());
-    builder.serializer(customizer.serializer().orElse(SPRING_JAVA_SERIALIZER));
-    customizer.jdbcCustomization().ifPresent(builder::jdbcCustomization);
+    builder.serializer(overrides.serializer().orElse(SPRING_JAVA_SERIALIZER));
+    overrides.jdbcCustomization().ifPresent(builder::jdbcCustomization);
 
     if (config.isAlwaysPersistTimestampInUtc()) {
       builder.alwaysPersistTimestampInUTC();
@@ -116,9 +144,9 @@ public final class DbSchedulerConfigurationSupport {
       builder.enablePriority();
     }
 
-    customizer.executorService().ifPresent(builder::executorService);
-    customizer.dueExecutor().ifPresent(builder::dueExecutor);
-    customizer.housekeeperExecutor().ifPresent(builder::housekeeperExecutor);
+    overrides.executorService().ifPresent(builder::executorService);
+    overrides.dueExecutor().ifPresent(builder::dueExecutor);
+    overrides.housekeeperExecutor().ifPresent(builder::housekeeperExecutor);
 
     builder.deleteUnresolvedAfter(config.getDeleteUnresolvedAfter());
     builder.startTasks(startupTasks(configuredTasks));
@@ -128,6 +156,55 @@ public final class DbSchedulerConfigurationSupport {
 
     schedulerListeners.forEach(builder::addSchedulerListener);
     executionInterceptors.forEach(builder::addExecutionInterceptor);
+
+    // Applied last so it can override anything derived from the properties above.
+    overrides.builderCustomizer().ifPresent(customize -> customize.accept(builder));
+
+    return builder.build();
+  }
+
+  /**
+   * Resolves which overrides to build the scheduler from, bridging a legacy {@link
+   * DbSchedulerCustomizer} bean if that is all the context provides.
+   */
+  @SuppressWarnings("removal")
+  public static DbSchedulerOverrides resolveOverrides(
+      @Nullable DbSchedulerOverrides overrides, @Nullable DbSchedulerCustomizer legacyCustomizer) {
+
+    if (overrides != null) {
+      if (legacyCustomizer != null) {
+        log.warn(
+            "Found both a DbSchedulerOverrides and a deprecated DbSchedulerCustomizer bean. "
+                + "The DbSchedulerCustomizer is ignored and should be removed.");
+      }
+      return overrides;
+    }
+
+    if (legacyCustomizer != null) {
+      log.warn(
+          "DbSchedulerCustomizer is deprecated and support for it will be removed in a future "
+              + "version. Expose a DbSchedulerOverrides bean instead.");
+      return toOverrides(legacyCustomizer);
+    }
+
+    return DbSchedulerOverrides.none();
+  }
+
+  /**
+   * @deprecated bridge for {@link DbSchedulerCustomizer}, removed in a future version along with
+   *     it.
+   */
+  @Deprecated(since = "17.0.0", forRemoval = true)
+  public static DbSchedulerOverrides toOverrides(DbSchedulerCustomizer customizer) {
+    DbSchedulerOverrides.Builder builder = DbSchedulerOverrides.builder();
+
+    customizer.schedulerName().ifPresent(builder::schedulerName);
+    customizer.serializer().ifPresent(builder::serializer);
+    customizer.dataSource().ifPresent(builder::dataSource);
+    customizer.executorService().ifPresent(builder::executorService);
+    customizer.dueExecutor().ifPresent(builder::dueExecutor);
+    customizer.housekeeperExecutor().ifPresent(builder::housekeeperExecutor);
+    customizer.jdbcCustomization().ifPresent(builder::jdbcCustomization);
 
     return builder.build();
   }
