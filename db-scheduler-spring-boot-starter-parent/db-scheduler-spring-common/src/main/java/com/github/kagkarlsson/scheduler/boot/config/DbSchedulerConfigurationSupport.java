@@ -50,8 +50,7 @@ public final class DbSchedulerConfigurationSupport {
   private DbSchedulerConfigurationSupport() {}
 
   /**
-   * @deprecated use the {@link DbSchedulerOverrides} overload. Will be removed in a future version
-   *     along with {@link DbSchedulerCustomizer}.
+   * @deprecated use the {@link DbSchedulerOverrides} overload
    */
   @Deprecated(since = "17.0.0", forRemoval = true)
   @SuppressWarnings("removal")
@@ -192,8 +191,7 @@ public final class DbSchedulerConfigurationSupport {
   }
 
   /**
-   * @deprecated bridge for {@link DbSchedulerCustomizer}, removed in a future version along with
-   *     it.
+   * @deprecated bridge for {@link DbSchedulerCustomizer}
    */
   @Deprecated(since = "17.0.0", forRemoval = true)
   @SuppressWarnings("removal")
