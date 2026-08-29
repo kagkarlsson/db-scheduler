@@ -452,7 +452,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
 
 ### Configuration options
 
-Configuration is mainly done via `application.properties`. Settings that cannot be expressed as properties — scheduler-name, serializer, executor-services, `JdbcCustomization` and `DataSource` — are configured by adding a bean of type `DbSchedulerOverrides` to your Spring context.
+Configuration is mainly done via `application.properties`. Settings that cannot be expressed as properties are configured by adding a bean of type `DbSchedulerOverrides` to your Spring context.
 
 ```java
 @Bean
@@ -464,13 +464,7 @@ DbSchedulerOverrides dbSchedulerOverrides() {
 }
 ```
 
-Anything left unset falls back to the corresponding property, and then to the library default. To set something programmatically that does have a property, or to reach a `SchedulerBuilder` option the starter does not surface, use the `customizeBuilder` escape hatch — it is applied last, so it wins over the properties:
-
-```java
-DbSchedulerOverrides.builder()
-    .customizeBuilder(builder -> builder.registerShutdownHook())
-    .build();
-```
+Anything left unset falls back to the corresponding property, and then to the library default. To set something programmatically that does have a property, or to reach a `SchedulerBuilder` option the starter does not surface, use the `customizeBuilder` escape hatch.
 
 **NB:** `DbSchedulerOverrides` replaces `DbSchedulerCustomizer` as of 17.0.0. An existing `DbSchedulerCustomizer` bean is still honoured, but it is deprecated and support for it will be removed in a future version.
 
