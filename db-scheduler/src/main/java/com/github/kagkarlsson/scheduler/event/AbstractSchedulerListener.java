@@ -37,6 +37,9 @@ public abstract class AbstractSchedulerListener implements SchedulerListener {
   public void onExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting) {}
 
   @Override
+  public void onExecutionRemoved(Execution execution) {}
+
+  @Override
   public void onSchedulerEvent(SchedulerEventType type) {}
 
   @Override
