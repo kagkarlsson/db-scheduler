@@ -26,7 +26,7 @@ public class SchedulerBuilderTest {
 
     assertThatThrownBy(() -> builder().pollingInterval(null))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("Polling interval must not be null");
+        .hasMessage("Polling interval must be greater than 0");
   }
 
   @Test
