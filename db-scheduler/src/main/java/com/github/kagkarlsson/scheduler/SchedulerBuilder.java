@@ -52,6 +52,9 @@ public class SchedulerBuilder {
           PollingStrategyConfig.Type.FETCH, 0.5, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH);
   public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.WARN;
   public static final boolean LOG_STACK_TRACE_ON_FAILURE = true;
+  public static final boolean LOG_LONG_RUNNING_EXECUTIONS = true;
+  public static final Duration DEFAULT_LONG_RUNNING_EXECUTIONS_LOGGING_THRESHOLD =
+      Duration.ofHours(8);
   private static final Logger LOG = LoggerFactory.getLogger(SchedulerBuilder.class);
   protected final DataSource dataSource;
   protected final List<Task<?>> knownTasks = new ArrayList<>();
@@ -75,6 +78,9 @@ public class SchedulerBuilder {
   protected PollingStrategyConfig pollingStrategyConfig = DEFAULT_POLLING_STRATEGY;
   protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
   protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
+  protected boolean logLongRunningTasks = LOG_LONG_RUNNING_EXECUTIONS;
+  protected Duration longRunningExecutionsLoggingThreshold =
+      DEFAULT_LONG_RUNNING_EXECUTIONS_LOGGING_THRESHOLD;
   protected boolean enablePriority = false;
   protected boolean registerShutdownHook = false;
   protected int numberOfMissedHeartbeatsBeforeDead = DEFAULT_MISSED_HEARTBEATS_LIMIT;
@@ -236,6 +242,17 @@ public class SchedulerBuilder {
     return this;
   }
 
+  public SchedulerBuilder logLongRunningExecutions(boolean logLongRunningTasks) {
+    this.logLongRunningTasks = logLongRunningTasks;
+    return this;
+  }
+
+  public SchedulerBuilder longRunningExecutionsLoggingThreshold(
+      Duration longRunningExecutionsLoggingThreshold) {
+    this.longRunningExecutionsLoggingThreshold = longRunningExecutionsLoggingThreshold;
+    return this;
+  }
+
   public SchedulerBuilder registerShutdownHook() {
     this.registerShutdownHook = true;
     return this;
@@ -341,6 +358,8 @@ public class SchedulerBuilder {
             shutdownMaxWait,
             logLevel,
             logStackTrace,
+            logLongRunningTasks,
+            longRunningExecutionsLoggingThreshold,
             startTasks,
             candidateDueExecutor,
             candidateHousekeeperExecutor);
