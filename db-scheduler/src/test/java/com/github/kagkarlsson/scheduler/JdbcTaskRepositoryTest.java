@@ -786,6 +786,29 @@ public class JdbcTaskRepositoryTest {
     seenData.forEach(data -> assertSame(seenData.get(0), data));
   }
 
+  @Test
+  public void remove_if_not_picked_should_remove_regardless_of_version() {
+    Instant now = TimeHelper.truncatedInstantNow();
+    TaskInstance<Void> instance = oneTimeTask.instance("id1");
+    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, now));
+    taskRepository.reschedule(
+        taskRepository.getExecution(instance).get(), now.plusSeconds(1), null, null, 0);
+
+    assertTrue(taskRepository.removeIfNotPicked(instance));
+    assertTrue(taskRepository.getExecution(instance).isEmpty());
+  }
+
+  @Test
+  public void remove_if_not_picked_should_keep_picked_execution() {
+    Instant now = TimeHelper.truncatedInstantNow();
+    TaskInstance<Void> instance = oneTimeTask.instance("id1");
+    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, now));
+    taskRepository.pick(taskRepository.getExecution(instance).get(), now);
+
+    assertFalse(taskRepository.removeIfNotPicked(instance));
+    assertTrue(taskRepository.getExecution(instance).isPresent());
+  }
+
   private List<Execution> getScheduledExecutions(
       ScheduledExecutionsFilter filter, String taskName) {
     List<Execution> alternativeTasks = new ArrayList<>();
