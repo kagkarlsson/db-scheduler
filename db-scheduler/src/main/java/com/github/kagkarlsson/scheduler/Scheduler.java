@@ -71,8 +71,8 @@ public class Scheduler implements SchedulerClient {
   private final Waiter heartbeatWaiter;
   final SettableSchedulerState schedulerState = new SettableSchedulerState();
   final ConfigurableLogger failureLogger;
-  final boolean logStuckExecutions;
-  final Duration stuckExecutionsLoggingThreshold;
+  final boolean logLongRunningExecutions;
+  final Duration longRunningExecutionsLoggingThreshold;
 
   protected Scheduler(
       Clock clock,
@@ -92,8 +92,8 @@ public class Scheduler implements SchedulerClient {
       Duration shutdownMaxWait,
       LogLevel logLevel,
       boolean logStackTrace,
-      boolean logStuckExecutions,
-      Duration stuckExecutionsLoggingThreshold,
+      boolean logLongRunningExecutions,
+      Duration longRunningExecutionsLoggingThreshold,
       List<OnStartup> onStartup,
       ExecutorService dueExecutor,
       ScheduledExecutorService housekeeperExecutor) {
@@ -118,8 +118,8 @@ public class Scheduler implements SchedulerClient {
     this.housekeeperExecutor = housekeeperExecutor;
     delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
-    this.logStuckExecutions = logStuckExecutions;
-    this.stuckExecutionsLoggingThreshold = stuckExecutionsLoggingThreshold;
+    this.logLongRunningExecutions = logLongRunningExecutions;
+    this.longRunningExecutionsLoggingThreshold = longRunningExecutionsLoggingThreshold;
 
     if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
       schedulerTaskRepository.verifySupportsLockAndFetch();
@@ -185,12 +185,14 @@ public class Scheduler implements SchedulerClient {
         heartbeatWaiter.getWaitDuration().toMillis(),
         MILLISECONDS);
 
-    if (logStuckExecutions) {
-      long stuckExecutionsThresholdMillis = stuckExecutionsLoggingThreshold.toMillis();
+    if (logLongRunningExecutions) {
+      long longRunningExecutionsThresholdMillis = longRunningExecutionsLoggingThreshold.toMillis();
       housekeeperExecutor.scheduleWithFixedDelay(
-          new RunAndLogErrors(this::logStuckExecutions, schedulerListeners),
-          stuckExecutionsThresholdMillis,
-          Math.min(detectDeadWaiter.getWaitDuration().toMillis(), stuckExecutionsThresholdMillis),
+          new RunAndLogErrors(this::logLongRunningExecutions, schedulerListeners),
+          longRunningExecutionsThresholdMillis,
+          Math.min(
+              2 * detectDeadWaiter.getWaitDuration().toMillis(),
+              longRunningExecutionsThresholdMillis),
           MILLISECONDS);
     }
 
@@ -453,22 +455,23 @@ public class Scheduler implements SchedulerClient {
     schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_UPDATE_HEARTBEATS);
   }
 
-  void logStuckExecutions() {
-    final List<CurrentlyExecuting> stuckExecutions =
+  void logLongRunningExecutions() {
+    final List<CurrentlyExecuting> longRunningExecutions =
         executor.getCurrentlyExecuting().stream()
             .filter(
-                executing -> executing.getDuration().compareTo(stuckExecutionsLoggingThreshold) > 0)
+                executing ->
+                    executing.getDuration().compareTo(longRunningExecutionsLoggingThreshold) > 0)
             .toList();
-    if (stuckExecutions.isEmpty()) {
-      LOG.trace("No stuck executions to log.");
+    if (longRunningExecutions.isEmpty()) {
+      LOG.trace("No long-running executions to log.");
       return;
     }
 
-    LOG.debug("Logging {} stuck executions being processed.", stuckExecutions.size());
-    stuckExecutions.forEach(
+    LOG.debug("Logging {} long-running executions being processed.", longRunningExecutions.size());
+    longRunningExecutions.forEach(
         execution -> {
           LOG.warn(
-              "Execution with {} is stuck during {}: {}",
+              "Execution with {} is long-running (execution time: {}). If this message is a false positive and the task is genuinely long-running, try increasing longRunningExecutionsLoggingThreshold or disabling logLongRunningExecutions. Current thread stacktrace: {}",
               execution.getExecution().taskInstance,
               execution.getDuration(),
               Arrays.stream(execution.getCurrentThread().getStackTrace())
@@ -477,7 +480,7 @@ public class Scheduler implements SchedulerClient {
                       Collectors.joining(
                           STACK_TRACE_ELEMENT_INDENT, STACK_TRACE_ELEMENT_INDENT, "")));
         });
-    schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_LOG_STUCK_EXECUTIONS);
+    schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_LOG_LONG_RUNNING_EXECUTIONS);
   }
 
   protected void updateHeartbeatForExecution(Instant now, CurrentlyExecuting currentlyExecuting) {

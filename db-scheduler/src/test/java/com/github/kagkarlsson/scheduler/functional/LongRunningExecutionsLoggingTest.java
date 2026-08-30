@@ -21,14 +21,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.LoggerFactory;
 
-public class StuckExecutionsLoggingTest {
+public class LongRunningExecutionsLoggingTest {
   @RegisterExtension
   public EmbeddedPostgresqlExtension postgres = new EmbeddedPostgresqlExtension();
 
   @RegisterExtension public StopSchedulerExtension stopScheduler = new StopSchedulerExtension();
 
   @Test
-  public void test_stuck_thread_logging() throws InterruptedException {
+  public void test_long_running_thread_logging() throws InterruptedException {
     PausingHandler<Void> handler = new PausingHandler<>();
     ListAppender<ILoggingEvent> appender = startAndGetLogListAppender();
 
@@ -41,7 +41,7 @@ public class StuckExecutionsLoggingTest {
         Scheduler.create(postgres.getDataSource(), customTask)
             .pollingInterval(Duration.ofMillis(100))
             .schedulerName(new SchedulerName.Fixed("test"))
-            .stuckExecutionsLoggingThreshold(Duration.ofMillis(40))
+            .longRunningExecutionsLoggingThreshold(Duration.ofMillis(40))
             .heartbeatInterval(Duration.ofMillis(40))
             .addSchedulerListener(listener)
             .build();
@@ -57,11 +57,11 @@ public class StuckExecutionsLoggingTest {
 
     List<ILoggingEvent> logEvents = appender.list;
 
-    checkLogEvent(logEvents, Level.DEBUG, "Logging 1 stuck executions being processed.");
+    checkLogEvent(logEvents, Level.DEBUG, "Logging 1 long-running executions being processed.");
     checkLogEvent(
         logEvents,
         Level.WARN,
-        "Execution with TaskInstance: task=custom-a, id=1, priority=0 is stuck during ");
+        "Execution with TaskInstance: task=custom-a, id=1, priority=0 is long-running (execution time: ");
   }
 
   private static void checkLogEvent(List<ILoggingEvent> logEvents, Level level, String message) {

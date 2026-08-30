@@ -246,7 +246,7 @@ graceful shutdown and to avoid dead executions.
 :gear: `.shutdownMaxWait(Duration)`<br/>
 How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this,
 consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()`
-in the ExecutionHandler and abort long-running task. Default `30min`.
+in the ExecutionHandler and abort long-running task. Default `8h`.
 
 :gear: `.enablePriority()`<br/>
 It is possible to define a priority for executions which determines the order in which due executions
@@ -316,11 +316,11 @@ How often to update the heartbeat timestamp for running executions. Default `5m`
 :gear: `.missedHeartbeatsLimit(int)`<br/>
 How many heartbeats may be missed before the execution is considered dead. Default `6`.
 
-:gear: `.logStuckExecutions(boolean)`<br/>
-Whether to run housekeeping periodical job for stuck executions logging. Default `true`.
+:gear: `.logLongRunningExecutions(boolean)`<br/>
+Whether to run housekeeping periodical job for long-running executions logging. Default `true`.
 
-:gear: `.stuckExecutionsLoggingThreshold(Duration)`<br/>
-Execution time threshold for stuck executions logging. Default `30m`.
+:gear: `.longRunningExecutionsLoggingThreshold(Duration)`<br/>
+Execution time threshold for long-running executions logging. Default `8h`.
 
 :gear: `.addExecutionInterceptor(ExecutionInterceptor)`<br/>
 Adds an `ExecutionInterceptor` which may inject logic around executions. For Spring Boot, simply register a Bean of type `ExecutionInterceptor`.
@@ -466,7 +466,7 @@ Configuration is mainly done via `application.properties`. Configuration of sche
 db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
 db-scheduler.missed-heartbeats-limit=6
-db-scheduler.stuck-executions-logging-threshold=30m
+db-scheduler.long-running-executions-logging-threshold=8h
 db-scheduler.polling-interval=10s
 db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
