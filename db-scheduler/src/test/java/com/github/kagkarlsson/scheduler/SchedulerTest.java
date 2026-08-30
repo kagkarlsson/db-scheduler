@@ -10,6 +10,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.github.kagkarlsson.scheduler.SchedulerName.Fixed;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
@@ -192,6 +193,17 @@ public class SchedulerTest {
     assertThat(scheduler.getCurrentlyExecuting(), hasSize(1));
 
     pausingHandler.waitInExecuteUntil.countDown();
+  }
+
+  @Test
+  public void scheduler_should_fail_to_start_if_table_missing() {
+    assertThrows(
+        IllegalStateException.class,
+        () ->
+            Scheduler.create(postgres.getDataSource())
+                .tableName("nonexistent_table")
+                .schedulerName(new SchedulerName.Fixed("missing-table-test"))
+                .build());
   }
 
   @Test
