@@ -95,6 +95,15 @@ public class SchedulerListeners implements SchedulerListener {
   }
 
   @Override
+  public void onExecutionRemoved(Execution execution) {
+    schedulerListeners.forEach(
+        listener -> {
+          fireAndLogErrors(
+              listener, "onExecutionRemoved", () -> listener.onExecutionRemoved(execution));
+        });
+  }
+
+  @Override
   public void onSchedulerEvent(SchedulerEventType type) {
     schedulerListeners.forEach(
         listener -> {
