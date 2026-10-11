@@ -20,7 +20,7 @@
     <hsqldb.version>2.7.4</hsqldb.version>
     <java8-matchers.version>1.6</java8-matchers.version>
     <equals-verifier.version>4.5.2</equals-verifier.version>
-    <bytebuddy.version>1.18.13</bytebuddy.version>
+    <bytebuddy.version>1.18.14</bytebuddy.version>
     <zonky-pg-embedded.version>2.2.2</zonky-pg-embedded.version>
     <zonky-pg-binaries.version>18.4.0</zonky-pg-binaries.version>
     <slf4j.version>1.7.36</slf4j.version>
@@ -334,7 +334,7 @@
     <dependency>
       <groupId>com.microsoft.sqlserver</groupId>
       <artifactId>mssql-jdbc</artifactId>
-      <version>13.4.0.jre8</version>
+      <version>13.6.0.jre8</version>
       <scope>test</scope>
     </dependency>
     <dependency>
