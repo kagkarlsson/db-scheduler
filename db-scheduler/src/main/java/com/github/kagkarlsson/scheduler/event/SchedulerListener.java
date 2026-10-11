@@ -72,6 +72,16 @@ public interface SchedulerListener {
   void onExecutionFailedHeartbeat(CurrentlyExecuting currentlyExecuting);
 
   /**
+   * Execution has been removed from the <code>scheduled_tasks</code> table, either because it
+   * completed with a <code>CompletionHandler</code> that stops the task (e.g. <code>
+   * ExecutionOperations.stop()</code>), or because it was explicitly cancelled via <code>
+   * SchedulerClient.cancel(TaskInstanceId)</code>.
+   *
+   * @param execution
+   */
+  void onExecutionRemoved(Execution execution);
+
+  /**
    * Internal scheduler event. Primarily intended for testing.
    *
    * @param type
