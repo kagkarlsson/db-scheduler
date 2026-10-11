@@ -589,16 +589,13 @@ public interface SchedulerClient {
     public void cancel(TaskInstanceId taskInstanceId) {
       String taskName = taskInstanceId.getTaskName();
       String instanceId = taskInstanceId.getId();
-      Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
-      if (execution.isPresent()) {
-        if (execution.get().isPicked()) {
-          throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
-        }
-
-        taskRepository.remove(execution.get());
-      } else {
-        throw new TaskInstanceNotFoundException(taskName, instanceId);
+      if (taskRepository.removeIfNotPicked(taskInstanceId)) {
+        return;
       }
+      if (taskRepository.getExecution(taskName, instanceId).isPresent()) {
+        throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
+      }
+      throw new TaskInstanceNotFoundException(taskName, instanceId);
     }
 
     @Override

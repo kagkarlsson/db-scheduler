@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler;
 
 import static com.github.kagkarlsson.scheduler.task.TaskInstanceId.StandardTaskInstanceId;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -119,6 +120,15 @@ public class SchedulerClientExceptionsTest {
             + taskInstance.getId()
             + ")",
         actualException.getMessage());
+  }
+
+  @Test
+  public void cancelSucceedsWhenTheExecutionWasRemoved() {
+    StandardTaskInstanceId taskInstance =
+        new StandardTaskInstanceId(randomAlphanumeric(10), randomAlphanumeric(10));
+    when(taskRepository.removeIfNotPicked(taskInstance)).thenReturn(true);
+
+    assertDoesNotThrow(() -> schedulerClient.cancel(taskInstance));
   }
 
   private Execution createExecutingExecution(StandardTaskInstanceId taskInstance) {
