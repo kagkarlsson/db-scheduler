@@ -99,6 +99,9 @@ public class SchedulerBuilder {
   }
 
   public SchedulerBuilder pollingInterval(Duration pollingInterval) {
+    if (pollingInterval == null || pollingInterval.toMillis() <= 0) {
+      throw new IllegalArgumentException("Polling interval must be greater than 0");
+    }
     this.poolingInterval = pollingInterval;
     return this;
   }
