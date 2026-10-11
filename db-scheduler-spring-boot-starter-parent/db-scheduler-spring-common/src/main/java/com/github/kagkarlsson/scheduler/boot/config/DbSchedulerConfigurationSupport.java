@@ -22,6 +22,7 @@ import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
 import com.github.kagkarlsson.scheduler.event.SchedulerListener;
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
+import com.github.kagkarlsson.scheduler.stats.ExecutorStatsBinder;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistryAdapter;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
@@ -58,6 +59,7 @@ public final class DbSchedulerConfigurationSupport {
       DbSchedulerProperties config,
       DbSchedulerCustomizer customizer,
       StatsRegistry registry,
+      ExecutorStatsBinder executorStatsBinder,
       Clock clock,
       DataSource existingDataSource,
       List<Task<?>> configuredTasks,
@@ -69,6 +71,7 @@ public final class DbSchedulerConfigurationSupport {
         config,
         toOverrides(customizer),
         registry,
+        executorStatsBinder,
         clock,
         existingDataSource,
         configuredTasks,
@@ -80,6 +83,7 @@ public final class DbSchedulerConfigurationSupport {
       DbSchedulerProperties config,
       DbSchedulerOverrides overrides,
       StatsRegistry registry,
+      ExecutorStatsBinder executorStatsBinder,
       Clock clock,
       DataSource existingDataSource,
       List<Task<?>> configuredTasks,
@@ -151,6 +155,7 @@ public final class DbSchedulerConfigurationSupport {
     builder.deleteUnresolvedAfter(config.getDeleteUnresolvedAfter());
     builder.startTasks(startupTasks(configuredTasks));
     builder.addSchedulerListener(new StatsRegistryAdapter(registry));
+    builder.executorStatsBinder(executorStatsBinder);
     builder.failureLogging(config.getFailureLoggerLevel(), config.isFailureLoggerLogStackTrace());
     builder.shutdownMaxWait(config.getShutdownMaxWait());
 
