@@ -93,6 +93,7 @@ public class Scheduler implements SchedulerClient {
       ScheduledExecutorService housekeeperExecutor) {
     this.clock = clock;
     this.schedulerTaskRepository = schedulerTaskRepository;
+    schedulerTaskRepository.validateTableExists();
     this.taskResolver = taskResolver;
     this.threadpoolSize = threadpoolSize;
     this.executor = new Executor(executorService, clock);

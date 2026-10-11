@@ -20,6 +20,7 @@ import static java.util.stream.Collectors.partitioningBy;
 import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
+import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.Clock;
@@ -800,6 +801,27 @@ public class JdbcTaskRepository implements TaskRepository {
           "Database using jdbc-customization '"
               + jdbcCustomization.getName()
               + "' does not support lock-and-fetch polling (i.e. Select-for-update)");
+    }
+  }
+
+  @Override
+  public void validateTableExists() {
+    String columns =
+        "task_name, task_instance, task_data, execution_time, picked, version"
+            + (orderByPriority ? ", priority" : "");
+    try {
+      jdbcRunner.query(
+          "select " + columns + " from " + tableName + " where 1 = 0",
+          PreparedStatementSetter.NOOP,
+          (ResultSetMapper<Object>) rs -> null);
+    } catch (SQLRuntimeException e) {
+      throw new IllegalStateException(
+          "Could not find table '"
+              + tableName
+              + "', or it is missing expected columns. "
+              + "Make sure it has been created using the correct DDL for your database — "
+              + "see the 'Database compatibility' section of the README.",
+          e);
     }
   }
 
