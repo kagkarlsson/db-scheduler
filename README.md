@@ -11,7 +11,7 @@ As such, also appreciated by users ([cbarbosa2](https://github.com/kagkarlsson/d
 
 > Your lib rocks! I'm so glad I got rid of Quartz and replaced it by yours which is way easier to handle!
 >
-> [cbarbosa2](https://github.com/cbarbosa2)
+> [cbarbosa2](https://github.com/kagkarlsson/db-scheduler/issues/115#issuecomment-649601944)
 
 Used in production by Digipost, Wise, TOMRA and [others](#who-uses-db-scheduler).
 
@@ -432,14 +432,28 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
 
 ### Getting started
 
-1. Add the following Maven dependency
+1. Add the following dependency
+
+   **Maven:**
 
    ```xml
    <dependency>
        <groupId>com.github.kagkarlsson</groupId>
        <artifactId>db-scheduler-spring-boot-4-starter</artifactId>
-       <version>16.11.0</version>
+       <version>16.12.0</version>
    </dependency>
+   ```
+
+   **Gradle (Groovy):**
+
+   ```groovy
+   implementation 'com.github.kagkarlsson:db-scheduler-spring-boot-4-starter:16.12.0'
+   ```
+
+   **Gradle (Kotlin DSL):**
+
+   ```kotlin
+   implementation("com.github.kagkarlsson:db-scheduler-spring-boot-4-starter:16.12.0")
    ```
 
    **NB:** For Spring Boot 3.x, use `db-scheduler-spring-boot-starter`
@@ -640,9 +654,9 @@ List of organizations known to be running db-scheduler in production:
 | [Statens vegvesen](https://www.vegvesen.no/) | The Norwegian Public Roads Administration                                                                                                   |
 | [Lightyear](https://lightyear.com/)          | A simple and approachable way to invest your money globally.                                                                                |
 | [NAV](https://www.nav.no/)                   | The Norwegian Labour and Welfare Administration                                                                                             |
-| [ModernLoop](https://modernloop.io/)         | Scale with your company’s hiring needs by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination. |
+| [ModernLoop](https://modernloop.io/)         | Scale with your company's hiring needs and by using ModernLoop to increase efficiency in interview scheduling, communication, and coordination. |
 | [Diffia](https://www.diffia.com/)            | Norwegian eHealth company                                                                                                                   |
-| [Swan](https://www.swan.io/)                 | Swan helps developers to embed banking services easily into their product.                                                                  |
+| [Swan](https://www.swan.io/)                 | Swan helps developers to embed banking services easily into your product.                                                                  |
 | [TOMRA](https://www.tomra.com/)              | TOMRA is a Norwegian multinational company that designs and manufactures reverse vending machines for recycling.                            |
 | [Kartverket](https://kartverket.no/)         | The Norwegian Mapping Authority.                                                                                                            |
 
