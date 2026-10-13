@@ -316,6 +316,12 @@ How often to update the heartbeat timestamp for running executions. Default `5m`
 :gear: `.missedHeartbeatsLimit(int)`<br/>
 How many heartbeats may be missed before the execution is considered dead. Default `6`.
 
+:gear: `.logLongRunningExecutions(boolean)`<br/>
+Whether to run housekeeping periodical job for long-running executions logging. Default `true`.
+
+:gear: `.longRunningExecutionsLoggingThreshold(Duration)`<br/>
+Execution time threshold for long-running executions logging. Default `8h`.
+
 :gear: `.addExecutionInterceptor(ExecutionInterceptor)`<br/>
 Adds an `ExecutionInterceptor` which may inject logic around executions. For Spring Boot, simply register a Bean of type `ExecutionInterceptor`.
 
@@ -474,6 +480,7 @@ Anything left unset falls back to the corresponding property, and then to the li
 db-scheduler.enabled=true
 db-scheduler.heartbeat-interval=5m
 db-scheduler.missed-heartbeats-limit=6
+db-scheduler.long-running-executions-logging-threshold=8h
 db-scheduler.polling-interval=10s
 db-scheduler.table-name=scheduled_tasks
 db-scheduler.immediate-execution-enabled=false
