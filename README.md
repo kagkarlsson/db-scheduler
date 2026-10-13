@@ -246,7 +246,7 @@ graceful shutdown and to avoid dead executions.
 :gear: `.shutdownMaxWait(Duration)`<br/>
 How long the scheduler will wait before interrupting executor-service threads. If you find yourself using this,
 consider if it is possible to instead regularly check `executionContext.getSchedulerState().isShuttingDown()`
-in the ExecutionHandler and abort long-running task. Default `8h`.
+in the ExecutionHandler and abort long-running task. Default `30min`.
 
 :gear: `.enablePriority()`<br/>
 It is possible to define a priority for executions which determines the order in which due executions
