@@ -23,6 +23,7 @@ import com.github.kagkarlsson.scheduler.task.schedule.CronSchedule;
 import com.github.kagkarlsson.scheduler.task.schedule.Daily;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -120,8 +121,16 @@ public class Jackson3SerializerTest {
     Jackson3Serializer customSerializer = new Jackson3Serializer(customizer);
 
     DataWithEnum data = new DataWithEnum(TestEnum.FOO);
+
+    byte[] serialized = customSerializer.serialize(data);
+
+    // assert that customizer is used
     assertEquals(
-        data, customSerializer.deserialize(DataWithEnum.class, customSerializer.serialize(data)));
+      "{\"value\":\"FOO\"}", new String(serialized, StandardCharsets.UTF_8));
+
+    // assert that serialization round-trip works
+    assertEquals(
+        data, customSerializer.deserialize(DataWithEnum.class, serialized));
   }
 
   private enum TestEnum {
