@@ -18,13 +18,17 @@ import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
+import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.zone.ZoneOffsetTransition;
+import java.time.zone.ZoneRules;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -71,12 +75,28 @@ public class CronSchedule implements Schedule, Serializable {
   public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
     lazyInitExecutionTime(); // for deserialized objects
 
-    // frame the 'last done' time in the context of the time zone for this schedule
+    // start from the time the execution was due (the executionTime) rather than the time it was
+    // done. cron-utils already matches a time repeated when the clocks go back only once, but only
+    // when it is given that match itself (the executionTime), not a time shortly after it (the
+    // timeDone). Use 'done' when the execution finished after the next time, e.g. when it ran long
+    // or the scheduler was down
+    Instant timeDone = executionComplete.getTimeDone();
+    Execution execution = executionComplete.getExecution();
+    if (execution != null) {
+      Instant nextTime = nextExecutionTimeAfter(execution.executionTime);
+      if (nextTime.isAfter(timeDone)) {
+        return nextTime;
+      }
+    }
+    return nextExecutionTimeAfter(timeDone);
+  }
+
+  private Instant nextExecutionTimeAfter(Instant after) {
+    // frame the 'after' time in the context of the time zone for this schedule
     // so that expressions like "0 05 13,20 * * ?" (New York) can operate in the
     // context of the desired time zone
-    ZonedDateTime lastDone = ZonedDateTime.ofInstant(executionComplete.getTimeDone(), zoneId);
-
-    Optional<ZonedDateTime> nextTime = cronExecutionTime.nextExecution(lastDone);
+    Optional<ZonedDateTime> nextTime =
+        cronExecutionTime.nextExecution(ZonedDateTime.ofInstant(after, zoneId));
     if (nextTime.isEmpty()) {
       LOG.error(
           "Cron-pattern did not return any further execution-times. This behavior is currently "
@@ -87,7 +107,31 @@ public class CronSchedule implements Schedule, Serializable {
       return Schedule.NEVER;
     }
 
-    return nextTime.get().toInstant();
+    // a time skipped when the clocks go forward runs once at the change instead, the way the
+    // repeated time runs once when they go back
+    Instant next = nextTime.get().toInstant();
+    ZoneRules rules = zoneId.getRules();
+    for (ZoneOffsetTransition transition = rules.nextTransition(after);
+        transition != null && transition.getInstant().isBefore(next);
+        transition = rules.nextTransition(transition.getInstant())) {
+      if (transition.isGap() && skipsLessFrequentThanHourlyTime(transition)) {
+        return transition.getInstant();
+      }
+    }
+    return next;
+  }
+
+  private boolean skipsLessFrequentThanHourlyTime(ZoneOffsetTransition gap) {
+    // evaluate the local times in UTC, where none of them is skipped
+    Optional<ZonedDateTime> skipped =
+        cronExecutionTime.nextExecution(
+            gap.getDateTimeBefore().minusSeconds(1).atZone(ZoneOffset.UTC));
+    if (skipped.isEmpty() || !skipped.get().toLocalDateTime().isBefore(gap.getDateTimeAfter())) {
+      return false;
+    }
+    // same frequency limit as cron-utils applies to the repeated time when the clocks go back
+    Optional<ZonedDateTime> following = cronExecutionTime.nextExecution(skipped.get());
+    return following.isEmpty() || Duration.between(skipped.get(), following.get()).toHours() > 1;
   }
 
   private void lazyInitExecutionTime() {
