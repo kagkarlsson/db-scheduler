@@ -575,7 +575,8 @@ public interface SchedulerClient {
         rescheduleUpdate.data(newData);
       }
 
-      boolean success = taskRepository.reschedule(execution, rescheduleUpdate.build());
+      boolean success =
+          taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate.build());
 
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);

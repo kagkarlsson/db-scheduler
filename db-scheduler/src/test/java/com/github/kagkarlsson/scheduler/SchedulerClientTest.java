@@ -7,8 +7,8 @@ import static com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.d
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doAnswer;
@@ -186,8 +186,9 @@ public class SchedulerClientTest {
   }
 
   @Test
-  public void concurrent_clients_should_reschedule_when_execution_has_been_updated_since_it_was_read()
-      throws Exception {
+  public void
+      concurrent_clients_should_reschedule_when_execution_has_been_updated_since_it_was_read()
+          throws Exception {
     TaskInstance<Void> instance = oneTimeTaskA.instance("1");
     var repository =
         spy(
