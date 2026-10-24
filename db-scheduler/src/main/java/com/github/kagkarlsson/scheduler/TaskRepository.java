@@ -79,6 +79,8 @@ public interface TaskRepository {
 
   boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
 
+  boolean rescheduleIfNotPicked(TaskInstanceId taskInstanceId, RescheduleUpdate rescheduleUpdate);
+
   boolean reschedule(
       Execution execution,
       Instant nextExecutionTime,

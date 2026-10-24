@@ -600,6 +600,60 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public boolean rescheduleIfNotPicked(
+      TaskInstanceId taskInstanceId, RescheduleUpdate rescheduleUpdate) {
+    var updates =
+        new StringBuilder("picked = ?, picked_by = ?, last_heartbeat = ?, execution_time = ?");
+    if (rescheduleUpdate.lastSuccess() != null) {
+      updates.append(", last_success = ?");
+    }
+    if (rescheduleUpdate.lastFailure() != null) {
+      updates.append(", last_failure = ?");
+    }
+    if (rescheduleUpdate.consecutiveFailures() != null) {
+      updates.append(", consecutive_failures = ?");
+    }
+    if (rescheduleUpdate.data() != null) {
+      updates.append(", task_data = ?");
+    }
+    updates.append(", version = version + 1");
+
+    var query =
+        "update "
+            + tableName
+            + " set "
+            + updates
+            + " where picked = ? and task_name = ? and task_instance = ?";
+    var updated =
+        jdbcRunner.execute(
+            query,
+            ps -> {
+              var index = 1;
+              ps.setBoolean(index++, false);
+              ps.setString(index++, null);
+              jdbcCustomization.setInstant(ps, index++, null);
+              jdbcCustomization.setInstant(ps, index++, rescheduleUpdate.executionTime());
+              if (rescheduleUpdate.lastSuccess() != null) {
+                jdbcCustomization.setInstant(ps, index++, rescheduleUpdate.lastSuccess().value());
+              }
+              if (rescheduleUpdate.lastFailure() != null) {
+                jdbcCustomization.setInstant(ps, index++, rescheduleUpdate.lastFailure().value());
+              }
+              if (rescheduleUpdate.consecutiveFailures() != null) {
+                ps.setInt(index++, rescheduleUpdate.consecutiveFailures().value());
+              }
+              if (rescheduleUpdate.data() != null) {
+                jdbcCustomization.setTaskData(
+                    ps, index++, serializer.serialize(rescheduleUpdate.data().value()));
+              }
+              ps.setBoolean(index++, false);
+              ps.setString(index++, taskInstanceId.getTaskName());
+              ps.setString(index, taskInstanceId.getId());
+            });
+    return updated == 1;
+  }
+
+  @Override
   public Optional<Execution> pick(Execution e, Instant timePicked) {
     final int updated =
         jdbcRunner.execute(
