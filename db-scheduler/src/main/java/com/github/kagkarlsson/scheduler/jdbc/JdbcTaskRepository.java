@@ -584,6 +584,38 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public boolean tryReschedule(TaskInstanceId taskInstanceId, Instant nextExecutionTime) {
+    final int updated =
+        jdbcRunner.execute(
+            "update "
+                + tableName
+                + " set execution_time = ?, picked = ?, picked_by = ?, "
+                + "last_heartbeat = ?, last_success = ?, last_failure = ?, "
+                + "consecutive_failures = ?, version = version + 1 "
+                + "where task_name = ? and task_instance = ? and picked = ?",
+            ps -> {
+              int index = 1;
+              jdbcCustomization.setInstant(ps, index++, nextExecutionTime);
+              ps.setBoolean(index++, false);
+              ps.setString(index++, null);
+              jdbcCustomization.setInstant(ps, index++, null);
+              jdbcCustomization.setInstant(ps, index++, null);
+              jdbcCustomization.setInstant(ps, index++, null);
+              ps.setInt(index++, 0);
+              ps.setString(index++, taskInstanceId.getTaskName());
+              ps.setString(index++, taskInstanceId.getId());
+              ps.setBoolean(index, false);
+            });
+
+    if (updated > 1) {
+      throw new IllegalStateException(
+          "Updated multiple executions when try-rescheduling task-instance: " + taskInstanceId);
+    }
+
+    return updated == 1;
+  }
+
+  @Override
   public Optional<Execution> pick(Execution e, Instant timePicked) {
     final int updated =
         jdbcRunner.execute(

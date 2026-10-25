@@ -207,6 +207,17 @@ public interface SchedulerClient {
   <T> boolean reschedule(SchedulableInstance<T> schedulableInstance);
 
   /**
+   * Tries to reschedule an existing execution. Returns {@literal false} if the execution does not
+   * exist or is currently running. Database failures are propagated.
+   *
+   * @param taskInstanceId task-instance to reschedule
+   * @param newExecutionTime the new execution time
+   * @return {@literal true} if rescheduled successfully, {@literal false} if not found or currently
+   *     running
+   */
+  boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
+
+  /**
    * Removes/Cancels an execution.
    *
    * @param taskInstanceId
@@ -581,6 +592,15 @@ public interface SchedulerClient {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
       } else {
         LOG.warn("Failed to reschedule task instance: {}", taskInstanceId);
+      }
+      return success;
+    }
+
+    @Override
+    public boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+      boolean success = taskRepository.tryReschedule(taskInstanceId, newExecutionTime);
+      if (success) {
+        schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
       }
       return success;
     }
