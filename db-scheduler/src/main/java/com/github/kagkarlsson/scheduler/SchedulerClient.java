@@ -142,6 +142,31 @@ public interface SchedulerClient {
   void scheduleBatch(List<SchedulableInstance<?>> schedulableInstances);
 
   /**
+   * Schedule all task instances that are not already scheduled. Existing executions are left
+   * unchanged. Currently supported only with PostgreSQL.
+   *
+   * <p>If the same task instance occurs more than once, the first occurrence is used.
+   *
+   * @param taskInstances task-instances to schedule, optionally with data
+   * @param executionTime instant it should run
+   * @throws UnsupportedOperationException if the configured database does not support this
+   *     operation
+   */
+  void scheduleBatchIfNotExists(List<TaskInstance<?>> taskInstances, Instant executionTime);
+
+  /**
+   * Schedule all task instances that are not already scheduled. Existing executions are left
+   * unchanged. Currently supported only with PostgreSQL.
+   *
+   * <p>If the same task instance occurs more than once, the first occurrence is used.
+   *
+   * @param schedulableInstances task-instances with individual execution times
+   * @throws UnsupportedOperationException if the configured database does not support this
+   *     operation
+   */
+  void scheduleBatchIfNotExists(List<SchedulableInstance<?>> schedulableInstances);
+
+  /**
    * Schedule a batch of executions. If any of the executions already exists, the scheduling will
    * fail and an exception will be thrown.
    *
@@ -164,6 +189,30 @@ public interface SchedulerClient {
    */
   default void scheduleBatch(Stream<SchedulableInstance<?>> schedulableInstances) {
     StreamUtils.chunkStream(schedulableInstances, DEFAULT_BATCH_SIZE).forEach(this::scheduleBatch);
+  }
+
+  /**
+   * Schedule task instances that are not already scheduled, in batches of {@link
+   * #DEFAULT_BATCH_SIZE}. Currently supported only with PostgreSQL.
+   *
+   * @param taskInstances task-instances to schedule, optionally with data
+   * @param executionTime instant it should run
+   */
+  default void scheduleBatchIfNotExists(
+      Stream<TaskInstance<?>> taskInstances, Instant executionTime) {
+    StreamUtils.chunkStream(taskInstances, DEFAULT_BATCH_SIZE)
+        .forEach(chunk -> scheduleBatchIfNotExists(chunk, executionTime));
+  }
+
+  /**
+   * Schedule task instances that are not already scheduled, in batches of {@link
+   * #DEFAULT_BATCH_SIZE}. Currently supported only with PostgreSQL.
+   *
+   * @param schedulableInstances task-instances with individual execution times
+   */
+  default void scheduleBatchIfNotExists(Stream<SchedulableInstance<?>> schedulableInstances) {
+    StreamUtils.chunkStream(schedulableInstances, DEFAULT_BATCH_SIZE)
+        .forEach(this::scheduleBatchIfNotExists);
   }
 
   /**
@@ -478,6 +527,31 @@ public interface SchedulerClient {
 
       taskRepository.createBatch(batchToSchedule);
       notifyListenersOfScheduledBatch(batchToSchedule);
+    }
+
+    @Override
+    public void scheduleBatchIfNotExists(
+        List<TaskInstance<?>> taskInstances, Instant executionTime) {
+      List<ScheduledTaskInstance> batchToSchedule =
+          taskInstances.stream()
+              .map(taskInstance -> new ScheduledTaskInstance(taskInstance, executionTime))
+              .collect(toList());
+
+      List<ScheduledTaskInstance> scheduled =
+          taskRepository.createBatchIfNotExists(batchToSchedule);
+      notifyListenersOfScheduledBatch(scheduled);
+    }
+
+    @Override
+    public void scheduleBatchIfNotExists(List<SchedulableInstance<?>> schedulableInstances) {
+      List<ScheduledTaskInstance> batchToSchedule =
+          schedulableInstances.stream()
+              .map(schedulable -> ScheduledTaskInstance.fixExecutionTime(schedulable, clock))
+              .collect(toList());
+
+      List<ScheduledTaskInstance> scheduled =
+          taskRepository.createBatchIfNotExists(batchToSchedule);
+      notifyListenersOfScheduledBatch(scheduled);
     }
 
     private void notifyListenersOfScheduledBatch(List<ScheduledTaskInstance> batchToSchedule) {

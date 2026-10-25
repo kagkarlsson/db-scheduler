@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
+import com.github.kagkarlsson.jdbc.RowMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.ExecutionTimeAndId;
@@ -41,15 +42,19 @@ import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -62,6 +67,7 @@ import org.slf4j.LoggerFactory;
 public class JdbcTaskRepository implements TaskRepository {
 
   public static final String DEFAULT_TABLE_NAME = "scheduled_tasks";
+  private static final int MAX_INSERTS_PER_STATEMENT = 100;
 
   private static final Logger LOG = LoggerFactory.getLogger(JdbcTaskRepository.class);
   private final TaskResolver taskResolver;
@@ -204,10 +210,57 @@ public class JdbcTaskRepository implements TaskRepository {
     }
   }
 
+  @Override
+  public List<ScheduledTaskInstance> createBatchIfNotExists(
+      List<ScheduledTaskInstance> executions) {
+    if (executions.isEmpty()) {
+      return List.of();
+    }
+
+    String insertIgnoreDuplicatesClause = jdbcCustomization.getBatchInsertIgnoreDuplicatesClause();
+    Map<TaskInstanceId, ScheduledTaskInstance> uniqueExecutions = new LinkedHashMap<>();
+    for (ScheduledTaskInstance execution : executions) {
+      uniqueExecutions.putIfAbsent(
+          TaskInstanceId.of(execution.getTaskName(), execution.getId()), execution);
+    }
+
+    List<ScheduledTaskInstance> distinctExecutions = new ArrayList<>(uniqueExecutions.values());
+    Set<TaskInstanceId> insertedTaskInstances = new HashSet<>();
+    for (int start = 0; start < distinctExecutions.size(); start += MAX_INSERTS_PER_STATEMENT) {
+      List<ScheduledTaskInstance> batch =
+          distinctExecutions.subList(
+              start, Math.min(start + MAX_INSERTS_PER_STATEMENT, distinctExecutions.size()));
+      String query = getBatchInsertIfNotExistsQuery(batch.size(), insertIgnoreDuplicatesClause);
+      List<TaskInstanceId> insertedInBatch =
+          jdbcRunner.query(
+              query,
+              ps -> {
+                int index = 1;
+                for (ScheduledTaskInstance execution : batch) {
+                  index = setInsertParameters(execution, ps, index);
+                }
+              },
+              (RowMapper<TaskInstanceId>)
+                  rs ->
+                      TaskInstanceId.of(
+                          rs.getString("task_name"), rs.getString("task_instance")));
+      insertedTaskInstances.addAll(insertedInBatch);
+    }
+
+    return uniqueExecutions.entrySet().stream()
+        .filter(entry -> insertedTaskInstances.contains(entry.getKey()))
+        .map(Map.Entry::getValue)
+        .collect(toList());
+  }
+
   private void setInsertParameters(ScheduledTaskInstance value, PreparedStatement ps)
       throws SQLException {
+    setInsertParameters(value, ps, 1);
+  }
+
+  private int setInsertParameters(ScheduledTaskInstance value, PreparedStatement ps, int index)
+      throws SQLException {
     var taskInstance = value.getTaskInstance();
-    int index = 1;
     ps.setString(index++, taskInstance.getTaskName());
     ps.setString(index++, taskInstance.getId());
     jdbcCustomization.setTaskData(ps, index++, serializer.serialize(taskInstance.getData()));
@@ -215,20 +268,39 @@ public class JdbcTaskRepository implements TaskRepository {
     ps.setBoolean(index++, false);
     ps.setLong(index++, 1L);
     if (orderByPriority) {
-      ps.setInt(index, taskInstance.getPriority());
+      ps.setInt(index++, taskInstance.getPriority());
     }
+    return index;
   }
 
   private String getInsertQuery(String tableName) {
     // FIXLATER: replace with some sort of generic SQL-builder, possibly extend micro-jdbc
     //           with execute(query-and-pss) and have builder return that..
+    return "insert into " + tableName + getInsertColumns() + " values " + getInsertValues();
+  }
+
+  private String getBatchInsertIfNotExistsQuery(
+      int numberOfExecutions, String insertIgnoreDuplicatesClause) {
+    String values =
+        IntStream.range(0, numberOfExecutions)
+            .mapToObj(ignored -> getInsertValues())
+            .collect(joining(", "));
     return "insert into "
         + tableName
-        + "(task_name, task_instance, task_data, execution_time, picked, version"
+        + getInsertColumns()
+        + " values "
+        + values
+        + insertIgnoreDuplicatesClause;
+  }
+
+  private String getInsertColumns() {
+    return "(task_name, task_instance, task_data, execution_time, picked, version"
         + (orderByPriority ? ", priority" : "")
-        + ") values(?, ?, ?, ?, ?, ? "
-        + (orderByPriority ? ", ?" : "")
         + ")";
+  }
+
+  private String getInsertValues() {
+    return "(?, ?, ?, ?, ?, ?" + (orderByPriority ? ", ?" : "") + ")";
   }
 
   @Override
