@@ -1,6 +1,7 @@
 package com.github.kagkarlsson.scheduler.jdbc;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
@@ -20,5 +21,15 @@ class PostgreSqlJdbcCustomizationTest {
     assertTrue(jdbcCustomization.supportsExplicitQueryLimitPart());
     Arrays.asList(1, 5, 20, 100)
         .forEach(it -> assertEquals(" LIMIT " + it, jdbcCustomization.getQueryLimitPart(it)));
+    assertEquals(
+        " on conflict (task_name, task_instance) do nothing returning task_name, task_instance",
+        jdbcCustomization.getBatchInsertIgnoreDuplicatesClause());
+  }
+
+  @Test
+  void batchInsertIgnoreDuplicatesIsNotSupportedByDefaultCustomization() {
+    assertThrows(
+        UnsupportedOperationException.class,
+        () -> new DefaultJdbcCustomization(false).getBatchInsertIgnoreDuplicatesClause());
   }
 }
