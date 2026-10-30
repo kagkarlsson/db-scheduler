@@ -7,14 +7,20 @@ import static com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.d
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.TestTasks.SavingHandler;
+import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
+import com.github.kagkarlsson.scheduler.jdbc.JdbcTaskRepository;
 import com.github.kagkarlsson.scheduler.serializer.JavaSerializer;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
+import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
@@ -25,6 +31,9 @@ import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import org.hamcrest.CoreMatchers;
@@ -174,6 +183,57 @@ public class SchedulerClientTest {
     scheduler.tick(ofSeconds(1));
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+  }
+
+  @Test
+  public void
+      concurrent_clients_should_reschedule_when_execution_has_been_updated_since_it_was_read()
+          throws Exception {
+    TaskInstance<Void> instance = oneTimeTaskA.instance("1");
+    var repository =
+        spy(
+            new JdbcTaskRepository(
+                DB.getDataSource(),
+                false,
+                JdbcTaskRepository.DEFAULT_TABLE_NAME,
+                new TaskResolver(SchedulerListeners.NOOP, settableClock, List.of(oneTimeTaskA)),
+                new SchedulerName.Fixed("client"),
+                false,
+                settableClock));
+    repository.createIfNotExists(
+        new ScheduledTaskInstance(instance, settableClock.now().plusSeconds(1)));
+
+    var bothClientsHaveReadTheExecution = new CyclicBarrier(2);
+    doAnswer(
+            invocation -> {
+              var execution = invocation.callRealMethod();
+              bothClientsHaveReadTheExecution.await(5, TimeUnit.SECONDS);
+              return execution;
+            })
+        .when(repository)
+        .getExecution(instance.getTaskName(), instance.getId());
+
+    SchedulerClient firstClient =
+        new SchedulerClient.StandardSchedulerClient(repository, settableClock);
+    SchedulerClient secondClient =
+        new SchedulerClient.StandardSchedulerClient(repository, settableClock);
+    var executor = Executors.newFixedThreadPool(2);
+    try {
+      var firstReschedule =
+          executor.submit(
+              () -> firstClient.reschedule(instance, settableClock.now().plusSeconds(2)));
+      var secondReschedule =
+          executor.submit(
+              () -> secondClient.reschedule(instance, settableClock.now().plusSeconds(2)));
+
+      assertDoesNotThrow(
+          () -> {
+            assertTrue(firstReschedule.get(5, TimeUnit.SECONDS));
+            assertTrue(secondReschedule.get(5, TimeUnit.SECONDS));
+          });
+    } finally {
+      executor.shutdownNow();
+    }
   }
 
   @Test
