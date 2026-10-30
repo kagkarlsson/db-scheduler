@@ -41,6 +41,7 @@ import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
+import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -500,6 +501,21 @@ public class JdbcTaskRepository implements TaskRepository {
               + "indicates that it does not support SELECT FOR UPDATE .. SKIP LOCKED. If it indeed does, "
               + "please indicate so in the JdbcCustomization.");
     }
+  }
+
+  @Override
+  public boolean removeIfNotPicked(TaskInstanceId taskInstanceId) {
+    final int removed =
+        jdbcRunner.execute(
+            "delete from "
+                + tableName
+                + " where task_name = ? and task_instance = ? and picked = ?",
+            ps -> {
+              ps.setString(1, taskInstanceId.getTaskName());
+              ps.setString(2, taskInstanceId.getId());
+              ps.setBoolean(3, false);
+            });
+    return removed > 0;
   }
 
   @Override
