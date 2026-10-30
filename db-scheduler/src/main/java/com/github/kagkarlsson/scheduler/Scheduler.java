@@ -274,8 +274,7 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
-  public void scheduleBatchIfNotExists(
-      List<TaskInstance<?>> taskInstances, Instant executionTime) {
+  public void scheduleBatchIfNotExists(List<TaskInstance<?>> taskInstances, Instant executionTime) {
     this.delegate.scheduleBatchIfNotExists(taskInstances, executionTime);
   }
 

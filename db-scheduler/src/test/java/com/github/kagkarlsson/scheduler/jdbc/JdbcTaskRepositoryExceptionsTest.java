@@ -5,6 +5,8 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
@@ -12,11 +14,13 @@ import com.github.kagkarlsson.jdbc.PreparedStatementSetter;
 import com.github.kagkarlsson.jdbc.ResultSetMapper;
 import com.github.kagkarlsson.jdbc.SQLRuntimeException;
 import com.github.kagkarlsson.scheduler.SystemClock;
+import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
 import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.SchedulableTaskInstance;
+import com.github.kagkarlsson.scheduler.task.ScheduledTaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.google.common.collect.Lists;
 import java.time.Instant;
@@ -89,6 +93,26 @@ public class JdbcTaskRepositoryExceptionsTest {
     assertEquals(rootCause, actualException.getCause());
     assertEquals(execution.getTaskInstance().getTaskName(), actualException.getTaskName());
     assertEquals(execution.getTaskInstance().getId(), actualException.getInstanceId());
+  }
+
+  @Test
+  public void createBatchIfNotExistsIsUnsupportedByDefaultCustomization() {
+    TaskInstance<Void> taskInstance =
+        new TaskInstance<>(randomAlphanumeric(10), randomAlphanumeric(10));
+
+    assertThrows(
+        UnsupportedOperationException.class,
+        () ->
+            jdbcTaskRepository.createBatchIfNotExists(
+                List.of(new ScheduledTaskInstance(taskInstance, Instant.now()))));
+  }
+
+  @Test
+  public void createBatchIfNotExistsIsUnsupportedByDefaultRepository() {
+    TaskRepository repository = mock(TaskRepository.class, CALLS_REAL_METHODS);
+
+    assertThrows(
+        UnsupportedOperationException.class, () -> repository.createBatchIfNotExists(emptyList()));
   }
 
   @Test

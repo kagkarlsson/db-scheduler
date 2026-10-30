@@ -154,6 +154,65 @@ public class JdbcTaskRepositoryTest {
   }
 
   @Test
+  public void test_createBatchIfNotExists_skips_existing_and_duplicate_executions() {
+    Instant originalExecutionTime = TimeHelper.truncatedInstantNow().minusSeconds(60);
+    Instant batchExecutionTime = originalExecutionTime.plusSeconds(30);
+    TaskInstance<Integer> existing = oneTimeTaskWithData.instance("existing", 7);
+    TaskInstance<Integer> firstDuplicate = oneTimeTaskWithData.instance("duplicate", 1);
+    TaskInstance<Integer> secondDuplicate = oneTimeTaskWithData.instance("duplicate", 2);
+    TaskInstance<Integer> other = oneTimeTaskWithData.instance("other", 3);
+
+    taskRepository.createIfNotExists(
+        new SchedulableTaskInstance<>(existing, originalExecutionTime));
+
+    List<ScheduledTaskInstance> inserted =
+        taskRepository.createBatchIfNotExists(
+            List.of(
+                new ScheduledTaskInstance(firstDuplicate, batchExecutionTime),
+                new ScheduledTaskInstance(existing, batchExecutionTime),
+                new ScheduledTaskInstance(secondDuplicate, batchExecutionTime.plusSeconds(1)),
+                new ScheduledTaskInstance(other, batchExecutionTime)));
+
+    assertEquals(
+        List.of("duplicate", "other"),
+        inserted.stream().map(ScheduledTaskInstance::getId).collect(Collectors.toList()));
+    assertEquals(
+        1, taskRepository.getExecution(firstDuplicate).orElseThrow().taskInstance.getData());
+
+    Execution existingExecution = taskRepository.getExecution(existing).orElseThrow();
+    assertEquals(originalExecutionTime, existingExecution.executionTime);
+    assertEquals(7, existingExecution.taskInstance.getData());
+  }
+
+  @Test
+  public void test_createBatchIfNotExists_returns_empty_for_empty_input() {
+    assertThat(taskRepository.createBatchIfNotExists(Collections.emptyList()), is(empty()));
+  }
+
+  @Test
+  public void test_createBatchIfNotExists_chunks_large_batches_and_sets_priority() {
+    JdbcTaskRepository repositoryWithPriority = createRepository(taskResolver, true);
+    Instant now = TimeHelper.truncatedInstantNow();
+    List<ScheduledTaskInstance> executions =
+        IntStream.range(0, 205)
+            .mapToObj(
+                i ->
+                    new ScheduledTaskInstance(
+                        oneTimeTask.instanceBuilder("batch-" + i).priority(i).build(), now))
+            .collect(Collectors.toList());
+
+    List<ScheduledTaskInstance> inserted =
+        repositoryWithPriority.createBatchIfNotExists(executions);
+
+    assertEquals(205, inserted.size());
+    Execution lastExecution =
+        repositoryWithPriority
+            .getExecution(oneTimeTask.instanceBuilder("batch-204").priority(204).build())
+            .orElseThrow();
+    assertEquals(204, lastExecution.taskInstance.getPriority());
+  }
+
+  @Test
   public void test_replace() {
     Instant now = TimeHelper.truncatedInstantNow();
 

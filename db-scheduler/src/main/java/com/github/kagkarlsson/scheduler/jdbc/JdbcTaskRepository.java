@@ -242,8 +242,7 @@ public class JdbcTaskRepository implements TaskRepository {
               },
               (RowMapper<TaskInstanceId>)
                   rs ->
-                      TaskInstanceId.of(
-                          rs.getString("task_name"), rs.getString("task_instance")));
+                      TaskInstanceId.of(rs.getString("task_name"), rs.getString("task_instance")));
       insertedTaskInstances.addAll(insertedInBatch);
     }
 
