@@ -315,6 +315,11 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  public boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+    return this.delegate.tryReschedule(taskInstanceId, newExecutionTime);
+  }
+
+  @Override
   public <T> boolean schedule(
       TaskInstance<T> taskInstance, Instant executionTime, ScheduleOptions scheduleOptions) {
     return this.delegate.schedule(taskInstance, executionTime, scheduleOptions);
