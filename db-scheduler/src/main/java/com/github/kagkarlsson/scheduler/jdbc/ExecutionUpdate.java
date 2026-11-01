@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 class ExecutionUpdate {
   private static final Logger LOG = LoggerFactory.getLogger(ExecutionUpdate.class);
 
-  private final Long versionToUpdate;
+  @Nullable private final Long versionToUpdate;
   private final TaskInstanceId taskInstance;
   @Nullable private NewValue<byte[]> taskData;
   @Nullable private NewValue<Instant> executionTime;
@@ -50,8 +50,18 @@ class ExecutionUpdate {
     this.version = new NewValue<>(versionToUpdate + 1);
   }
 
+  private ExecutionUpdate(TaskInstanceId taskInstance) {
+    this.taskInstance = taskInstance;
+    this.versionToUpdate = null;
+    this.version = null;
+  }
+
   static ExecutionUpdate forExecution(Execution execution) {
     return new ExecutionUpdate(execution.taskInstance, execution.version);
+  }
+
+  static ExecutionUpdate forTaskInstance(TaskInstanceId taskInstance) {
+    return new ExecutionUpdate(taskInstance);
   }
 
   ExecutionUpdate executionTime(@Nullable Instant executionTime) {
@@ -95,6 +105,78 @@ class ExecutionUpdate {
   }
 
   void updateSingle(JdbcConfig jdbcConfig) {
+    var updates = getUpdates(jdbcConfig);
+    addIfSet(
+        version, "version", updates, (ps, index) -> ps.setLong(index, throwIfNull(version.value)));
+
+    if (updates.isEmpty()) {
+      return;
+    }
+
+    var versionToUpdate = throwIfNull(this.versionToUpdate);
+
+    String query =
+        "UPDATE "
+            + jdbcConfig.tableName()
+            + " SET "
+            + updates.stream().map(u -> u.column + " = ?").collect(joining(", "))
+            + " WHERE task_name = ? AND task_instance = ? AND version = ?";
+
+    LOG.debug("ExecutionUpdate query: {}", query);
+    int updatedRows =
+        jdbcConfig
+            .runner()
+            .execute(
+                query,
+                ps -> {
+                  int index = 1;
+                  for (ColumnUpdate update : updates) {
+                    update.setter.setParameter(ps, index++);
+                  }
+                  ps.setString(index++, taskInstance.getTaskName());
+                  ps.setString(index++, taskInstance.getId());
+                  ps.setLong(index, versionToUpdate);
+                });
+    if (updatedRows != 1) {
+      throw new ExecutionException(
+          "Expected one execution to be updated, but updated " + updatedRows + ". Indicates a bug.",
+          taskInstance.getTaskName(),
+          taskInstance.getId(),
+          versionToUpdate);
+    }
+  }
+
+  boolean updateIfNotPicked(JdbcConfig jdbcConfig) {
+    var updates = getUpdates(jdbcConfig);
+    var updateParameters = updates.stream().map(u -> u.column + " = ?").collect(joining(", "));
+    var query =
+        "UPDATE "
+            + jdbcConfig.tableName()
+            + " SET "
+            + updateParameters
+            + (updates.isEmpty() ? "" : ", ")
+            + "version = version + 1"
+            + " WHERE task_name = ? AND task_instance = ? AND picked = ?";
+
+    LOG.debug("ExecutionUpdate query: {}", query);
+    var updatedRows =
+        jdbcConfig
+            .runner()
+            .execute(
+                query,
+                ps -> {
+                  var index = 1;
+                  for (var update : updates) {
+                    update.setter.setParameter(ps, index++);
+                  }
+                  ps.setString(index++, taskInstance.getTaskName());
+                  ps.setString(index++, taskInstance.getId());
+                  ps.setBoolean(index, false);
+                });
+    return updatedRows == 1;
+  }
+
+  private List<ColumnUpdate> getUpdates(JdbcConfig jdbcConfig) {
     var updates = new ArrayList<ColumnUpdate>();
 
     addIfSet(
@@ -130,42 +212,7 @@ class ExecutionUpdate {
         "last_heartbeat",
         updates,
         (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastHeartbeat.value));
-    addIfSet(
-        version, "version", updates, (ps, index) -> ps.setLong(index, throwIfNull(version.value)));
-
-    if (updates.isEmpty()) {
-      return;
-    }
-
-    String query =
-        "UPDATE "
-            + jdbcConfig.tableName()
-            + " SET "
-            + updates.stream().map(u -> u.column + " = ?").collect(joining(", "))
-            + " WHERE task_name = ? AND task_instance = ? AND version = ?";
-
-    LOG.debug("ExecutionUpdate query: {}", query);
-    int updatedRows =
-        jdbcConfig
-            .runner()
-            .execute(
-                query,
-                ps -> {
-                  int index = 1;
-                  for (ColumnUpdate update : updates) {
-                    update.setter.setParameter(ps, index++);
-                  }
-                  ps.setString(index++, taskInstance.getTaskName());
-                  ps.setString(index++, taskInstance.getId());
-                  ps.setLong(index, versionToUpdate);
-                });
-    if (updatedRows != 1) {
-      throw new ExecutionException(
-          "Expected one execution to be updated, but updated " + updatedRows + ". Indicates a bug.",
-          taskInstance.getTaskName(),
-          taskInstance.getId(),
-          versionToUpdate);
-    }
+    return updates;
   }
 
   private void addIfSet(
