@@ -177,6 +177,22 @@ public class SchedulerClientTest {
   }
 
   @Test
+  public void client_should_be_able_to_try_reschedule_executions() {
+    String data = "try-reschedule-data";
+    TaskInstanceId taskInstanceId = TaskInstanceId.of(savingTask.getName(), "try-reschedule");
+    scheduler.schedule(
+        savingTask.instance(taskInstanceId.getId(), data), settableClock.now().plusSeconds(10));
+
+    assertTrue(scheduler.tryReschedule(taskInstanceId, settableClock.now()));
+    assertFalse(
+        scheduler.tryReschedule(
+            TaskInstanceId.of("missing-task", "missing-id"), settableClock.now()));
+
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data));
+  }
+
+  @Test
   public void client_should_be_able_to_reschedule_executions_via_schedule_when_exists_reschedule() {
     String data1 = "data1";
     String data2 = "data2";
