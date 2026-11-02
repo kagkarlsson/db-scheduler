@@ -54,6 +54,42 @@ class ExecutionUpdate {
     return new ExecutionUpdate(execution.taskInstance, execution.version);
   }
 
+  static boolean tryReschedule(
+      TaskInstanceId taskInstanceId, Instant nextExecutionTime, JdbcConfig jdbcConfig) {
+    String query =
+        "UPDATE "
+            + jdbcConfig.tableName()
+            + " SET execution_time = ?, picked = ?, picked_by = ?, last_heartbeat = ?, "
+            + "last_success = ?, last_failure = ?, consecutive_failures = ?, "
+            + "version = version + 1 WHERE task_name = ? AND task_instance = ? AND picked = ?";
+
+    int updatedRows =
+        jdbcConfig
+            .runner()
+            .execute(
+                query,
+                ps -> {
+                  int index = 1;
+                  jdbcConfig.customization().setInstant(ps, index++, nextExecutionTime);
+                  ps.setBoolean(index++, false);
+                  ps.setString(index++, null);
+                  jdbcConfig.customization().setInstant(ps, index++, null);
+                  jdbcConfig.customization().setInstant(ps, index++, null);
+                  jdbcConfig.customization().setInstant(ps, index++, null);
+                  ps.setInt(index++, 0);
+                  ps.setString(index++, taskInstanceId.getTaskName());
+                  ps.setString(index++, taskInstanceId.getId());
+                  ps.setBoolean(index, false);
+                });
+
+    if (updatedRows > 1) {
+      throw new IllegalStateException(
+          "Updated multiple executions when try-rescheduling task-instance: " + taskInstanceId);
+    }
+
+    return updatedRows == 1;
+  }
+
   ExecutionUpdate executionTime(@Nullable Instant executionTime) {
     this.executionTime = new NewValue<>(executionTime);
     return this;
