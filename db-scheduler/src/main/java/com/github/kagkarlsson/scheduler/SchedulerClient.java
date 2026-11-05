@@ -596,6 +596,7 @@ public interface SchedulerClient {
         }
 
         taskRepository.remove(execution.get());
+        schedulerListeners.onExecutionRemoved(execution.get());
       } else {
         throw new TaskInstanceNotFoundException(taskName, instanceId);
       }
