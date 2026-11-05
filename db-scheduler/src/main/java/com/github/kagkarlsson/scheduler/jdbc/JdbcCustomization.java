@@ -30,6 +30,17 @@ public interface JdbcCustomization {
 
   void setTaskData(PreparedStatement p, int index, byte[] value) throws SQLException;
 
+  /**
+   * Returns the database-specific SQL suffix for an insert that ignores duplicate task instances
+   * and returns the instances inserted by the statement.
+   *
+   * <p>Currently supported only by {@link PostgreSqlJdbcCustomization}.
+   */
+  default String getBatchInsertIgnoreDuplicatesClause() {
+    throw new UnsupportedOperationException(
+        "Batch scheduling while ignoring duplicates is currently supported only for PostgreSQL");
+  }
+
   byte[] getTaskData(ResultSet rs, String columnName) throws SQLException;
 
   boolean supportsExplicitQueryLimitPart();

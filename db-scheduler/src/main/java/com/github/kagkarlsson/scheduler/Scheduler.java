@@ -293,6 +293,16 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  public void scheduleBatchIfNotExists(List<TaskInstance<?>> taskInstances, Instant executionTime) {
+    this.delegate.scheduleBatchIfNotExists(taskInstances, executionTime);
+  }
+
+  @Override
+  public void scheduleBatchIfNotExists(List<SchedulableInstance<?>> schedulableInstances) {
+    this.delegate.scheduleBatchIfNotExists(schedulableInstances);
+  }
+
+  @Override
   @SuppressWarnings("deprecation")
   public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
     this.delegate.schedule(taskInstance, executionTime);

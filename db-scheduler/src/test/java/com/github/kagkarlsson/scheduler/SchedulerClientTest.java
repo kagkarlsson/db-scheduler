@@ -15,6 +15,7 @@ import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.TestTasks.SavingHandler;
 import com.github.kagkarlsson.scheduler.serializer.JavaSerializer;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
+import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
@@ -109,6 +110,44 @@ public class SchedulerClientTest {
     scheduler.runAnyDueExecutions();
 
     assertThat(onetimeTaskHandlerA.timesExecuted.get(), CoreMatchers.is(2));
+  }
+
+  @Test
+  public void client_should_schedule_batch_if_not_exists_from_streams() {
+    SchedulerClient client = create(DB.getDataSource(), oneTimeTaskA).build();
+    Instant firstExecutionTime = settableClock.now();
+    TaskInstance<Void> first = oneTimeTaskA.instance("batch-first");
+    TaskInstance<Void> duplicate = oneTimeTaskA.instance("batch-first");
+
+    client.scheduleBatchIfNotExists(Stream.of(first, duplicate), firstExecutionTime);
+    client.scheduleBatchIfNotExists(
+        Stream.of(
+            SchedulableInstance.of(
+                oneTimeTaskA.instance("batch-second"), firstExecutionTime.plusSeconds(1)),
+            SchedulableInstance.of(
+                oneTimeTaskA.instance("batch-first"), firstExecutionTime.plusSeconds(2))));
+
+    assertThat(client.getScheduledExecutions(), hasSize(2));
+    assertEquals(
+        firstExecutionTime,
+        client
+            .getScheduledExecution(TaskInstanceId.of(oneTimeTaskA.getName(), "batch-first"))
+            .orElseThrow()
+            .getExecutionTime());
+  }
+
+  @Test
+  public void scheduler_should_forward_batch_if_not_exists_overloads() {
+    Instant executionTime = settableClock.now();
+    TaskInstance<Void> first = oneTimeTaskA.instance("scheduler-batch-first");
+    TaskInstance<Void> second = oneTimeTaskA.instance("scheduler-batch-second");
+
+    scheduler.scheduleBatchIfNotExists(List.of(first, second), executionTime);
+    scheduler.scheduleBatchIfNotExists(
+        List.of(
+            SchedulableInstance.of(oneTimeTaskA.instance("scheduler-batch-third"), executionTime)));
+
+    assertEquals(3, scheduler.getScheduledExecutions().size());
   }
 
   @Test
