@@ -4,29 +4,15 @@ Version-specific upgrade notes. For the full list of changes per release, see
 [releases](https://github.com/kagkarlsson/db-scheduler/releases).
 
 **Upgrading to 17.x**
-* The Spring Boot starters no longer register a no-op `DbSchedulerCustomizer` bean. Injecting
-`DbSchedulerCustomizer` directly will fail to resolve. Configuration previously done by implementing that
-interface is now done with a `DbSchedulerOverrides` bean, see
-[configuration options](./README.md#configuration-options). An existing `DbSchedulerCustomizer` bean is still
-honoured, but it is deprecated and will be removed in a future version.
-* `Jackson3Serializer` has moved from the Spring Boot 4 starter to the core module, from
-`com.github.kagkarlsson.scheduler.boot.autoconfigure` to `com.github.kagkarlsson.scheduler.serializer`. Its
-`Instant` serializers moved from `...boot.autoconfigure.jackson3` to `...serializer.jackson3`. Jackson 3 is an
-optional dependency of the core module, so the serializer can now be used without Spring.
+* The Spring Boot starters no longer register a no-op `DbSchedulerCustomizer` bean. Configure the starter with a
+`DbSchedulerOverrides` bean instead. An existing `DbSchedulerCustomizer` bean still works, but is deprecated.
+* `Jackson3Serializer` has moved from the Spring Boot 4 starter to the core module, package
+`com.github.kagkarlsson.scheduler.serializer`.
 * The internal JDBC helpers (`JdbcRunner`, `SQLRuntimeException`, etc.) have moved from
 `com.github.kagkarlsson.shaded.jdbc` to `com.github.kagkarlsson.jdbc`. Unlikely to affect anyone, but if you
 reference these classes directly you will have to update your imports.
-* The starter jars now declare an `Automatic-Module-Name`: `db.scheduler.spring.boot.starter` for the Boot 3
-starter and `com.github.kagkarlsson.scheduler.boot` for the Boot 4 starter. If you reference a starter from a
-`module-info.java`, replace the previous filename-derived name.
-* Logging of long-running executions is enabled by default. An execution still running after
-`longRunningExecutionsLoggingThreshold` (default 8 hours) is logged once at `WARN`, including a stack trace for
-the executing thread. Turn it off with `logLongRunningExecutions(false)`, or
-`db-scheduler.log-long-running-executions=false` for the starter.
-* `SchedulerBuilder.pollingInterval(..)` now rejects `null` and durations of zero or less.
-* The public constructors of `CurrentlyExecuting` and `ExecutionOperations` take one additional argument each,
-and the protected `Scheduler` constructor takes two. Only relevant if you construct these yourself or subclass
-`Scheduler`.
+* The starter jars now declare an `Automatic-Module-Name`, so a `requires` clause has to be updated:
+`db.scheduler.spring.boot.starter` (Boot 3) and `com.github.kagkarlsson.scheduler.boot` (Boot 4).
 
 **Upgrading to 16.x**
 * Java 17+ is required now, since we migrated our codebase to Java 17
