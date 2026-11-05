@@ -49,7 +49,7 @@ See [Database compatibility](#database-compatibility) for supported database eng
 <dependency>
     <groupId>com.github.kagkarlsson</groupId>
     <artifactId>db-scheduler</artifactId>
-    <version>16.11.0</version>
+    <version>17.0.0</version>
 </dependency>
 ```
 
@@ -444,7 +444,7 @@ For Spring Boot applications, there is a starter `db-scheduler-spring-boot-start
    <dependency>
        <groupId>com.github.kagkarlsson</groupId>
        <artifactId>db-scheduler-spring-boot-4-starter</artifactId>
-       <version>16.11.0</version>
+       <version>17.0.0</version>
    </dependency>
    ```
 
