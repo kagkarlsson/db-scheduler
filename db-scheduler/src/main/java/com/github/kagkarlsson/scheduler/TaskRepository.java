@@ -37,6 +37,18 @@ public interface TaskRepository {
 
   void createBatch(List<ScheduledTaskInstance> executions);
 
+  /**
+   * Creates the executions that do not already exist and returns only the executions inserted.
+   *
+   * <p>The default implementation is unsupported. Repositories can override this when they can
+   * ignore duplicates atomically.
+   */
+  default List<ScheduledTaskInstance> createBatchIfNotExists(
+      List<ScheduledTaskInstance> executions) {
+    throw new UnsupportedOperationException(
+        "Batch scheduling while ignoring duplicates is not supported by this repository");
+  }
+
   Instant replace(Execution toBeReplaced, ScheduledTaskInstance newInstance);
 
   /** Prefer ScheduledTaskInstance which has a fixed execution-time */

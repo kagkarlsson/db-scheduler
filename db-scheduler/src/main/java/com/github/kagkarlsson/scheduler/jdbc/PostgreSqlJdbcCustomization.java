@@ -41,6 +41,11 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
   }
 
   @Override
+  public String getBatchInsertIgnoreDuplicatesClause() {
+    return " on conflict (task_name, task_instance) do nothing returning task_name, task_instance";
+  }
+
+  @Override
   public boolean supportsSingleStatementLockAndFetch() {
     return !useGenericLockAndFetch;
   }

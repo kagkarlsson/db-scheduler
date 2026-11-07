@@ -111,6 +111,11 @@ public class AutodetectJdbcCustomization implements JdbcCustomization {
   }
 
   @Override
+  public String getBatchInsertIgnoreDuplicatesClause() {
+    return jdbcCustomization.getBatchInsertIgnoreDuplicatesClause();
+  }
+
+  @Override
   public byte[] getTaskData(ResultSet rs, String columnName) throws SQLException {
     return jdbcCustomization.getTaskData(rs, columnName);
   }
