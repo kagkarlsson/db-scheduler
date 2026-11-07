@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler.functional;
 
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -155,6 +156,32 @@ public class RecurringTaskScheduleTest {
   private void assertScheduled(
       ManualScheduler scheduler, String taskName, LocalTime expectedExecutionTime) {
     assertScheduled(scheduler, taskName, expectedExecutionTime, null);
+  }
+
+  @Test
+  void should_preserve_last_success_when_cron_changes_on_restart() {
+    var task =
+        Tasks.recurring(RECURRING_A, Schedules.cron("0 0 9 * * *", ZONE))
+            .execute(TestTasks.DO_NOTHING);
+    var scheduler = manualSchedulerFor(List.of(task));
+    scheduler.start();
+    scheduler.tick(Duration.ofHours(1));
+    var lastSuccess = clock.now();
+    scheduler.runAnyDueExecutions();
+    var instance = TaskInstanceId.of(RECURRING_A, RecurringTask.INSTANCE);
+    assertThat(scheduler.getScheduledExecution(instance).orElseThrow().getLastSuccess())
+        .isEqualTo(lastSuccess);
+
+    var updatedTask =
+        Tasks.recurring(RECURRING_A, Schedules.cron("0 0 12 * * *", ZONE))
+            .execute(TestTasks.DO_NOTHING);
+    var restartedScheduler = manualSchedulerFor(List.of(updatedTask));
+    restartedScheduler.start();
+
+    assertScheduled(restartedScheduler, RECURRING_A, LocalTime.NOON);
+    var execution = restartedScheduler.getScheduledExecution(instance).orElseThrow();
+    assertThat(execution.getLastSuccess()).isEqualTo(lastSuccess);
+    assertThat(execution.getLastFailure()).isNull();
   }
 
   @SuppressWarnings("OptionalGetWithoutIsPresent")

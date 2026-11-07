@@ -168,7 +168,8 @@ public interface SchedulerClient {
 
   /**
    * Update an existing execution to a new execution-time. If the execution does not exist or if it
-   * is currently running, an exception is thrown.
+   * is currently running, an exception is thrown. The last-success and last-failure timestamps are
+   * retained, while the consecutive-failure count is reset.
    *
    * @param taskInstanceId Task-instance to reschedule, expected to exist
    * @param newExecutionTime the new execution-time
@@ -182,7 +183,8 @@ public interface SchedulerClient {
 
   /**
    * Update an existing execution with a new execution-time and new task-data. If the execution does
-   * not exist or if it is currently running, an exception is thrown.
+   * not exist or if it is currently running, an exception is thrown. The last-success and
+   * last-failure timestamps are retained, while the consecutive-failure count is reset.
    *
    * @param taskInstanceId
    * @param newExecutionTime the new execution-time
@@ -197,7 +199,8 @@ public interface SchedulerClient {
 
   /**
    * Update an existing execution with a new execution-time and new task-data. If the execution does
-   * not exist or if it is currently running, an exception is thrown.
+   * not exist or if it is currently running, an exception is thrown. The last-success and
+   * last-failure timestamps are retained, while the consecutive-failure count is reset.
    *
    * @param schedulableInstance the updated instance
    * @return true if rescheduled successfully
@@ -560,10 +563,7 @@ public interface SchedulerClient {
     public <T> boolean reschedule(
         TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
       RescheduleUpdate.Builder rescheduleUpdate =
-          RescheduleUpdate.toExecutionTime(newExecutionTime)
-              .lastSuccess(null)
-              .lastFailure(null)
-              .consecutiveFailures(0);
+          RescheduleUpdate.toExecutionTime(newExecutionTime).consecutiveFailures(0);
 
       if (newData != null) {
         rescheduleUpdate.data(newData);

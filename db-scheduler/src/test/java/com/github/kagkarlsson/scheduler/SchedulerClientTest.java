@@ -5,6 +5,7 @@ import static com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.W
 import static com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.WHEN_EXISTS_RESCHEDULE;
 import static com.github.kagkarlsson.scheduler.SchedulerClient.ScheduleOptions.defaultOptions;
 import static java.time.Duration.ofSeconds;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -27,7 +28,9 @@ import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
@@ -43,6 +46,8 @@ import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class SchedulerClientTest {
 
@@ -277,6 +282,50 @@ public class SchedulerClientTest {
     scheduler.tick(ofSeconds(1));
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {false, true})
+  void client_reschedule_should_preserve_execution_history(boolean updateData) {
+    var executions = new AtomicInteger();
+    var task =
+        Tasks.recurring("history", Schedules.fixedDelay(ofSeconds(60)), String.class)
+            .initialData("original")
+            .execute(
+                (instance, context) -> {
+                  if (executions.incrementAndGet() > 1) {
+                    throw new IllegalStateException("Simulated failure");
+                  }
+                });
+    var manualScheduler =
+        TestHelper.createManualScheduler(DB.getDataSource())
+            .clock(settableClock)
+            .startTasks(List.of(task))
+            .start();
+    var instance = task.instance(RecurringTask.INSTANCE);
+    var lastSuccess = settableClock.now();
+    manualScheduler.runAnyDueExecutions();
+    manualScheduler.tick(ofSeconds(60));
+    var lastFailure = settableClock.now();
+    manualScheduler.runAnyDueExecutions();
+
+    var client = create(DB.getDataSource(), task).build();
+    assertThat(client.getScheduledExecution(instance).orElseThrow().getConsecutiveFailures())
+        .isEqualTo(1);
+    var newExecutionTime = settableClock.now().plusSeconds(600);
+    var rescheduled =
+        updateData
+            ? client.reschedule(instance, newExecutionTime, "updated")
+            : client.reschedule(instance, newExecutionTime);
+
+    assertThat(rescheduled).isTrue();
+    var execution = client.getScheduledExecution(instance).orElseThrow();
+    assertThat(execution.getExecutionTime()).isEqualTo(newExecutionTime);
+    assertThat(execution.getLastSuccess()).isEqualTo(lastSuccess);
+    assertThat(execution.getLastFailure()).isEqualTo(lastFailure);
+    assertThat(execution.getConsecutiveFailures()).isZero();
+    assertThat(execution.getData()).isEqualTo(updateData ? "updated" : "original");
+    assertThat(execution.isPicked()).isFalse();
   }
 
   @Test
