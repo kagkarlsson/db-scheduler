@@ -115,4 +115,6 @@ public interface TaskRepository {
   int removeExecutions(String taskName);
 
   void verifySupportsLockAndFetch();
+
+  void validateTableExists();
 }
