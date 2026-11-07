@@ -130,6 +130,47 @@ class ExecutionUpdateTest {
     assertThat(getExecution(execution).taskInstance.getData()).isEqualTo("new-data");
   }
 
+  @Test
+  void try_reschedule_updates_unpicked_execution() {
+    Execution execution = insert(AN_INSTANT);
+
+    boolean updated =
+        ExecutionUpdate.tryReschedule(execution.taskInstance, ANOTHER_INSTANT, jdbcConfig);
+
+    assertThat(updated).isTrue();
+    Execution rescheduled = getExecution(execution);
+    assertThat(rescheduled.executionTime).isEqualTo(ANOTHER_INSTANT);
+    assertThat(rescheduled.picked).isFalse();
+    assertThat(rescheduled.pickedBy).isNull();
+    assertThat(rescheduled.lastHeartbeat).isNull();
+    assertThat(rescheduled.lastSuccess).isNull();
+    assertThat(rescheduled.lastFailure).isNull();
+    assertThat(rescheduled.consecutiveFailures).isZero();
+    assertThat(rescheduled.version).isEqualTo(execution.version + 1);
+  }
+
+  @Test
+  void try_reschedule_returns_false_when_execution_is_picked() {
+    Execution execution = insert(AN_INSTANT);
+    ExecutionUpdate.forExecution(execution).picked(true).updateSingle(jdbcConfig);
+
+    boolean updated =
+        ExecutionUpdate.tryReschedule(execution.taskInstance, ANOTHER_INSTANT, jdbcConfig);
+
+    assertThat(updated).isFalse();
+    assertThat(getExecution(execution).executionTime).isEqualTo(AN_INSTANT);
+  }
+
+  @Test
+  void try_reschedule_returns_false_when_execution_does_not_exist() {
+    TaskInstanceId missingTaskInstance = TaskInstanceId.of("missing-task", "missing-id");
+
+    boolean updated =
+        ExecutionUpdate.tryReschedule(missingTaskInstance, ANOTHER_INSTANT, jdbcConfig);
+
+    assertThat(updated).isFalse();
+  }
+
   private Execution insert(Instant executionTime) {
     var instance = ONETIME_TASK.instanceBuilder(TASK_ID).scheduledTo(executionTime);
     repository.createIfNotExists(instance);

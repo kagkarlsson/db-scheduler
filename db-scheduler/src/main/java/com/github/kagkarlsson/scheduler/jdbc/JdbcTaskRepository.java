@@ -600,6 +600,11 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public boolean tryReschedule(TaskInstanceId taskInstanceId, Instant nextExecutionTime) {
+    return ExecutionUpdate.tryReschedule(taskInstanceId, nextExecutionTime, jdbcConfig);
+  }
+
+  @Override
   public Optional<Execution> pick(Execution e, Instant timePicked) {
     final int updated =
         jdbcRunner.execute(
