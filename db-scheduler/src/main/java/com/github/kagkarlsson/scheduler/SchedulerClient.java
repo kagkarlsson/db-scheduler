@@ -358,6 +358,7 @@ public interface SchedulerClient {
     private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
     private JdbcCustomization jdbcCustomization;
     private boolean priority = false;
+    private Clock clock = new SystemClock();
 
     private Builder(DataSource dataSource, List<Task<?>> knownTasks) {
       this.dataSource = dataSource;
@@ -393,8 +394,12 @@ public interface SchedulerClient {
       return this;
     }
 
+    public Builder clock(Clock clock) {
+      this.clock = clock;
+      return this;
+    }
+
     public SchedulerClient build() {
-      final SystemClock clock = new SystemClock();
       TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, knownTasks);
 
       final JdbcCustomization jdbcCustomization =

@@ -19,6 +19,8 @@ import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
+import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
+import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import com.github.kagkarlsson.scheduler.testhelper.SettableClock;
 import com.github.kagkarlsson.scheduler.testhelper.TestHelper;
@@ -138,6 +140,24 @@ public class SchedulerClientTest {
     assertThat(countExecutionsForTask(client, oneTimeTaskB.getName(), Void.class), is(3));
     assertThat(
         client.getScheduledExecutionsForTask(oneTimeTaskB.getName(), Void.class).size(), is(3));
+  }
+
+  @Test
+  public void client_should_use_configured_clock_when_scheduling() {
+    RecurringTask<Void> recurringTask =
+        TestTasks.recurring("Recurring", FixedDelay.ofHours(1), TestTasks.DO_NOTHING);
+    Instant fixedNow = Instant.parse("2020-01-01T00:00:00Z");
+    settableClock.set(fixedNow);
+
+    SchedulerClient client = create(DB.getDataSource(), recurringTask).clock(settableClock).build();
+    client.scheduleIfNotExists(recurringTask.schedulableInstance(RecurringTask.INSTANCE));
+
+    assertThat(
+        client
+            .getScheduledExecution(TaskInstanceId.of("Recurring", RecurringTask.INSTANCE))
+            .get()
+            .getExecutionTime(),
+        is(fixedNow));
   }
 
   @Test
