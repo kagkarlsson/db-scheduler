@@ -600,6 +600,32 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public boolean rescheduleIfNotPicked(
+      TaskInstanceId taskInstanceId, RescheduleUpdate rescheduleUpdate) {
+    var update = ExecutionUpdate.forTaskInstance(taskInstanceId);
+
+    update.picked(false);
+    update.pickedBy(null);
+    update.lastHeartbeat(null);
+    update.executionTime(rescheduleUpdate.executionTime());
+
+    if (rescheduleUpdate.lastSuccess() != null) {
+      update.lastSuccess(rescheduleUpdate.lastSuccess().value());
+    }
+    if (rescheduleUpdate.lastFailure() != null) {
+      update.lastFailure(rescheduleUpdate.lastFailure().value());
+    }
+    if (rescheduleUpdate.consecutiveFailures() != null) {
+      update.consecutiveFailures(rescheduleUpdate.consecutiveFailures().value());
+    }
+    if (rescheduleUpdate.data() != null) {
+      update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
+    }
+
+    return update.updateIfNotPicked(jdbcConfig);
+  }
+
+  @Override
   public Optional<Execution> pick(Execution e, Instant timePicked) {
     final int updated =
         jdbcRunner.execute(
