@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
@@ -206,9 +207,7 @@ public class SchedulerClientTest {
   }
 
   @Test
-  public void
-      concurrent_clients_should_reschedule_when_execution_has_been_updated_since_it_was_read()
-          throws Exception {
+  public void concurrent_clients_should_reschedule_without_version_conflict() throws Exception {
     TaskInstance<Void> instance = oneTimeTaskA.instance("1");
     var repository =
         spy(
@@ -223,15 +222,14 @@ public class SchedulerClientTest {
     repository.createIfNotExists(
         new ScheduledTaskInstance(instance, settableClock.now().plusSeconds(1)));
 
-    var bothClientsHaveReadTheExecution = new CyclicBarrier(2);
+    var bothClientsAreAboutToReschedule = new CyclicBarrier(2);
     doAnswer(
             invocation -> {
-              var execution = invocation.callRealMethod();
-              bothClientsHaveReadTheExecution.await(5, TimeUnit.SECONDS);
-              return execution;
+              bothClientsAreAboutToReschedule.await(5, TimeUnit.SECONDS);
+              return invocation.callRealMethod();
             })
         .when(repository)
-        .getExecution(instance.getTaskName(), instance.getId());
+        .rescheduleIfNotPicked(any(), any());
 
     SchedulerClient firstClient =
         new SchedulerClient.StandardSchedulerClient(repository, settableClock);
