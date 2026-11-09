@@ -586,7 +586,15 @@ public class JdbcTaskRepository implements TaskRepository {
 
   @Override
   public boolean tryReschedule(TaskInstanceId taskInstanceId, Instant nextExecutionTime) {
-    return ExecutionUpdate.tryReschedule(taskInstanceId, nextExecutionTime, jdbcConfig);
+    return ExecutionUpdate.forTaskInstance(taskInstanceId)
+        .executionTime(nextExecutionTime)
+        .picked(false)
+        .pickedBy(null)
+        .lastHeartbeat(null)
+        .lastSuccess(null)
+        .lastFailure(null)
+        .consecutiveFailures(0)
+        .updateIfNotPicked(jdbcConfig);
   }
 
   @Override

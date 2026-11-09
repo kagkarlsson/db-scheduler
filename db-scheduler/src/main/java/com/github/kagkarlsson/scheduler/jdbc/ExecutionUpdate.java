@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 class ExecutionUpdate {
   private static final Logger LOG = LoggerFactory.getLogger(ExecutionUpdate.class);
 
-  private final Long versionToUpdate;
+  @Nullable private final Long versionToUpdate;
   private final TaskInstanceId taskInstance;
   @Nullable private NewValue<byte[]> taskData;
   @Nullable private NewValue<Instant> executionTime;
@@ -42,52 +42,23 @@ class ExecutionUpdate {
   @Nullable private NewValue<Instant> lastFailure;
   @Nullable private NewValue<Integer> consecutiveFailures;
   @Nullable private NewValue<Instant> lastHeartbeat;
-  @Nullable private final NewValue<Long> version;
 
   ExecutionUpdate(TaskInstanceId taskInstance, Long versionToUpdate) {
     this.taskInstance = taskInstance;
     this.versionToUpdate = versionToUpdate;
-    this.version = new NewValue<>(versionToUpdate + 1);
+  }
+
+  private ExecutionUpdate(TaskInstanceId taskInstance) {
+    this.taskInstance = taskInstance;
+    this.versionToUpdate = null;
   }
 
   static ExecutionUpdate forExecution(Execution execution) {
     return new ExecutionUpdate(execution.taskInstance, execution.version);
   }
 
-  static boolean tryReschedule(
-      TaskInstanceId taskInstanceId, Instant nextExecutionTime, JdbcConfig jdbcConfig) {
-    String query =
-        "UPDATE "
-            + jdbcConfig.tableName()
-            + " SET execution_time = ?, picked = ?, picked_by = ?, last_heartbeat = ?, "
-            + "last_success = ?, last_failure = ?, consecutive_failures = ?, "
-            + "version = version + 1 WHERE task_name = ? AND task_instance = ? AND picked = ?";
-
-    int updatedRows =
-        jdbcConfig
-            .runner()
-            .execute(
-                query,
-                ps -> {
-                  int index = 1;
-                  jdbcConfig.customization().setInstant(ps, index++, nextExecutionTime);
-                  ps.setBoolean(index++, false);
-                  ps.setString(index++, null);
-                  jdbcConfig.customization().setInstant(ps, index++, null);
-                  jdbcConfig.customization().setInstant(ps, index++, null);
-                  jdbcConfig.customization().setInstant(ps, index++, null);
-                  ps.setInt(index++, 0);
-                  ps.setString(index++, taskInstanceId.getTaskName());
-                  ps.setString(index++, taskInstanceId.getId());
-                  ps.setBoolean(index, false);
-                });
-
-    if (updatedRows > 1) {
-      throw new IllegalStateException(
-          "Updated multiple executions when try-rescheduling task-instance: " + taskInstanceId);
-    }
-
-    return updatedRows == 1;
+  static ExecutionUpdate forTaskInstance(TaskInstanceId taskInstance) {
+    return new ExecutionUpdate(taskInstance);
   }
 
   ExecutionUpdate executionTime(@Nullable Instant executionTime) {
@@ -131,6 +102,57 @@ class ExecutionUpdate {
   }
 
   void updateSingle(JdbcConfig jdbcConfig) {
+    var updates = getUpdates(jdbcConfig);
+    if (updates.isEmpty()) {
+      return;
+    }
+
+    var expectedVersion = throwIfNull(versionToUpdate);
+    var updatedRows =
+        update(jdbcConfig, "version = ?", (ps, index) -> ps.setLong(index, expectedVersion));
+    if (updatedRows != 1) {
+      throw new ExecutionException(
+          "Expected one execution to be updated, but updated " + updatedRows + ". Indicates a bug.",
+          taskInstance.getTaskName(),
+          taskInstance.getId(),
+          expectedVersion);
+    }
+  }
+
+  boolean updateIfNotPicked(JdbcConfig jdbcConfig) {
+    return update(jdbcConfig, "picked = ?", (ps, index) -> ps.setBoolean(index, false)) == 1;
+  }
+
+  private int update(
+      JdbcConfig jdbcConfig, String condition, PreparedStatementParameterSetter conditionSetter) {
+    var updates = getUpdates(jdbcConfig);
+    String query =
+        "UPDATE "
+            + jdbcConfig.tableName()
+            + " SET "
+            + updates.stream().map(u -> u.column + " = ?").collect(joining(", "))
+            + (updates.isEmpty() ? "" : ", ")
+            + "version = version + 1"
+            + " WHERE task_name = ? AND task_instance = ? AND "
+            + condition;
+
+    LOG.debug("ExecutionUpdate query: {}", query);
+    return jdbcConfig
+        .runner()
+        .execute(
+            query,
+            ps -> {
+              var index = 1;
+              for (var update : updates) {
+                update.setter.setParameter(ps, index++);
+              }
+              ps.setString(index++, taskInstance.getTaskName());
+              ps.setString(index++, taskInstance.getId());
+              conditionSetter.setParameter(ps, index);
+            });
+  }
+
+  private List<ColumnUpdate> getUpdates(JdbcConfig jdbcConfig) {
     var updates = new ArrayList<ColumnUpdate>();
 
     addIfSet(
@@ -166,42 +188,7 @@ class ExecutionUpdate {
         "last_heartbeat",
         updates,
         (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastHeartbeat.value));
-    addIfSet(
-        version, "version", updates, (ps, index) -> ps.setLong(index, throwIfNull(version.value)));
-
-    if (updates.isEmpty()) {
-      return;
-    }
-
-    String query =
-        "UPDATE "
-            + jdbcConfig.tableName()
-            + " SET "
-            + updates.stream().map(u -> u.column + " = ?").collect(joining(", "))
-            + " WHERE task_name = ? AND task_instance = ? AND version = ?";
-
-    LOG.debug("ExecutionUpdate query: {}", query);
-    int updatedRows =
-        jdbcConfig
-            .runner()
-            .execute(
-                query,
-                ps -> {
-                  int index = 1;
-                  for (ColumnUpdate update : updates) {
-                    update.setter.setParameter(ps, index++);
-                  }
-                  ps.setString(index++, taskInstance.getTaskName());
-                  ps.setString(index++, taskInstance.getId());
-                  ps.setLong(index, versionToUpdate);
-                });
-    if (updatedRows != 1) {
-      throw new ExecutionException(
-          "Expected one execution to be updated, but updated " + updatedRows + ". Indicates a bug.",
-          taskInstance.getTaskName(),
-          taskInstance.getId(),
-          versionToUpdate);
-    }
+    return updates;
   }
 
   private void addIfSet(

@@ -131,11 +131,25 @@ class ExecutionUpdateTest {
   }
 
   @Test
-  void try_reschedule_updates_unpicked_execution() {
+  void try_reschedule_updates_unpicked_execution_and_increments_version() {
     Execution execution = insert(AN_INSTANT);
+    ExecutionUpdate.forExecution(execution)
+        .lastHeartbeat(ANOTHER_INSTANT)
+        .lastSuccess(ANOTHER_INSTANT)
+        .lastFailure(ANOTHER_INSTANT)
+        .consecutiveFailures(4)
+        .updateSingle(jdbcConfig);
 
     boolean updated =
-        ExecutionUpdate.tryReschedule(execution.taskInstance, ANOTHER_INSTANT, jdbcConfig);
+        ExecutionUpdate.forTaskInstance(execution)
+            .executionTime(ANOTHER_INSTANT)
+            .picked(false)
+            .pickedBy(null)
+            .lastHeartbeat(null)
+            .lastSuccess(null)
+            .lastFailure(null)
+            .consecutiveFailures(0)
+            .updateIfNotPicked(jdbcConfig);
 
     assertThat(updated).isTrue();
     Execution rescheduled = getExecution(execution);
@@ -146,7 +160,7 @@ class ExecutionUpdateTest {
     assertThat(rescheduled.lastSuccess).isNull();
     assertThat(rescheduled.lastFailure).isNull();
     assertThat(rescheduled.consecutiveFailures).isZero();
-    assertThat(rescheduled.version).isEqualTo(execution.version + 1);
+    assertThat(rescheduled.version).isEqualTo(execution.version + 2);
   }
 
   @Test
@@ -155,18 +169,23 @@ class ExecutionUpdateTest {
     ExecutionUpdate.forExecution(execution).picked(true).updateSingle(jdbcConfig);
 
     boolean updated =
-        ExecutionUpdate.tryReschedule(execution.taskInstance, ANOTHER_INSTANT, jdbcConfig);
+        ExecutionUpdate.forTaskInstance(execution)
+            .executionTime(ANOTHER_INSTANT)
+            .picked(false)
+            .updateIfNotPicked(jdbcConfig);
 
     assertThat(updated).isFalse();
     assertThat(getExecution(execution).executionTime).isEqualTo(AN_INSTANT);
+    assertThat(getExecution(execution).picked).isTrue();
   }
 
   @Test
   void try_reschedule_returns_false_when_execution_does_not_exist() {
-    TaskInstanceId missingTaskInstance = TaskInstanceId.of("missing-task", "missing-id");
-
     boolean updated =
-        ExecutionUpdate.tryReschedule(missingTaskInstance, ANOTHER_INSTANT, jdbcConfig);
+        ExecutionUpdate.forTaskInstance(TaskInstanceId.of(ONETIME_TASK.getName(), TASK_ID))
+            .executionTime(ANOTHER_INSTANT)
+            .picked(false)
+            .updateIfNotPicked(jdbcConfig);
 
     assertThat(updated).isFalse();
   }
