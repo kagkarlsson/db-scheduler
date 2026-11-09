@@ -79,6 +79,14 @@ public interface TaskRepository {
 
   boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
 
+  /**
+   * Implementations should reschedule in a single atomic operation, so that an execution cannot be
+   * picked between deciding and rescheduling.
+   *
+   * @return true if it was rescheduled, false if it does not exist or is currently picked
+   */
+  boolean rescheduleIfNotPicked(TaskInstanceId taskInstanceId, RescheduleUpdate rescheduleUpdate);
+
   boolean reschedule(
       Execution execution,
       Instant nextExecutionTime,

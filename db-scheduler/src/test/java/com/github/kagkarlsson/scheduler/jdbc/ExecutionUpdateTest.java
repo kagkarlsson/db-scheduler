@@ -130,6 +130,43 @@ class ExecutionUpdateTest {
     assertThat(getExecution(execution).taskInstance.getData()).isEqualTo("new-data");
   }
 
+  @Test
+  void should_increment_version_when_no_fields_are_set() {
+    var execution = insert(AN_INSTANT);
+
+    ExecutionUpdate.forExecution(execution).updateSingle(jdbcConfig);
+
+    assertThat(getExecution(execution).version).isEqualTo(execution.version + 1);
+  }
+
+  @Test
+  void should_update_if_not_picked_regardless_of_version() {
+    var execution = insert(AN_INSTANT);
+    ExecutionUpdate.forExecution(execution).lastHeartbeat(ANOTHER_INSTANT).updateSingle(jdbcConfig);
+
+    var updated =
+        ExecutionUpdate.forTaskInstance(execution.taskInstance)
+            .executionTime(ANOTHER_INSTANT)
+            .updateIfNotPicked(jdbcConfig);
+
+    assertThat(updated).isTrue();
+    assertThat(getExecution(execution).executionTime).isEqualTo(ANOTHER_INSTANT);
+  }
+
+  @Test
+  void should_not_update_if_picked() {
+    var execution = insert(AN_INSTANT);
+    ExecutionUpdate.forExecution(execution).picked(true).updateSingle(jdbcConfig);
+
+    var updated =
+        ExecutionUpdate.forTaskInstance(execution.taskInstance)
+            .executionTime(ANOTHER_INSTANT)
+            .updateIfNotPicked(jdbcConfig);
+
+    assertThat(updated).isFalse();
+    assertThat(getExecution(execution).executionTime).isEqualTo(AN_INSTANT);
+  }
+
   private Execution insert(Instant executionTime) {
     var instance = ONETIME_TASK.instanceBuilder(TASK_ID).scheduledTo(executionTime);
     repository.createIfNotExists(instance);

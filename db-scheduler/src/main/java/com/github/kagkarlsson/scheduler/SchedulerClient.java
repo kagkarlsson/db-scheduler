@@ -559,17 +559,6 @@ public interface SchedulerClient {
     @Override
     public <T> boolean reschedule(
         TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
-      String taskName = taskInstanceId.getTaskName();
-      String instanceId = taskInstanceId.getId();
-      Execution execution =
-          taskRepository
-              .getExecution(taskName, instanceId)
-              .orElseThrow(() -> new TaskInstanceNotFoundException(taskName, instanceId));
-
-      if (execution.isPicked()) {
-        throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
-      }
-
       RescheduleUpdate.Builder rescheduleUpdate =
           RescheduleUpdate.toExecutionTime(newExecutionTime)
               .lastSuccess(null)
@@ -580,14 +569,20 @@ public interface SchedulerClient {
         rescheduleUpdate.data(newData);
       }
 
-      boolean success = taskRepository.reschedule(execution, rescheduleUpdate.build());
+      boolean success =
+          taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate.build());
 
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
-      } else {
-        LOG.warn("Failed to reschedule task instance: {}", taskInstanceId);
+        return true;
       }
-      return success;
+
+      String taskName = taskInstanceId.getTaskName();
+      String instanceId = taskInstanceId.getId();
+      if (taskRepository.getExecution(taskName, instanceId).isPresent()) {
+        throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
+      }
+      throw new TaskInstanceNotFoundException(taskName, instanceId);
     }
 
     @Override
