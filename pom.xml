@@ -75,7 +75,7 @@
     <jackson.version>2.22.4</jackson.version>
     <jackson3.version>3.2.4</jackson3.version>
     <postgresql.version>42.7.14</postgresql.version>
-    <guava.version>33.7.2-jre</guava.version>
+    <guava.version>33.8.0-jre</guava.version>
   </properties>
 
   <dependencyManagement>
