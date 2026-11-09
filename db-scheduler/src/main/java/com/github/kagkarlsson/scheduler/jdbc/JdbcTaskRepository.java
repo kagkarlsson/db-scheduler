@@ -504,6 +504,21 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public boolean removeIfNotPicked(TaskInstanceId taskInstanceId) {
+    final int removed =
+        jdbcRunner.execute(
+            "delete from "
+                + tableName
+                + " where task_name = ? and task_instance = ? and picked = ?",
+            ps -> {
+              ps.setString(1, taskInstanceId.getTaskName());
+              ps.setString(2, taskInstanceId.getId());
+              ps.setBoolean(3, false);
+            });
+    return removed > 0;
+  }
+
+  @Override
   public void remove(Execution execution) {
 
     final int removed =
@@ -561,7 +576,21 @@ public class JdbcTaskRepository implements TaskRepository {
   @Override
   public boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
     ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
+    configureRescheduleUpdate(update, rescheduleUpdate);
+    update.updateSingle(jdbcConfig);
+    return true;
+  }
 
+  @Override
+  public boolean rescheduleIfNotPicked(
+      TaskInstanceId taskInstanceId, RescheduleUpdate rescheduleUpdate) {
+    var update = ExecutionUpdate.forTaskInstance(taskInstanceId);
+    configureRescheduleUpdate(update, rescheduleUpdate);
+    return update.updateIfNotPicked(jdbcConfig);
+  }
+
+  private void configureRescheduleUpdate(
+      ExecutionUpdate update, RescheduleUpdate rescheduleUpdate) {
     update.picked(false);
     update.pickedBy(null);
     update.lastHeartbeat(null);
@@ -579,22 +608,6 @@ public class JdbcTaskRepository implements TaskRepository {
     if (rescheduleUpdate.data() != null) {
       update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
     }
-
-    update.updateSingle(jdbcConfig);
-    return true;
-  }
-
-  @Override
-  public boolean tryReschedule(TaskInstanceId taskInstanceId, Instant nextExecutionTime) {
-    return ExecutionUpdate.forTaskInstance(taskInstanceId)
-        .executionTime(nextExecutionTime)
-        .picked(false)
-        .pickedBy(null)
-        .lastHeartbeat(null)
-        .lastSuccess(null)
-        .lastFailure(null)
-        .consecutiveFailures(0)
-        .updateIfNotPicked(jdbcConfig);
   }
 
   @Override

@@ -131,6 +131,43 @@ class ExecutionUpdateTest {
   }
 
   @Test
+  void should_increment_version_when_no_fields_are_set() {
+    var execution = insert(AN_INSTANT);
+
+    ExecutionUpdate.forExecution(execution).updateSingle(jdbcConfig);
+
+    assertThat(getExecution(execution).version).isEqualTo(execution.version + 1);
+  }
+
+  @Test
+  void should_update_if_not_picked_regardless_of_version() {
+    var execution = insert(AN_INSTANT);
+    ExecutionUpdate.forExecution(execution).lastHeartbeat(ANOTHER_INSTANT).updateSingle(jdbcConfig);
+
+    var updated =
+        ExecutionUpdate.forTaskInstance(execution.taskInstance)
+            .executionTime(ANOTHER_INSTANT)
+            .updateIfNotPicked(jdbcConfig);
+
+    assertThat(updated).isTrue();
+    assertThat(getExecution(execution).executionTime).isEqualTo(ANOTHER_INSTANT);
+  }
+
+  @Test
+  void should_not_update_if_picked() {
+    var execution = insert(AN_INSTANT);
+    ExecutionUpdate.forExecution(execution).picked(true).updateSingle(jdbcConfig);
+
+    var updated =
+        ExecutionUpdate.forTaskInstance(execution.taskInstance)
+            .executionTime(ANOTHER_INSTANT)
+            .updateIfNotPicked(jdbcConfig);
+
+    assertThat(updated).isFalse();
+    assertThat(getExecution(execution).executionTime).isEqualTo(AN_INSTANT);
+  }
+
+  @Test
   void try_reschedule_updates_unpicked_execution_and_increments_version() {
     Execution execution = insert(AN_INSTANT);
     ExecutionUpdate.forExecution(execution)
@@ -140,18 +177,14 @@ class ExecutionUpdateTest {
         .consecutiveFailures(4)
         .updateSingle(jdbcConfig);
 
-    boolean updated =
-        ExecutionUpdate.forTaskInstance(execution)
-            .executionTime(ANOTHER_INSTANT)
-            .picked(false)
-            .pickedBy(null)
-            .lastHeartbeat(null)
+    var rescheduleUpdate =
+        com.github.kagkarlsson.scheduler.task.RescheduleUpdate.toExecutionTime(ANOTHER_INSTANT)
             .lastSuccess(null)
             .lastFailure(null)
             .consecutiveFailures(0)
-            .updateIfNotPicked(jdbcConfig);
+            .build();
+    assertThat(repository.rescheduleIfNotPicked(execution.taskInstance, rescheduleUpdate)).isTrue();
 
-    assertThat(updated).isTrue();
     Execution rescheduled = getExecution(execution);
     assertThat(rescheduled.executionTime).isEqualTo(ANOTHER_INSTANT);
     assertThat(rescheduled.picked).isFalse();
@@ -161,33 +194,6 @@ class ExecutionUpdateTest {
     assertThat(rescheduled.lastFailure).isNull();
     assertThat(rescheduled.consecutiveFailures).isZero();
     assertThat(rescheduled.version).isEqualTo(execution.version + 2);
-  }
-
-  @Test
-  void try_reschedule_returns_false_when_execution_is_picked() {
-    Execution execution = insert(AN_INSTANT);
-    ExecutionUpdate.forExecution(execution).picked(true).updateSingle(jdbcConfig);
-
-    boolean updated =
-        ExecutionUpdate.forTaskInstance(execution)
-            .executionTime(ANOTHER_INSTANT)
-            .picked(false)
-            .updateIfNotPicked(jdbcConfig);
-
-    assertThat(updated).isFalse();
-    assertThat(getExecution(execution).executionTime).isEqualTo(AN_INSTANT);
-    assertThat(getExecution(execution).picked).isTrue();
-  }
-
-  @Test
-  void try_reschedule_returns_false_when_execution_does_not_exist() {
-    boolean updated =
-        ExecutionUpdate.forTaskInstance(TaskInstanceId.of(ONETIME_TASK.getName(), TASK_ID))
-            .executionTime(ANOTHER_INSTANT)
-            .picked(false)
-            .updateIfNotPicked(jdbcConfig);
-
-    assertThat(updated).isFalse();
   }
 
   private Execution insert(Instant executionTime) {

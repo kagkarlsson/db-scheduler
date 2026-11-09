@@ -369,6 +369,7 @@ public interface SchedulerClient {
     private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
     private JdbcCustomization jdbcCustomization;
     private boolean priority = false;
+    private Clock clock = new SystemClock();
 
     private Builder(DataSource dataSource, List<Task<?>> knownTasks) {
       this.dataSource = dataSource;
@@ -404,8 +405,12 @@ public interface SchedulerClient {
       return this;
     }
 
+    public Builder clock(Clock clock) {
+      this.clock = clock;
+      return this;
+    }
+
     public SchedulerClient build() {
-      final SystemClock clock = new SystemClock();
       TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, knownTasks);
 
       final JdbcCustomization jdbcCustomization =
@@ -565,17 +570,6 @@ public interface SchedulerClient {
     @Override
     public <T> boolean reschedule(
         TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
-      String taskName = taskInstanceId.getTaskName();
-      String instanceId = taskInstanceId.getId();
-      Execution execution =
-          taskRepository
-              .getExecution(taskName, instanceId)
-              .orElseThrow(() -> new TaskInstanceNotFoundException(taskName, instanceId));
-
-      if (execution.isPicked()) {
-        throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
-      }
-
       RescheduleUpdate.Builder rescheduleUpdate =
           RescheduleUpdate.toExecutionTime(newExecutionTime)
               .lastSuccess(null)
@@ -586,19 +580,32 @@ public interface SchedulerClient {
         rescheduleUpdate.data(newData);
       }
 
-      boolean success = taskRepository.reschedule(execution, rescheduleUpdate.build());
+      boolean success =
+          taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate.build());
 
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
-      } else {
-        LOG.warn("Failed to reschedule task instance: {}", taskInstanceId);
+        return true;
       }
-      return success;
+
+      String taskName = taskInstanceId.getTaskName();
+      String instanceId = taskInstanceId.getId();
+      if (taskRepository.getExecution(taskName, instanceId).isPresent()) {
+        throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
+      }
+      throw new TaskInstanceNotFoundException(taskName, instanceId);
     }
 
     @Override
     public boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
-      boolean success = taskRepository.tryReschedule(taskInstanceId, newExecutionTime);
+      RescheduleUpdate rescheduleUpdate =
+          RescheduleUpdate.toExecutionTime(newExecutionTime)
+              .lastSuccess(null)
+              .lastFailure(null)
+              .consecutiveFailures(0)
+              .build();
+
+      boolean success = taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate);
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
       }
@@ -609,16 +616,13 @@ public interface SchedulerClient {
     public void cancel(TaskInstanceId taskInstanceId) {
       String taskName = taskInstanceId.getTaskName();
       String instanceId = taskInstanceId.getId();
-      Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
-      if (execution.isPresent()) {
-        if (execution.get().isPicked()) {
-          throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
-        }
-
-        taskRepository.remove(execution.get());
-      } else {
-        throw new TaskInstanceNotFoundException(taskName, instanceId);
+      if (taskRepository.removeIfNotPicked(taskInstanceId)) {
+        return;
       }
+      if (taskRepository.getExecution(taskName, instanceId).isPresent()) {
+        throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
+      }
+      throw new TaskInstanceNotFoundException(taskName, instanceId);
     }
 
     @Override

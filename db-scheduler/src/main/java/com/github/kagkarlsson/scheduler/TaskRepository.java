@@ -69,14 +69,23 @@ public interface TaskRepository {
 
   void remove(Execution execution);
 
+  /**
+   * Implementations should remove in a single atomic operation, so that an execution cannot be
+   * picked between deciding and removing.
+   *
+   * @return true if it was removed, false if it does not exist or is currently picked
+   */
+  boolean removeIfNotPicked(TaskInstanceId taskInstanceId);
+
   boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
 
   /**
-   * Atomically reschedule an execution if it exists and is not currently picked.
+   * Implementations should reschedule in a single atomic operation, so that an execution cannot be
+   * picked between deciding and rescheduling.
    *
-   * @return {@literal true} if the execution was rescheduled, otherwise {@literal false}
+   * @return true if it was rescheduled, false if it does not exist or is currently picked
    */
-  boolean tryReschedule(TaskInstanceId taskInstanceId, Instant nextExecutionTime);
+  boolean rescheduleIfNotPicked(TaskInstanceId taskInstanceId, RescheduleUpdate rescheduleUpdate);
 
   boolean reschedule(
       Execution execution,

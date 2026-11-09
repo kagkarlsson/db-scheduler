@@ -63,6 +63,12 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
         null);
   }
 
+  /**
+   * The limiting select must be a CTE, evaluated exactly once. As a plain IN-subquery of the
+   * UPDATE, the planner could re-execute it per candidate row (nested-loop semi join), picking more
+   * executions than the limit. PostgreSQL never inlines a CTE containing FOR UPDATE; the explicit
+   * MATERIALIZED keyword is avoided since it requires PostgreSQL 12+.
+   */
   @Override
   public List<Execution> lockAndFetchSingleStatement(
       JdbcTaskRepositoryContext ctx, Instant now, int limit, boolean orderByPriority) {
@@ -70,11 +76,7 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
         new JdbcTaskRepository.UnresolvedFilter(ctx.taskResolver.getUnresolved());
 
     String selectForUpdateQuery =
-        " WITH locked_executions as (UPDATE "
-            + ctx.tableName
-            + " st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 "
-            + " WHERE (st1.task_name, st1.task_instance) IN "
-            + "(SELECT st2.task_name, st2.task_instance FROM "
+        " WITH candidates AS (SELECT st2.task_name, st2.task_instance FROM "
             + ctx.tableName
             + " st2 "
             + " WHERE picked = ? and execution_time <= ? "
@@ -82,7 +84,12 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
             + Queries.ansiSqlOrderPart(orderByPriority)
             + " FOR UPDATE SKIP LOCKED "
             + getQueryLimitPart(limit)
-            + ")"
+            + "), "
+            + " locked_executions as (UPDATE "
+            + ctx.tableName
+            + " st1 SET picked = ?, picked_by = ?, last_heartbeat = ?, version = version + 1 "
+            + " WHERE (st1.task_name, st1.task_instance) IN "
+            + "(SELECT task_name, task_instance FROM candidates)"
             + " RETURNING st1.*) "
             + " SELECT * FROM locked_executions "
             + Queries.ansiSqlOrderPart(orderByPriority);
@@ -91,14 +98,14 @@ public class PostgreSqlJdbcCustomization extends DefaultJdbcCustomization {
         selectForUpdateQuery,
         ps -> {
           int index = 1;
+          // Candidate select
+          ps.setBoolean(index++, false); // picked (old)
+          setInstant(ps, index++, now); // execution_time
+          index = unresolvedFilter.setParameters(ps, index);
           // Update
           ps.setBoolean(index++, true); // picked (new)
           ps.setString(index++, truncate(ctx.schedulerName.getName(), 50)); // picked_by
           setInstant(ps, index++, now); // last_heartbeat
-          // Inner select
-          ps.setBoolean(index++, false); // picked (old)
-          setInstant(ps, index++, now); // execution_time
-          index = unresolvedFilter.setParameters(ps, index);
         },
         ctx.resultSetMapper.get());
   }

@@ -3,10 +3,16 @@
 Version-specific upgrade notes. For the full list of changes per release, see
 [releases](https://github.com/kagkarlsson/db-scheduler/releases).
 
-**Upgrading to 16.13.x**
+**Upgrading to 17.x**
+* The Spring Boot starters no longer register a no-op `DbSchedulerCustomizer` bean. Configure the starter with a
+`DbSchedulerOverrides` bean instead. An existing `DbSchedulerCustomizer` bean still works, but is deprecated.
+* `Jackson3Serializer` has moved from the Spring Boot 4 starter to the core module, package
+`com.github.kagkarlsson.scheduler.serializer`.
 * The internal JDBC helpers (`JdbcRunner`, `SQLRuntimeException`, etc.) have moved from
 `com.github.kagkarlsson.shaded.jdbc` to `com.github.kagkarlsson.jdbc`. Unlikely to affect anyone, but if you
 reference these classes directly you will have to update your imports.
+* The starter jars now declare an `Automatic-Module-Name`, so a `requires` clause has to be updated:
+`db.scheduler.spring.boot.starter` (Boot 3) and `com.github.kagkarlsson.scheduler.boot` (Boot 4).
 
 **Upgrading to 16.x**
 * Java 17+ is required now, since we migrated our codebase to Java 17

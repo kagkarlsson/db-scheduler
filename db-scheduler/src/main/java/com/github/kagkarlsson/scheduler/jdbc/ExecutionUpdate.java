@@ -102,20 +102,15 @@ class ExecutionUpdate {
   }
 
   void updateSingle(JdbcConfig jdbcConfig) {
-    var updates = getUpdates(jdbcConfig);
-    if (updates.isEmpty()) {
-      return;
-    }
-
-    var expectedVersion = throwIfNull(versionToUpdate);
+    var versionToUpdate = throwIfNull(this.versionToUpdate);
     var updatedRows =
-        update(jdbcConfig, "version = ?", (ps, index) -> ps.setLong(index, expectedVersion));
+        update(jdbcConfig, "version = ?", (ps, index) -> ps.setLong(index, versionToUpdate));
     if (updatedRows != 1) {
       throw new ExecutionException(
           "Expected one execution to be updated, but updated " + updatedRows + ". Indicates a bug.",
           taskInstance.getTaskName(),
           taskInstance.getId(),
-          expectedVersion);
+          versionToUpdate);
     }
   }
 
@@ -126,7 +121,7 @@ class ExecutionUpdate {
   private int update(
       JdbcConfig jdbcConfig, String condition, PreparedStatementParameterSetter conditionSetter) {
     var updates = getUpdates(jdbcConfig);
-    String query =
+    var query =
         "UPDATE "
             + jdbcConfig.tableName()
             + " SET "

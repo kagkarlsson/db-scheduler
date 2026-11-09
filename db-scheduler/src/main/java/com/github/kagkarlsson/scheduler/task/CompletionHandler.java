@@ -86,7 +86,7 @@ public interface CompletionHandler<T> {
       this(
           (TaskInstance<CURRENT_TYPE> currentInstance) -> {
             return SchedulableInstance.of(
-                new TaskInstance<>(newTaskName, currentInstance.getId(), newData), Instant.now());
+                new TaskInstance<>(newTaskName, currentInstance.getId(), newData), now -> now);
           });
       this.newTaskName = newTaskName;
     }
@@ -94,7 +94,8 @@ public interface CompletionHandler<T> {
     public OnCompleteReplace(TaskDescriptor<NEXT_TYPE> newTask, NEXT_TYPE newData) {
       this(
           (TaskInstance<CURRENT_TYPE> currentInstance) ->
-              newTask.instance(currentInstance.getId()).data(newData).scheduledTo(Instant.now()));
+              SchedulableInstance.of(
+                  newTask.instance(currentInstance.getId()).data(newData).build(), now -> now));
       this.newTaskName = newTask.getTaskName();
     }
 
