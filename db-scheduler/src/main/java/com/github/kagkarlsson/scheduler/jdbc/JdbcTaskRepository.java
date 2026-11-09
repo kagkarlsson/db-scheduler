@@ -576,25 +576,7 @@ public class JdbcTaskRepository implements TaskRepository {
   @Override
   public boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
     ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
-
-    update.picked(false);
-    update.pickedBy(null);
-    update.lastHeartbeat(null);
-    update.executionTime(rescheduleUpdate.executionTime());
-
-    if (rescheduleUpdate.lastSuccess() != null) {
-      update.lastSuccess(rescheduleUpdate.lastSuccess().value());
-    }
-    if (rescheduleUpdate.lastFailure() != null) {
-      update.lastFailure(rescheduleUpdate.lastFailure().value());
-    }
-    if (rescheduleUpdate.consecutiveFailures() != null) {
-      update.consecutiveFailures(rescheduleUpdate.consecutiveFailures().value());
-    }
-    if (rescheduleUpdate.data() != null) {
-      update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
-    }
-
+    configureRescheduleUpdate(update, rescheduleUpdate);
     update.updateSingle(jdbcConfig);
     return true;
   }
@@ -603,7 +585,12 @@ public class JdbcTaskRepository implements TaskRepository {
   public boolean rescheduleIfNotPicked(
       TaskInstanceId taskInstanceId, RescheduleUpdate rescheduleUpdate) {
     var update = ExecutionUpdate.forTaskInstance(taskInstanceId);
+    configureRescheduleUpdate(update, rescheduleUpdate);
+    return update.updateIfNotPicked(jdbcConfig);
+  }
 
+  private void configureRescheduleUpdate(
+      ExecutionUpdate update, RescheduleUpdate rescheduleUpdate) {
     update.picked(false);
     update.pickedBy(null);
     update.lastHeartbeat(null);
@@ -621,8 +608,6 @@ public class JdbcTaskRepository implements TaskRepository {
     if (rescheduleUpdate.data() != null) {
       update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
     }
-
-    return update.updateIfNotPicked(jdbcConfig);
   }
 
   @Override
