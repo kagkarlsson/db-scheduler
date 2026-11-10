@@ -97,10 +97,28 @@ error. Don't fix source code in a deps PR.
 changed source files after a formatter bump, put that in its own commit:
 `style: apply <plugin> <version> formatting`.
 
-## 4. PR
+## 4. Push and wait for CI
 
-Use the `open-pr` skill: preview, wait for approval, open as `--draft`. Preview
-all the PRs together so they can be approved in one go.
+Pushing a branch runs `build` (full `-Ptests-for-ci` with the Docker compatibility
+tests that can't run locally) and `spring-boot-compatibility`. Each takes about 5
+minutes. Push every branch, then wait for both workflows to finish before
+previewing any PR:
+
+```bash
+git push -u origin "$B:$B"
+gh run list --branch "$B" --event push --json databaseId,workflowName,status,conclusion
+gh run watch <databaseId> --exit-status      # run in background; one per workflow
+gh run view <databaseId> --log-failed | tail -50   # on failure
+```
+
+If a run fails because of one bump, drop that bump, push a new commit (never
+force-push), and list it under "Not included" with the failing test.
+
+## 5. PR
+
+Use the `open-pr` skill: preview, wait for approval, open as `--draft`. The
+branches are already pushed, so `open-pr` only runs `gh pr create`. Preview all
+the PRs together so they can be approved in one go.
 
 Titles must pass the semantic-PR lint:
 - Combined: `build(deps): consolidate dependency bumps`
@@ -113,7 +131,7 @@ parts, in this order, and drop any part that would be empty:
 2. Bullets of `artifact from -> to`, grouped by kind (test drivers/tooling,
    plugins, actions).
 3. `Not included: <artifact> <to> (<major | build failure>).`
-4. `Verified locally with mvn verify on <modules>; compatibility tests run in CI.`
+4. `Verified with mvn verify on <modules> locally and a green CI run on the branch.`
 5. `---` then `This PR was prepared with Claude Code.`
 
 Example (runtime PR):
@@ -123,7 +141,7 @@ Bumps the Spring Boot 4 starter from 4.0.9 to 4.1.2 (minor release).
 
 - spring-boot-4.version 4.0.9 -> 4.1.2
 
-Verified locally with `mvn verify` on spring-common, both starters and the spring-boot example.
+Verified with `mvn verify` on spring-common, both starters and the spring-boot example locally and a green CI run on the branch.
 
 ---
 This PR was prepared with Claude Code.
