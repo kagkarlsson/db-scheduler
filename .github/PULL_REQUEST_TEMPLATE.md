@@ -7,7 +7,12 @@ Fixes #issue-nr (if applicable)
 - [ ] Added/ran automated tests
 - [ ] Update README and/or examples
 - [ ] Ran `mvn spotless:apply`
-- [ ] If AI tools were used, disclosed per the [AI Contribution Policy](../AI_POLICY.md)
+
+#### AI disclosure
+
+<!-- See AI_POLICY.md. Write "none" if no AI tools were used. Example: "Claude Code (claude-opus-5-5). Self-reviewed with /code-review high (claude-opus-5-5), fresh context." -->
+
+AI:
 
 ---
 

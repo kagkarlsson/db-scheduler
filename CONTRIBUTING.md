@@ -4,7 +4,8 @@
 
 Contributions made with the assistance of AI tools are welcome, but must follow the
 [AI Contribution Policy](AI_POLICY.md). In short: disclose AI use, fully understand the changes,
-and don't paste raw AI output into issues or discussions.
+and don't paste raw AI output into issues or discussions. AI agents working on this repository
+should read [AGENTS.md](AGENTS.md).
 
 ### Are you new and looking to dive in?
 
