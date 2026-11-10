@@ -69,7 +69,7 @@
     <slf4j.version>1.7.36</slf4j.version>
     <logback.version>1.2.13</logback.version>
     <spring-boot-3.version>3.5.16</spring-boot-3.version>
-    <spring-boot-4.version>4.0.9</spring-boot-4.version>
+    <spring-boot-4.version>4.1.2</spring-boot-4.version>
     <micrometer.version>1.17.2</micrometer.version>
     <gson.version>2.15.0</gson.version>
     <jackson.version>2.23.0</jackson.version>
