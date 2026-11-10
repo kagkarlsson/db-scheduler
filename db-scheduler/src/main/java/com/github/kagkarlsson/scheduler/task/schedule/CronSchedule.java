@@ -27,8 +27,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.zone.ZoneOffsetTransition;
-import java.time.zone.ZoneRules;
 import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -92,11 +90,26 @@ public class CronSchedule implements Schedule, Serializable {
   }
 
   private Instant nextExecutionTimeAfter(Instant after) {
+    var afterInZone = ZonedDateTime.ofInstant(after, zoneId);
+
+    // cron-utils never returns a local time the clocks skip when they go forward. So look for the
+    // next local time in UTC as well, where no time is skipped. If the clocks skip that time, run
+    // at the change instead, the way a repeated time runs once when they go back
+    var afterInUtc = afterInZone.toLocalDateTime().atZone(ZoneOffset.UTC);
+    var nextInUtc = cronExecutionTime.nextExecution(afterInUtc);
+    if (nextInUtc.isPresent() && runsLessOftenThanHourly(nextInUtc.get())) {
+      var change = zoneId.getRules().getTransition(nextInUtc.get().toLocalDateTime());
+      if (change != null && change.isGap()) {
+        // getTransition only returns a change for a local time inside it, so nextInUtc is a
+        // local time the clocks skip. We return the start of the gap.
+        return change.getInstant();
+      }
+    }
+
     // frame the 'after' time in the context of the time zone for this schedule
     // so that expressions like "0 05 13,20 * * ?" (New York) can operate in the
     // context of the desired time zone
-    Optional<ZonedDateTime> nextTime =
-        cronExecutionTime.nextExecution(ZonedDateTime.ofInstant(after, zoneId));
+    Optional<ZonedDateTime> nextTime = cronExecutionTime.nextExecution(afterInZone);
     if (nextTime.isEmpty()) {
       LOG.error(
           "Cron-pattern did not return any further execution-times. This behavior is currently "
@@ -107,31 +120,13 @@ public class CronSchedule implements Schedule, Serializable {
       return Schedule.NEVER;
     }
 
-    // a time skipped when the clocks go forward runs once at the change instead, the way the
-    // repeated time runs once when they go back
-    Instant next = nextTime.get().toInstant();
-    ZoneRules rules = zoneId.getRules();
-    for (ZoneOffsetTransition transition = rules.nextTransition(after);
-        transition != null && transition.getInstant().isBefore(next);
-        transition = rules.nextTransition(transition.getInstant())) {
-      if (transition.isGap() && skipsLessFrequentThanHourlyTime(transition)) {
-        return transition.getInstant();
-      }
-    }
-    return next;
+    return nextTime.get().toInstant();
   }
 
-  private boolean skipsLessFrequentThanHourlyTime(ZoneOffsetTransition gap) {
-    // evaluate the local times in UTC, where none of them is skipped
-    Optional<ZonedDateTime> skipped =
-        cronExecutionTime.nextExecution(
-            gap.getDateTimeBefore().minusSeconds(1).atZone(ZoneOffset.UTC));
-    if (skipped.isEmpty() || !skipped.get().toLocalDateTime().isBefore(gap.getDateTimeAfter())) {
-      return false;
-    }
-    // same frequency limit as cron-utils applies to the repeated time when the clocks go back
-    Optional<ZonedDateTime> following = cronExecutionTime.nextExecution(skipped.get());
-    return following.isEmpty() || Duration.between(skipped.get(), following.get()).toHours() > 1;
+  private boolean runsLessOftenThanHourly(ZonedDateTime time) {
+    // same limit as cron-utils applies to the repeated time when the clocks go back
+    var following = cronExecutionTime.nextExecution(time);
+    return following.isEmpty() || Duration.between(time, following.get()).toHours() > 1;
   }
 
   private void lazyInitExecutionTime() {
