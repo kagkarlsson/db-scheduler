@@ -27,8 +27,7 @@ Contributions made with the assistance of AI tools are welcome, but contributors
 When an AI agent wrote most of the change:
 
 * Before opening the PR, have the change **self-reviewed** in a fresh context (not the session
-  that wrote it) by the most capable model available, and state the review model in the PR
-  description. The [`pre-pr`](.claude/skills/pre-pr/SKILL.md) skill describes the steps.
+  that wrote it) by the most capable model available. The [`pre-pr`](.claude/skills/pre-pr/SKILL.md) skill describes the steps.
 * The review should prioritize correctness and readability. Don't add code to handle unlikely
   edge cases just because a review tool flagged them.
 * A human must read the whole diff before opening the PR. No unattended or bulk PRs.

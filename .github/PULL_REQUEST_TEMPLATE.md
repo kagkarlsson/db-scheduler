@@ -8,7 +8,7 @@ Fixes #issue-nr (if applicable)
 - [ ] Update README and/or examples
 - [ ] Ran `mvn spotless:apply`
 
-<!-- If AI tools were used, add a line like: "Assisted by claude-opus-5-5 (Claude Code), self-reviewed with /code-review high." See AI_POLICY.md. -->
+<!-- If AI tools were used, add a line like: "Assisted by claude-opus-5-5 (Claude Code)." See AI_POLICY.md. -->
 
 ---
 

@@ -46,11 +46,10 @@ Fix or consciously dismiss each finding.
 
 ## 4. AI line for the PR description
 
-End the PR description with one line naming the model and tool, adding the self-review
-only if one was run, e.g.:
+End the PR description with one line naming the model and tool, e.g.:
 
 ```
-Assisted by claude-opus-5-5 (Claude Code), self-reviewed with /code-review high.
+Assisted by claude-opus-5-5 (Claude Code).
 ```
 
 Add a "Verified by:" note only if something beyond the tests was used to verify the change
