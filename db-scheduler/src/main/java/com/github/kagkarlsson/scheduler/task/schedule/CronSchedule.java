@@ -18,12 +18,14 @@ import com.cronutils.model.CronType;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.model.time.ExecutionTime;
 import com.cronutils.parser.CronParser;
+import com.github.kagkarlsson.scheduler.task.Execution;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
@@ -71,12 +73,43 @@ public class CronSchedule implements Schedule, Serializable {
   public Instant getNextExecutionTime(ExecutionComplete executionComplete) {
     lazyInitExecutionTime(); // for deserialized objects
 
-    // frame the 'last done' time in the context of the time zone for this schedule
+    // start from the time the execution was due (the executionTime) rather than the time it was
+    // done. cron-utils already matches a time repeated when the clocks go back only once, but only
+    // when it is given that match itself (the executionTime), not a time shortly after it (the
+    // timeDone). Use 'done' when the execution finished after the next time, e.g. when it ran long
+    // or the scheduler was down
+    Instant timeDone = executionComplete.getTimeDone();
+    Execution execution = executionComplete.getExecution();
+    if (execution != null) {
+      Instant nextTime = nextExecutionTimeAfter(execution.executionTime);
+      if (nextTime.isAfter(timeDone)) {
+        return nextTime;
+      }
+    }
+    return nextExecutionTimeAfter(timeDone);
+  }
+
+  private Instant nextExecutionTimeAfter(Instant after) {
+    var afterInZone = ZonedDateTime.ofInstant(after, zoneId);
+
+    // cron-utils never returns a local time the clocks skip when they go forward. So look for the
+    // next local time in UTC as well, where no time is skipped. If the clocks skip that time, run
+    // at the change instead, the way a repeated time runs once when they go back
+    var afterInUtc = afterInZone.toLocalDateTime().atZone(ZoneOffset.UTC);
+    var nextInUtc = cronExecutionTime.nextExecution(afterInUtc);
+    if (nextInUtc.isPresent() && runsLessOftenThanHourly(nextInUtc.get())) {
+      var change = zoneId.getRules().getTransition(nextInUtc.get().toLocalDateTime());
+      if (change != null && change.isGap()) {
+        // getTransition only returns a change for a local time inside it, so nextInUtc is a
+        // local time the clocks skip. We return the start of the gap.
+        return change.getInstant();
+      }
+    }
+
+    // frame the 'after' time in the context of the time zone for this schedule
     // so that expressions like "0 05 13,20 * * ?" (New York) can operate in the
     // context of the desired time zone
-    ZonedDateTime lastDone = ZonedDateTime.ofInstant(executionComplete.getTimeDone(), zoneId);
-
-    Optional<ZonedDateTime> nextTime = cronExecutionTime.nextExecution(lastDone);
+    Optional<ZonedDateTime> nextTime = cronExecutionTime.nextExecution(afterInZone);
     if (nextTime.isEmpty()) {
       LOG.error(
           "Cron-pattern did not return any further execution-times. This behavior is currently "
@@ -88,6 +121,12 @@ public class CronSchedule implements Schedule, Serializable {
     }
 
     return nextTime.get().toInstant();
+  }
+
+  private boolean runsLessOftenThanHourly(ZonedDateTime time) {
+    // same limit as cron-utils applies to the repeated time when the clocks go back
+    var following = cronExecutionTime.nextExecution(time);
+    return following.isEmpty() || Duration.between(time, following.get()).toHours() > 1;
   }
 
   private void lazyInitExecutionTime() {
