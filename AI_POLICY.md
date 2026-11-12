@@ -14,7 +14,7 @@ Contributions made with the assistance of AI tools are welcome, but contributors
 ## Pull requests
 
 * If AI tools were used, **disclose** this in the PR description. Include what tools and
-  **models** were used (e.g. "Claude Code, claude-opus-5-5") and optionally what they were used for.
+  **models** were used (e.g. "Assisted by claude-opus-5-5 (Claude Code).") and optionally what they were used for.
 
 * The contributor must **fully understand** all submitted changes and be able to explain and maintain them.
 

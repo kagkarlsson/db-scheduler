@@ -1,6 +1,6 @@
 ---
 name: pre-pr
-description: Use before opening a pull request against db-scheduler. Runs /finalize, a fresh-context self-review focused on correctness and readability, a red/green check of the tests, and produces the AI-disclosure line for the PR description.
+description: Use before opening a pull request against db-scheduler. Runs /finalize, a fresh-context self-review focused on correctness and readability, a red/green check of the tests, and produces the "Assisted by" line for the PR description.
 ---
 
 # Pre-PR self-review
@@ -44,12 +44,13 @@ Fix or consciously dismiss each finding.
 - **Public API:** changes should be additive (new overloads rather than changed signatures).
 - Update README, examples, or `UPGRADING.md` if behavior or API changed.
 
-## 4. Disclosure line for the PR description
+## 4. AI line for the PR description
 
-Fill in the AI disclosure in the PR template with one line, e.g.:
+End the PR description with one line naming the model and tool, adding the self-review
+only if one was run, e.g.:
 
 ```
-AI: Claude Code (claude-opus-5-5). Self-reviewed with /code-review high (claude-opus-5-5), fresh context.
+Assisted by claude-opus-5-5 (Claude Code), self-reviewed with /code-review high.
 ```
 
 Add a "Verified by:" note only if something beyond the tests was used to verify the change

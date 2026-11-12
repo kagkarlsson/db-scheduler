@@ -8,11 +8,7 @@ Fixes #issue-nr (if applicable)
 - [ ] Update README and/or examples
 - [ ] Ran `mvn spotless:apply`
 
-#### AI disclosure
-
-<!-- See AI_POLICY.md. Write "none" if no AI tools were used. Example: "Claude Code (claude-opus-5-5). Self-reviewed with /code-review high (claude-opus-5-5), fresh context." -->
-
-AI:
+<!-- If AI tools were used, add a line like: "Assisted by claude-opus-5-5 (Claude Code), self-reviewed with /code-review high." See AI_POLICY.md. -->
 
 ---
 
