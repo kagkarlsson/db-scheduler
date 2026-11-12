@@ -7,7 +7,8 @@ Fixes #issue-nr (if applicable)
 - [ ] Added/ran automated tests
 - [ ] Update README and/or examples
 - [ ] Ran `mvn spotless:apply`
-- [ ] If AI tools were used, disclosed per the [AI Contribution Policy](../AI_POLICY.md)
+
+<!-- If AI tools were used, add a line like: "Assisted by claude-opus-5-5 (Claude Code)." See AI_POLICY.md. -->
 
 ---
 

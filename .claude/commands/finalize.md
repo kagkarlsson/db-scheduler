@@ -6,9 +6,9 @@ description: Format, license-header, and verify before committing.
 Run the pre-commit gauntlet for db-scheduler in this order, stopping on the first
 failure and reporting it:
 
-1. `mvn verify` — runs tests, license check, dependency analysis, spotless check.
+1. `mvn spotless:apply` — formats Java, pom.xml, and markdown.
 2. `mvn license:format` — adds Apache license headers to any new `src/main` files.
-3. `mvn spotless:apply` — formats Java, pom.xml, and markdown.
+3. `mvn verify` — runs tests, license check, dependency analysis, spotless check.
 
 If `mvn verify` fails on dependency-plugin warnings, fix the unused/undeclared
 dependency rather than disabling the check. Do not pass `-DskipChecks` unless explicitly
