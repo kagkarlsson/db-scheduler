@@ -11,9 +11,11 @@ create table scheduled_tasks (
     last_heartbeat TIMESTAMP,
     version BIGINT,
     priority SMALLINT,
+    state varchar(20),
     PRIMARY KEY (task_name, task_instance)
 );
 
 CREATE INDEX execution_time_idx ON scheduled_tasks (execution_time);
 CREATE INDEX last_heartbeat_idx ON scheduled_tasks (last_heartbeat);
 CREATE INDEX priority_execution_time_idx on scheduled_tasks (priority desc, execution_time asc);
+CREATE INDEX state_execution_time_idx ON scheduled_tasks (state, execution_time);
