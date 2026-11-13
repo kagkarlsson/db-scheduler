@@ -11,5 +11,6 @@ create table scheduled_tasks (
     last_heartbeat TIMESTAMP WITH TIME ZONE,
     version BIGINT,
     priority INT,
+    state varchar(20),
     PRIMARY KEY (task_name, task_instance)
 )

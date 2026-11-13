@@ -156,7 +156,10 @@ scheduler.scheduleBatch(taskInstances, Instant.now());
 |                                                                                    Example                                                                                     |                                                                                                       Description                                                                                                       |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [EnableImmediateExecutionMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/EnableImmediateExecutionMain.java)                                       | When scheduling executions to run `now()` or earlier, the local `Scheduler` will be hinted about this, and "wake up" to go check for new executions earlier than it normally would (as configured by `pollingInterval`. |
-| [MaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/MaxRetriesMain.java)                                                                   | How to set a limit on the number of retries an execution can have.                                                                                                                                                      |
+| [MaxRetriesWithDlqMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/MaxRetriesWithDlqMain.java)                                                     | Limit the number of retries an execution can have, then park it in `State.FAILED` as a dead-letter-queue and reactivate it after the issue is fixed.                                                                    |
+| [MigrationStyleRecordMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/MigrationStyleRecordMain.java)                                               | Liquibase-style one-shot task that is auto-seeded on startup and kept as a `State.RECORD` row so it runs **exactly once, ever**, surviving JVM restarts.                                                                |
+| [PauseAndResumeRecurringTaskMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/PauseAndResumeRecurringTaskMain.java)                                 | Manually pause a recurring task via `client.deactivate(..., State.PAUSED)` and resume it via `client.reactivate(...)`.                                                                                                  |
+| [IdempotentOneTimeTaskMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/IdempotentOneTimeTaskMain.java)                                             | Use `onCompleteDelayRemoval()` so re-scheduling the same instance id within the retention window is a no-op — for at-most-once handling of duplicate events (e.g. retried webhooks).                                    |
 | [ExponentialBackoffMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/ExponentialBackoffMain.java)                                                   | How to use exponential backoff as retry strategy instead of fixed delay as is default.                                                                                                                                  |
 | [ExponentialBackoffWithMaxRetriesMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/ExponentialBackoffWithMaxRetriesMain.java)                       | How to use exponential backoff as retry strategy **and** a hard limit on the maximum number of retries.                                                                                                                 |
 | [TrackingProgressRecurringTaskMain.java](./examples/features/src/main/java/com/github/kagkarlsson/examples/TrackingProgressRecurringTaskMain.java)                             | Recurring jobs may store `task_data` as a way of persisting state across executions. This example shows how.                                                                                                            |
@@ -399,6 +402,40 @@ More details on the time zone formats can be found [here](https://docs.oracle.co
 
 A `Schedule` can be marked as disabled. The scheduler will not schedule the initial executions for tasks with a disabled schedule,
 and it will remove any existing executions for that task.
+
+### Execution state and deactivation
+
+Since v17(?), a task-instance has a `state` field (and column) indicating if the execution is `ACTIVE` or not.
+Only `ACTIVE` executions are considered for execution; everything else is considered _deactivated_.
+Rows with `state == NULL` are treated as `ACTIVE` for backward compatibility.
+See table below for a full list of states.
+
+|  State   |                                                                 Description / Intended use                                                                  |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| ACTIVE   | Will run.                                                                                                                                                   |
+| COMPLETE | Has run and **completed successfully**. Auto-deleted after the configured retention (default 14 days). May help ensure indempotency.                        |
+| RECORD   | Has run and **completed successfully**. **Kept indefinitely** as a historic record (similar to a Liquibase migration row — useful to guarantee run-once).   |
+| FAILED   | Has run but **failed permanently** (set by a `FailureHandler`). Auto-deleted after the configured retention. Similar to a DLQ. Can be manually reactivated. |
+| PAUSED   | Temporarily and manually deactivated. Intended for recurring tasks and manual reactivation. Never auto-deleted.                                             |
+| WAITING  | Waiting for activation by another automatic process. Never auto-deleted.                                                                                    |
+
+**Client API:**
+
+* `SchedulerClient.deactivate(TaskInstanceId, State)` — deactivate an execution to the given state. Keeps `lastSuccess`, `lastFailure` and `consecutiveFailures`.
+* `SchedulerClient.reactivate(TaskInstanceId, Instant)` — reschedule a deactivated execution as `ACTIVE`, resetting execution history.
+* `ScheduledExecutionsFilter.active()` / `.deactivated()` / `.allActiveAndDeactivated()` — filter executions by state when listing.
+
+**Completion- and failure-handlers:**
+
+* `Tasks.oneTime(...).onCompleteDeactivate(State)` — keep execution in a deactivated state after a successful run.
+* `Tasks.oneTime(...).onCompleteDelayRemoval()` — convenience for `onCompleteDeactivate(State.COMPLETE)`.
+* `Tasks.oneTime(...).onCompleteKeepAsRecord()` — convenience for `onCompleteDeactivate(State.RECORD)`.
+* `FailureHandler.maxRetries(n).withBackoff(...).thenDeactivate(State.FAILED)` — fluent failure handler that deactivates after `n` retries.
+
+**Housekeeping:** a background job runs every 24h and removes `COMPLETE` and `FAILED` executions older than `deleteDeactivatedAfter`
+(default 14d). `RECORD`, `PAUSED` and `WAITING` are never auto-deleted. Set the duration to `Duration.ZERO` to disable.
+
+**Runnable examples:** [MigrationStyleRecordMain](./examples/features/src/main/java/com/github/kagkarlsson/examples/MigrationStyleRecordMain.java) (RECORD), [IdempotentOneTimeTaskMain](./examples/features/src/main/java/com/github/kagkarlsson/examples/IdempotentOneTimeTaskMain.java) (COMPLETE), [PauseAndResumeRecurringTaskMain](./examples/features/src/main/java/com/github/kagkarlsson/examples/PauseAndResumeRecurringTaskMain.java) (PAUSED), [MaxRetriesWithDlqMain](./examples/features/src/main/java/com/github/kagkarlsson/examples/MaxRetriesWithDlqMain.java) (FAILED / DLQ).
 
 ### Serializers
 

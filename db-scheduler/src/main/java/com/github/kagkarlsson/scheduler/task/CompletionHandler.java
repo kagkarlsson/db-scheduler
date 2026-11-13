@@ -28,7 +28,21 @@ public interface CompletionHandler<T> {
     @Override
     public void complete(
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-      executionOperations.stop();
+      executionOperations.remove();
+    }
+  }
+
+  class OnCompleteDeactivate<T> implements CompletionHandler<T> {
+    private final State state;
+
+    public OnCompleteDeactivate(State state) {
+      this.state = state;
+    }
+
+    @Override
+    public void complete(
+        ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
+      executionOperations.deactivate(DeactivateUpdate.toState(state).build());
     }
   }
 
@@ -74,9 +88,9 @@ public interface CompletionHandler<T> {
   class OnCompleteReplace<CURRENT_TYPE, NEXT_TYPE> implements CompletionHandler<CURRENT_TYPE> {
 
     private static final Logger LOG = LoggerFactory.getLogger(OnCompleteReplace.class);
-    private String newTaskName = "<hidden>"; // used for logging purposes only
     private final Function<TaskInstance<CURRENT_TYPE>, SchedulableInstance<NEXT_TYPE>>
         newInstanceCreator;
+    private String newTaskName = "<hidden>"; // used for logging purposes only
 
     public OnCompleteReplace(String newTaskName) {
       this(newTaskName, null);

@@ -22,3 +22,6 @@ CREATE INDEX scheduled_tasks_execution_time_idx on scheduled_tasks(execution_tim
 CREATE INDEX scheduled_tasks_last_heartbeat_idx on scheduled_tasks(last_heartbeat);
 CREATE INDEX scheduled_tasks_priority_execution_time_idx on scheduled_tasks(priority desc, execution_time asc);
 
+-- Migrations
+ALTER TABLE scheduled_tasks ADD state varchar(20);
+CREATE INDEX scheduled_tasks_state_execution_time_idx ON scheduled_tasks (state, execution_time);

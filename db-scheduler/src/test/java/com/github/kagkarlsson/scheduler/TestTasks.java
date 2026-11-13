@@ -2,16 +2,21 @@ package com.github.kagkarlsson.scheduler;
 
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.CompletionHandler;
+import com.github.kagkarlsson.scheduler.task.DeactivateUpdate;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionContext;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.FailureHandler;
+import com.github.kagkarlsson.scheduler.task.State;
+import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.VoidExecutionHandler;
 import com.github.kagkarlsson.scheduler.task.helper.OneTimeTask;
 import com.github.kagkarlsson.scheduler.task.helper.RecurringTask;
 import com.github.kagkarlsson.scheduler.task.schedule.FixedDelay;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
+import com.github.kagkarlsson.scheduler.task.schedule.Schedules;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -21,6 +26,12 @@ import org.slf4j.LoggerFactory;
 public class TestTasks {
 
   public static final TaskDescriptor<Void> ONETIME = TaskDescriptor.of("task-onetime", Void.class);
+  public static final TaskDescriptor<Void> RECURRING =
+      TaskDescriptor.of("task-recurring", Void.class);
+  public static final Task<Void> ONETIME_TASK =
+      TestTasks.oneTime("task-onetime", Void.class, TestTasks.DO_NOTHING);
+
+  public static final Schedule EVERY_FIVE_SEC = Schedules.fixedDelay(Duration.ofSeconds(5));
 
   public static final CompletionHandler<Void> REMOVE_ON_COMPLETE =
       new CompletionHandler.OnCompleteRemove<>();
@@ -30,6 +41,9 @@ public class TestTasks {
       (taskInstance, executionContext) -> {
         throw new RuntimeException("Simulated failure");
       };
+  public static final FailureHandler<Void> ON_FAILURE_DEACTIVATE =
+      (executionComplete, executionOperations) ->
+          executionOperations.deactivate(DeactivateUpdate.toState(State.FAILED).build());
 
   public static <T> OneTimeTask<T> oneTime(
       String name, Class<T> dataClass, VoidExecutionHandler<T> handler) {
@@ -87,7 +101,7 @@ public class TestTasks {
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
       this.result = executionComplete.getResult();
       this.cause = executionComplete.getCause();
-      executionOperations.stop();
+      executionOperations.remove();
       waitForNotify.countDown();
     }
   }
@@ -102,7 +116,7 @@ public class TestTasks {
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
       this.result = executionComplete.getResult();
       this.cause = executionComplete.getCause();
-      executionOperations.stop();
+      executionOperations.remove();
       waitForNotify.countDown();
     }
   }
