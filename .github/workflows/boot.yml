@@ -1,5 +1,7 @@
 name: spring-boot-compatibility
 on: [push]
+permissions:
+  contents: read
 jobs:
   build-boot3:
     runs-on: ubuntu-22.04
