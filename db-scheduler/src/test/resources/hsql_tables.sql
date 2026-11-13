@@ -16,3 +16,4 @@ create table scheduled_tasks (
 
 -- Migrations
 ALTER TABLE scheduled_tasks ADD COLUMN state varchar(20);
+ALTER TABLE scheduled_tasks ADD COLUMN last_failure_text longvarchar;

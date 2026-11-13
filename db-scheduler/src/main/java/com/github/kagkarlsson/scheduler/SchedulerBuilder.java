@@ -52,6 +52,7 @@ public class SchedulerBuilder {
       new PollingStrategyConfig(
           PollingStrategyConfig.Type.FETCH, 0.5, UPPER_LIMIT_FRACTION_OF_THREADS_FOR_FETCH);
   public static final LogLevel DEFAULT_FAILURE_LOG_LEVEL = LogLevel.WARN;
+  public static final int DEFAULT_FAILURE_TEXT_MAX_LENGTH = 4000;
   public static final boolean LOG_STACK_TRACE_ON_FAILURE = true;
   public static final boolean LOG_LONG_RUNNING_EXECUTIONS = true;
   public static final Duration DEFAULT_LONG_RUNNING_EXECUTIONS_LOGGING_THRESHOLD =
@@ -80,6 +81,8 @@ public class SchedulerBuilder {
   protected PollingStrategyConfig pollingStrategyConfig = DEFAULT_POLLING_STRATEGY;
   protected LogLevel logLevel = DEFAULT_FAILURE_LOG_LEVEL;
   protected boolean logStackTrace = LOG_STACK_TRACE_ON_FAILURE;
+  protected FailureTextFormatter failureTextFormatter = FailureTextFormatter.STACK_TRACE;
+  protected int failureTextMaxLength = DEFAULT_FAILURE_TEXT_MAX_LENGTH;
   protected boolean logLongRunningTasks = LOG_LONG_RUNNING_EXECUTIONS;
   protected Duration longRunningExecutionsLoggingThreshold =
       DEFAULT_LONG_RUNNING_EXECUTIONS_LOGGING_THRESHOLD;
@@ -247,6 +250,25 @@ public class SchedulerBuilder {
     return this;
   }
 
+  /**
+   * How to create the text stored in {@code last_failure_text} when an execution fails. Default
+   * {@link FailureTextFormatter#STACK_TRACE}. Use {@link FailureTextFormatter#NONE} to store
+   * nothing.
+   */
+  public SchedulerBuilder failureTextFormatter(FailureTextFormatter failureTextFormatter) {
+    if (failureTextFormatter == null) {
+      throw new IllegalArgumentException("Failure text formatter must not be null");
+    }
+    this.failureTextFormatter = failureTextFormatter;
+    return this;
+  }
+
+  /** Max length (characters) of {@code last_failure_text}. Default 4000. */
+  public SchedulerBuilder failureTextMaxLength(int maxLength) {
+    this.failureTextMaxLength = maxLength;
+    return this;
+  }
+
   public SchedulerBuilder failureLogging(LogLevel logLevel, boolean logStackTrace) {
     if (logLevel == null) {
       throw new IllegalArgumentException("Log level must not be null");
@@ -373,6 +395,8 @@ public class SchedulerBuilder {
             shutdownMaxWait,
             logLevel,
             logStackTrace,
+            failureTextFormatter,
+            failureTextMaxLength,
             logLongRunningTasks,
             longRunningExecutionsLoggingThreshold,
             startTasks,

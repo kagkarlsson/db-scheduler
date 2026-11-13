@@ -288,6 +288,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 + "last_heartbeat = ?, "
                 + "last_success = ?, "
                 + "last_failure = ?, "
+                + "last_failure_text = ?, "
                 + "consecutive_failures = ?, "
                 + "execution_time = ?, "
                 + "task_data = ?, "
@@ -304,6 +305,7 @@ public class JdbcTaskRepository implements TaskRepository {
               jdbcCustomization.setInstant(ps, index++, null); // last_heartbeat
               jdbcCustomization.setInstant(ps, index++, null); // last_success
               jdbcCustomization.setInstant(ps, index++, null); // last_failure
+              ps.setString(index++, null); // last_failure_text
               ps.setInt(index++, 0); // consecutive_failures
               jdbcCustomization.setInstant(ps, index++, newExecutionTime); // execution_time
               // may cause datbase-specific problems, might have to use setNull instead
@@ -579,6 +581,10 @@ public class JdbcTaskRepository implements TaskRepository {
       update.lastFailure(deactivateUpdate.lastFailure().value());
     }
 
+    if (deactivateUpdate.lastFailureText() != null) {
+      update.lastFailureText(deactivateUpdate.lastFailureText().value());
+    }
+
     if (deactivateUpdate.consecutiveFailures() != null) {
       update.consecutiveFailures(deactivateUpdate.consecutiveFailures().value());
     }
@@ -596,6 +602,7 @@ public class JdbcTaskRepository implements TaskRepository {
     update.pickedBy(null);
     update.lastSuccess(null);
     update.lastFailure(null);
+    update.lastFailureText(null);
     update.consecutiveFailures(0);
     update.lastHeartbeat(null);
     update.state(State.ACTIVE);
@@ -664,6 +671,9 @@ public class JdbcTaskRepository implements TaskRepository {
     }
     if (rescheduleUpdate.lastFailure() != null) {
       update.lastFailure(rescheduleUpdate.lastFailure().value());
+    }
+    if (rescheduleUpdate.lastFailureText() != null) {
+      update.lastFailureText(rescheduleUpdate.lastFailureText().value());
     }
     if (rescheduleUpdate.consecutiveFailures() != null) {
       update.consecutiveFailures(rescheduleUpdate.consecutiveFailures().value());
@@ -1212,6 +1222,7 @@ public class JdbcTaskRepository implements TaskRepository {
         final String pickedBy = rs.getString("picked_by");
         Instant lastSuccess = jdbcCustomization.getInstant(rs, "last_success");
         Instant lastFailure = jdbcCustomization.getInstant(rs, "last_failure");
+        String lastFailureText = rs.getString("last_failure_text");
         int consecutiveFailures =
             rs.getInt("consecutive_failures"); // null-value is returned as 0 which is the preferred
         // default
@@ -1240,6 +1251,7 @@ public class JdbcTaskRepository implements TaskRepository {
                 pickedBy,
                 lastSuccess,
                 lastFailure,
+                lastFailureText,
                 consecutiveFailures,
                 lastHeartbeat,
                 version,

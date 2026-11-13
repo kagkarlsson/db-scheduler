@@ -34,6 +34,7 @@ public class LockAndFetchCandidates implements PollStrategy {
   private final TaskResolver taskResolver;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
+  private final FailureTexts failureTexts;
   private final Clock clock;
   private final PollingStrategyConfig pollingStrategyConfig;
   private final Runnable triggerCheckForNewExecutions;
@@ -51,6 +52,7 @@ public class LockAndFetchCandidates implements PollStrategy {
       List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
+      FailureTexts failureTexts,
       TaskResolver taskResolver,
       Clock clock,
       PollingStrategyConfig pollingStrategyConfig,
@@ -64,6 +66,7 @@ public class LockAndFetchCandidates implements PollStrategy {
     this.taskResolver = taskResolver;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
+    this.failureTexts = failureTexts;
     this.clock = clock;
     this.pollingStrategyConfig = pollingStrategyConfig;
     this.triggerCheckForNewExecutions = triggerCheckForNewExecutions;
@@ -110,6 +113,7 @@ public class LockAndFetchCandidates implements PollStrategy {
               taskResolver,
               schedulerState,
               failureLogger,
+              failureTexts,
               clock,
               maxAgeBeforeConsideredDead,
               picked),

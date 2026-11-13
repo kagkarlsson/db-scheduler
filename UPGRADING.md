@@ -4,6 +4,13 @@ Version-specific upgrade notes. For the full list of changes per release, see
 [releases](https://github.com/kagkarlsson/db-scheduler/releases).
 
 **Upgrading to 17.x**
+* Add column `last_failure_text` (unbounded text, nullable) to the database schema, e.g. `text` for PostgreSQL,
+MySQL and MariaDB, `nvarchar(max)` for SQL Server and `clob` for Oracle. See the table definitions for
+[postgresql](./db-scheduler/src/test/resources/postgresql_tables.sql),
+[oracle](./db-scheduler/src/test/resources/oracle_tables.sql) or
+[mysql](./db-scheduler/src/test/resources/mysql_tables.sql). It stores the stack trace of the last failure,
+see `SchedulerBuilder.failureTextFormatter(..)`. MySQL/MariaDB `text` holds 64KB, which fits the default max length
+(4000 characters); use `mediumtext` if you raise `failureTextMaxLength` above ~16000.
 * The Spring Boot starters no longer register a no-op `DbSchedulerCustomizer` bean. Configure the starter with a
 `DbSchedulerOverrides` bean instead. An existing `DbSchedulerCustomizer` bean still works, but is deprecated.
 * `Jackson3Serializer` has moved from the Spring Boot 4 starter to the core module, package

@@ -12,6 +12,7 @@ create table scheduled_tasks (
     version BIGINT,
     priority SMALLINT,
     state varchar(20),
+    last_failure_text text,
     PRIMARY KEY (task_name, task_instance)
 );
 

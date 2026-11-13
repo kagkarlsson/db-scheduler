@@ -47,6 +47,7 @@ class ExecutePicked implements Runnable {
   private final TaskResolver taskResolver;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
+  private final FailureTexts failureTexts;
   private final Clock clock;
   private HeartbeatConfig heartbeatConfig;
   private final Execution pickedExecution;
@@ -60,6 +61,7 @@ class ExecutePicked implements Runnable {
       TaskResolver taskResolver,
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
+      FailureTexts failureTexts,
       Clock clock,
       HeartbeatConfig heartbeatConfig,
       Execution pickedExecution) {
@@ -71,6 +73,7 @@ class ExecutePicked implements Runnable {
     this.taskResolver = taskResolver;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
+    this.failureTexts = failureTexts;
     this.clock = clock;
     this.heartbeatConfig = heartbeatConfig;
     this.pickedExecution = pickedExecution;
@@ -160,7 +163,12 @@ class ExecutePicked implements Runnable {
       task.getFailureHandler()
           .onFailure(
               completeEvent,
-              new ExecutionOperations(taskRepository, schedulerListeners, execution, clock));
+              ExecutionOperations.forFailure(
+                  taskRepository,
+                  schedulerListeners,
+                  execution,
+                  clock,
+                  failureTexts.format(cause)));
     } catch (Throwable e) {
       schedulerListeners.onSchedulerEvent(SchedulerEventType.FAILUREHANDLER_ERROR);
       schedulerListeners.onSchedulerEvent(SchedulerEventType.UNEXPECTED_ERROR);

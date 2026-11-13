@@ -23,4 +23,5 @@ create table test.scheduled_tasks (
 
 -- Migrations
 ALTER TABLE test.scheduled_tasks ADD COLUMN state varchar(20);
+ALTER TABLE test.scheduled_tasks ADD COLUMN last_failure_text text;
 CREATE INDEX state_execution_time_idx ON test.scheduled_tasks (state, execution_time);

@@ -68,7 +68,11 @@ class ClockHandlersTest {
         .deadExecution(
             completed,
             new ExecutionOperations<>(repository, SchedulerListeners.NOOP, execution, () -> NOW));
-    verify(repository)
-        .reschedule(execution, NOW, execution.lastSuccess, NOW, execution.consecutiveFailures + 1);
+    var update = ArgumentCaptor.forClass(RescheduleUpdate.class);
+    verify(repository).reschedule(eq(execution), update.capture());
+    assertThat(update.getValue().executionTime()).isEqualTo(NOW);
+    assertThat(update.getValue().lastFailure()).isEqualTo(new NewValue<>(NOW));
+    assertThat(update.getValue().consecutiveFailures())
+        .isEqualTo(new NewValue<>(execution.consecutiveFailures + 1));
   }
 }

@@ -17,6 +17,7 @@ import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.event.SchedulerListeners;
 import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 
 public class ExecutionOperations<T> {
 
@@ -24,16 +25,42 @@ public class ExecutionOperations<T> {
   private final SchedulerListeners schedulerListeners;
   private final Execution execution;
   private final Clock clock;
+  // non-null when handling a failure: the text to store as last_failure_text (value may be null)
+  private final @Nullable NewValue<String> failureText;
 
   public ExecutionOperations(
       TaskRepository taskRepository,
       SchedulerListeners schedulerListeners,
       Execution execution,
       Clock clock) {
+    this(taskRepository, schedulerListeners, execution, clock, null);
+  }
+
+  private ExecutionOperations(
+      TaskRepository taskRepository,
+      SchedulerListeners schedulerListeners,
+      Execution execution,
+      Clock clock,
+      @Nullable NewValue<String> failureText) {
     this.taskRepository = taskRepository;
     this.schedulerListeners = schedulerListeners;
     this.execution = execution;
     this.clock = clock;
+    this.failureText = failureText;
+  }
+
+  /**
+   * For failure- and dead-execution handlers. Every update made through these operations also sets
+   * {@code last_failure_text}, unless the update sets it explicitly.
+   */
+  public static <T> ExecutionOperations<T> forFailure(
+      TaskRepository taskRepository,
+      SchedulerListeners schedulerListeners,
+      Execution execution,
+      Clock clock,
+      @Nullable String failureText) {
+    return new ExecutionOperations<>(
+        taskRepository, schedulerListeners, execution, clock, new NewValue<>(failureText));
   }
 
   public void stop() {
@@ -41,6 +68,9 @@ public class ExecutionOperations<T> {
   }
 
   public void deactivate(DeactivateUpdate deactivateUpdate) {
+    if (failureText != null) {
+      deactivateUpdate = deactivateUpdate.withLastFailureTextIfUnset(failureText.value());
+    }
     taskRepository.deactivate(execution, deactivateUpdate);
   }
 
@@ -59,36 +89,36 @@ public class ExecutionOperations<T> {
     if (completed.getResult() == ExecutionComplete.Result.OK) {
       taskRepository.reschedule(
           execution, nextExecutionTime, completed.getTimeDone(), execution.lastFailure, 0);
+      hintExecutionScheduled(completed.getExecution().taskInstance, nextExecutionTime);
     } else {
-      taskRepository.reschedule(
-          execution,
-          nextExecutionTime,
-          execution.lastSuccess,
-          completed.getTimeDone(),
-          execution.consecutiveFailures + 1);
+      reschedule(failedUpdate(completed, nextExecutionTime).build());
     }
-    hintExecutionScheduled(completed.getExecution().taskInstance, nextExecutionTime);
   }
 
   public void reschedule(ExecutionComplete completed, Instant nextExecutionTime, T newData) {
     if (completed.getResult() == ExecutionComplete.Result.OK) {
       taskRepository.reschedule(
           execution, nextExecutionTime, newData, completed.getTimeDone(), execution.lastFailure, 0);
+      hintExecutionScheduled(completed.getExecution().taskInstance, nextExecutionTime);
     } else {
-      taskRepository.reschedule(
-          execution,
-          nextExecutionTime,
-          newData,
-          execution.lastSuccess,
-          completed.getTimeDone(),
-          execution.consecutiveFailures + 1);
+      reschedule(failedUpdate(completed, nextExecutionTime).data(newData).build());
     }
-    hintExecutionScheduled(completed.getExecution().taskInstance, nextExecutionTime);
   }
 
   public void reschedule(RescheduleUpdate update) {
+    if (failureText != null) {
+      update = update.withLastFailureTextIfUnset(failureText.value());
+    }
     taskRepository.reschedule(execution, update);
     hintExecutionScheduled(execution.taskInstance, update.executionTime());
+  }
+
+  private RescheduleUpdate.Builder failedUpdate(
+      ExecutionComplete completed, Instant nextExecutionTime) {
+    return RescheduleUpdate.toExecutionTime(nextExecutionTime)
+        .lastSuccess(execution.lastSuccess)
+        .lastFailure(completed.getTimeDone())
+        .consecutiveFailures(execution.consecutiveFailures + 1);
   }
 
   private void hintExecutionScheduled(TaskInstanceId taskInstanceId, Instant nextExecutionTime) {

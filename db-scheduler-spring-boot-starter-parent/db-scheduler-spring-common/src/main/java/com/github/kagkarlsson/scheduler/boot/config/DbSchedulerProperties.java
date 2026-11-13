@@ -127,6 +127,13 @@ public class DbSchedulerProperties {
   /** Whether or not to log the {@link Throwable} that caused a task to fail. */
   private boolean failureLoggerLogStackTrace = SchedulerBuilder.LOG_STACK_TRACE_ON_FAILURE;
 
+  /**
+   * Max length (characters) of the failure text stored in {@code last_failure_text}. To change what
+   * is stored, or store nothing, set a {@code FailureTextFormatter} via {@code
+   * DbSchedulerOverrides.builder().customizeBuilder(..)}.
+   */
+  private int failureTextMaxLength = SchedulerBuilder.DEFAULT_FAILURE_TEXT_MAX_LENGTH;
+
   /** Whether to run housekeeping periodical job for long-running executions logging. */
   private boolean logLongRunningExecutions = SchedulerBuilder.LOG_LONG_RUNNING_EXECUTIONS;
 
@@ -240,6 +247,14 @@ public class DbSchedulerProperties {
 
   public void setFailureLoggerLevel(LogLevel failureLoggerLevel) {
     this.failureLoggerLevel = failureLoggerLevel;
+  }
+
+  public int getFailureTextMaxLength() {
+    return failureTextMaxLength;
+  }
+
+  public void setFailureTextMaxLength(int failureTextMaxLength) {
+    this.failureTextMaxLength = failureTextMaxLength;
   }
 
   public boolean isLogLongRunningExecutions() {

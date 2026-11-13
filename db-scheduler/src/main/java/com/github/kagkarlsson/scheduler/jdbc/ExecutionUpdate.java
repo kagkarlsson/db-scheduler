@@ -41,6 +41,7 @@ class ExecutionUpdate {
   @Nullable private NewValue<String> pickedBy;
   @Nullable private NewValue<Instant> lastSuccess;
   @Nullable private NewValue<Instant> lastFailure;
+  @Nullable private NewValue<String> lastFailureText;
   @Nullable private NewValue<Integer> consecutiveFailures;
   @Nullable private NewValue<Instant> lastHeartbeat;
   @Nullable private NewValue<State> state;
@@ -90,6 +91,11 @@ class ExecutionUpdate {
 
   ExecutionUpdate lastFailure(@Nullable Instant lastFailure) {
     this.lastFailure = new NewValue<>(lastFailure);
+    return this;
+  }
+
+  ExecutionUpdate lastFailureText(@Nullable String lastFailureText) {
+    this.lastFailureText = new NewValue<>(lastFailureText);
     return this;
   }
 
@@ -190,6 +196,11 @@ class ExecutionUpdate {
         "last_heartbeat",
         updates,
         (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastHeartbeat.value));
+    addIfSet(
+        lastFailureText,
+        "last_failure_text",
+        updates,
+        (ps, index) -> ps.setString(index, lastFailureText.value));
     addIfSet(
         state,
         "state",

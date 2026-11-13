@@ -140,6 +140,7 @@ public class SchedulerClientExceptionsTest {
         randomAlphanumeric(5),
         null,
         null,
+        null,
         0,
         null,
         1,
