@@ -36,6 +36,7 @@ public class FetchCandidates implements PollStrategy {
   private final List<ExecutionInterceptor> executionInterceptors;
   private final SchedulerState schedulerState;
   private final ConfigurableLogger failureLogger;
+  private final FailureTexts failureTexts;
   private final TaskResolver taskResolver;
   private final Clock clock;
   private final PollingStrategyConfig pollingStrategyConfig;
@@ -54,6 +55,7 @@ public class FetchCandidates implements PollStrategy {
       List<ExecutionInterceptor> executionInterceptors,
       SchedulerState schedulerState,
       ConfigurableLogger failureLogger,
+      FailureTexts failureTexts,
       TaskResolver taskResolver,
       Clock clock,
       PollingStrategyConfig pollingStrategyConfig,
@@ -66,6 +68,7 @@ public class FetchCandidates implements PollStrategy {
     this.executionInterceptors = executionInterceptors;
     this.schedulerState = schedulerState;
     this.failureLogger = failureLogger;
+    this.failureTexts = failureTexts;
     this.taskResolver = taskResolver;
     this.clock = clock;
     this.pollingStrategyConfig = pollingStrategyConfig;
@@ -111,6 +114,7 @@ public class FetchCandidates implements PollStrategy {
                             taskResolver,
                             schedulerState,
                             failureLogger,
+                            failureTexts,
                             clock,
                             heartbeatConfig,
                             picked)

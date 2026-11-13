@@ -29,12 +29,13 @@ public final class Execution implements TaskInstanceId, Resolvable {
   public final @Nullable Instant lastHeartbeat;
   public final long version;
   public final @Nullable Instant lastFailure;
+  public final @Nullable String lastFailureText;
   public final @Nullable Instant lastSuccess;
   public final State state;
   public int consecutiveFailures;
 
   public Execution(Instant executionTime, TaskInstance taskInstance) {
-    this(executionTime, taskInstance, false, null, null, null, 0, null, 1L, State.ACTIVE);
+    this(executionTime, taskInstance, false, null, null, null, null, 0, null, 1L, State.ACTIVE);
   }
 
   public Execution(
@@ -44,6 +45,7 @@ public final class Execution implements TaskInstanceId, Resolvable {
       @Nullable String pickedBy,
       @Nullable Instant lastSuccess,
       @Nullable Instant lastFailure,
+      @Nullable String lastFailureText,
       int consecutiveFailures,
       @Nullable Instant lastHeartbeat,
       long version,
@@ -53,6 +55,7 @@ public final class Execution implements TaskInstanceId, Resolvable {
     this.picked = picked;
     this.pickedBy = pickedBy;
     this.lastFailure = lastFailure;
+    this.lastFailureText = lastFailureText;
     this.lastSuccess = lastSuccess;
     this.consecutiveFailures = consecutiveFailures;
     this.lastHeartbeat = lastHeartbeat;
@@ -85,6 +88,7 @@ public final class Execution implements TaskInstanceId, Resolvable {
         newPickedBy,
         lastSuccess,
         lastFailure,
+        lastFailureText,
         consecutiveFailures,
         newLastHeartbeat,
         version + 1, // since this was incremented in the database when picked

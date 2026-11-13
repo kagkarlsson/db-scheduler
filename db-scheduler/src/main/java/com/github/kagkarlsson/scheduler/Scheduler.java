@@ -75,6 +75,8 @@ public class Scheduler implements SchedulerClient {
   private final Waiter heartbeatWaiter;
   final SettableSchedulerState schedulerState = new SettableSchedulerState();
   final ConfigurableLogger failureLogger;
+  private final FailureTexts failureTexts;
+  private final SchedulerName schedulerName;
   final boolean logLongRunningExecutions;
   final Duration longRunningExecutionsLoggingThreshold;
 
@@ -97,6 +99,8 @@ public class Scheduler implements SchedulerClient {
       Duration shutdownMaxWait,
       LogLevel logLevel,
       boolean logStackTrace,
+      FailureTextFormatter failureTextFormatter,
+      int failureTextMaxLength,
       boolean logLongRunningExecutions,
       Duration longRunningExecutionsLoggingThreshold,
       List<OnStartup> onStartup,
@@ -124,6 +128,8 @@ public class Scheduler implements SchedulerClient {
     this.housekeeperExecutor = housekeeperExecutor;
     delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
+    this.failureTexts = new FailureTexts(failureTextFormatter, failureTextMaxLength);
+    this.schedulerName = schedulerName;
     this.logLongRunningExecutions = logLongRunningExecutions;
     this.longRunningExecutionsLoggingThreshold = longRunningExecutionsLoggingThreshold;
 
@@ -139,6 +145,7 @@ public class Scheduler implements SchedulerClient {
               executionInterceptors,
               schedulerState,
               failureLogger,
+              failureTexts,
               taskResolver,
               clock,
               pollingStrategyConfig,
@@ -155,6 +162,7 @@ public class Scheduler implements SchedulerClient {
               executionInterceptors,
               schedulerState,
               failureLogger,
+              failureTexts,
               taskResolver,
               clock,
               pollingStrategyConfig,
@@ -441,8 +449,12 @@ public class Scheduler implements SchedulerClient {
                     .getDeadExecutionHandler()
                     .deadExecution(
                         ExecutionComplete.failure(execution, now, now, null),
-                        new ExecutionOperations(
-                            schedulerTaskRepository, schedulerListeners, execution, clock));
+                        ExecutionOperations.forFailure(
+                            schedulerTaskRepository,
+                            schedulerListeners,
+                            execution,
+                            clock,
+                            failureTexts.deadExecution(execution, schedulerName.getName())));
               } else {
                 LOG.error(
                     "Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.",

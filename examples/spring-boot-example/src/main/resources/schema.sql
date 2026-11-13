@@ -14,5 +14,6 @@ create table if not exists scheduled_tasks (
 	version BIGINT,
 	priority INT,
 	state varchar(20),
+	last_failure_text longvarchar,
 	PRIMARY KEY (task_name, task_instance)
 );

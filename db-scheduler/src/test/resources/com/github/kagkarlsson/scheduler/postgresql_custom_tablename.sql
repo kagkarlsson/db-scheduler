@@ -12,5 +12,6 @@ create table custom_tablename (
   priority INT,
   consecutive_failures INT,
   state text,
+  last_failure_text text,
   PRIMARY KEY (task_name, task_instance)
 )

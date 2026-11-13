@@ -579,6 +579,7 @@ public interface SchedulerClient {
           RescheduleUpdate.toExecutionTime(newExecutionTime)
               .lastSuccess(null)
               .lastFailure(null)
+              .lastFailureText(null)
               .consecutiveFailures(0);
 
       if (newData != null) {

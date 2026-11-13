@@ -153,6 +153,7 @@ public final class DbSchedulerConfigurationSupport {
     builder.startTasks(startupTasks(configuredTasks));
     builder.addSchedulerListener(new StatsRegistryAdapter(registry));
     builder.failureLogging(config.getFailureLoggerLevel(), config.isFailureLoggerLogStackTrace());
+    builder.failureTextMaxLength(config.getFailureTextMaxLength());
     builder.logLongRunningExecutions(config.isLogLongRunningExecutions());
     builder.longRunningExecutionsLoggingThreshold(
         config.getLongRunningExecutionsLoggingThreshold());

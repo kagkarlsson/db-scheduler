@@ -21,6 +21,7 @@ import org.jspecify.annotations.Nullable;
 public record DeactivateUpdate(
     @Nullable NewValue<Instant> lastSuccess,
     @Nullable NewValue<Instant> lastFailure,
+    @Nullable NewValue<String> lastFailureText,
     @Nullable NewValue<Integer> consecutiveFailures,
     NewValue<State> state) {
 
@@ -28,9 +29,19 @@ public record DeactivateUpdate(
     return new Builder(state);
   }
 
+  /** Sets {@code lastFailureText} to the given value, unless the update already sets it. */
+  DeactivateUpdate withLastFailureTextIfUnset(@Nullable String text) {
+    if (lastFailureText != null) {
+      return this;
+    }
+    return new DeactivateUpdate(
+        lastSuccess, lastFailure, new NewValue<>(text), consecutiveFailures, state);
+  }
+
   public static class Builder {
     @Nullable private NewValue<Instant> lastSuccess;
     @Nullable private NewValue<Instant> lastFailure;
+    @Nullable private NewValue<String> lastFailureText;
     @Nullable private NewValue<Integer> consecutiveFailures;
     private final NewValue<State> state;
 
@@ -48,13 +59,19 @@ public record DeactivateUpdate(
       return this;
     }
 
+    public Builder lastFailureText(@Nullable String lastFailureText) {
+      this.lastFailureText = new NewValue<>(lastFailureText);
+      return this;
+    }
+
     public Builder consecutiveFailures(Integer consecutiveFailures) {
       this.consecutiveFailures = new NewValue<>(consecutiveFailures);
       return this;
     }
 
     public DeactivateUpdate build() {
-      return new DeactivateUpdate(lastSuccess, lastFailure, consecutiveFailures, state);
+      return new DeactivateUpdate(
+          lastSuccess, lastFailure, lastFailureText, consecutiveFailures, state);
     }
   }
 }

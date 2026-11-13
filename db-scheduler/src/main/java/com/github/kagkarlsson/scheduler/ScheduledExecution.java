@@ -74,6 +74,10 @@ public class ScheduledExecution<DATA_TYPE> {
     return execution.lastFailure;
   }
 
+  public @Nullable String getLastFailureText() {
+    return execution.lastFailureText;
+  }
+
   public int getConsecutiveFailures() {
     return execution.consecutiveFailures;
   }

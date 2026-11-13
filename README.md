@@ -366,6 +366,15 @@ behavior and have the Scheduler always issue commits. Default `false`.
 Configures how to log task failures, i.e. `Throwable`s thrown from a task execution handler. Use log level `OFF` to disable
 this kind of logging completely. Default `WARN, true`.
 
+:gear: `.failureTextFormatter(FailureTextFormatter)`<br/>
+How to create the text stored in `last_failure_text` when an execution fails. `STACK_TRACE` stores the stack trace, and
+if it is longer than the max length, keeps fewer frames per exception rather than cutting off the root cause.
+`MESSAGE_ONLY` stores one line per exception in the cause chain. `NONE` stores nothing, for example if exception
+messages may contain sensitive data. Default `STACK_TRACE`.
+
+:gear: `.failureTextMaxLength(int)`<br/>
+Max length (characters) of `last_failure_text`. Longer texts are cut. Default `4000`.
+
 ### Task configuration
 
 Tasks are created using one of the builder-classes in `Tasks`. The builders have sensible defaults, but the following options can be overridden.
@@ -533,6 +542,9 @@ db-scheduler.polling-strategy-lower-limit-fraction-of-threads=0.5
 db-scheduler.polling-strategy-upper-limit-fraction-of-threads=3.0
 
 db-scheduler.shutdown-max-wait=30m
+
+# A FailureTextFormatter can be set via DbSchedulerOverrides.builder().customizeBuilder(..)
+db-scheduler.failure-text-max-length=4000
 ```
 
 ## Interacting with scheduled executions using the SchedulerClient
@@ -551,6 +563,36 @@ It will allow for operations such as:
 * Reschedule a specific execution
 * Remove an old executions that have been retrying for too long
 * ...
+
+### What a scheduled execution contains
+
+Every execution is one row in the `scheduled_tasks` table. `SchedulerClient.getScheduledExecutions(..)` and
+`getScheduledExecution(..)` return it as a `ScheduledExecution`:
+
+|     `ScheduledExecution`      |                 Column                  |                                         Description                                         |
+|-------------------------------|-----------------------------------------|---------------------------------------------------------------------------------------------|
+| `getTaskInstance()`           | `task_name`, `task_instance`            | Task name and instance id.                                                                  |
+| `getData()`, `getRawData()`   | `task_data`                             | Serialized task data (raw bytes if the task is unknown to this client).                     |
+| `getExecutionTime()`          | `execution_time`                        | When it is next due. Not changed by deactivation.                                           |
+| `getState()`                  | `state`                                 | `ACTIVE`, or a deactivated state. See [Execution state](#execution-state-and-deactivation). |
+| `isPicked()`, `getPickedBy()` | `picked`, `picked_by`                   | Whether it is currently executing, and on which scheduler.                                  |
+| `getLastSuccess()`            | `last_success`                          | When the last successful run finished.                                                      |
+| `getLastFailure()`            | `last_failure`                          | When the last failed run finished.                                                          |
+| `getLastFailureText()`        | `last_failure_text`                     | Stack trace or message of the last failure. See `.failureTextFormatter(..)`.                |
+| `getConsecutiveFailures()`    | `consecutive_failures`                  | Number of failures since the last success.                                                  |
+| –                             | `last_heartbeat`, `version`, `priority` | Internal: dead execution detection, optimistic locking, order of fetching.                  |
+
+How the run history changes:
+
+|                  Event                   | `last_success` | `last_failure`, `last_failure_text` | `consecutive_failures` |
+|------------------------------------------|----------------|-------------------------------------|------------------------|
+| Run succeeds and is rescheduled          | set            | kept                                | 0                      |
+| Run fails and is rescheduled             | kept           | set                                 | +1                     |
+| Run fails and is deactivated to `FAILED` | kept           | set                                 | kept                   |
+| Dead execution revived                   | kept           | set (text describes the dead node)  | +1                     |
+| `SchedulerClient.deactivate(..)`         | kept           | kept                                | kept                   |
+| `SchedulerClient.reactivate(..)`         | cleared        | cleared                             | 0                      |
+| `SchedulerClient.reschedule(..)`         | cleared        | cleared                             | 0                      |
 
 ## How it works
 

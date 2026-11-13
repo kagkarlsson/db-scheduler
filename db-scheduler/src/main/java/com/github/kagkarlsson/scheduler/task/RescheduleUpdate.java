@@ -23,10 +23,20 @@ public record RescheduleUpdate(
     @Nullable NewValue<Object> data,
     @Nullable NewValue<Instant> lastSuccess,
     @Nullable NewValue<Instant> lastFailure,
+    @Nullable NewValue<String> lastFailureText,
     @Nullable NewValue<Integer> consecutiveFailures) {
 
   public static Builder toExecutionTime(Instant executionTime) {
     return new Builder(executionTime);
+  }
+
+  /** Sets {@code lastFailureText} to the given value, unless the update already sets it. */
+  RescheduleUpdate withLastFailureTextIfUnset(@Nullable String text) {
+    if (lastFailureText != null) {
+      return this;
+    }
+    return new RescheduleUpdate(
+        executionTime, data, lastSuccess, lastFailure, new NewValue<>(text), consecutiveFailures);
   }
 
   public static class Builder {
@@ -34,6 +44,7 @@ public record RescheduleUpdate(
     @Nullable private NewValue<Object> data;
     @Nullable private NewValue<Instant> lastSuccess;
     @Nullable private NewValue<Instant> lastFailure;
+    @Nullable private NewValue<String> lastFailureText;
     @Nullable private NewValue<Integer> consecutiveFailures;
 
     public Builder(Instant executionTime) {
@@ -55,6 +66,11 @@ public record RescheduleUpdate(
       return this;
     }
 
+    public Builder lastFailureText(@Nullable String lastFailureText) {
+      this.lastFailureText = new NewValue<>(lastFailureText);
+      return this;
+    }
+
     public Builder consecutiveFailures(int count) {
       this.consecutiveFailures = new NewValue<>(count);
       return this;
@@ -64,12 +80,13 @@ public record RescheduleUpdate(
     public Builder resetFailures() {
       this.consecutiveFailures = new NewValue<>(0);
       this.lastFailure = new NewValue<>(null);
+      this.lastFailureText = new NewValue<>(null);
       return this;
     }
 
     public RescheduleUpdate build() {
       return new RescheduleUpdate(
-          executionTime, data, lastSuccess, lastFailure, consecutiveFailures);
+          executionTime, data, lastSuccess, lastFailure, lastFailureText, consecutiveFailures);
     }
   }
 }
