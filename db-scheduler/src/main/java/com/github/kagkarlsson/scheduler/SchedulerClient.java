@@ -218,6 +218,17 @@ public interface SchedulerClient {
   boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
 
   /**
+   * Tries to reschedule an existing execution and update its data. Returns {@literal false} if the
+   * execution does not exist or is currently running. Database failures are propagated.
+   *
+   * @param taskInstanceId task-instance to reschedule
+   * @param newExecutionTime the new execution time
+   * @param newData new task data, or {@literal null} to keep the existing data
+   * @return {@literal true} if rescheduled successfully, otherwise {@literal false}
+   */
+  <T> boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
+
+  /**
    * Removes/Cancels an execution.
    *
    * @param taskInstanceId
@@ -570,21 +581,7 @@ public interface SchedulerClient {
     @Override
     public <T> boolean reschedule(
         TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
-      RescheduleUpdate.Builder rescheduleUpdate =
-          RescheduleUpdate.toExecutionTime(newExecutionTime)
-              .lastSuccess(null)
-              .lastFailure(null)
-              .consecutiveFailures(0);
-
-      if (newData != null) {
-        rescheduleUpdate.data(newData);
-      }
-
-      boolean success =
-          taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate.build());
-
-      if (success) {
-        schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
+      if (tryReschedule(taskInstanceId, newExecutionTime, newData)) {
         return true;
       }
 
@@ -598,14 +595,23 @@ public interface SchedulerClient {
 
     @Override
     public boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
-      RescheduleUpdate rescheduleUpdate =
+      return tryReschedule(taskInstanceId, newExecutionTime, null);
+    }
+
+    @Override
+    public <T> boolean tryReschedule(
+        TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
+      RescheduleUpdate.Builder rescheduleUpdate =
           RescheduleUpdate.toExecutionTime(newExecutionTime)
               .lastSuccess(null)
               .lastFailure(null)
-              .consecutiveFailures(0)
-              .build();
+              .consecutiveFailures(0);
+      if (newData != null) {
+        rescheduleUpdate.data(newData);
+      }
 
-      boolean success = taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate);
+      boolean success =
+          taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate.build());
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
       }
