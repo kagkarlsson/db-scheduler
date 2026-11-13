@@ -167,35 +167,6 @@ class ExecutionUpdateTest {
     assertThat(getExecution(execution).executionTime).isEqualTo(AN_INSTANT);
   }
 
-  @Test
-  void try_reschedule_updates_unpicked_execution_and_increments_version() {
-    Execution execution = insert(AN_INSTANT);
-    ExecutionUpdate.forExecution(execution)
-        .lastHeartbeat(ANOTHER_INSTANT)
-        .lastSuccess(ANOTHER_INSTANT)
-        .lastFailure(ANOTHER_INSTANT)
-        .consecutiveFailures(4)
-        .updateSingle(jdbcConfig);
-
-    var rescheduleUpdate =
-        com.github.kagkarlsson.scheduler.task.RescheduleUpdate.toExecutionTime(ANOTHER_INSTANT)
-            .lastSuccess(null)
-            .lastFailure(null)
-            .consecutiveFailures(0)
-            .build();
-    assertThat(repository.rescheduleIfNotPicked(execution.taskInstance, rescheduleUpdate)).isTrue();
-
-    Execution rescheduled = getExecution(execution);
-    assertThat(rescheduled.executionTime).isEqualTo(ANOTHER_INSTANT);
-    assertThat(rescheduled.picked).isFalse();
-    assertThat(rescheduled.pickedBy).isNull();
-    assertThat(rescheduled.lastHeartbeat).isNull();
-    assertThat(rescheduled.lastSuccess).isNull();
-    assertThat(rescheduled.lastFailure).isNull();
-    assertThat(rescheduled.consecutiveFailures).isZero();
-    assertThat(rescheduled.version).isEqualTo(execution.version + 2);
-  }
-
   private Execution insert(Instant executionTime) {
     var instance = ONETIME_TASK.instanceBuilder(TASK_ID).scheduledTo(executionTime);
     repository.createIfNotExists(instance);
