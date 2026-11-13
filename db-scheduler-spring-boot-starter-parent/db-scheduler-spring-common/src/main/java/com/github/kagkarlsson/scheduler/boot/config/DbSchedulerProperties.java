@@ -121,11 +121,19 @@ public class DbSchedulerProperties {
    */
   private boolean alwaysPersistTimestampInUtc = false;
 
-  /** Which log level to use when logging task failures. Defaults to {@link LogLevel#DEBUG}. */
+  /** Which log level to use when logging task failures. Defaults to {@link LogLevel#WARN}. */
   private LogLevel failureLoggerLevel = SchedulerBuilder.DEFAULT_FAILURE_LOG_LEVEL;
 
   /** Whether or not to log the {@link Throwable} that caused a task to fail. */
   private boolean failureLoggerLogStackTrace = SchedulerBuilder.LOG_STACK_TRACE_ON_FAILURE;
+
+  /** Whether to run housekeeping periodical job for long-running executions logging. */
+  private boolean logLongRunningExecutions = SchedulerBuilder.LOG_LONG_RUNNING_EXECUTIONS;
+
+  /** Execution time threshold for long-running executions logging. */
+  @DurationUnit(MINUTES)
+  private Duration longRunningExecutionsLoggingThreshold =
+      SchedulerBuilder.DEFAULT_LONG_RUNNING_EXECUTIONS_LOGGING_THRESHOLD;
 
   /** Whether or executions are ordered by priority */
   private boolean priorityEnabled = false;
@@ -232,6 +240,23 @@ public class DbSchedulerProperties {
 
   public void setFailureLoggerLevel(LogLevel failureLoggerLevel) {
     this.failureLoggerLevel = failureLoggerLevel;
+  }
+
+  public boolean isLogLongRunningExecutions() {
+    return logLongRunningExecutions;
+  }
+
+  public void setLogLongRunningExecutions(boolean logLongRunningExecutions) {
+    this.logLongRunningExecutions = logLongRunningExecutions;
+  }
+
+  public Duration getLongRunningExecutionsLoggingThreshold() {
+    return longRunningExecutionsLoggingThreshold;
+  }
+
+  public void setLongRunningExecutionsLoggingThreshold(
+      Duration longRunningExecutionsLoggingThreshold) {
+    this.longRunningExecutionsLoggingThreshold = longRunningExecutionsLoggingThreshold;
   }
 
   public boolean isFailureLoggerLogStackTrace() {

@@ -71,6 +71,8 @@ public class ManualScheduler extends Scheduler {
         Duration.ZERO,
         logLevel,
         logStackTrace,
+        false,
+        Duration.ZERO,
         onStartup,
         dueExecutor,
         houseKeeperExecutor);

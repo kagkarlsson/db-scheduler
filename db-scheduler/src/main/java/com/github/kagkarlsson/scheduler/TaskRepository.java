@@ -64,6 +64,8 @@ public interface TaskRepository {
     return results;
   }
 
+  List<TaskSummary> getScheduledExecutionsSummaryByTask();
+
   List<Execution> lockAndFetchGeneric(Instant now, int limit);
 
   List<Execution> lockAndGetDue(Instant now, int limit);
@@ -74,7 +76,23 @@ public interface TaskRepository {
 
   void reactivate(Execution execution, Instant newExecutionTime);
 
+  /**
+   * Implementations should remove in a single atomic operation, so that an execution cannot be
+   * picked between deciding and removing.
+   *
+   * @return true if it was removed, false if it does not exist or is currently picked
+   */
+  boolean removeIfNotPicked(TaskInstanceId taskInstanceId);
+
   boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
+
+  /**
+   * Implementations should reschedule in a single atomic operation, so that an execution cannot be
+   * picked between deciding and rescheduling.
+   *
+   * @return true if it was rescheduled, false if it does not exist or is currently picked
+   */
+  boolean rescheduleIfNotPicked(TaskInstanceId taskInstanceId, RescheduleUpdate rescheduleUpdate);
 
   boolean reschedule(
       Execution execution,
@@ -91,9 +109,9 @@ public interface TaskRepository {
       Instant lastFailure,
       int consecutiveFailures);
 
-  boolean tryReschedule(Execution execution, RescheduleUpdate rescheduleUpdate);
-
   Optional<Execution> pick(Execution e, Instant timePicked);
+
+  void unpickPickedBatch(List<Execution> pickedExecutions);
 
   List<Execution> getDeadExecutions(Instant olderThan);
 

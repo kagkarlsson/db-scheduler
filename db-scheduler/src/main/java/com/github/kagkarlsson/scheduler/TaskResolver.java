@@ -85,6 +85,10 @@ public class TaskResolver {
         .collect(Collectors.toList());
   }
 
+  public boolean isUnresolved(String taskName) {
+    return unresolvedTasks.containsKey(taskName);
+  }
+
   public void clearUnresolved(String taskName) {
     unresolvedTasks.remove(taskName);
   }

@@ -27,7 +27,7 @@ public interface DeadExecutionHandler<T> {
     @Override
     public void deadExecution(
         ExecutionComplete executionComplete, ExecutionOperations<T> executionOperations) {
-      final Instant now = Instant.now();
+      final Instant now = executionComplete.getTimeDone();
       LOG.info("Reviving dead execution: " + executionComplete.getExecution() + " to " + now);
       executionOperations.reschedule(executionComplete, now);
     }

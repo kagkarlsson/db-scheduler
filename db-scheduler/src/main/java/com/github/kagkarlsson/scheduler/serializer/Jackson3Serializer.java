@@ -11,14 +11,13 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.boot.autoconfigure;
+package com.github.kagkarlsson.scheduler.serializer;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.github.kagkarlsson.scheduler.boot.autoconfigure.jackson3.InstantDeserializer;
-import com.github.kagkarlsson.scheduler.boot.autoconfigure.jackson3.InstantSerializer;
 import com.github.kagkarlsson.scheduler.exceptions.SerializationException;
-import com.github.kagkarlsson.scheduler.serializer.Serializer;
 import com.github.kagkarlsson.scheduler.serializer.jackson.ScheduleMixin;
+import com.github.kagkarlsson.scheduler.serializer.jackson3.InstantDeserializer;
+import com.github.kagkarlsson.scheduler.serializer.jackson3.InstantSerializer;
 import com.github.kagkarlsson.scheduler.task.schedule.Schedule;
 import java.time.Instant;
 import java.util.function.Consumer;

@@ -40,7 +40,8 @@ class ScheduleOnceOnStartup<T> implements ScheduleOnStartup<T> {
   }
 
   public void apply(SchedulerClient scheduler, Clock clock, Task<T> task) {
-    scheduler.schedule(getSchedulableInstance(task), firstExecutionTime.apply(clock.now()));
+    scheduler.scheduleIfNotExists(
+        getSchedulableInstance(task), firstExecutionTime.apply(clock.now()));
   }
 
   private TaskInstance<T> getSchedulableInstance(Task<T> task) {

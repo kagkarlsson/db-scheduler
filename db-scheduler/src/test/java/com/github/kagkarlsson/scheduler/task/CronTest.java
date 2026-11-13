@@ -17,10 +17,13 @@ import java.time.ZonedDateTime;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 public class CronTest {
 
   ZoneId london = ZoneId.of("Europe/London");
+  ZoneId berlin = ZoneId.of("Europe/Berlin");
   ZoneId utc = ZoneId.of("UTC");
   ZoneId newYork = ZoneId.of("America/New_York");
 
@@ -152,6 +155,88 @@ public class CronTest {
     EqualsVerifier.forClass(CronSchedule.class).verify();
   }
 
+  @ParameterizedTest
+  @CsvSource({
+    "SPRING53, 0 30 2 * * ?",
+    "SPRING, 0 30 2 * * ?",
+    "QUARTZ, 0 30 2 * * ? *",
+    "UNIX, 30 2 * * *",
+    "CRON4J, 30 2 * * *"
+  })
+  public void should_run_a_time_repeated_when_the_clocks_go_back_once(
+      CronStyle cronStyle, String pattern) {
+    CronSchedule schedule = new CronSchedule(pattern, berlin, cronStyle);
+    ZonedDateTime dayBefore = ZonedDateTime.of(2026, 10, 24, 2, 30, 0, 0, berlin);
+    ZonedDateTime due = ZonedDateTime.of(2026, 10, 25, 2, 30, 0, 0, berlin); // the first 02:30
+
+    assertThat(
+        nextExecutionTime(schedule, dayBefore, dayBefore.plusSeconds(5)), is(due.toInstant()));
+    assertThat(
+        nextExecutionTime(schedule, due, due.plusSeconds(5)), is(due.plusDays(1).toInstant()));
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "SPRING53, 0 30 2 * * ?",
+    "SPRING, 0 30 2 * * ?",
+    "QUARTZ, 0 30 2 * * ? *",
+    "UNIX, 30 2 * * *",
+    "CRON4J, 30 2 * * *"
+  })
+  public void should_run_a_time_skipped_when_the_clocks_go_forward_at_the_change(
+      CronStyle cronStyle, String pattern) {
+    CronSchedule schedule = new CronSchedule(pattern, berlin, cronStyle);
+    ZonedDateTime due = ZonedDateTime.of(2026, 3, 28, 2, 30, 0, 0, berlin);
+    ZonedDateTime change = ZonedDateTime.of(2026, 3, 29, 3, 0, 0, 0, berlin);
+
+    assertThat(nextExecutionTime(schedule, due, due.plusSeconds(5)), is(change.toInstant()));
+    assertThat(
+        nextExecutionTime(schedule, change, change.plusSeconds(5)),
+        is(ZonedDateTime.of(2026, 3, 30, 2, 30, 0, 0, berlin).toInstant()));
+  }
+
+  @Test
+  public void should_run_a_yearly_time_skipped_when_the_clocks_go_forward_at_the_change() {
+    CronSchedule schedule = new CronSchedule("0 30 1 29 3 ?", london);
+    ZonedDateTime due = ZonedDateTime.of(2025, 3, 29, 1, 30, 0, 0, london);
+    ZonedDateTime change = ZonedDateTime.of(2026, 3, 29, 2, 0, 0, 0, london);
+
+    assertThat(nextExecutionTime(schedule, due, due.plusSeconds(5)), is(change.toInstant()));
+  }
+
+  @Test
+  public void should_run_a_single_time_skipped_when_the_clocks_go_forward_at_the_change() {
+    CronSchedule schedule = new CronSchedule("0 30 1 29 3 ? 2026", london, CronStyle.QUARTZ);
+    ZonedDateTime change = ZonedDateTime.of(2026, 3, 29, 2, 0, 0, 0, london);
+
+    assertThat(
+        schedule.getInitialExecutionTime(change.minusDays(1).toInstant()), is(change.toInstant()));
+    assertThat(nextExecutionTime(schedule, change, change.plusSeconds(5)), is(Schedule.NEVER));
+  }
+
+  @Test
+  public void should_run_crons_more_frequent_than_hourly_by_the_clock_when_the_clocks_change() {
+    CronSchedule schedule = new CronSchedule("0 */15 1 * * ?", london);
+    ZonedDateTime lastBeforeBack = ZonedDateTime.of(2026, 10, 25, 1, 45, 0, 0, london);
+    ZonedDateTime lastBeforeForward = ZonedDateTime.of(2026, 3, 28, 1, 45, 0, 0, london);
+
+    assertThat(
+        nextExecutionTime(schedule, lastBeforeBack, lastBeforeBack.plusSeconds(5)),
+        is(lastBeforeBack.plusMinutes(15).toInstant()));
+    assertThat(
+        nextExecutionTime(schedule, lastBeforeForward, lastBeforeForward.plusSeconds(5)),
+        is(ZonedDateTime.of(2026, 3, 30, 1, 0, 0, 0, london).toInstant()));
+  }
+
+  @Test
+  public void should_continue_from_time_done_when_execution_ran_past_next_time() {
+    CronSchedule schedule = new CronSchedule("0 * * * * ?", utc);
+    ZonedDateTime due = ZonedDateTime.of(2000, 1, 1, 12, 0, 0, 0, utc);
+
+    assertThat(
+        nextExecutionTime(schedule, due, due.plusSeconds(90)), is(due.plusMinutes(2).toInstant()));
+  }
+
   private void assertNextExecutionTime(
       ZonedDateTime timeDone, String cronPattern, ZonedDateTime expectedTime) {
     assertNextExecutionTime(timeDone, expectedTime, new CronSchedule(cronPattern));
@@ -177,5 +262,11 @@ public class CronTest {
 
   private ExecutionComplete complete(Instant timeDone) {
     return ExecutionComplete.success(null, timeDone, timeDone);
+  }
+
+  private Instant nextExecutionTime(Schedule schedule, ZonedDateTime due, ZonedDateTime done) {
+    return schedule.getNextExecutionTime(
+        ExecutionComplete.success(
+            new Execution(due.toInstant(), null), due.toInstant(), done.toInstant()));
   }
 }

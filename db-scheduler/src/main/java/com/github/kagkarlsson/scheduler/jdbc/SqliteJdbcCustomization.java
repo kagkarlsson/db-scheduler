@@ -11,4 +11,23 @@
  * express or implied. See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.kagkarlsson.scheduler.boot;
+package com.github.kagkarlsson.scheduler.jdbc;
+
+import static com.github.kagkarlsson.scheduler.jdbc.AutodetectJdbcCustomization.SQLITE;
+
+public class SqliteJdbcCustomization extends DefaultJdbcCustomization {
+
+  public SqliteJdbcCustomization() {
+    super(true);
+  }
+
+  @Override
+  public String getName() {
+    return SQLITE;
+  }
+
+  @Override
+  public String getQueryLimitPart(int limit) {
+    return Queries.postgresSqlLimitPart(limit);
+  }
+}

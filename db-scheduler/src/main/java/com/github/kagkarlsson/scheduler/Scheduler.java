@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ public class Scheduler implements SchedulerClient {
   public static final String THREAD_PREFIX = "db-scheduler";
   static final int DELETE_OLD_DEACTIVATED_BATCH_LIMIT = 10_000;
   private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
+  private static final String STACK_TRACE_ELEMENT_INDENT = System.lineSeparator() + "\t\t";
   private final SchedulerClient delegate;
   final Clock clock;
   final TaskRepository schedulerTaskRepository;
@@ -73,6 +75,8 @@ public class Scheduler implements SchedulerClient {
   private final Waiter heartbeatWaiter;
   final SettableSchedulerState schedulerState = new SettableSchedulerState();
   final ConfigurableLogger failureLogger;
+  final boolean logLongRunningExecutions;
+  final Duration longRunningExecutionsLoggingThreshold;
 
   protected Scheduler(
       Clock clock,
@@ -93,6 +97,8 @@ public class Scheduler implements SchedulerClient {
       Duration shutdownMaxWait,
       LogLevel logLevel,
       boolean logStackTrace,
+      boolean logLongRunningExecutions,
+      Duration longRunningExecutionsLoggingThreshold,
       List<OnStartup> onStartup,
       ExecutorService dueExecutor,
       ScheduledExecutorService housekeeperExecutor) {
@@ -118,6 +124,8 @@ public class Scheduler implements SchedulerClient {
     this.housekeeperExecutor = housekeeperExecutor;
     delegate = new StandardSchedulerClient(clientTaskRepository, this.schedulerListeners, clock);
     this.failureLogger = ConfigurableLogger.create(LOG, logLevel, logStackTrace);
+    this.logLongRunningExecutions = logLongRunningExecutions;
+    this.longRunningExecutionsLoggingThreshold = longRunningExecutionsLoggingThreshold;
 
     if (pollingStrategyConfig.type == PollingStrategyConfig.Type.LOCK_AND_FETCH) {
       schedulerTaskRepository.verifySupportsLockAndFetch();
@@ -187,6 +195,17 @@ public class Scheduler implements SchedulerClient {
         0,
         Duration.ofHours(24).toMillis(),
         MILLISECONDS);
+
+    if (logLongRunningExecutions) {
+      long longRunningExecutionsThresholdMillis = longRunningExecutionsLoggingThreshold.toMillis();
+      housekeeperExecutor.scheduleWithFixedDelay(
+          new RunAndLogErrors(this::logLongRunningExecutions, schedulerListeners),
+          longRunningExecutionsThresholdMillis,
+          Math.min(
+              2 * detectDeadWaiter.getWaitDuration().toMillis(),
+              longRunningExecutionsThresholdMillis),
+          MILLISECONDS);
+    }
 
     schedulerState.setStarted();
   }
@@ -259,6 +278,7 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public <T> void schedule(SchedulableInstance<T> schedulableInstance) {
     this.delegate.schedule(schedulableInstance);
   }
@@ -284,6 +304,7 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  @SuppressWarnings("deprecation")
   public <T> void schedule(TaskInstance<T> taskInstance, Instant executionTime) {
     this.delegate.schedule(taskInstance, executionTime);
   }
@@ -362,6 +383,11 @@ public class Scheduler implements SchedulerClient {
     return this.delegate.getScheduledExecution(taskInstanceId);
   }
 
+  @Override
+  public List<TaskSummary> getScheduledExecutionsSummaryByTask() {
+    return this.delegate.getScheduledExecutionsSummaryByTask();
+  }
+
   public List<Execution> getFailingExecutions(Duration failingAtLeastFor) {
     return schedulerTaskRepository.getExecutionsFailingLongerThan(failingAtLeastFor);
   }
@@ -416,7 +442,7 @@ public class Scheduler implements SchedulerClient {
                     .deadExecution(
                         ExecutionComplete.failure(execution, now, now, null),
                         new ExecutionOperations(
-                            schedulerTaskRepository, schedulerListeners, execution));
+                            schedulerTaskRepository, schedulerListeners, execution, clock));
               } else {
                 LOG.error(
                     "Failed to find implementation for task with name '{}' for detected dead execution. Either delete the execution from the databaser, or add an implementation for it.",
@@ -483,6 +509,35 @@ public class Scheduler implements SchedulerClient {
     Instant now = clock.now();
     currentlyProcessing.forEach(execution -> updateHeartbeatForExecution(now, execution));
     schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_UPDATE_HEARTBEATS);
+  }
+
+  void logLongRunningExecutions() {
+    final List<CurrentlyExecuting> longRunningExecutions =
+        executor.getCurrentlyExecuting().stream()
+            .filter(
+                executing ->
+                    executing.getDuration().compareTo(longRunningExecutionsLoggingThreshold) > 0)
+            .toList();
+    if (longRunningExecutions.isEmpty()) {
+      LOG.trace("No long-running executions to log.");
+      return;
+    }
+
+    longRunningExecutions.stream()
+        .filter(CurrentlyExecuting::markLongRunningWarningLogged)
+        .forEach(
+            execution -> {
+              LOG.warn(
+                  "Execution with {} is long-running (execution time: {}). If this message is a false positive and the task is genuinely long-running, try increasing longRunningExecutionsLoggingThreshold or disabling logLongRunningExecutions. Current thread stacktrace: {}",
+                  execution.getExecution().taskInstance,
+                  execution.getDuration(),
+                  Arrays.stream(execution.getCurrentThread().getStackTrace())
+                      .map(StackTraceElement::toString)
+                      .collect(
+                          Collectors.joining(
+                              STACK_TRACE_ELEMENT_INDENT, STACK_TRACE_ELEMENT_INDENT, "")));
+            });
+    schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_LOG_LONG_RUNNING_EXECUTIONS);
   }
 
   protected void updateHeartbeatForExecution(Instant now, CurrentlyExecuting currentlyExecuting) {

@@ -16,6 +16,7 @@ package com.github.kagkarlsson.scheduler.jdbc;
 import static com.github.kagkarlsson.scheduler.StringUtils.truncate;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.partitioningBy;
 import static java.util.stream.Collectors.toList;
 
 import com.github.kagkarlsson.jdbc.JdbcRunner;
@@ -30,6 +31,7 @@ import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.TaskRepository;
 import com.github.kagkarlsson.scheduler.TaskResolver;
 import com.github.kagkarlsson.scheduler.TaskResolver.UnresolvedTask;
+import com.github.kagkarlsson.scheduler.TaskSummary;
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.exceptions.FailedToScheduleBatchException;
 import com.github.kagkarlsson.scheduler.exceptions.TaskInstanceException;
@@ -50,6 +52,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -176,12 +179,12 @@ public class JdbcTaskRepository implements TaskRepository {
         return delegate.get();
       }
 
-      Supplier<T> delegate = this::firstTime;
+      volatile Supplier<T> delegate = this::firstTime;
     };
   }
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "deprecation"})
   public boolean createIfNotExists(SchedulableInstance instance) {
     return createIfNotExists(
         new ScheduledTaskInstance(
@@ -254,7 +257,7 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({"unchecked", "deprecation"})
   public Instant replace(Execution toBeReplaced, SchedulableInstance newInstance) {
     return replace(
         toBeReplaced,
@@ -358,6 +361,32 @@ public class JdbcTaskRepository implements TaskRepository {
   }
 
   @Override
+  public List<TaskSummary> getScheduledExecutionsSummaryByTask() {
+    var query =
+        "select task_name, "
+            + "count(*) as instance_count, "
+            + "sum(case when picked = ? then 1 else 0 end) as running_count, "
+            + "sum(case when picked = ? and coalesce(consecutive_failures, 0) > 0 then 1 else 0 end) as failing_count, "
+            + "sum(case when picked = ? and coalesce(consecutive_failures, 0) = 0 then 1 else 0 end) as scheduled_count, "
+            + "min(execution_time) as earliest_execution_time, "
+            + "max(last_success) as latest_last_success, "
+            + "max(last_failure) as latest_last_failure, "
+            + "max(consecutive_failures) as max_consecutive_failures "
+            + "from "
+            + tableName
+            + " group by task_name";
+
+    return jdbcRunner.query(
+        query,
+        (PreparedStatement p) -> {
+          p.setBoolean(1, true); // running: picked
+          p.setBoolean(2, false); // failing: not picked
+          p.setBoolean(3, false); // scheduled: not picked
+        },
+        new TaskSummaryResultSetMapper());
+  }
+
+  @Override
   public List<Execution> getDue(Instant now, int limit) {
     LOG.trace("Using generic fetch-then-lock query");
     final UnresolvedFilter unresolvedFilter = new UnresolvedFilter(taskResolver.getUnresolved());
@@ -366,6 +395,24 @@ public class JdbcTaskRepository implements TaskRepository {
             tableName, limit, unresolvedFilter.andCondition(), orderByPriority);
 
     return getExecutions(jdbcRunner, selectDueQuery, now, limit, unresolvedFilter);
+  }
+
+  private List<Execution> lockAndFetchSingleStatement(Instant now, int limit) {
+    List<Execution> allCandidates =
+        jdbcCustomization.lockAndFetchSingleStatement(
+            getTaskRespositoryContext(), now, limit, orderByPriority);
+
+    Map<Boolean, List<Execution>> allCandidatesByIsUnresolved =
+        allCandidates.stream()
+            .collect(
+                partitioningBy(execution -> taskResolver.isUnresolved(execution.getTaskName())));
+
+    List<Execution> unresolvedExecutions = allCandidatesByIsUnresolved.get(Boolean.TRUE);
+    if (unresolvedExecutions != null && !unresolvedExecutions.isEmpty()) {
+      unpickPickedBatch(unresolvedExecutions);
+    }
+
+    return allCandidatesByIsUnresolved.get(Boolean.FALSE);
   }
 
   @Override
@@ -468,8 +515,7 @@ public class JdbcTaskRepository implements TaskRepository {
   public List<Execution> lockAndGetDue(Instant now, int limit) {
     if (jdbcCustomization.supportsSingleStatementLockAndFetch()) {
       LOG.trace("Using single-statement lock-and-fetch");
-      return jdbcCustomization.lockAndFetchSingleStatement(
-          getTaskRespositoryContext(), now, limit, orderByPriority);
+      return lockAndFetchSingleStatement(now, limit);
     } else if (jdbcCustomization.supportsGenericLockAndFetch()) {
       LOG.trace("Using generic transaction-based lock-and-fetch");
       return lockAndFetchGeneric(now, limit);
@@ -479,6 +525,21 @@ public class JdbcTaskRepository implements TaskRepository {
               + "indicates that it does not support SELECT FOR UPDATE .. SKIP LOCKED. If it indeed does, "
               + "please indicate so in the JdbcCustomization.");
     }
+  }
+
+  @Override
+  public boolean removeIfNotPicked(TaskInstanceId taskInstanceId) {
+    final int removed =
+        jdbcRunner.execute(
+            "delete from "
+                + tableName
+                + " where task_name = ? and task_instance = ? and picked = ?",
+            ps -> {
+              ps.setString(1, taskInstanceId.getTaskName());
+              ps.setString(2, taskInstanceId.getId());
+              ps.setBoolean(3, false);
+            });
+    return removed > 0;
   }
 
   @Override
@@ -577,18 +638,22 @@ public class JdbcTaskRepository implements TaskRepository {
 
   @Override
   public boolean reschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
-    var rescheduledSuccessfully = tryReschedule(execution, rescheduleUpdate);
-    if (!rescheduledSuccessfully) {
-      throw new ExecutionException(
-          "Expected one execution to be updated, but updated none. Indicates a bug.", execution);
-    }
+    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
+    configureRescheduleUpdate(update, rescheduleUpdate);
+    update.updateSingle(jdbcConfig);
     return true;
   }
 
   @Override
-  public boolean tryReschedule(Execution execution, RescheduleUpdate rescheduleUpdate) {
-    ExecutionUpdate update = ExecutionUpdate.forExecution(execution);
+  public boolean rescheduleIfNotPicked(
+      TaskInstanceId taskInstanceId, RescheduleUpdate rescheduleUpdate) {
+    var update = ExecutionUpdate.forTaskInstance(taskInstanceId);
+    configureRescheduleUpdate(update, rescheduleUpdate);
+    return update.updateIfNotPicked(jdbcConfig);
+  }
 
+  private void configureRescheduleUpdate(
+      ExecutionUpdate update, RescheduleUpdate rescheduleUpdate) {
     update.picked(false);
     update.pickedBy(null);
     update.lastHeartbeat(null);
@@ -606,8 +671,6 @@ public class JdbcTaskRepository implements TaskRepository {
     if (rescheduleUpdate.data() != null) {
       update.taskData(serializer.serialize(rescheduleUpdate.data().value()));
     }
-
-    return update.tryUpdate(jdbcConfig);
   }
 
   @Override
@@ -648,6 +711,52 @@ public class JdbcTaskRepository implements TaskRepository {
       throw new IllegalStateException(
           "Updated multiple rows when picking single execution. Should never happen since name and id is primary key. Execution: "
               + e);
+    }
+  }
+
+  @Override
+  public void unpickPickedBatch(List<Execution> pickedExecutions) {
+    if (pickedExecutions.isEmpty()) {
+      return;
+    }
+
+    final int[] updated =
+        jdbcRunner.executeBatch(
+            "update "
+                + tableName
+                + " set picked = ?, picked_by = ?, version = version + 1 "
+                + "where picked = ? "
+                + "and version = ? "
+                + "and task_name = ? "
+                + "and task_instance = ?",
+            pickedExecutions,
+            (execution, ps) -> {
+              int index = 1;
+              ps.setBoolean(index++, false); // picked
+              ps.setString(index++, null); // picked_by
+              ps.setBoolean(index++, true); // only picked
+              ps.setLong(index++, execution.version);
+              ps.setString(index++, execution.getTaskName());
+              ps.setString(index++, execution.getId());
+            });
+
+    final List<Execution> unpickedTasks = new ArrayList<>();
+    final List<Execution> nonUnpickedTasks = new ArrayList<>();
+    for (int i = 0; i < updated.length; i++) {
+      Execution task = pickedExecutions.get(i);
+      if (updated[i] == 1) {
+        unpickedTasks.add(task);
+      } else {
+        nonUnpickedTasks.add(task);
+      }
+    }
+    if (nonUnpickedTasks.isEmpty()) {
+      LOG.debug("Successfully unpicked tasks: {}", unpickedTasks);
+    } else {
+      LOG.error(
+          "Error while unpicking tasks batch. Failed to unpick: {}, successfully unpicked: {}",
+          nonUnpickedTasks,
+          unpickedTasks);
     }
   }
 
@@ -845,7 +954,7 @@ public class JdbcTaskRepository implements TaskRepository {
         tableName,
         schedulerSchedulerName,
         jdbcRunner,
-        () -> new ExecutionResultSetMapper(false, true));
+        () -> new ExecutionResultSetMapper(true, true));
   }
 
   private QueryBuilder queryForFilter(ScheduledExecutionsFilter filter) {
@@ -1009,6 +1118,28 @@ public class JdbcTaskRepository implements TaskRepository {
     public int setParameters(PreparedStatement p, int index) throws SQLException {
       p.setString(index++, value);
       return index;
+    }
+  }
+
+  private class TaskSummaryResultSetMapper implements ResultSetMapper<List<TaskSummary>> {
+
+    @Override
+    public List<TaskSummary> map(ResultSet rs) throws SQLException {
+      var summaries = new ArrayList<TaskSummary>();
+      while (rs.next()) {
+        summaries.add(
+            new TaskSummary(
+                rs.getString("task_name"),
+                rs.getInt("instance_count"),
+                rs.getInt("running_count"),
+                rs.getInt("failing_count"),
+                rs.getInt("scheduled_count"),
+                jdbcCustomization.getInstant(rs, "earliest_execution_time"),
+                jdbcCustomization.getInstant(rs, "latest_last_success"),
+                jdbcCustomization.getInstant(rs, "latest_last_failure"),
+                rs.getInt("max_consecutive_failures")));
+      }
+      return summaries;
     }
   }
 

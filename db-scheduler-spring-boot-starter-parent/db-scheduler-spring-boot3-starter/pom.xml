@@ -46,6 +46,10 @@
     <!-- Spring dependencies -->
     <dependency>
       <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
     </dependency>
     <dependency>
@@ -107,11 +111,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
       <scope>test</scope>
@@ -155,25 +154,18 @@
         </plugin>
       </plugins>
     </pluginManagement>
-  </build>
 
-  <!--  TODO: enable when we get working -->
-  <!--    <build>-->
-  <!--        <pluginManagement>-->
-  <!--          <plugins>-->
-  <!--            <plugin>-->
-  <!--                <groupId>org.apache.maven.plugins</groupId>-->
-  <!--                <artifactId>maven-jar-plugin</artifactId>-->
-  <!--                <version>3.3.0</version>-->
-  <!--                <configuration>-->
-  <!--                    <archive>-->
-  <!--                        <manifestEntries>-->
-  <!--                            <Automatic-Module-Name>com.github.kagkarlsson.scheduler.boot</Automatic-Module-Name>-->
-  <!--                        </manifestEntries>-->
-  <!--                    </archive>-->
-  <!--                </configuration>-->
-  <!--            </plugin>-->
-  <!--          </plugins>-->
-  <!--        </pluginManagement>-->
-  <!--    </build>-->
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <Automatic-Module-Name>db.scheduler.spring.boot.starter</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

@@ -323,6 +323,16 @@ public interface SchedulerClient {
    */
   Optional<ScheduledExecution<Object>> getScheduledExecution(TaskInstanceId taskInstanceId);
 
+  /**
+   * Summarizes all executions by task-name in the database (a {@code GROUP BY task_name}) and
+   * returns one {@link TaskSummary} per task-name. All executions are included, both picked
+   * (running) and not.
+   *
+   * @return one summary per task-name, empty if no executions exist
+   * @see com.github.kagkarlsson.scheduler.TaskSummary
+   */
+  List<TaskSummary> getScheduledExecutionsSummaryByTask();
+
   class ScheduleOptions {
 
     public static final ScheduleOptions WHEN_EXISTS_DO_NOTHING =
@@ -364,6 +374,7 @@ public interface SchedulerClient {
     private String tableName = JdbcTaskRepository.DEFAULT_TABLE_NAME;
     private JdbcCustomization jdbcCustomization;
     private boolean priority = false;
+    private Clock clock = new SystemClock();
 
     private Builder(DataSource dataSource, List<Task<?>> knownTasks) {
       this.dataSource = dataSource;
@@ -399,8 +410,12 @@ public interface SchedulerClient {
       return this;
     }
 
+    public Builder clock(Clock clock) {
+      this.clock = clock;
+      return this;
+    }
+
     public SchedulerClient build() {
-      final SystemClock clock = new SystemClock();
       TaskResolver taskResolver = new TaskResolver(SchedulerListeners.NOOP, clock, knownTasks);
 
       final JdbcCustomization jdbcCustomization =
@@ -450,7 +465,7 @@ public interface SchedulerClient {
     @Override
     public <T> boolean scheduleIfNotExists(TaskInstance<T> taskInstance, Instant executionTime) {
       boolean success =
-          taskRepository.createIfNotExists(SchedulableInstance.of(taskInstance, executionTime));
+          taskRepository.createIfNotExists(new ScheduledTaskInstance(taskInstance, executionTime));
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstance, executionTime);
       }
@@ -560,17 +575,6 @@ public interface SchedulerClient {
     @Override
     public <T> boolean reschedule(
         TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
-      String taskName = taskInstanceId.getTaskName();
-      String instanceId = taskInstanceId.getId();
-      Execution execution =
-          taskRepository
-              .getExecution(taskName, instanceId)
-              .orElseThrow(() -> new TaskInstanceNotFoundException(taskName, instanceId));
-
-      if (execution.isPicked()) {
-        throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
-      }
-
       RescheduleUpdate.Builder rescheduleUpdate =
           RescheduleUpdate.toExecutionTime(newExecutionTime)
               .lastSuccess(null)
@@ -581,30 +585,33 @@ public interface SchedulerClient {
         rescheduleUpdate.data(newData);
       }
 
-      boolean success = taskRepository.tryReschedule(execution, rescheduleUpdate.build());
+      boolean success =
+          taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate.build());
 
       if (success) {
         schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
-      } else {
-        LOG.warn("Failed to reschedule task instance: {}", taskInstanceId);
+        return true;
       }
-      return success;
+
+      String taskName = taskInstanceId.getTaskName();
+      String instanceId = taskInstanceId.getId();
+      if (taskRepository.getExecution(taskName, instanceId).isPresent()) {
+        throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
+      }
+      throw new TaskInstanceNotFoundException(taskName, instanceId);
     }
 
     @Override
     public void cancel(TaskInstanceId taskInstanceId) {
       String taskName = taskInstanceId.getTaskName();
       String instanceId = taskInstanceId.getId();
-      Optional<Execution> execution = taskRepository.getExecution(taskName, instanceId);
-      if (execution.isPresent()) {
-        if (execution.get().isPicked()) {
-          throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
-        }
-
-        taskRepository.remove(execution.get());
-      } else {
-        throw new TaskInstanceNotFoundException(taskName, instanceId);
+      if (taskRepository.removeIfNotPicked(taskInstanceId)) {
+        return;
       }
+      if (taskRepository.getExecution(taskName, instanceId).isPresent()) {
+        throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
+      }
+      throw new TaskInstanceNotFoundException(taskName, instanceId);
     }
 
     @Override
@@ -677,6 +684,11 @@ public interface SchedulerClient {
       Optional<Execution> e =
           taskRepository.getExecution(taskInstanceId.getTaskName(), taskInstanceId.getId());
       return e.map(oe -> new ScheduledExecution<>(Object.class, oe));
+    }
+
+    @Override
+    public List<TaskSummary> getScheduledExecutionsSummaryByTask() {
+      return taskRepository.getScheduledExecutionsSummaryByTask();
     }
   }
 

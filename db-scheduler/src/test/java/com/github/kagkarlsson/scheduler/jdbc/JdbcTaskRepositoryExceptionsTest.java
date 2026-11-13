@@ -176,7 +176,8 @@ public class JdbcTaskRepositoryExceptionsTest {
             () -> {
               jdbcTaskRepository.reschedule(execution, Instant.now(), null, null, 0);
             });
-    assertThat(actualException.getMessage()).matches(Pattern.compile("Expected .* execution to be updated, but updated .*"));
+    assertThat(actualException.getMessage())
+        .matches(Pattern.compile("Expected .* execution to be updated, but updated .*"));
     assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());
@@ -199,7 +200,8 @@ public class JdbcTaskRepositoryExceptionsTest {
             () -> {
               jdbcTaskRepository.reschedule(execution, Instant.now(), "", null, null, 0);
             });
-    assertThat(actualException.getMessage()).matches(Pattern.compile("Expected .* execution to be updated, but updated .*"));
+    assertThat(actualException.getMessage())
+        .matches(Pattern.compile("Expected .* execution to be updated, but updated .*"));
     assertEquals(execution.version, actualException.getVersion());
     assertEquals(execution.taskInstance.getTaskName(), actualException.getTaskName());
     assertEquals(execution.taskInstance.getId(), actualException.getInstanceId());

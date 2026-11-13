@@ -42,6 +42,7 @@ mvn test -Dtest=ClassName[#method]
 - AssertJ over Hamcrest in tests.
 - Compact tests are fine — multiple assertions/steps per test to reduce boilerplate.
 - Comments only when WHY is non-obvious.
+- Prefer `var` for local variable declaration
 
 ## Finalizing changes
 
@@ -50,6 +51,17 @@ Before committing run `/finalize` (or manually `mvn spotless:apply && mvn licens
 in lock-step across all six dialect files.
 
 Per CONTRIBUTING.md: open an issue before non-trivial PRs; one focused change per PR.
+
+## Before opening a PR
+
+- Run the `pre-pr` skill (`.claude/skills/pre-pr/SKILL.md`), or follow its steps manually
+  if your tool has no skill support: finalize, fresh-context self-review, red/green check,
+  "Assisted by" line.
+- Don't modify or delete existing tests to make them pass. If a test is wrong, say so in
+  the PR description.
+- Keep the diff minimal; no reformatting or refactoring beyond what the change needs.
+- PR titles must follow Conventional Commits (`feat:`, `fix:`, `chore:`, ...); CI enforces it.
+- Never post AI-generated text as issue or PR comments (see AI_POLICY.md).
 
 ## Easy to get wrong
 

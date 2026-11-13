@@ -67,6 +67,7 @@ public class TestHelper {
       return this;
     }
 
+    @SuppressWarnings("deprecation")
     public ManualSchedulerBuilder statsRegistry(StatsRegistry statsRegistry) {
       super.statsRegistry = statsRegistry;
       return this;
