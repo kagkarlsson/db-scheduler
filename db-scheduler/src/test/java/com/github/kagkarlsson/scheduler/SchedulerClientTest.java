@@ -13,7 +13,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import co.unruly.matchers.OptionalMatchers;
 import com.github.kagkarlsson.scheduler.TestTasks.SavingHandler;
@@ -204,6 +209,58 @@ public class SchedulerClientTest {
     scheduler.tick(ofSeconds(1));
     scheduler.runAnyDueExecutions();
     assertThat(savingHandler.savedData, CoreMatchers.is(data2));
+  }
+
+  @Test
+  public void client_should_be_able_to_try_reschedule_executions() {
+    String data = "try-reschedule-data";
+    TaskInstanceId taskInstanceId = TaskInstanceId.of(savingTask.getName(), "try-reschedule");
+    scheduler.schedule(
+        savingTask.instance(taskInstanceId.getId(), data), settableClock.now().plusSeconds(10));
+
+    assertTrue(scheduler.tryReschedule(taskInstanceId, settableClock.now()));
+    assertFalse(
+        scheduler.tryReschedule(
+            TaskInstanceId.of("missing-task", "missing-id"), settableClock.now()));
+
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is(data));
+  }
+
+  @Test
+  public void try_reschedule_should_update_data_and_preserve_it_for_null() {
+    var instance = savingTask.instance("try-reschedule-data", "original");
+    scheduler.schedule(instance, settableClock.now().plusSeconds(10));
+
+    assertTrue(scheduler.tryReschedule(instance, settableClock.now(), "updated"));
+    assertTrue(scheduler.tryReschedule(instance, settableClock.now(), null));
+    assertFalse(
+        scheduler.tryReschedule(
+            TaskInstanceId.of("missing", "missing"), settableClock.now(), "data"));
+
+    scheduler.runAnyDueExecutions();
+    assertThat(savingHandler.savedData, CoreMatchers.is("updated"));
+  }
+
+  @Test
+  public void reschedule_variants_should_notify_once_only_on_success() {
+    var repository = mock(TaskRepository.class);
+    var listeners = mock(SchedulerListeners.class);
+    var client = new SchedulerClient.StandardSchedulerClient(repository, listeners, settableClock);
+    var instance = savingTask.instance("listener", "original");
+    var executionTime = settableClock.now();
+    when(repository.rescheduleIfNotPicked(any(), any())).thenReturn(true);
+
+    assertTrue(client.reschedule(instance, executionTime, "updated"));
+    verify(listeners).onExecutionScheduled(instance, executionTime);
+    assertTrue(client.tryReschedule(instance, executionTime, "updated"));
+    verify(listeners, times(2)).onExecutionScheduled(instance, executionTime);
+    assertTrue(client.tryReschedule(instance, executionTime));
+    verify(listeners, times(3)).onExecutionScheduled(instance, executionTime);
+
+    when(repository.rescheduleIfNotPicked(any(), any())).thenReturn(false);
+    assertFalse(client.tryReschedule(instance, executionTime, "ignored"));
+    verifyNoMoreInteractions(listeners);
   }
 
   @Test
