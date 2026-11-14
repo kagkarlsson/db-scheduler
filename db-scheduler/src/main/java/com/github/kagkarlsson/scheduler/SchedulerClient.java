@@ -207,6 +207,28 @@ public interface SchedulerClient {
   <T> boolean reschedule(SchedulableInstance<T> schedulableInstance);
 
   /**
+   * Tries to reschedule an existing execution. Returns {@literal false} if the execution does not
+   * exist or is currently running. Database failures are propagated.
+   *
+   * @param taskInstanceId task-instance to reschedule
+   * @param newExecutionTime the new execution time
+   * @return {@literal true} if rescheduled successfully, {@literal false} if not found or currently
+   *     running
+   */
+  boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime);
+
+  /**
+   * Tries to reschedule an existing execution and update its data. Returns {@literal false} if the
+   * execution does not exist or is currently running. Database failures are propagated.
+   *
+   * @param taskInstanceId task-instance to reschedule
+   * @param newExecutionTime the new execution time
+   * @param newData new task data, or {@literal null} to keep the existing data
+   * @return {@literal true} if rescheduled successfully, otherwise {@literal false}
+   */
+  <T> boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData);
+
+  /**
    * Removes/Cancels an execution.
    *
    * @param taskInstanceId
@@ -559,21 +581,7 @@ public interface SchedulerClient {
     @Override
     public <T> boolean reschedule(
         TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
-      RescheduleUpdate.Builder rescheduleUpdate =
-          RescheduleUpdate.toExecutionTime(newExecutionTime)
-              .lastSuccess(null)
-              .lastFailure(null)
-              .consecutiveFailures(0);
-
-      if (newData != null) {
-        rescheduleUpdate.data(newData);
-      }
-
-      boolean success =
-          taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate.build());
-
-      if (success) {
-        schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
+      if (tryReschedule(taskInstanceId, newExecutionTime, newData)) {
         return true;
       }
 
@@ -583,6 +591,31 @@ public interface SchedulerClient {
         throw new TaskInstanceCurrentlyExecutingException(taskName, instanceId);
       }
       throw new TaskInstanceNotFoundException(taskName, instanceId);
+    }
+
+    @Override
+    public boolean tryReschedule(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+      return tryReschedule(taskInstanceId, newExecutionTime, null);
+    }
+
+    @Override
+    public <T> boolean tryReschedule(
+        TaskInstanceId taskInstanceId, Instant newExecutionTime, T newData) {
+      RescheduleUpdate.Builder rescheduleUpdate =
+          RescheduleUpdate.toExecutionTime(newExecutionTime)
+              .lastSuccess(null)
+              .lastFailure(null)
+              .consecutiveFailures(0);
+      if (newData != null) {
+        rescheduleUpdate.data(newData);
+      }
+
+      boolean success =
+          taskRepository.rescheduleIfNotPicked(taskInstanceId, rescheduleUpdate.build());
+      if (success) {
+        schedulerListeners.onExecutionScheduled(taskInstanceId, newExecutionTime);
+      }
+      return success;
     }
 
     @Override
