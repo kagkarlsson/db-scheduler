@@ -542,6 +542,7 @@ that should be "started" if they do not already have an existing execution. The 
 If the task already has a future execution (i.e. has been started at least once before), but an updated `Schedule` now indicates another execution-time,
 the existing execution will be rescheduled to the new execution-time (with the exception of _non-deterministic_ schedules
 such as `FixedDelay` where new execution-time is further into the future).
+Rescheduling preserves the last-success and last-failure timestamps, including when changing a cron expression. The consecutive-failure count is reset, just as with an explicit `SchedulerClient.reschedule(...)` call.
 
 Create using `Tasks.recurring(..)`.
 
