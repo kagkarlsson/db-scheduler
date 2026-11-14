@@ -17,6 +17,7 @@ import static java.util.stream.Collectors.joining;
 
 import com.github.kagkarlsson.scheduler.exceptions.ExecutionException;
 import com.github.kagkarlsson.scheduler.task.Execution;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -42,6 +43,7 @@ class ExecutionUpdate {
   @Nullable private NewValue<Instant> lastFailure;
   @Nullable private NewValue<Integer> consecutiveFailures;
   @Nullable private NewValue<Instant> lastHeartbeat;
+  @Nullable private NewValue<State> state;
 
   ExecutionUpdate(TaskInstanceId taskInstance, Long versionToUpdate) {
     this.taskInstance = taskInstance;
@@ -98,6 +100,11 @@ class ExecutionUpdate {
 
   ExecutionUpdate lastHeartbeat(@Nullable Instant lastHeartbeat) {
     this.lastHeartbeat = new NewValue<>(lastHeartbeat);
+    return this;
+  }
+
+  ExecutionUpdate state(@Nullable State state) {
+    this.state = new NewValue<>(state);
     return this;
   }
 
@@ -183,6 +190,11 @@ class ExecutionUpdate {
         "last_heartbeat",
         updates,
         (ps, index) -> jdbcConfig.customization().setInstant(ps, index, lastHeartbeat.value));
+    addIfSet(
+        state,
+        "state",
+        updates,
+        (ps, index) -> ps.setString(index, state.value != null ? state.value.name() : null));
     return updates;
   }
 

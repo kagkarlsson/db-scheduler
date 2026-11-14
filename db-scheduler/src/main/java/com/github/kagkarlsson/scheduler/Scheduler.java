@@ -28,12 +28,14 @@ import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.ExecutionOperations;
 import com.github.kagkarlsson.scheduler.task.OnStartup;
 import com.github.kagkarlsson.scheduler.task.SchedulableInstance;
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.Task;
 import com.github.kagkarlsson.scheduler.task.TaskInstance;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
@@ -48,6 +50,7 @@ public class Scheduler implements SchedulerClient {
 
   public static final double TRIGGER_NEXT_BATCH_WHEN_AVAILABLE_THREADS_RATIO = 0.5;
   public static final String THREAD_PREFIX = "db-scheduler";
+  static final int DELETE_OLD_DEACTIVATED_BATCH_LIMIT = 10_000;
   private static final Logger LOG = LoggerFactory.getLogger(Scheduler.class);
   private static final String STACK_TRACE_ELEMENT_INDENT = System.lineSeparator() + "\t\t";
   private final SchedulerClient delegate;
@@ -62,6 +65,7 @@ public class Scheduler implements SchedulerClient {
   int threadpoolSize;
   private final Waiter executeDueWaiter;
   private final Duration deleteUnresolvedAfter;
+  private final Duration deleteDeactivatedAfter;
   private final Duration shutdownMaxWait;
   protected final List<OnStartup> onStartup;
   private final Waiter detectDeadWaiter;
@@ -89,6 +93,7 @@ public class Scheduler implements SchedulerClient {
       List<ExecutionInterceptor> executionInterceptors,
       PollingStrategyConfig pollingStrategyConfig,
       Duration deleteUnresolvedAfter,
+      Duration deleteDeactivatedAfter,
       Duration shutdownMaxWait,
       LogLevel logLevel,
       boolean logStackTrace,
@@ -104,6 +109,7 @@ public class Scheduler implements SchedulerClient {
     this.executor = new Executor(executorService, clock);
     this.executeDueWaiter = executeDueWaiter;
     this.deleteUnresolvedAfter = deleteUnresolvedAfter;
+    this.deleteDeactivatedAfter = deleteDeactivatedAfter;
     this.shutdownMaxWait = shutdownMaxWait;
     this.onStartup = onStartup;
     this.detectDeadWaiter = new Waiter(heartbeatInterval.multipliedBy(2), clock);
@@ -183,6 +189,11 @@ public class Scheduler implements SchedulerClient {
         new RunAndLogErrors(this::updateHeartbeats, schedulerListeners),
         0,
         heartbeatWaiter.getWaitDuration().toMillis(),
+        MILLISECONDS);
+    housekeeperExecutor.scheduleWithFixedDelay(
+        new RunAndLogErrors(this::deleteOldDeactivatedExecutions, schedulerListeners),
+        0,
+        Duration.ofHours(24).toMillis(),
         MILLISECONDS);
 
     if (logLongRunningExecutions) {
@@ -332,6 +343,16 @@ public class Scheduler implements SchedulerClient {
   }
 
   @Override
+  public void reactivate(TaskInstanceId taskInstanceId, Instant newExecutionTime) {
+    this.delegate.reactivate(taskInstanceId, newExecutionTime);
+  }
+
+  @Override
+  public void deactivate(TaskInstanceId taskInstanceId, State state) {
+    this.delegate.deactivate(taskInstanceId, state);
+  }
+
+  @Override
   public void fetchScheduledExecutions(Consumer<ScheduledExecution<Object>> consumer) {
     this.delegate.fetchScheduledExecutions(consumer);
   }
@@ -440,6 +461,41 @@ public class Scheduler implements SchedulerClient {
       LOG.trace("No dead executions found.");
     }
     schedulerListeners.onSchedulerEvent(SchedulerEventType.RAN_DETECT_DEAD);
+  }
+
+  protected void deleteOldDeactivatedExecutions() {
+    deleteOldDeactivatedExecutions(DELETE_OLD_DEACTIVATED_BATCH_LIMIT);
+  }
+
+  protected void deleteOldDeactivatedExecutions(int batchLimit) {
+    if (deleteDeactivatedAfter.isZero()) {
+      LOG.trace("Deletion of old deactivated executions is disabled.");
+      return;
+    }
+
+    LOG.debug("Deleting old deactivated executions.");
+    Instant olderThan = clock.now().minus(deleteDeactivatedAfter);
+
+    // Only auto-clean states COMPLETE, FAILED
+    // RECORD - keep indefinitely
+    // PAUSED, WAITING - for now user must handle, future improvement with separate
+    //                   retention for these
+    EnumSet<State> deleteInStates = EnumSet.of(State.COMPLETE, State.FAILED);
+
+    int totalRemoved = 0;
+    int removed;
+    do {
+      removed =
+          schedulerTaskRepository.removeOldDeactivatedExecutions(
+              deleteInStates, olderThan, batchLimit);
+      totalRemoved += removed;
+    } while (removed == batchLimit && !schedulerState.isShuttingDown());
+
+    if (totalRemoved > 0) {
+      LOG.info("Removed {} old deactivated executions", totalRemoved);
+    } else {
+      LOG.trace("No old deactivated executions found.");
+    }
   }
 
   void updateHeartbeats() {

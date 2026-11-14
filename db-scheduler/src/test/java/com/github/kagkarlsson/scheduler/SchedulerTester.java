@@ -2,6 +2,7 @@ package com.github.kagkarlsson.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.kagkarlsson.scheduler.task.State;
 import com.github.kagkarlsson.scheduler.task.TaskInstanceId;
 import com.github.kagkarlsson.scheduler.testhelper.ManualScheduler;
 import java.time.Instant;
@@ -33,9 +34,14 @@ public class SchedulerTester {
     }
 
     public ExecutionAssertion isScheduled() {
-      assertThat(scheduler.getScheduledExecution(instance))
-          .as("Execution %s/%s is scheduled", instance.getTaskName(), instance.getId())
-          .isPresent();
+      return hasState(State.ACTIVE);
+    }
+
+    public ExecutionAssertion hasState(State expected) {
+      var scheduled = scheduler.getScheduledExecution(instance);
+      assertThat(scheduled)
+          .as("Execution %s/%s has state %s", instance.getTaskName(), instance.getId(), expected)
+          .hasValueSatisfying(e -> assertThat(e.getState()).isEqualTo(expected));
       return this;
     }
 
@@ -45,6 +51,31 @@ public class SchedulerTester {
               "Execution %s/%s has %d consecutive failures",
               instance.getTaskName(), instance.getId(), expected)
           .hasValueSatisfying(e -> assertThat(e.getConsecutiveFailures()).isEqualTo(expected));
+      return this;
+    }
+
+    public ExecutionAssertion hasNoLastFailure() {
+      assertThat(scheduler.getScheduledExecution(instance))
+          .as("Execution %s/%s has no last failure", instance.getTaskName(), instance.getId())
+          .hasValueSatisfying(e -> assertThat(e.getLastFailure()).isNull());
+      return this;
+    }
+
+    public ExecutionAssertion hasLastSuccess(Instant expected) {
+      assertThat(scheduler.getScheduledExecution(instance))
+          .as(
+              "Execution %s/%s has last success %s",
+              instance.getTaskName(), instance.getId(), expected)
+          .hasValueSatisfying(e -> assertThat(e.getLastSuccess()).isEqualTo(expected));
+      return this;
+    }
+
+    public ExecutionAssertion hasLastFailure(Instant expected) {
+      assertThat(scheduler.getScheduledExecution(instance))
+          .as(
+              "Execution %s/%s has last failure %s",
+              instance.getTaskName(), instance.getId(), expected)
+          .hasValueSatisfying(e -> assertThat(e.getLastFailure()).isEqualTo(expected));
       return this;
     }
 

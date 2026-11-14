@@ -1,4 +1,4 @@
-package com.github.kagkarlsson.scheduler.functional;
+package com.github.kagkarlsson.scheduler.feature;
 
 import static co.unruly.matchers.OptionalMatchers.contains;
 import static java.util.Collections.singletonList;

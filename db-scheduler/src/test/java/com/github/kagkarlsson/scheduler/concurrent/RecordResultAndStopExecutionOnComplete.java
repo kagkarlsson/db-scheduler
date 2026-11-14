@@ -32,7 +32,7 @@ class RecordResultAndStopExecutionOnComplete<T> implements CompletionHandler<T> 
       } else {
         failed.add(instanceId);
       }
-      executionOperations.stop();
+      executionOperations.remove();
 
     } catch (Exception e) {
       LOG.error("Error during completion!", e);

@@ -62,7 +62,7 @@ public class SchedulerClientMain extends Example {
 
     System.out.println("Listing scheduled executions");
     clientWithTypeInformation
-        .getScheduledExecutions(ScheduledExecutionsFilter.all())
+        .getScheduledExecutions(ScheduledExecutionsFilter.active())
         .forEach(
             execution -> {
               System.out.printf(
@@ -77,7 +77,7 @@ public class SchedulerClientMain extends Example {
     System.out.println(
         "Listing scheduled executions for client with no known tasks (data-classes and implementations)");
     rawClient
-        .getScheduledExecutions(ScheduledExecutionsFilter.all())
+        .getScheduledExecutions(ScheduledExecutionsFilter.active())
         .forEach(
             execution -> {
               System.out.printf(

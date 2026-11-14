@@ -17,6 +17,12 @@ import java.util.Optional;
 
 public class Queries {
 
+  public static final String ACTIVE_STATE = "ACTIVE";
+  public static final String SQL_ACTIVE_CONDITION =
+      "(state is null OR state = '" + ACTIVE_STATE + "')";
+  public static final String SQL_DEACTIVATED_CONDITION =
+      "(state is not null AND state <> '" + ACTIVE_STATE + "')";
+
   public static String selectForUpdate(
       String tableName,
       String orderPart,
@@ -28,7 +34,9 @@ public class Queries {
     return "SELECT * FROM "
         + tableName
         + Optional.ofNullable(sqlServerStyleForUpdate).orElse("")
-        + " WHERE picked = ? AND execution_time <= ? "
+        + " WHERE picked = ? AND execution_time <= ? AND "
+        + SQL_ACTIVE_CONDITION
+        + " "
         + requiredAndCondition
         + orderPart
         + Optional.ofNullable(postgresOracleStyleForUpdate).orElse("")

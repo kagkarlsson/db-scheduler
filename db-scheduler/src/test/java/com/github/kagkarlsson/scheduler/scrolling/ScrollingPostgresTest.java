@@ -1,6 +1,6 @@
 package com.github.kagkarlsson.scheduler.scrolling;
 
-import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.all;
+import static com.github.kagkarlsson.scheduler.ScheduledExecutionsFilter.active;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.github.kagkarlsson.scheduler.EmbeddedPostgresqlExtension;
@@ -28,21 +28,21 @@ public class ScrollingPostgresTest {
 
     createTestExecutions(client, 10);
 
-    var firstHalf = getScheduledForTask(client, all().limit(5));
+    var firstHalf = getScheduledForTask(client, active().limit(5));
     assertEquals(5, firstHalf.size());
 
     ExecutionTimeAndId fifth = ExecutionTimeAndId.from(firstHalf.get(4));
-    var secondHalf = getScheduledForTask(client, all().after(fifth).limit(10));
+    var secondHalf = getScheduledForTask(client, active().after(fifth).limit(10));
     assertEquals(5, secondHalf.size());
 
-    var allBeforeFifth = getScheduledForTask(client, all().before(fifth).limit(10));
+    var allBeforeFifth = getScheduledForTask(client, active().before(fifth).limit(10));
     assertEquals(4, allBeforeFifth.size());
 
-    var allResults = getScheduledForTask(client, all().limit(200));
+    var allResults = getScheduledForTask(client, active().limit(200));
     assertEquals(10, allResults.size());
 
     var first = ExecutionTimeAndId.from(allResults.get(0));
-    var betweenFirstAndFifth = getScheduledForTask(client, all().after(first).before(fifth));
+    var betweenFirstAndFifth = getScheduledForTask(client, active().after(first).before(fifth));
     assertEquals(3, betweenFirstAndFifth.size());
   }
 

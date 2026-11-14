@@ -1,4 +1,4 @@
-package com.github.kagkarlsson.scheduler.functional;
+package com.github.kagkarlsson.scheduler.feature;
 
 import static com.github.kagkarlsson.jdbc.PreparedStatementSetter.NOOP;
 import static org.hamcrest.MatcherAssert.assertThat;

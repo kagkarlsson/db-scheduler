@@ -52,7 +52,9 @@ public class MssqlJdbcCustomization extends DefaultJdbcCustomization {
         + " * FROM "
         + tableName
         // try reading past locked rows to see if that helps on deadlock-warnings
-        + " WITH (READPAST) WHERE picked = ? AND execution_time <= ? "
+        + " WITH (READPAST) WHERE picked = ? AND execution_time <= ? AND "
+        + Queries.SQL_ACTIVE_CONDITION
+        + " "
         + andCondition
         + Queries.ansiSqlOrderPart(orderByPriority)
         + getQueryLimitPart(limit);
