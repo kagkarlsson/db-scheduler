@@ -13,6 +13,8 @@
  */
 package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 
+import com.github.kagkarlsson.scheduler.stats.ExecutorStatsBinder;
+import com.github.kagkarlsson.scheduler.stats.MicrometerExecutorStatsBinder;
 import com.github.kagkarlsson.scheduler.stats.MicrometerStatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.task.Task;
@@ -60,5 +62,16 @@ public class DbSchedulerMetricsAutoConfiguration {
         "Spring Boot Actuator and Micrometer detected. Will use: {} for StatsRegistry",
         registry.getClass().getName());
     return new MicrometerStatsRegistry(registry, configuredTasks);
+  }
+
+  @ConditionalOnClass(MeterRegistry.class)
+  @ConditionalOnBean(MeterRegistry.class)
+  @ConditionalOnProperty("db-scheduler.register-executors-metrics")
+  @Bean
+  ExecutorStatsBinder micrometerExecutorStatsBinder(MeterRegistry registry) {
+    log.debug(
+        "Spring Boot Actuator and Micrometer detected. Will use: {} for ExecutorStatsBinder",
+        registry.getClass().getName());
+    return new MicrometerExecutorStatsBinder(registry);
   }
 }
