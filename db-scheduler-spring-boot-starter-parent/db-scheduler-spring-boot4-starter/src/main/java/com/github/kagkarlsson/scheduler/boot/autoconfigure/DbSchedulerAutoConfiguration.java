@@ -15,12 +15,14 @@ package com.github.kagkarlsson.scheduler.boot.autoconfigure;
 
 import com.github.kagkarlsson.scheduler.Clock;
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.SystemClock;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerConfigurationSupport;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerOverrides;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerProperties;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerStarter;
+import com.github.kagkarlsson.scheduler.boot.config.SchedulerClientInvocationHandler;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ContextReadyStart;
 import com.github.kagkarlsson.scheduler.boot.config.startup.ImmediateStart;
 import com.github.kagkarlsson.scheduler.event.ExecutionInterceptor;
@@ -42,8 +44,10 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
+import org.springframework.cglib.proxy.Proxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 @EnableConfigurationProperties(DbSchedulerProperties.class)
@@ -57,14 +61,12 @@ public class DbSchedulerAutoConfiguration {
   private static final Logger log = LoggerFactory.getLogger(DbSchedulerAutoConfiguration.class);
   private final DbSchedulerProperties config;
   private final DataSource existingDataSource;
-  private final List<Task<?>> configuredTasks;
   private final List<SchedulerListener> schedulerListeners;
   private final List<ExecutionInterceptor> executionInterceptors;
 
   public DbSchedulerAutoConfiguration(
       DbSchedulerProperties dbSchedulerProperties,
       DataSource dataSource,
-      List<Task<?>> configuredTasks,
       List<SchedulerListener> schedulerListeners,
       List<ExecutionInterceptor> executionInterceptors) {
     this.config =
@@ -72,8 +74,6 @@ public class DbSchedulerAutoConfiguration {
             dbSchedulerProperties, "Can't configure db-scheduler without required configuration");
     this.existingDataSource =
         Objects.requireNonNull(dataSource, "An existing javax.sql.DataSource is required");
-    this.configuredTasks =
-        Objects.requireNonNull(configuredTasks, "At least one Task must be configured");
     this.schedulerListeners = schedulerListeners;
     this.executionInterceptors = executionInterceptors;
   }
@@ -101,7 +101,9 @@ public class DbSchedulerAutoConfiguration {
       ObjectProvider<DbSchedulerOverrides> overrides,
       ObjectProvider<DbSchedulerCustomizer> legacyCustomizer,
       StatsRegistry registry,
-      Clock clock) {
+      Clock clock,
+      List<Task<?>> configuredTasks) {
+    Objects.requireNonNull(configuredTasks, "At least one Task must be configured");
     log.info("Creating db-scheduler using tasks from Spring context: {}", configuredTasks);
     return DbSchedulerConfigurationSupport.buildScheduler(
         config,
@@ -113,6 +115,18 @@ public class DbSchedulerAutoConfiguration {
         configuredTasks,
         schedulerListeners,
         executionInterceptors);
+  }
+
+  @Primary
+  @Bean(name = "schedulerClient")
+  @ConditionalOnBean(Scheduler.class)
+  @ConditionalOnMissingBean(name = "schedulerClient")
+  public SchedulerClient schedulerClient(ObjectProvider<Scheduler> scheduler) {
+    return (SchedulerClient)
+        Proxy.newProxyInstance(
+            SchedulerClient.class.getClassLoader(),
+            new Class<?>[] {SchedulerClient.class},
+            new SchedulerClientInvocationHandler(scheduler));
   }
 
   @ConditionalOnBean(Scheduler.class)
