@@ -280,6 +280,35 @@ public abstract class CompatibilityTest {
     assertEquals(3, summary.maxConsecutiveFailures());
   }
 
+  @Test
+  public void test_jdbc_failing_filter() {
+    var repo = createJdbcTaskRepository(false);
+    var now = truncatedInstantNow();
+    createExecution(repo, "scheduled", now.plusSeconds(10)); // consecutive_failures is null
+    for (var id : List.of("failing-1", "failing-2")) {
+      repo.reschedule(
+          createExecution(repo, id, now.plusSeconds(20)), now.plusSeconds(20), null, now, 1);
+    }
+    repo.pick(createExecution(repo, "running", now.plusSeconds(30)), now);
+
+    var failing = all().withPicked(false).withFailing(true);
+    var failingIds = idsFrom(repo.getScheduledExecutions(failing));
+    var scheduledIds =
+        idsFrom(repo.getScheduledExecutions(all().withPicked(false).withFailing(false)));
+    assertEquals(List.of("failing-1", "failing-2"), failingIds);
+    assertEquals(List.of("scheduled"), scheduledIds);
+
+    var summary = repo.getScheduledExecutionsSummaryByTask().get(0);
+    assertEquals(summary.failingCount(), failingIds.size());
+    assertEquals(summary.scheduledCount(), scheduledIds.size());
+
+    var firstPage = repo.getScheduledExecutions(failing.limit(1));
+    var secondPage =
+        repo.getScheduledExecutions(
+            failing.after(ExecutionTimeAndId.from(toScheduled(firstPage.get(0)))));
+    assertEquals(List.of("failing-2"), idsFrom(secondPage));
+  }
+
   private Execution createExecution(JdbcTaskRepository repo, String id, Instant executionTime) {
     var instance = ONETIME.instance(id).scheduledTo(executionTime);
     repo.createIfNotExists(instance);
