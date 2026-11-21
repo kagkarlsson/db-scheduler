@@ -165,7 +165,19 @@ public class Scheduler implements SchedulerClient {
     schedulerListeners.add(listener);
   }
 
+  /**
+   * Starts the scheduler.
+   *
+   * <p>A stopped scheduler cannot be restarted. Create a new instance, or use {@link #pause()} and
+   * {@link #resume()} to suspend execution temporarily.
+   *
+   * @throws IllegalStateException if {@link #stop()} has already been called
+   */
   public void start() {
+    if (schedulerState.isShuttingDown()) {
+      throw new IllegalStateException(
+          "Scheduler has been stopped and cannot be started again. Create a new instance.");
+    }
     LOG.info("Starting scheduler.");
 
     executeOnStartup();

@@ -5,6 +5,7 @@ import static java.time.Duration.between;
 import static java.time.Duration.ofHours;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -67,6 +68,23 @@ public class SchedulerTest {
         TestHelper.createManualScheduler(postgres.getDataSource(), tasks).clock(clock).start();
     stopScheduler.register(manualScheduler);
     return manualScheduler;
+  }
+
+  /**
+   * Guards against restarting a stopped scheduler, which would leave it permanently reported as
+   * shutting down with terminated executors (issue #248).
+   */
+  @Test
+  public void scheduler_should_reject_start_after_stop() {
+    var scheduler = Scheduler.create(postgres.getDataSource()).build();
+    stopScheduler.register(scheduler);
+
+    scheduler.start();
+    scheduler.stop();
+
+    assertThatThrownBy(scheduler::start)
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("cannot be started again");
   }
 
   @Test
