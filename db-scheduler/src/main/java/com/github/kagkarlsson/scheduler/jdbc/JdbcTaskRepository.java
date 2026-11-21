@@ -844,6 +844,8 @@ public class JdbcTaskRepository implements TaskRepository {
 
     filter.getPickedValue().ifPresent(value -> q.andCondition(new PickedCondition(value)));
 
+    filter.getFailingValue().ifPresent(value -> q.andCondition(new FailingCondition(value)));
+
     filter.getAfterExecution().ifPresent(e -> q.andCondition(new ExecutionTimeAfterCondition(e)));
 
     filter.getBeforeExecution().ifPresent(e -> q.andCondition(new ExecutionTimeBeforeCondition(e)));
@@ -1052,6 +1054,28 @@ public class JdbcTaskRepository implements TaskRepository {
     @Override
     public int setParameters(PreparedStatement p, int index) throws SQLException {
       p.setBoolean(index++, value);
+      return index;
+    }
+  }
+
+  // Must match failing_count/scheduled_count in getScheduledExecutionsSummaryByTask()
+  private static class FailingCondition implements AndCondition {
+
+    private final boolean value;
+
+    public FailingCondition(boolean value) {
+      this.value = value;
+    }
+
+    @Override
+    public String getQueryPart() {
+      return value
+          ? "coalesce(consecutive_failures, 0) > 0"
+          : "coalesce(consecutive_failures, 0) = 0";
+    }
+
+    @Override
+    public int setParameters(PreparedStatement p, int index) {
       return index;
     }
   }

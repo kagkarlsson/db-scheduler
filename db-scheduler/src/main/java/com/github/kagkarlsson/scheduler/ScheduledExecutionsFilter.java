@@ -19,6 +19,7 @@ import java.util.Optional;
 public class ScheduledExecutionsFilter {
 
   private Boolean pickedValue;
+  private Boolean failingValue;
   private boolean includeUnresolved = false;
   private ExecutionTimeAndId afterExecution;
   private ExecutionTimeAndId beforeExecution;
@@ -39,6 +40,16 @@ public class ScheduledExecutionsFilter {
     return this;
   }
 
+  /**
+   * Failing means {@code consecutive_failures > 0}, regardless of whether the execution is
+   * currently picked. Combine with {@code withPicked(false)} to match {@link
+   * TaskSummary#failingCount()}.
+   */
+  public ScheduledExecutionsFilter withFailing(boolean failingValue) {
+    this.failingValue = failingValue;
+    return this;
+  }
+
   public ScheduledExecutionsFilter withIncludeUnresolved(boolean includeUnresolved) {
     this.includeUnresolved = includeUnresolved;
     return this;
@@ -46,6 +57,10 @@ public class ScheduledExecutionsFilter {
 
   public Optional<Boolean> getPickedValue() {
     return Optional.ofNullable(pickedValue);
+  }
+
+  public Optional<Boolean> getFailingValue() {
+    return Optional.ofNullable(failingValue);
   }
 
   public boolean getIncludeUnresolved() {

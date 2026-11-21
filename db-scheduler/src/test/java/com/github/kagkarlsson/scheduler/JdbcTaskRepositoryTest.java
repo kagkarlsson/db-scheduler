@@ -555,6 +555,30 @@ public class JdbcTaskRepositoryTest {
   }
 
   @Test
+  public void get_scheduled_by_task_name_and_failing() {
+    Instant now = TimeHelper.truncatedInstantNow();
+    scheduleWithFailures(oneTimeTask.instance("failing"), now, 2);
+    scheduleWithFailures(oneTimeTask.instance("ok"), now.plusSeconds(1), 0);
+    scheduleWithFailures(alternativeOneTimeTask.instance("other-failing"), now, 3);
+
+    assertEquals(List.of("failing"), ids(all().withFailing(true), oneTimeTask.getName()));
+    assertEquals(List.of("ok"), ids(all().withFailing(false), oneTimeTask.getName()));
+    assertEquals(
+        List.of("other-failing"), ids(all().withFailing(true), alternativeOneTimeTask.getName()));
+  }
+
+  private void scheduleWithFailures(
+      TaskInstance<Void> instance, Instant executionTime, int consecutiveFailures) {
+    taskRepository.createIfNotExists(new SchedulableTaskInstance<>(instance, executionTime));
+    var execution = taskRepository.getExecution(instance).orElseThrow();
+    taskRepository.reschedule(execution, executionTime, null, null, consecutiveFailures);
+  }
+
+  private List<String> ids(ScheduledExecutionsFilter filter, String taskName) {
+    return getScheduledExecutions(filter, taskName).stream().map(Execution::getId).toList();
+  }
+
+  @Test
   public void get_dead_executions_should_not_include_previously_unresolved() {
     Instant now = TimeHelper.truncatedInstantNow();
 
