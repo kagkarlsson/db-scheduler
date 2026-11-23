@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.github.kagkarlsson.scheduler.Scheduler;
+import com.github.kagkarlsson.scheduler.SchedulerClient;
 import com.github.kagkarlsson.scheduler.SchedulerName;
 import com.github.kagkarlsson.scheduler.boot.actuator.DbSchedulerHealthIndicator;
 import com.github.kagkarlsson.scheduler.boot.config.DbSchedulerCustomizer;
@@ -22,10 +23,12 @@ import com.github.kagkarlsson.scheduler.stats.StatsRegistry;
 import com.github.kagkarlsson.scheduler.stats.StatsRegistry.DefaultStatsRegistry;
 import com.github.kagkarlsson.scheduler.task.ExecutionComplete;
 import com.github.kagkarlsson.scheduler.task.Task;
+import com.github.kagkarlsson.scheduler.task.TaskDescriptor;
 import com.github.kagkarlsson.scheduler.task.helper.Tasks;
 import com.google.common.collect.ImmutableList;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -323,6 +326,23 @@ public class DbSchedulerAutoConfigurationTest {
         });
   }
 
+  @Test
+  public void it_should_initialize_with_circular_dependency_resolving() {
+    ctxRunner
+        .withUserConfiguration(SchedulerTaskConfig.class)
+        .run(
+            (AssertableApplicationContext ctx) -> {
+              assertThat(ctx).hasSingleBean(DataSource.class);
+              assertThat(ctx).getBeans(SchedulerClient.class).hasSize(2);
+              assertThat(ctx).hasSingleBean(Scheduler.class);
+              ctx.getBean(Scheduler.class)
+                  .fetchScheduledExecutions(
+                      execution -> {
+                        fail("No scheduled executions should be present", execution);
+                      });
+            });
+  }
+
   @Configuration
   static class SingleTaskConfiguration {
     @Bean
@@ -437,6 +457,45 @@ public class DbSchedulerAutoConfigurationTest {
         @Override
         public void registerSingleCompletedExecution(ExecutionComplete completeEvent) {}
       };
+    }
+  }
+
+  /**
+   * This configuration demonstrates a circular dependency issue: - ReschedulerService depends on
+   * SchedulerClient - SchedulerClient depends on Task list (in DbSchedulerAutoConfiguration) -
+   * ReschedulerTask depends on ReschedulerService
+   *
+   * <p>The circular chain: ReschedulerService -> SchedulerClient -> ReschedulerTask ->
+   * ReschedulerService
+   */
+  @Configuration
+  static class SchedulerTaskConfig {
+
+    @Bean
+    public Task<Void> reschedulerTask(
+        ReschedulerService reschedulerService, TaskDescriptor<Void> reschedulerTaskDescriptor) {
+      return Tasks.oneTime(reschedulerTaskDescriptor)
+          .execute(
+              (instance, context) -> {
+                reschedulerService.schedule();
+              });
+    }
+
+    @Bean
+    public TaskDescriptor<Void> reschedulerTaskDescriptor() {
+      return TaskDescriptor.of("reschedule-in-separate-service");
+    }
+
+    @Bean
+    public ReschedulerService schedulerService(
+        SchedulerClient schedulerClient, TaskDescriptor<Void> desc) {
+      return new ReschedulerService(schedulerClient, desc);
+    }
+
+    public record ReschedulerService(SchedulerClient schedulerClient, TaskDescriptor<Void> desc) {
+      public void schedule() {
+        schedulerClient.schedule(desc.instance("recalculate-all").scheduledTo(Instant.now()));
+      }
     }
   }
 
